@@ -13,7 +13,7 @@ class University extends Model
     protected $primaryKey = 'universidad_id';
     protected $fillable = ['nombre'];
     
-    public function Campuses()
+    public function campus()
     {
         return $this->hasMany(Campus::class, 'universidad_id', 'universidad_id');
     }

@@ -18,7 +18,7 @@ class Campus extends Model
         return $this->belongsTo(University::class, 'universidad_id', 'universidad_id');
     }
 
-    public function Faculties()
+    public function Faculty()
     {
         return $this->hasMany(Faculty::class, 'sede_id', 'sede_id');
     }

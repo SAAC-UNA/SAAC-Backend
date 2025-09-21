@@ -22,7 +22,7 @@ class Faculty extends Model
         return $this->belongsTo(Campus::class, 'sede_id', 'sede_id');
     }
 
-    public function careers()
+    public function career()
     {
         return $this->hasMany(Career::class, 'facultad_id', 'facultad_id');
     }
