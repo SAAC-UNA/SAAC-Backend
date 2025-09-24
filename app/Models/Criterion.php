@@ -22,4 +22,9 @@ class Criterion extends Model
     {
         return $this->hasMany(Evidence::class, 'criterio_id', 'criterio_id');
     }
+
+    public function standards()
+    {
+        return $this->hasMany(Standard::class, 'criterio_id', 'criterio_id');
+    }
 }

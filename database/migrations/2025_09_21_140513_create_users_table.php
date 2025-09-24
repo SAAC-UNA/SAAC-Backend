@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('USUARIO', function (Blueprint $table) {
-            $table->id('usuario_id');
+            $table->id()->name('usuario_id');
             #CAMBIAR FOREIGNID SEGUN NOMBRE TABLA ROLES LARAVEL-PERMISSION
             #$table->foreignId('rol_id')->constrained('ROL')->onDelete('cascade'); 
             $table->string('cedula')->unique();
