@@ -2,7 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\UniversityController; // Importante importa el controlador
+// Importante importa el controlador
+use App\Http\Controllers\UniversityController; 
 use App\Http\Controllers\CampusController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\CareerController;
