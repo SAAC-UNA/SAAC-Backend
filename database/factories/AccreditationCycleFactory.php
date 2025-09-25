@@ -17,7 +17,8 @@ class AccreditationCycleFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'carrera_sede_id' => \App\Models\CareerCampus::factory(),
+            'nombre' => $this->faker->words(2, true),
         ];
     }
 }

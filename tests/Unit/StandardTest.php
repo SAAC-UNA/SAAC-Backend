@@ -13,12 +13,19 @@ class StandardTest extends TestCase
     /** @test */
     public function it_creates_a_standard()
     {
-        $standard = Standard::factory()->create([
-            'nombre' => 'Estándar 1',
+        $criterion = \App\Models\Criterion::factory()->create([
+            'componente_id' => \App\Models\Component::factory()->create([
+                'dimension_id' => \App\Models\Dimension::factory()->create()->dimension_id,
+            ])->componente_id,
+        ]);
+        $standard = \App\Models\Standard::factory()->create([
+            'criterio_id' => $criterion->criterio_id,
+            'descripcion' => 'Estándar 1',
         ]);
 
         $this->assertDatabaseHas('ESTANDAR', [
-            'nombre' => 'Estándar 1',
+            'descripcion' => 'Estándar 1',
+            'criterio_id' => $criterion->criterio_id,
         ]);
     }
 }

@@ -13,12 +13,10 @@ class AuditLogTest extends TestCase
     /** @test */
     public function it_creates_an_audit_log()
     {
-        $auditLog = AuditLog::factory()->create([
-            'accion' => 'Login',
-        ]);
+        $auditLog = \App\Models\AuditLog::factory()->create();
 
-        $this->assertDatabaseHas('AUDITORIA', [
-            'accion' => 'Login',
+        $this->assertDatabaseHas('BITACORA', [
+            'bitacora_id' => $auditLog->bitacora_id,
         ]);
     }
 }

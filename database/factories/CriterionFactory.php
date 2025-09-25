@@ -17,7 +17,10 @@ class CriterionFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'componente_id' => \App\Models\Component::factory(),
+            'comentario_id' => \App\Models\Comment::factory(),
+            'descripcion' => $this->faker->sentence(6),
+            'nomenclatura' => $this->faker->bothify('CRIT-##'),
         ];
     }
 }

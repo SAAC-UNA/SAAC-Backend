@@ -13,12 +13,14 @@ class ProcessTest extends TestCase
     /** @test */
     public function it_creates_a_process()
     {
-        $process = Process::factory()->create([
-            'nombre' => 'Proceso 1',
+        $accreditationCycle = \App\Models\AccreditationCycle::factory()->create();
+        $process = \App\Models\Process::factory()->create([
+            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
         ]);
 
         $this->assertDatabaseHas('PROCESO', [
-            'nombre' => 'Proceso 1',
+            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
+            'proceso_id' => $process->proceso_id,
         ]);
     }
 }

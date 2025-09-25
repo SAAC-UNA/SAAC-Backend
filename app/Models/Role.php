@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatieRole;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Modelo Role que extiende la implementación de Spatie.
@@ -13,10 +14,8 @@ use Spatie\Permission\Models\Role as SpatieRole;
  */
 class Role extends SpatieRole
 {
-    /**
-     * @var string[] 
-
-     */
+    use HasFactory;
+    protected $primaryKey = 'id';
     protected $fillable = [
         'name',
         'description', // se mantiene en inglés por compatibilidad con Spatie

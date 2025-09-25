@@ -17,7 +17,9 @@ class FacultyFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'universidad_id' => \App\Models\University::factory(),
+            'sede_id' => \App\Models\Campus::factory(),
+            'nombre' => $this->faker->company . ' Facultad',
         ];
     }
 }

@@ -17,7 +17,8 @@ class CareerCampusFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'carrera_id' => \App\Models\Career::factory(),
+            'sede_id' => \App\Models\Campus::factory(),
         ];
     }
 }

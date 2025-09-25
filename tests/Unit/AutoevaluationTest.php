@@ -13,12 +13,10 @@ class AutoevaluationTest extends TestCase
     /** @test */
     public function it_creates_an_autoevaluation()
     {
-        $autoevaluation = Autoevaluation::factory()->create([
-            'nombre' => 'Autoevaluación 2025',
-        ]);
+        $autoevaluation = \App\Models\Autoevaluation::factory()->create();
 
         $this->assertDatabaseHas('AUTOEVALUACION', [
-            'nombre' => 'Autoevaluación 2025',
+            'autoevaluacion_id' => $autoevaluation->autoevaluacion_id,
         ]);
     }
 }

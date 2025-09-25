@@ -13,12 +13,13 @@ class ProcessFeatureTest extends TestCase
     /** @test */
     public function it_can_create_and_retrieve_a_process()
     {
+        $accreditationCycle = \App\Models\AccreditationCycle::factory()->create();
         $process = Process::factory()->create([
-            'nombre' => 'Proceso 2',
+            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
         ]);
 
-        $found = Process::where('nombre', 'Proceso 2')->first();
+        $found = Process::find($process->proceso_id);
         $this->assertNotNull($found);
-        $this->assertEquals('Proceso 2', $found->nombre);
+        $this->assertEquals($process->proceso_id, $found->proceso_id);
     }
 }

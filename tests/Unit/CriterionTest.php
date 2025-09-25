@@ -13,12 +13,17 @@ class CriterionTest extends TestCase
     /** @test */
     public function it_creates_a_criterion()
     {
-        $criterion = Criterion::factory()->create([
-            'nombre' => 'Criterio 1',
+        $component = \App\Models\Component::factory()->create([
+            'dimension_id' => \App\Models\Dimension::factory()->create()->dimension_id,
+        ]);
+        $criterion = \App\Models\Criterion::factory()->create([
+            'componente_id' => $component->componente_id,
+            'descripcion' => 'Criterio 1',
         ]);
 
         $this->assertDatabaseHas('CRITERIO', [
-            'nombre' => 'Criterio 1',
+            'descripcion' => 'Criterio 1',
+            'componente_id' => $component->componente_id,
         ]);
     }
 }

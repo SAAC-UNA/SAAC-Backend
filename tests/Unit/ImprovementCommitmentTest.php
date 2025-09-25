@@ -13,12 +13,10 @@ class ImprovementCommitmentTest extends TestCase
     /** @test */
     public function it_creates_an_improvement_commitment()
     {
-        $commitment = ImprovementCommitment::factory()->create([
-            'nombre' => 'Compromiso 1',
-        ]);
+        $commitment = \App\Models\ImprovementCommitment::factory()->create();
 
         $this->assertDatabaseHas('COMPROMISO_MEJORA', [
-            'nombre' => 'Compromiso 1',
+            'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
         ]);
     }
 }

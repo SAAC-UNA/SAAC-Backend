@@ -17,7 +17,7 @@ class UniversityFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nombre' => $this->faker->company . ' Universidad',
         ];
     }
 }

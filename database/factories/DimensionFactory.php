@@ -17,7 +17,9 @@ class DimensionFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'comentario_id' => \App\Models\Comment::factory(),
+            'nombre' => $this->faker->word(),
+            'nomenclatura' => $this->faker->bothify('DIM-##'),
         ];
     }
 }

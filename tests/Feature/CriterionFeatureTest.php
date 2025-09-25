@@ -13,12 +13,17 @@ class CriterionFeatureTest extends TestCase
     /** @test */
     public function it_can_create_and_retrieve_a_criterion()
     {
+        $dimension = \App\Models\Dimension::factory()->create();
+        $component = \App\Models\Component::factory()->create([
+            'dimension_id' => $dimension->dimension_id,
+        ]);
         $criterion = Criterion::factory()->create([
-            'nombre' => 'Criterio 2',
+            'componente_id' => $component->componente_id,
+            'descripcion' => 'Criterio 2',
         ]);
 
-        $found = Criterion::where('nombre', 'Criterio 2')->first();
+        $found = Criterion::where('descripcion', 'Criterio 2')->where('componente_id', $component->componente_id)->first();
         $this->assertNotNull($found);
-        $this->assertEquals('Criterio 2', $found->nombre);
+        $this->assertEquals('Criterio 2', $found->descripcion);
     }
 }

@@ -13,7 +13,7 @@ class RoleTest extends TestCase
     /** @test */
     public function it_creates_a_role()
     {
-        $role = Role::factory()->create([
+        $role = \App\Models\Role::factory()->create([
             'name' => 'Administrador',
         ]);
 

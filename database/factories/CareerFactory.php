@@ -17,7 +17,8 @@ class CareerFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'facultad_id' => \App\Models\Faculty::factory(),
+            'nombre' => $this->faker->jobTitle . ' Carrera',
         ];
     }
 }

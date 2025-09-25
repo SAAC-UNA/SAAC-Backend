@@ -17,7 +17,8 @@ class CampusFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'universidad_id' => \App\Models\University::factory(),
+            'nombre' => $this->faker->city . ' Campus',
         ];
     }
 }

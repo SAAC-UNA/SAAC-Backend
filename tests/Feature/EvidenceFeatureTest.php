@@ -13,12 +13,22 @@ class EvidenceFeatureTest extends TestCase
     /** @test */
     public function it_can_create_and_retrieve_evidence()
     {
+        $dimension = \App\Models\Dimension::factory()->create();
+        $component = \App\Models\Component::factory()->create([
+            'dimension_id' => $dimension->dimension_id,
+        ]);
+        $criterion = \App\Models\Criterion::factory()->create([
+            'componente_id' => $component->componente_id,
+        ]);
+        $evidenceState = \App\Models\EvidenceState::factory()->create();
         $evidence = Evidence::factory()->create([
-            'nombre' => 'Evidencia 2',
+            'criterio_id' => $criterion->criterio_id,
+            'estado_evidencia_id' => $evidenceState->estado_evidencia_id,
+            'descripcion' => 'Evidencia 2',
         ]);
 
-        $found = Evidence::where('nombre', 'Evidencia 2')->first();
+        $found = Evidence::where('descripcion', 'Evidencia 2')->where('criterio_id', $criterion->criterio_id)->first();
         $this->assertNotNull($found);
-        $this->assertEquals('Evidencia 2', $found->nombre);
+        $this->assertEquals('Evidencia 2', $found->descripcion);
     }
 }

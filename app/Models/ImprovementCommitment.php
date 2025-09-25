@@ -10,7 +10,7 @@ class ImprovementCommitment extends Model
     /** @use HasFactory<\Database\Factories\ImprovementCommitmentFactory> */
     use HasFactory;
     protected $table = 'COMPROMISO_MEJORA';
-    protected $primaryKey = 'ID_COMPROMISO_MEJORA';
+    protected $primaryKey = 'compromiso_mejora_id';
     protected $fillable = ['proceso_id', 'fecha_inicio', 'fecha_fin'];
 
     public function process()

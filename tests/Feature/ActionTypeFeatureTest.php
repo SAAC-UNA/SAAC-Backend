@@ -14,11 +14,11 @@ class ActionTypeFeatureTest extends TestCase
     public function it_can_create_and_retrieve_an_action_type()
     {
         $actionType = ActionType::factory()->create([
-            'nombre' => 'Tipo de Acción 2',
+            'descripcion' => 'Tipo de Acción 2',
         ]);
 
-        $found = ActionType::where('nombre', 'Tipo de Acción 2')->first();
+        $found = ActionType::where('descripcion', 'Tipo de Acción 2')->first();
         $this->assertNotNull($found);
-        $this->assertEquals('Tipo de Acción 2', $found->nombre);
+        $this->assertEquals('Tipo de Acción 2', $found->descripcion);
     }
 }

@@ -14,11 +14,11 @@ class CommentFeatureTest extends TestCase
     public function it_can_create_and_retrieve_a_comment()
     {
         $comment = Comment::factory()->create([
-            'contenido' => 'Comentario funcional',
+            'texto' => 'Comentario funcional',
         ]);
 
-        $found = Comment::where('contenido', 'Comentario funcional')->first();
+        $found = Comment::where('texto', 'Comentario funcional')->first();
         $this->assertNotNull($found);
-        $this->assertEquals('Comentario funcional', $found->contenido);
+        $this->assertEquals('Comentario funcional', $found->texto);
     }
 }

@@ -17,7 +17,10 @@ class EvidenceFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'criterio_id' => \App\Models\Criterion::factory(),
+            'estado_evidencia_id' => \App\Models\EvidenceState::factory(),
+            'descripcion' => $this->faker->sentence(6),
+            'nomenclatura' => $this->faker->bothify('EVID-##'),
         ];
     }
 }

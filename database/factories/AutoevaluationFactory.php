@@ -17,7 +17,9 @@ class AutoevaluationFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'proceso_id' => \App\Models\Process::factory(),
+            'fecha_inicio' => $this->faker->date(),
+            'fecha_fin' => $this->faker->date(),
         ];
     }
 }

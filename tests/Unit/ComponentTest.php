@@ -13,12 +13,15 @@ class ComponentTest extends TestCase
     /** @test */
     public function it_creates_a_component()
     {
-        $component = Component::factory()->create([
+        $dimension = \App\Models\Dimension::factory()->create();
+        $component = \App\Models\Component::factory()->create([
+            'dimension_id' => $dimension->dimension_id,
             'nombre' => 'Componente 1',
         ]);
 
         $this->assertDatabaseHas('COMPONENTE', [
             'nombre' => 'Componente 1',
+            'dimension_id' => $dimension->dimension_id,
         ]);
     }
 }

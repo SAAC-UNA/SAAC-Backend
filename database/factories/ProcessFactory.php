@@ -17,7 +17,7 @@ class ProcessFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'ciclo_acreditacion_id' => \App\Models\AccreditationCycle::factory(),
         ];
     }
 }

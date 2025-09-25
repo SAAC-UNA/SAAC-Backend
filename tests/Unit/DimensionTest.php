@@ -13,12 +13,15 @@ class DimensionTest extends TestCase
     /** @test */
     public function it_creates_a_dimension()
     {
-        $dimension = Dimension::factory()->create([
+        $comment = \App\Models\Comment::factory()->create();
+        $dimension = \App\Models\Dimension::factory()->create([
+            'comentario_id' => $comment->comentario_id,
             'nombre' => 'Dimensión 1',
         ]);
 
         $this->assertDatabaseHas('DIMENSION', [
             'nombre' => 'Dimensión 1',
+            'comentario_id' => $comment->comentario_id,
         ]);
     }
 }

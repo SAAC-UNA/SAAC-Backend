@@ -13,12 +13,12 @@ class CommentTest extends TestCase
     /** @test */
     public function it_creates_a_comment()
     {
-        $comment = Comment::factory()->create([
-            'contenido' => 'Comentario de prueba',
+        $comment = \App\Models\Comment::factory()->create([
+            'texto' => 'Comentario de prueba',
         ]);
 
         $this->assertDatabaseHas('COMENTARIO', [
-            'contenido' => 'Comentario de prueba',
+            'texto' => 'Comentario de prueba',
         ]);
     }
 }

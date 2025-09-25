@@ -17,7 +17,7 @@ class ActionTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'descripcion' => $this->faker->sentence(3),
         ];
     }
 }

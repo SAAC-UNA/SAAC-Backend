@@ -13,12 +13,10 @@ class ImprovementCommitmentFeatureTest extends TestCase
     /** @test */
     public function it_can_create_and_retrieve_an_improvement_commitment()
     {
-        $commitment = ImprovementCommitment::factory()->create([
-            'nombre' => 'Compromiso 2',
-        ]);
+        $commitment = ImprovementCommitment::factory()->create();
 
-        $found = ImprovementCommitment::where('nombre', 'Compromiso 2')->first();
+        $found = ImprovementCommitment::find($commitment->compromiso_mejora_id);
         $this->assertNotNull($found);
-        $this->assertEquals('Compromiso 2', $found->nombre);
+        $this->assertEquals($commitment->compromiso_mejora_id, $found->compromiso_mejora_id);
     }
 }

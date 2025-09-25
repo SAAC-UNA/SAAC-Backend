@@ -17,7 +17,8 @@ class StandardFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'criterio_id' => \App\Models\Criterion::factory(),
+            'descripcion' => $this->faker->sentence(6),
         ];
     }
 }

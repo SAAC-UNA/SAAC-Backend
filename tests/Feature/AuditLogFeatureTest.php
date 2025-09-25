@@ -14,11 +14,11 @@ class AuditLogFeatureTest extends TestCase
     public function it_can_create_and_retrieve_an_audit_log()
     {
         $auditLog = AuditLog::factory()->create([
-            'accion' => 'Logout',
+            'detalle' => 'Logout funcional',
         ]);
 
-        $found = AuditLog::where('accion', 'Logout')->first();
+        $found = AuditLog::where('detalle', 'Logout funcional')->first();
         $this->assertNotNull($found);
-        $this->assertEquals('Logout', $found->accion);
+        $this->assertEquals('Logout funcional', $found->detalle);
     }
 }
