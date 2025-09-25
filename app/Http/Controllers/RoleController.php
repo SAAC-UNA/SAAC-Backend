@@ -153,4 +153,27 @@ class RoleController extends Controller
 
         return response()->json(['datos' => $permisos], 200);
     }
+
+     /**
+      * Eliminar un rol existente.
+      *
+      * @param int $id Identificador del rol a eliminar.
+      * @return JsonResponse
+      */
+      // En tu archivo App\Http\Controllers\RoleController.php
+
+    public function eliminarRol(int $id): JsonResponse
+    {
+      // Llamamos al método del servicio para eliminar el rol
+        $resultado = $this->rolServicio->eliminarRol($id);
+
+      // El método del servicio devuelve un booleano, lo revisamos
+        if (!$resultado) {
+            return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
+        }
+
+        return response()->json(['mensaje' => 'Rol eliminado con éxito'], 200);
+    }
+
+
 }

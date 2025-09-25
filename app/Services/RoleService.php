@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Database\Eloquent\Model;
+
 
 class RoleService
 {
@@ -100,6 +102,35 @@ class RoleService
      */
     public function listarPermisos()
     {
-        return Permission::all()->pluck('name');
+         return Permission::all()->pluck('name');
     }
+    
+    /**
+ * Eliminar un rol existente.
+ *
+ * @param Role $rol
+ * @return bool
+ */
+   public function eliminarRol(int $id): ?Role
+   {
+        return DB::transaction(function () use ($id) {
+            $rol = Role::find($id);
+
+            if (!$rol) {
+                return null;
+            }
+
+       Model::unsetEventDispatcher();// Evitar que Spatie intente resolver users()
+
+        $rol->permissions()->detach();
+        $rol->delete();
+        Model::setEventDispatcher(app('events')); // restaurar eventos
+
+        return $rol;
+      });
+   }
+
+
 }
+
+

@@ -19,5 +19,10 @@ Route::prefix('roles')->group(function () {
 
     // Actualizar rol
     Route::put('/{id}', [RoleController::class, 'actualizarRol'])->name('roles.actualizar');
+
+    // Eliminar rol
+    Route::delete('/{id}', [RoleController::class, 'eliminarRol'])->name('roles.eliminar');
+
+
 });
 
