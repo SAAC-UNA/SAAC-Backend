@@ -13,7 +13,7 @@ class Component extends Model
     protected $primaryKey = 'componente_id';
     protected $fillable = ['comentario_id', 'nombre', 'nomenclatura'];
 
-    public function dimensions()
+    public function dimension()
     {
         return $this->belongsTo(Dimension::class, 'componente_id', 'componente_id');
     }
