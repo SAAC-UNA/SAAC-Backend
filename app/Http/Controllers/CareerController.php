@@ -6,23 +6,25 @@ use App\Models\Career;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
+use App\Services\CareerService;
+use App\Http\Requests\CareerRequest;
 
 class CareerController extends Controller
 {
+    protected $service; // <-- Service
+
+    public function __construct(CareerService $service) // <-- Service
+    {
+        $this->service = $service;
+    }
     /**
      * GET /api/estructura/carreras?facultad_id=#
      */
     public function index(Request $request)
     {
-        $q = Career::query()
-            ->with('faculty')
-            ->orderBy('nombre');
-
-        if ($request->filled('facultad_id')) {
-            $q->where('facultad_id', (int) $request->input('facultad_id'));
-        }
-
-        return response()->json($q->get(), 200);
+        $facultadId = $request->filled('facultad_id') ? (int) $request->input('facultad_id') : null;
+        $items = $this->service->getAll($facultadId);
+        return response()->json($items, 200);
     }
 
     /**
@@ -30,66 +32,41 @@ class CareerController extends Controller
      */
     public function show($id)
     {
-        $car = Career::with('faculty')->find($id);
-        if (!$car) {
+        $career= $this->service->findById((int)$id);
+        if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
-        return response()->json($car, 200);
+        return response()->json($career, 200);
+
     }
 
     /**
      * POST /api/estructura/carreras
      * { "nombre":"Ing. Sistemas", "facultad_id":1 }
      */
-    public function store(Request $request)
+    public function store(CareerRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nombre'       => ['required','string','max:250'],
-            'facultad_id'  => ['required','integer','exists:FACULTAD,facultad_id'],
-        ], [
-            'nombre.required'      => 'El nombre es obligatorio.',
-            'facultad_id.required' => 'La facultad es obligatoria.',
-            'facultad_id.exists'   => 'La facultad no existe.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['message'=>'Datos inválidos.','errors'=>$validator->errors()], 422);
-        }
-
-        $car = Career::create($validator->validated());
-        $pk  = $car->getKeyName(); // 'carrera_id'
+        $career = $this->service->create($request->validated());
+        $primaryKeyName = $career->getKeyName();
 
         return response()
-            ->json(['message'=>'Carrera creada correctamente.','data'=>$car], 201)
-            ->header('Location', route('carreras.show', $car->$pk));
+            ->json(['message'=>'Carrera creada correctamente.','data'=>$career], 201)
+            ->header('Location', route('carreras.show', $career->$primaryKeyName));
     }
 
     /**
      * PUT/PATCH /api/estructura/carreras/{id}
      */
-    public function update(Request $request, $id)
+    public function update(CareerRequest $request, $id)
     {
-        $car = Career::find($id);
-        if (!$car) {
+        $career = Career::find($id);
+        if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'nombre'       => ['required','string','max:250'],
-            'facultad_id'  => ['required','integer','exists:FACULTAD,facultad_id'],
-        ], [
-            'nombre.required'      => 'El nombre es obligatorio.',
-            'facultad_id.required' => 'La facultad es obligatoria.',
-            'facultad_id.exists'   => 'La facultad no existe.',
-        ]);
+        $updated = $this->service->update($career, $request->validated());
 
-        if ($validator->fails()) {
-            return response()->json(['message'=>'Datos inválidos.','errors'=>$validator->errors()], 422);
-        }
-
-        $car->update($validator->validated());
-
-        return response()->json(['message'=>'Carrera actualizada correctamente.','data'=>$car], 200);
+        return response()->json(['message'=>'Carrera actualizada correctamente.','data'=>$updated], 200);
     }
 
     /**
@@ -97,13 +74,13 @@ class CareerController extends Controller
      */
     public function destroy($id)
     {
-        $car = Career::find($id);
-        if (!$car) {
+        $career = Career::find($id);
+        if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
 
         try {
-            $car->delete();
+            $this->service->delete($career);
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
@@ -115,4 +92,5 @@ class CareerController extends Controller
             return response()->json(['message'=>'Error al eliminar.','error'=>$e->getMessage()], 500);
         }
     }
+    
 }

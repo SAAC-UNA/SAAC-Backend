@@ -21,6 +21,7 @@ use App\Http\Controllers\DevCommentController;
 
 
 // CRUD completo de cada endpoint
+//Route::apiResource('estructura/universidades', UniversityController::class)->parameters(['universidades' => 'universidad'])->only(['index','store','show','update','destroy']);
 Route::apiResource('estructura/universidades', UniversityController::class)->only(['index','store','show','update','destroy']);
 Route::apiResource('estructura/campuses', CampusController::class)->only(['index','store','show','update','destroy']);
 Route::apiResource('estructura/facultades', FacultyController::class)->only(['index','store','show','update','destroy']);

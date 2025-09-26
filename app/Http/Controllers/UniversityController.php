@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use App\Services\UniversityService;
+use App\Http\Requests\UniversityRequest;
 
 class UniversityController extends Controller
 {
@@ -43,25 +44,9 @@ class UniversityController extends Controller
      * POST /api/universidades
      * Body JSON: { "nombre": "UNA" }
      */
-    public function store(Request $request)
+    public function store(UniversityRequest $request)
     {
-    $table = (new University)->getTable();
-
-    $validator = Validator::make($request->all(), [
-        'nombre' => ['required', 'string', 'max:250', Rule::unique($table, 'nombre')],
-    ], [
-        'nombre.required' => 'El nombre es obligatorio.',
-        'nombre.unique'   => 'Ya existe una universidad con ese nombre.',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'message' => 'Datos inválidos.',
-            'errors'  => $validator->errors()
-        ], 422);
-    }
-
-    $university = $this->service->create($validator->validated());
+    $university = $this->service->create($request->validated());
 
     return response()
         ->json([
@@ -69,49 +54,28 @@ class UniversityController extends Controller
             'data'    => $university
         ], 201)
         ->header('Location', route('universidades.show', $university->universidad_id));
-    }
 
+    }
 
     /**
      * PUT/PATCH /api/universidades/{id}
      * Body JSON: { "nombre": "UCR" }
      */
-   public function update(Request $request, $id)
+   public function update(UniversityRequest $request, $id)
     {
     $university = University::find($id);
-
     if (!$university) {
         return response()->json(['message' => 'Universidad no encontrada.'], 404);
     }
 
-    $table = (new University)->getTable(); // 'UNIVERSIDAD'
-
-    $validator = Validator::make($request->all(), [
-        'nombre' => [
-            'required', 'string', 'max:250',
-            Rule::unique($table, 'nombre')->ignore($university->universidad_id, 'universidad_id'),
-        ],
-    ], [
-        'nombre.required' => 'El nombre es obligatorio.',
-        'nombre.unique'   => 'Ya existe otra universidad con ese nombre.',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'message' => 'Datos inválidos.',
-            'errors'  => $validator->errors()
-        ], 422);
-    }
-
-    // Ahora se usa el service
-    $updatedUniversity = $this->service->update($university, $validator->validated());
+    // Datos ya validados por el FormRequest (incluye la regla unique con ignore)
+    $updated = $this->service->update($university, $request->validated());
 
     return response()->json([
         'message' => 'Universidad actualizada correctamente.',
-        'data'    => $updatedUniversity
+        'data'    => $updated
     ], 200);
     }
-
 
     /**
      * DELETE /api/universidades/{id}

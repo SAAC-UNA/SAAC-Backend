@@ -4,28 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Models\Faculty;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
+use App\Services\FacultyService;
+use App\Http\Requests\FacultyRequest;
 
 class FacultyController extends Controller
 {
+    protected $service; // <-- NUEVO
+
+    public function __construct(FacultyService $service) // <-- serivice
+    {
+        $this->service = $service;
+    }
     /**
      * GET /api/estructura/facultades?universidad_id=#&sede_id=#
      */
     public function index(Request $request)
     {
-        $q = Faculty::query()
-            ->with(['university','campus'])
-            ->orderBy('nombre');
+        $universidadId = $request->filled('universidad_id') ? (int) $request->input('universidad_id') : null;
+        $sedeId        = $request->filled('sede_id')        ? (int) $request->input('sede_id')        : null;
 
-        if ($request->filled('universidad_id')) {
-            $q->where('universidad_id', (int) $request->input('universidad_id'));
-        }
-        if ($request->filled('sede_id')) {
-            $q->where('sede_id', (int) $request->input('sede_id'));
-        }
-
-        return response()->json($q->get(), 200);
+        $items = $this->service->getAll($universidadId, $sedeId);
+        return response()->json($items, 200);
     }
 
     /**
@@ -33,72 +33,39 @@ class FacultyController extends Controller
      */
     public function show($id)
     {
-        $fac = Faculty::with(['university','campus'])->find($id);
-        if (!$fac) {
+        $faculty = $this->service->findById((int)$id);
+        if (!$faculty) {
             return response()->json(['message' => 'Facultad no encontrada.'], 404);
         }
-        return response()->json($fac, 200);
+        return response()->json($faculty, 200);
     }
 
     /**
      * POST /api/estructura/facultades
      * { "nombre":"Ciencias", "universidad_id":1, "sede_id":1 }
      */
-    public function store(Request $request)
+    public function store(FacultyRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nombre'         => ['required','string','max:250'],
-            'universidad_id' => ['required','integer','exists:UNIVERSIDAD,universidad_id'],
-            'sede_id'        => ['required','integer','exists:SEDE,sede_id'],
-        ], [
-            'nombre.required'         => 'El nombre es obligatorio.',
-            'universidad_id.required' => 'La universidad es obligatoria.',
-            'universidad_id.exists'   => 'La universidad no existe.',
-            'sede_id.required'        => 'La sede es obligatoria.',
-            'sede_id.exists'          => 'La sede no existe.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['message'=>'Datos inválidos.','errors'=>$validator->errors()], 422);
-        }
-
-        $fac = Faculty::create($validator->validated());
-        $pk  = $fac->getKeyName(); // 'facultad_id'
+        $faculty= $this->service->create($request->validated());
+        $primaryKeyName = $faculty->getKeyName();
 
         return response()
-            ->json(['message'=>'Facultad creada correctamente.','data'=>$fac], 201)
-            ->header('Location', route('facultades.show', $fac->$pk));
+        ->json(['message'=>'Facultad creada correctamente.','data'=>$faculty], 201)
+        ->header('Location', route('facultades.show', $faculty->$primaryKeyName));
     }
-
     /**
      * PUT/PATCH /api/estructura/facultades/{id}
      */
-    public function update(Request $request, $id)
+   public function update(FacultyRequest $request, $id)
     {
-        $fac = Faculty::find($id);
-        if (!$fac) {
+        $faculty= Faculty::find($id);
+        if (!$faculty) {
             return response()->json(['message' => 'Facultad no encontrada.'], 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'nombre'         => ['required','string','max:250'],
-            'universidad_id' => ['required','integer','exists:UNIVERSIDAD,universidad_id'],
-            'sede_id'        => ['required','integer','exists:SEDE,sede_id'],
-        ], [
-            'nombre.required'         => 'El nombre es obligatorio.',
-            'universidad_id.required' => 'La universidad es obligatoria.',
-            'universidad_id.exists'   => 'La universidad no existe.',
-            'sede_id.required'        => 'La sede es obligatoria.',
-            'sede_id.exists'          => 'La sede no existe.',
-        ]);
+        $updated = $this->service->update($faculty, $request->validated());
 
-        if ($validator->fails()) {
-            return response()->json(['message'=>'Datos inválidos.','errors'=>$validator->errors()], 422);
-        }
-
-        $fac->update($validator->validated());
-
-        return response()->json(['message'=>'Facultad actualizada correctamente.','data'=>$fac], 200);
+        return response()->json(['message'=>'Facultad actualizada correctamente.','data'=>$updated], 200);
     }
 
     /**
@@ -106,13 +73,15 @@ class FacultyController extends Controller
      */
     public function destroy($id)
     {
-        $fac = Faculty::find($id);
+         $fac = Faculty::find($id);
         if (!$fac) {
             return response()->json(['message' => 'Facultad no encontrada.'], 404);
         }
 
         try {
-            $fac->delete();
+            // ANTES: $fac->delete()
+            // AHORA: service->delete(...)
+            $this->service->delete($fac);
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
@@ -123,5 +92,5 @@ class FacultyController extends Controller
             }
             return response()->json(['message'=>'Error al eliminar.','error'=>$e->getMessage()], 500);
         }
-    }
+    }   
 }
