@@ -14,8 +14,20 @@ return [
         'gestion_roles',
         'gestion_usuarios',
         'gestion_reportes',
-        'gestion_programas',
         'gestion_ciclos',
+        'gestion_compromiso_de_mejora',
+        'gestion_notificaciones',
+    ],
+
+    // Etiquetas legibles para frontend
+    'descriptions' => [
+        'gestion_roles'                => 'Gestión de Roles',
+        'gestion_usuarios'             => 'Gestión de Usuarios',
+        'gestion_reportes'             => 'Gestión de Reportes',
+        'gestion_ciclos'               => 'Gestión de Ciclos',
+        'gestion_compromiso_de_mejora' => 'Gestión de Compromisos de Mejora',
+        'gestion_notificaciones'       => 'Gestión de Notificaciones',
     ],
 
 ];
+
