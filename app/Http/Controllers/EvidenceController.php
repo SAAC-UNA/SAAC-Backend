@@ -3,67 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Evidence;
-<<<<<<< HEAD
-use App\Http\Requests\StoreEvidenceRequest;
-use App\Http\Requests\UpdateEvidenceRequest;
-
-class EvidenceController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEvidenceRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Evidence $evidence)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Evidence $evidence)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateEvidenceRequest $request, Evidence $evidence)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Evidence $evidence)
-    {
-        //
-=======
 use Illuminate\Database\QueryException;
 use App\Http\Resources\EvidenceResource;
 use App\Services\EvidenceService;
@@ -73,7 +12,7 @@ class EvidenceController extends Controller
 {
     protected $service; // Service
 
-    public function __construct(EvidenceService $service) 
+    public function __construct(EvidenceService $service)
     {
         $this->service = $service;
     }
@@ -114,9 +53,9 @@ class EvidenceController extends Controller
      */
     public function update(EvidenceRequest $request, $id)
     {
-        $evidence= \App\Models\Evidence::find($id);
+        $evidence = \App\Models\Evidence::find($id);
         if (!$evidence) {
-        return response()->json(['message' => 'Evidencia no encontrada.'], 404);
+            return response()->json(['message' => 'Evidencia no encontrada.'], 404);
         }
 
         $updated = $this->service->update($evidence, $request->validated());
@@ -147,6 +86,5 @@ class EvidenceController extends Controller
             }
             return response()->json(['message' => 'Error al eliminar.', 'error' => $qe->getMessage()], 500);
         }
->>>>>>> 02_API_de_Endpoints_de_Estructura
     }
 }

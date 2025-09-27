@@ -3,68 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Career;
-<<<<<<< HEAD
-use App\Http\Requests\StoreCareerRequest;
-use App\Http\Requests\UpdateCareerRequest;
-
-class CareerController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreCareerRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Career $career)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Career $career)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCareerRequest $request, Career $career)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Career $career)
-    {
-        //
-    }
-=======
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
@@ -94,12 +32,11 @@ class CareerController extends Controller
      */
     public function show($id)
     {
-        $career= $this->service->findById((int)$id);
+        $career = $this->service->findById((int)$id);
         if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
         return response()->json($career, 200);
-
     }
 
     /**
@@ -112,7 +49,7 @@ class CareerController extends Controller
         $primaryKeyName = $career->getKeyName();
 
         return response()
-            ->json(['message'=>'Carrera creada correctamente.','data'=>$career], 201)
+            ->json(['message' => 'Carrera creada correctamente.', 'data' => $career], 201)
             ->header('Location', route('carreras.show', $career->$primaryKeyName));
     }
 
@@ -128,7 +65,7 @@ class CareerController extends Controller
 
         $updated = $this->service->update($career, $request->validated());
 
-        return response()->json(['message'=>'Carrera actualizada correctamente.','data'=>$updated], 200);
+        return response()->json(['message' => 'Carrera actualizada correctamente.', 'data' => $updated], 200);
     }
 
     /**
@@ -151,9 +88,7 @@ class CareerController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            return response()->json(['message'=>'Error al eliminar.','error'=>$e->getMessage()], 500);
+            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
-    
->>>>>>> 02_API_de_Endpoints_de_Estructura
 }

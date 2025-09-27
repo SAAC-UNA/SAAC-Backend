@@ -3,67 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Campus;
-<<<<<<< HEAD
-use App\Http\Requests\StoreCampusRequest;
-use App\Http\Requests\UpdateCampusRequest;
-
-class CampusController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreCampusRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Campus $campus)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Campus $campus)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCampusRequest $request, Campus $campus)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Campus $campus)
-    {
-        //
-=======
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
@@ -72,7 +11,7 @@ use App\Http\Requests\CampusRequest;
 
 class CampusController extends Controller
 {
-     protected $service; // Para service
+    protected $service; // Para service
 
     public function __construct(CampusService $service) // Para service
     {
@@ -116,11 +55,11 @@ class CampusController extends Controller
         $primaryKeyName = $campus->getKeyName();
 
         return response()
-        ->json([
-            'message' => 'Campus creado correctamente.',
-            'data'    => $campus
-        ], 201)
-        ->header('Location', route('campuses.show', $campus->$primaryKeyName));
+            ->json([
+                'message' => 'Campus creado correctamente.',
+                'data'    => $campus
+            ], 201)
+            ->header('Location', route('campuses.show', $campus->$primaryKeyName));
     }
 
     /**
@@ -128,24 +67,24 @@ class CampusController extends Controller
      */
     public function update(CampusRequest $request, $id)
     {
-    $campus = Campus::find($id);
-    if (!$campus) {
-        return response()->json(['message' => 'Campus no encontrado.'], 404);
-    }
+        $campus = Campus::find($id);
+        if (!$campus) {
+            return response()->json(['message' => 'Campus no encontrado.'], 404);
+        }
 
-    $updated = $this->service->update($campus, $request->validated());
+        $updated = $this->service->update($campus, $request->validated());
 
-    return response()->json([
-        'message' => 'Campus actualizado correctamente.',
-        'data'    => $updated
-    ], 200);
+        return response()->json([
+            'message' => 'Campus actualizado correctamente.',
+            'data'    => $updated
+        ], 200);
     }
     /**
      * DELETE /api/campus/{id}
      */
     public function destroy($id)
     {
-                $campus = Campus::find($id);
+        $campus = Campus::find($id);
         if (!$campus) {
             return response()->json(['message' => 'Campus no encontrado.'], 404);
         }
@@ -162,9 +101,7 @@ class CampusController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            return response()->json(['message'=>'Error al eliminar.','error'=>$e->getMessage()], 500);
+            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
-
->>>>>>> 02_API_de_Endpoints_de_Estructura
     }
 }

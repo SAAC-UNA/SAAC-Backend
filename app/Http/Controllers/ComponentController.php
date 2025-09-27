@@ -3,67 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Component;
-<<<<<<< HEAD
-use App\Http\Requests\StoreComponentRequest;
-use App\Http\Requests\UpdateComponentRequest;
-
-class ComponentController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreComponentRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Component $component)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Component $component)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateComponentRequest $request, Component $component)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Component $component)
-    {
-        //
-=======
 use Illuminate\Database\QueryException;
 use App\Services\ComponentService;
 use App\Http\Requests\ComponentRequest;
@@ -82,7 +21,7 @@ class ComponentController extends Controller
      */
     public function index()
     {
-       $items = $this->service->getAll(); // antes: Eloquent directo
+        $items = $this->service->getAll(); // antes: Eloquent directo
         return response()->json($items, 200);
     }
 
@@ -91,7 +30,7 @@ class ComponentController extends Controller
      */
     public function show($id)
     {
-       $component = $this->service->findById((int)$id); // antes: Eloquent directo
+        $component = $this->service->findById((int)$id); // antes: Eloquent directo
         if (!$component) {
             return response()->json(['message' => 'Componente no encontrado.'], 404);
         }
@@ -106,8 +45,8 @@ class ComponentController extends Controller
         $component = $this->service->create($request->validated());
 
         return response()->json([
-        'message' => 'Componente creado correctamente.',
-        'data'    => $component->load(['dimension','comment']),
+            'message' => 'Componente creado correctamente.',
+            'data'    => $component->load(['dimension', 'comment']),
         ], 201);
     }
 
@@ -148,17 +87,16 @@ class ComponentController extends Controller
             $driverErr = (int)($e->errorInfo[1] ?? 0); // 1451 => FK en DELETE
 
             if ($sqlState === '23000' && $driverErr === 1451) {
-            return response()->json([
-                'message' => 'No se puede eliminar: el componente tiene registros relacionados.',
-                'code'    => 'FK_CONSTRAINT',
-            ], 409);
-    }
+                return response()->json([
+                    'message' => 'No se puede eliminar: el componente tiene registros relacionados.',
+                    'code'    => 'FK_CONSTRAINT',
+                ], 409);
+            }
 
-        return response()->json([
-            'message' => 'Error al eliminar.',
-            'error'   => $e->getMessage(),
-         ], 500);
+            return response()->json([
+                'message' => 'Error al eliminar.',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
->>>>>>> 02_API_de_Endpoints_de_Estructura
     }
 }

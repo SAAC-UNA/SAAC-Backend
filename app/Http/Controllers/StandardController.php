@@ -3,67 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Standard;
-<<<<<<< HEAD
-use App\Http\Requests\StoreStandardRequest;
-use App\Http\Requests\UpdateStandardRequest;
-
-class StandardController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreStandardRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Standard $standard)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Standard $standard)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateStandardRequest $request, Standard $standard)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Standard $standard)
-    {
-        //
-=======
 use Illuminate\Database\QueryException;
 use App\Services\StandardService;
 use App\Http\Requests\StandardRequest;
@@ -72,7 +11,7 @@ use App\Http\Requests\StandardRequest;
 
 class StandardController extends Controller
 {
-     protected $service; // <-- NUEVO
+    protected $service; // <-- NUEVO
 
     public function __construct(StandardService $service) // <-- NUEVO
     {
@@ -105,12 +44,12 @@ class StandardController extends Controller
      */
     public function store(StandardRequest $request)
     {
-    try {
-        $standar = $this->service->create($request->validated());
-        return response()->json($standar, 201);
-    } catch (\Illuminate\Database\QueryException $e) {
-        return response()->json(['message' => 'Error al crear el estándar.'], 500);
-    }
+        try {
+            $standar = $this->service->create($request->validated());
+            return response()->json($standar, 201);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json(['message' => 'Error al crear el estándar.'], 500);
+        }
     }
 
     /**
@@ -119,13 +58,13 @@ class StandardController extends Controller
     public function update(StandardRequest $request, $id)
     {
         $standar = \App\Models\Standard::find($id);
-        if (!$standar) return response()->json(['message'=>'Estándar no encontrado.'], 404);
+        if (!$standar) return response()->json(['message' => 'Estándar no encontrado.'], 404);
 
         try {
-            $standar= $this->service->update($standar, $request->validated());
+            $standar = $this->service->update($standar, $request->validated());
             return response()->json($standar, 200);
         } catch (\Illuminate\Database\QueryException $e) {
-            return response()->json(['message'=>'Error al actualizar el estándar.'], 500);
+            return response()->json(['message' => 'Error al actualizar el estándar.'], 500);
         }
     }
 
@@ -134,16 +73,15 @@ class StandardController extends Controller
      */
     public function destroy($id)
     {
-        
+
         $standar = Standard::find($id);
-        if (!$standar) return response()->json(['message'=>'Estándar no encontrado.'], 404);
+        if (!$standar) return response()->json(['message' => 'Estándar no encontrado.'], 404);
 
         try {
             $this->service->delete($standar); // antes: $std->delete()
             return response()->noContent(); //204
         } catch (QueryException $e) {
-            return response()->json(['message'=>'No se puede eliminar.'], 409);
+            return response()->json(['message' => 'No se puede eliminar.'], 409);
         }
->>>>>>> 02_API_de_Endpoints_de_Estructura
     }
 }

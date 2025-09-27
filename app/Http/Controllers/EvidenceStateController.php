@@ -3,72 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceState;
-<<<<<<< HEAD
-use App\Http\Requests\StoreEvidenceStateRequest;
-use App\Http\Requests\UpdateEvidenceStateRequest;
-
-class EvidenceStateController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEvidenceStateRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(EvidenceState $evidenceState)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(EvidenceState $evidenceState)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateEvidenceStateRequest $request, EvidenceState $evidenceState)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(EvidenceState $evidenceState)
-    {
-        //
-=======
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use App\Services\EvidenceStateService;
-use App\Http\Requests\EvidenceStateRequest; 
+use App\Http\Requests\EvidenceStateRequest;
 
 class EvidenceStateController extends Controller
 {
@@ -92,7 +31,7 @@ class EvidenceStateController extends Controller
      */
     public function show($id)
     {
-       $estado = $this->service->findById((int)$id); // antes: EvidenceState::find
+        $estado = $this->service->findById((int)$id); // antes: EvidenceState::find
         if (!$estado) {
             return response()->json(['message' => 'Estado no encontrado.'], 404);
         }
@@ -136,16 +75,15 @@ class EvidenceStateController extends Controller
     public function destroy($id)
     {
         $estado = EvidenceState::find($id);
-    if (!$estado) {
-        return response()->json(['message' => 'Estado no encontrado.'], 404);
-    }
+        if (!$estado) {
+            return response()->json(['message' => 'Estado no encontrado.'], 404);
+        }
 
-    try {
-        $this->service->delete($estado);
-        return response()->noContent(); // 204 No Content
-    } catch (QueryException $ex) {
-        return response()->json(['message' => 'No se puede eliminar: está en uso.'], 409);
-    }
->>>>>>> 02_API_de_Endpoints_de_Estructura
+        try {
+            $this->service->delete($estado);
+            return response()->noContent(); // 204 No Content
+        } catch (QueryException $ex) {
+            return response()->json(['message' => 'No se puede eliminar: está en uso.'], 409);
+        }
     }
 }
