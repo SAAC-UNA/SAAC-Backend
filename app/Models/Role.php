@@ -15,7 +15,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Role extends SpatieRole
 {
     use HasFactory;
+
+    // Clave primaria
     protected $primaryKey = 'id';
+
+    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'name',
         'description', // se mantiene en inglés por compatibilidad con Spatie

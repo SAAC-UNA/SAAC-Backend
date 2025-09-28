@@ -10,17 +10,19 @@ class Component extends Model
     /** @use HasFactory<\Database\Factories\ComponentFactory> */
     use HasFactory;
 
-    // Nombre de la tabla
+    // Nombre de la tabla en la base de datos
     protected $table = 'COMPONENTE';
 
-    // Nombre de la clave primaria
+    // Clave primaria
     protected $primaryKey = 'componente_id';
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['dimension_id', 'comentario_id', 'nombre', 'nomenclatura'];
 
     /**
-     * Relación: un componente pertenece a una dimensión
+     * Relación: Un componente pertenece a una dimensión.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function dimension()
     {
@@ -28,7 +30,9 @@ class Component extends Model
     }
 
     /**
-     * Relación: un componente pertenece a un comentario
+     * Relación: Un componente pertenece a un comentario.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function comment()
     {

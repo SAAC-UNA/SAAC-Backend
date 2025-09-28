@@ -9,13 +9,19 @@ class Criterion extends Model
 {
     use HasFactory;
 
-    // Tabla y PK
+    // Nombre de la tabla en la base de datos
     protected $table = 'CRITERIO';
-    protected $primaryKey = 'criterio_id';
-    public $incrementing = true;   // por claridad
-    protected $keyType = 'int';    // por claridad
 
-    // Asignación masiva
+    // Clave primaria
+    protected $primaryKey = 'criterio_id';
+
+    // Indica si la clave primaria es autoincremental
+    public $incrementing = true;
+
+    // Tipo de la clave primaria
+    protected $keyType = 'int';
+
+    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'componente_id',
         'comentario_id',
@@ -23,18 +29,32 @@ class Criterion extends Model
         'nomenclatura',
     ];
 
-    // Relaciones
+    /**
+     * Relación: Un criterio pertenece a un componente.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function component()
     {
         return $this->belongsTo(Component::class, 'componente_id', 'componente_id');
     }
 
+    /**
+     * Relación: Un criterio pertenece a un comentario.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function comment()
     {
         return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
     }
 
-    public function standard()
+    /**
+     * Relación: Un criterio tiene muchos estándares.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function standards()
     {
         return $this->hasMany(Standard::class, 'criterio_id', 'criterio_id');
     }

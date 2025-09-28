@@ -9,20 +9,41 @@ class Process extends Model
 {
     /** @use HasFactory<\Database\Factories\ProcessFactory> */
     use HasFactory;
+
+    // Nombre de la tabla en la base de datos
     protected $table = 'PROCESO';
+
+    // Clave primaria
     protected $primaryKey = 'proceso_id';
+
+    // Campos que se pueden asignar masivamente
     protected $fillable = ['ciclo_acreditacion_id'];
 
+    /**
+     * Relación: Un proceso pertenece a un ciclo de acreditación.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function accreditationCycle()
     {
         return $this->belongsTo(AccreditationCycle::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
     }
 
+    /**
+     * Relación: Un proceso tiene una autoevaluación.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
     public function autoevaluation()
     {
         return $this->hasOne(Autoevaluation::class, 'proceso_id', 'proceso_id');
     }
 
+    /**
+     * Relación: Un proceso tiene un compromiso de mejora.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
     public function improvementCommitment()
     {
         return $this->hasOne(ImprovementCommitment::class, 'proceso_id', 'proceso_id');
