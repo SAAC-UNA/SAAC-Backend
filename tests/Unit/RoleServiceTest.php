@@ -1,11 +1,9 @@
 <?php
-// falta etenderle a esto esto era para ver si era asi , luego ver lode las alera para poder quitar el test luego lo mismompara el controller si es posi
-//sible  DESDE CERO
+
 namespace Tests\Unit;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
 use App\Models\Role;
 use App\Services\RoleService;
 use PHPUnit\Framework\Attributes\Test;
@@ -19,18 +17,20 @@ class RoleServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Cargar los permisos oficiales desde el seeder
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
+
         $this->service = new RoleService();
     }
 
     #[Test]
     public function creaRolCorrectamente()
     {
-        $permiso = Permission::create(['name' => 'gestion_roles', 'guard_name' => 'api']);
-
         $rol = $this->service->crearRol([
             'name' => 'Tester',
             'description' => 'Rol de pruebas',
-            'permissions' => [$permiso->name],
+            'permissions' => ['gestion_roles'],
         ]);
 
         $this->assertInstanceOf(Role::class, $rol);
@@ -41,19 +41,16 @@ class RoleServiceTest extends TestCase
     #[Test]
     public function actualizaRolCorrectamente()
     {
-        $permiso1 = Permission::create(['name' => 'gestion_roles', 'guard_name' => 'api']);
-        $permiso2 = Permission::create(['name' => 'gestion_usuarios', 'guard_name' => 'api']);
-
         $rol = $this->service->crearRol([
             'name' => 'Editor',
             'description' => 'Rol inicial',
-            'permissions' => [$permiso1->name],
+            'permissions' => ['gestion_roles'],
         ]);
 
         $rolActualizado = $this->service->actualizarRol($rol, [
             'name' => 'Editor actualizado',
             'description' => 'Rol cambiado',
-            'permissions' => [$permiso2->name],
+            'permissions' => ['gestion_usuarios'],
         ]);
 
         $this->assertEquals('Editor actualizado', $rolActualizado->name);
@@ -66,7 +63,7 @@ class RoleServiceTest extends TestCase
         $rol = $this->service->crearRol([
             'name' => 'Temporal',
             'description' => 'Se eliminará',
-            'permissions' => [],
+            'permissions' => ['gestion_roles'],
         ]);
 
         $this->service->eliminarRol($rol->id);
@@ -77,11 +74,10 @@ class RoleServiceTest extends TestCase
     #[Test]
     public function listaRolesCorrectamente()
     {
-        $permiso = Permission::create(['name' => 'gestion_roles', 'guard_name' => 'api']);
         $rol = $this->service->crearRol([
             'name' => 'Supervisor',
             'description' => 'Rol con gestión',
-            'permissions' => [$permiso->name],
+            'permissions' => ['gestion_roles'],
         ]);
 
         $roles = $this->service->listarRoles();
@@ -94,11 +90,10 @@ class RoleServiceTest extends TestCase
     #[Test]
     public function obtieneRolPorIdCorrectamente()
     {
-        $permiso = Permission::create(['name' => 'gestion_roles', 'guard_name' => 'api']);
         $rol = $this->service->crearRol([
             'name' => 'Administrador',
             'description' => 'Rol de administrador',
-            'permissions' => [$permiso->name],
+            'permissions' => ['gestion_roles'],
         ]);
 
         $rolObtenido = $this->service->obtenerRol($rol->id);
@@ -111,13 +106,12 @@ class RoleServiceTest extends TestCase
     #[Test]
     public function listaPermisosCorrectamente()
     {
-        Permission::create(['name' => 'gestion_roles', 'guard_name' => 'api']);
-        Permission::create(['name' => 'gestion_usuarios', 'guard_name' => 'api']);
-
         $permisos = $this->service->listarPermisos();
 
-        $this->assertCount(2, $permisos);
-        $this->assertTrue($permisos->contains('gestion_roles'));
-        $this->assertTrue($permisos->contains('gestion_usuarios'));
+        // Validar que los permisos listados coincidan con los del config oficial
+        $this->assertEqualsCanonicalizing(
+            config('permissions.list'),
+            $permisos->toArray()
+        );
     }
 }

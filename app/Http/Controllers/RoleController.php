@@ -4,23 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\RoleRequest;
-use App\Models\Role;
+use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
-use Spatie\Permission\Models\Permission;
 
-
-/**
- * Controlador para la gestión de roles y sus permisos.
- */
 class RoleController extends Controller
 {
     private RoleService $rolServicio;
 
-    /**
-     * Constructor del controlador.
-     *
-     * @param RoleService $rolServicio Servicio para la gestión de roles.
-     */
     public function __construct(RoleService $rolServicio)
     {
         $this->rolServicio = $rolServicio;
@@ -31,24 +21,8 @@ class RoleController extends Controller
      */
     public function listarRoles(): JsonResponse
     {
-        $roles = $this->rolServicio->listarRoles()->map(function ($rol) {
-            $descriptions = config('permissions.descriptions');
-
-            return [
-                'id'          => $rol->id,
-                'name'        => $rol->name,
-                'description' => $rol->description,
-                'permissions' => $rol->permissions->map(function ($permiso) use ($descriptions) {
-                    return [
-                        'id'    => $permiso->id,
-                        'name'  => $permiso->name,
-                        'label' => $descriptions[$permiso->name] ?? $permiso->name,
-                    ];
-                }),
-            ];
-        });
-
-        return response()->json(['datos' => $roles], 200);
+        $roles = $this->rolServicio->listarRoles();
+        return response()->json(['datos' => RoleResource::collection($roles)], 200);
     }
 
     /**
@@ -57,22 +31,9 @@ class RoleController extends Controller
     public function crearRol(RoleRequest $request): JsonResponse
     {
         $rol = $this->rolServicio->crearRol($request->validated());
-        $descriptions = config('permissions.descriptions');
-
         return response()->json([
             'mensaje' => 'Rol creado con éxito',
-            'datos'   => [
-                'id'          => $rol->id,
-                'name'        => $rol->name,
-                'description' => $rol->description,
-                'permissions' => $rol->permissions->map(function ($permiso) use ($descriptions) {
-                    return [
-                        'id'    => $permiso->id,
-                        'name'  => $permiso->name,
-                        'label' => $descriptions[$permiso->name] ?? $permiso->name,
-                    ];
-                }),
-            ],
+            'datos'   => new RoleResource($rol),
         ], 201);
     }
 
@@ -87,22 +48,7 @@ class RoleController extends Controller
             return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
         }
 
-        $descriptions = config('permissions.descriptions');
-
-        return response()->json([
-            'datos' => [
-                'id'          => $rol->id,
-                'name'        => $rol->name,
-                'description' => $rol->description,
-                'permissions' => $rol->permissions->map(function ($permiso) use ($descriptions) {
-                    return [
-                        'id'    => $permiso->id,
-                        'name'  => $permiso->name,
-                        'label' => $descriptions[$permiso->name] ?? $permiso->name,
-                    ];
-                }),
-            ]
-        ], 200);
+        return response()->json(['datos' => new RoleResource($rol)], 200);
     }
 
     /**
@@ -130,40 +76,16 @@ class RoleController extends Controller
             'permissions' => $rolActualizado->permissions->pluck('name')->sort()->values()->toArray(),
         ];
 
-        $descriptions = config('permissions.descriptions');
-
         if ($original == $nuevo) {
             return response()->json([
                 'mensaje' => 'No se realizaron cambios en el rol',
-                'datos'   => [
-                    'id'          => $rolActualizado->id,
-                    'name'        => $rolActualizado->name,
-                    'description' => $rolActualizado->description,
-                    'permissions' => $rolActualizado->permissions->map(function ($permiso) use ($descriptions) {
-                        return [
-                            'id'    => $permiso->id,
-                            'name'  => $permiso->name,
-                            'label' => $descriptions[$permiso->name] ?? $permiso->name,
-                        ];
-                    }),
-                ],
+                'datos'   => new RoleResource($rolActualizado),
             ], 200);
         }
 
         return response()->json([
             'mensaje' => 'Rol actualizado con éxito',
-            'datos'   => [
-                'id'          => $rolActualizado->id,
-                'name'        => $rolActualizado->name,
-                'description' => $rolActualizado->description,
-                'permissions' => $rolActualizado->permissions->map(function ($permiso) use ($descriptions) {
-                    return [
-                        'id'    => $permiso->id,
-                        'name'  => $permiso->name,
-                        'label' => $descriptions[$permiso->name] ?? $permiso->name,
-                    ];
-                }),
-            ],
+            'datos'   => new RoleResource($rolActualizado),
         ], 200);
     }
 
@@ -190,3 +112,4 @@ class RoleController extends Controller
         return response()->json(['mensaje' => 'Rol eliminado con éxito'], 200);
     }
 }
+
