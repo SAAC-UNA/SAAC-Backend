@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de comentarios
         Schema::create('COMENTARIO', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('comentario_id');
+            // Relación con usuario
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('cascade');
+            // Texto del comentario
             $table->text('texto', 300);
+            // Fecha de creación del comentario (opcional)
             $table->date('fecha_creacion')->nullable();
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -25,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de comentarios
         Schema::dropIfExists('COMENTARIO');
     }
 };

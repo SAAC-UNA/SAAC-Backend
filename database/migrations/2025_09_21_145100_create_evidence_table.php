@@ -11,12 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de evidencias
         Schema::create('EVIDENCIA', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('evidencia_id');
+            // Relación con criterio
             $table->foreignId('criterio_id')->constrained('CRITERIO', 'criterio_id');
+            // Relación con estado de evidencia
             $table->foreignId('estado_evidencia_id')->constrained('ESTADO_EVIDENCIA', 'estado_evidencia_id');
+            // Descripción de la evidencia
             $table->string('descripcion', 80);
+            // Nomenclatura de la evidencia
             $table->string('nomenclatura', 20);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -26,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de evidencias
         Schema::dropIfExists('EVIDENCIA');
     }
 };

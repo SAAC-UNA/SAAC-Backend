@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de facultades
         Schema::create('FACULTAD', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('facultad_id');
+            // Relación con universidad
             $table->foreignId('universidad_id')->constrained('UNIVERSIDAD', 'universidad_id')->onDelete('cascade');
+            // Relación con sede
             $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('cascade');
+            // Nombre de la facultad
             $table->string('nombre', 250);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -25,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de facultades
         Schema::dropIfExists('FACULTAD');
     }
 };

@@ -11,12 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de criterios
         Schema::create('CRITERIO', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('criterio_id');
+            // Relación con componente
             $table->foreignId('componente_id')->constrained('COMPONENTE', 'componente_id');
+            // Relación con comentario
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id');
+            // Descripción del criterio
             $table->string('descripcion', 300);
+            // Nomenclatura del criterio
             $table->string('nomenclatura', 20);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -26,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de criterios
         Schema::dropIfExists('CRITERIO');
     }
 };

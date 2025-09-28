@@ -11,12 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de componentes
         Schema::create('COMPONENTE', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('componente_id');
+            // Relación con dimensión
             $table->foreignId('dimension_id')->constrained('DIMENSION', 'dimension_id')->onDelete('cascade');
+            // Relación con comentario
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
+            // Nombre del componente
             $table->string('nombre', 80);
+            // Nomenclatura del componente
             $table->string('nomenclatura', 20);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -26,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de componentes
         Schema::dropIfExists('COMPONENTE');
     }
 };

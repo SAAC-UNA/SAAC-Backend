@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de sedes
         Schema::create('SEDE', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('sede_id');
+            // Relación con universidad
             $table->foreignId('universidad_id')->constrained('UNIVERSIDAD', 'universidad_id')->onDelete('cascade');
+            // Nombre de la sede
             $table->string('nombre', 250);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -24,6 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de sedes
         Schema::dropIfExists('SEDE');
     }
 };

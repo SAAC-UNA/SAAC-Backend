@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de estados de evidencia
         Schema::create('ESTADO_EVIDENCIA', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('estado_evidencia_id');
+            // Nombre del estado
             $table->string('nombre', 30);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -23,6 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de estados de evidencia
         Schema::dropIfExists('ESTADO_EVIDENCIA');
     }
 };

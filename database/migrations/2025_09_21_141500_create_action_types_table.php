@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de tipos de acción
         Schema::create('TIPO_ACCION', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('tipo_accion_id');
+            // Descripción del tipo de acción
             $table->string('descripcion', 100);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -23,6 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de tipos de acción
         Schema::dropIfExists('TIPO_ACCION');
     }
 };

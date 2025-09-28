@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de universidades
         Schema::create('UNIVERSIDAD', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('universidad_id');
+            // Nombre de la universidad
             $table->string('nombre', 250);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -23,6 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de universidades
         Schema::dropIfExists('UNIVERSIDAD');
     }
 };

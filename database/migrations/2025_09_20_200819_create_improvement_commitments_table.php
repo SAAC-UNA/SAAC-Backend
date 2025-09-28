@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de compromisos de mejora
         Schema::create('COMPROMISO_MEJORA', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('compromiso_mejora_id');
+            // Relación con proceso
             $table->foreignId('proceso_id')->constrained('PROCESO', 'proceso_id')->onDelete('cascade');
+            // Fecha de inicio del compromiso (opcional)
             $table->date('fecha_inicio')->nullable();
+            // Fecha de fin del compromiso (opcional)
             $table->date('fecha_fin')->nullable();
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -25,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de compromisos de mejora
         Schema::dropIfExists('COMPROMISO_MEJORA');
     }
 };

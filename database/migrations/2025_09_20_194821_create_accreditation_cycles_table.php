@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de ciclos de acreditación
         Schema::create('CICLO_ACREDITACION', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('ciclo_acreditacion_id');
+            // Relación con carrera_sede
             $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('cascade');
+            // Nombre del ciclo
             $table->string('nombre', 50);
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -24,6 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('accreditation_cycles');
+        // Elimina la tabla de ciclos de acreditación
+        Schema::dropIfExists('CICLO_ACREDITACION');
     }
 };

@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de estándares
         Schema::create('ESTANDAR', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('estandar_id');
+            // Relación con criterio
             $table->foreignId('criterio_id')->constrained('CRITERIO')->name('criterio_id');
+            // Descripción del estándar
             $table->string('descripcion', 250)->name('descripcion');
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -24,6 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de estándares
         Schema::dropIfExists('ESTANDAR');
     }
 };

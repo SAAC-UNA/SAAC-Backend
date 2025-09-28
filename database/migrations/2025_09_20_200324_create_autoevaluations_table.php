@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de autoevaluaciones
         Schema::create('AUTOEVALUACION', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id()->name('autoevaluacion_id');
+            // Relación con proceso
             $table->foreignId('proceso_id')->constrained('PROCESO', 'proceso_id')->onDelete('cascade');
+            // Fecha de inicio de la autoevaluación (opcional)
             $table->date('fecha_inicio')->nullable();
+            // Fecha de fin de la autoevaluación (opcional)
             $table->date('fecha_fin')->nullable();
+            // Timestamps de creación y actualización
             $table->timestamps();
         });
     }
@@ -25,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Elimina la tabla de autoevaluaciones
         Schema::dropIfExists('AUTOEVALUACION');
     }
 };
