@@ -2,27 +2,23 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\PermissionController;
 
 Route::prefix('roles')->group(function () {
-    // Listar roles
-    Route::get('/', [RoleController::class, 'listarRoles'])->name('roles.index');
+    // Listar todos los roles
+    Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
 
-    // Crear rol
-    Route::post('/crear', [RoleController::class, 'crearRol'])->name('roles.guardar');
+    // Crear un nuevo rol
+    Route::post('/crear', [RoleController::class, 'createRole'])->name('roles.create');
 
-    // Listar permisos (endpoint adicional) - primero las rutas fijas
-    Route::get('/permisos', [RoleController::class, 'listarPermisos'])->name('roles.permisos');
+    // Listar todos los permisos disponibles
+    Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
 
-    // Mostrar rol específico
-    Route::get('/{id}', [RoleController::class, 'mostrarRol'])->name('roles.mostrar');
+    // Mostrar un rol específico
+    Route::get('/{id}', [RoleController::class, 'showRole'])->name('roles.show');
 
-    // Actualizar rol
-    Route::put('/{id}', [RoleController::class, 'actualizarRol'])->name('roles.actualizar');
+    // Actualizar un rol existente
+    Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
 
-    // Eliminar rol
-    Route::delete('/{id}', [RoleController::class, 'eliminarRol'])->name('roles.eliminar');
-
-
+    // Eliminar un rol
+    Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
 });
-

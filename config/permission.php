@@ -124,7 +124,7 @@ return [
 
         'store' => 'default',
     ],
-    'defaults' => [// nuevo
+    'defaults' => [// new  
         'guard' => 'api',
     ],
     

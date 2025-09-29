@@ -7,20 +7,24 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Database\Eloquent\Model;
 
-
+/**
+ * Servicio que gestiona la lógica de negocio relacionada con Roles.
+ * Incluye operaciones para listar, obtener, crear, actualizar y eliminar roles,
+ * así como la gestión de permisos asociados.
+ */
 class RoleService
 {
     public function __construct()
     {
-        // Preparado para futuras dependencias (ej: logger, bitácora, etc.)
+        // Preparado para futuras dependencias (ej: logger, auditoría, etc.)
     }
 
     /**
      * Listar todos los roles con sus permisos asociados.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection Colección de roles con permisos.
      */
-    public function listarRoles()
+    public function listRoles()
     {
         return Role::with('permissions:id,name')->get();
     }
@@ -28,109 +32,113 @@ class RoleService
     /**
      * Obtener un rol específico por ID con sus permisos.
      *
-     * @param int $id
-     * @return Role|null
+     * @param int $id Identificador único del rol.
+     * @return Role|null Retorna el rol o null si no existe.
      */
-    public function obtenerRol(int $id): ?Role
+    public function getRole(int $id): ?Role
     {
         return Role::with('permissions')->find($id);
     }
 
     /**
      * Crear un nuevo rol con sus permisos.
+     * Se usa transacción para garantizar atomicidad en el proceso.
      *
-     * @param array<string,mixed> $datos
-     * @return Role
+     * @param array<string,mixed> $data Datos validados del rol.
+     * @return Role Rol recién creado.
      */
-    public function crearRol(array $datos): Role
+    public function createRole(array $data): Role
     {
-        return DB::transaction(function () use ($datos) {
-            $rol = Role::create([
-                'name'        => $datos['name'],
-                'description' => $datos['description'] ?? null,
+        return DB::transaction(function () use ($data) {
+            $role = Role::create([
+                'name'        => $data['name'],
+                'description' => $data['description'] ?? null,
                 'guard_name'  => 'api',
             ]);
 
-            if (!empty($datos['permissions'])) {
-                $rol->syncPermissions($datos['permissions']);
+            // Si se especifican permisos, se asignan al rol
+            if (!empty($data['permissions'])) {
+                $role->syncPermissions($data['permissions']);
             }
 
-            return $rol->refresh();
+            return $role->refresh();
         });
     }
 
     /**
      * Actualizar un rol existente.
+     * Solo se ejecuta la actualización si hay cambios reales.
      *
-     * @param Role $rol
-     * @param array<string,mixed> $datos
-     * @return Role
+     * @param Role $role Rol a actualizar.
+     * @param array<string,mixed> $data Nuevos datos del rol.
+     * @return Role Rol actualizado.
      */
-    public function actualizarRol(Role $rol, array $datos): Role
+    public function updateRole(Role $role, array $data): Role
     {
-        return DB::transaction(function () use ($rol, $datos) {
+        return DB::transaction(function () use ($role, $data) {
             $original = [
-                'name'        => $rol->name,
-                'description' => $rol->description,
-                'permissions' => $rol->permissions->pluck('name')->sort()->values()->toArray(),
+                'name'        => $role->name,
+                'description' => $role->description,
+                'permissions' => $role->permissions->pluck('name')->sort()->values()->toArray(),
             ];
 
-            $nuevos = [
-                'name'        => $datos['name'] ?? $rol->name,
-                'description' => $datos['description'] ?? null,
-                'permissions' => collect($datos['permissions'] ?? $original['permissions'])
+            $newData = [
+                'name'        => $data['name'] ?? $role->name,
+                'description' => $data['description'] ?? null,
+                'permissions' => collect($data['permissions'] ?? $original['permissions'])
                                     ->sort()->values()->toArray(),
             ];
 
-            if ($original != $nuevos) {
-                $rol->update([
-                    'name'        => $nuevos['name'],
-                    'description' => $nuevos['description'],
+            // Se evita actualizar si los datos son idénticos
+            if ($original != $newData) {
+                $role->update([
+                    'name'        => $newData['name'],
+                    'description' => $newData['description'],
                 ]);
 
-                $rol->syncPermissions($nuevos['permissions']);
+                $role->syncPermissions($newData['permissions']);
             }
 
-            return $rol->refresh();
+            return $role->refresh();
         });
     }
 
     /**
-     * Listar todos los permisos disponibles.
+     * Listar todos los permisos disponibles en el sistema.
      *
      * @return \Illuminate\Support\Collection
      */
-    public function listarPermisos()
+    public function listPermissions()
     {
-         return Permission::all()->pluck('name');
+        return Permission::all()->pluck('name');
     }
-    
-    /**
- * Eliminar un rol existente.
- *
- * @param Role $rol
- * @return bool
- */
-   public function eliminarRol(int $id): ?Role
-   {
-        return DB::transaction(function () use ($id) {
-            $rol = Role::find($id);
 
-            if (!$rol) {
+    /**
+     * Eliminar un rol existente por su ID.
+     * Se desasocian permisos antes de la eliminación y se manejan eventos.
+     *
+     * @param int $id Identificador del rol a eliminar.
+     * @return Role|null Rol eliminado o null si no existe.
+     */
+    public function deleteRole(int $id): ?Role
+    {
+        return DB::transaction(function () use ($id) {
+            $role = Role::find($id);
+
+            if (!$role) {
                 return null;
             }
 
-       Model::unsetEventDispatcher();// Evitar que Spatie intente resolver users()
+            // Se desactiva el despachador de eventos para evitar conflictos con Spatie
+            Model::unsetEventDispatcher();
 
-        $rol->permissions()->detach();
-        $rol->delete();
-        Model::setEventDispatcher(app('events')); // restaurar eventos
+            $role->permissions()->detach();
+            $role->delete();
 
-        return $rol;
-      });
-   }
+            // Se restaura el despachador de eventos
+            Model::setEventDispatcher(app('events'));
 
-
+            return $role;
+        });
+    }
 }
-
-

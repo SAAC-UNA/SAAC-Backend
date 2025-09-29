@@ -6,6 +6,11 @@
  * Este archivo es la fuente única de verdad (single source of truth)
  * para los permisos base. Se utiliza en seeders, validaciones
  * y cualquier lógica que requiera conocer los permisos oficiales.
+ *
+ * Nomenclatura:
+ * - Claves internas (list y descriptions): en español y snake_case,
+ *   porque así están almacenadas en la base de datos.
+ * - Etiquetas legibles (descriptions): en español, para mostrar al usuario final.
  */
 
 return [
@@ -30,4 +35,3 @@ return [
     ],
 
 ];
-
