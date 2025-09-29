@@ -19,6 +19,18 @@ class Component extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = ['dimension_id', 'comentario_id', 'nombre', 'nomenclatura'];
 
+    // --- Relaciones ---
+
+    /**
+     * Relación: Un componente tiene muchos criterios.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function criteria()
+    {
+        return $this->hasMany(Criterion::class, 'componente_id', 'componente_id');
+    }
+
     /**
      * Relación: Un componente pertenece a una dimensión.
      *

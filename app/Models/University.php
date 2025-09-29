@@ -23,4 +23,16 @@ class University extends Model
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['nombre'];
+
+    // --- Relaciones ---
+
+    /**
+     * Relación: Una universidad tiene muchas facultades.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function faculties()
+    {
+        return $this->hasMany(Faculty::class, 'universidad_id', 'universidad_id');
+    }
 }

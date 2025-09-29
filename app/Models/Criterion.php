@@ -29,6 +29,18 @@ class Criterion extends Model
         'nomenclatura',
     ];
 
+    // --- Relaciones ---
+
+    /**
+     * Relación: Un criterio tiene muchas evidencias.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function evidences()
+    {
+        return $this->hasMany(Evidence::class, 'criterio_id', 'criterio_id');
+    }
+
     /**
      * Relación: Un criterio pertenece a un componente.
      *
