@@ -20,8 +20,6 @@ return [
         'gestion_usuarios',
         'gestion_reportes',
         'gestion_ciclos',
-        'gestion_compromiso_de_mejora',
-        'gestion_notificaciones',
     ],
 
     // Etiquetas legibles para frontend
@@ -30,8 +28,8 @@ return [
         'gestion_usuarios'             => 'Gestión de Usuarios',
         'gestion_reportes'             => 'Gestión de Reportes',
         'gestion_ciclos'               => 'Gestión de Ciclos',
-        'gestion_compromiso_de_mejora' => 'Gestión de Compromisos de Mejora',
-        'gestion_notificaciones'       => 'Gestión de Notificaciones',
+
+
     ],
 
 ];
