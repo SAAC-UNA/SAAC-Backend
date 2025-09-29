@@ -2,24 +2,22 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-/**
- * Seeder principal que ejecuta los demás seeders del sistema.
- */
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Ejecuta todos los seeders registrados en la aplicación.
-     *
-     * @return void
+     * Seed the application's database.
      */
     public function run(): void
     {
-        $this->call([
-            PermissionSeeder::class,
-            
-            
+        // User::factory(10)->create();
+
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
         ]);
     }
 }
