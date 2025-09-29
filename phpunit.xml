@@ -35,4 +35,9 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
+    <logging>
+        <junit outputFile="tests/report.junit.xml"/>
+    </logging>
+
+    
 </phpunit>
