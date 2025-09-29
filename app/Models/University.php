@@ -22,7 +22,7 @@ class University extends Model
     protected $keyType = 'int';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['nombre'];
+    protected $fillable = ['nombre', 'activo'];
 
     // --- Relaciones ---
 

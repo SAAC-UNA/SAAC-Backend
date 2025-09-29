@@ -17,7 +17,7 @@ class Dimension extends Model
     protected $primaryKey = 'dimension_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['comentario_id', 'nombre', 'nomenclatura'];
+    protected $fillable = ['comentario_id', 'nombre', 'nomenclatura' , 'activo'];
 
     /**
      * Relación: Una dimensión tiene muchos componentes.

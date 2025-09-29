@@ -16,7 +16,7 @@ class Standard extends Model
     protected $primaryKey = 'estandar_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['criterio_id', 'descripcion'];
+    protected $fillable = ['criterio_id', 'descripcion', 'activo'];
 
     // Timestamps automáticos
     public $timestamps = true;

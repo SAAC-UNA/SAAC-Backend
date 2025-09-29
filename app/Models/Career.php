@@ -25,7 +25,7 @@ class Career extends Model
     public $timestamps = true;
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['facultad_id', 'nombre'];
+    protected $fillable = ['facultad_id', 'nombre' , 'activo'];
 
     /**
      * Relación: Una carrera pertenece a una facultad.

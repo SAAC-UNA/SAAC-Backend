@@ -25,7 +25,7 @@ class Campus extends Model
     public $timestamps = true;
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['universidad_id', 'nombre'];
+    protected $fillable = ['universidad_id', 'nombre' , 'activo'];
 
     /**
      * Relación: Un campus pertenece a una universidad.

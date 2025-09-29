@@ -17,7 +17,7 @@ class Component extends Model
     protected $primaryKey = 'componente_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['dimension_id', 'comentario_id', 'nombre', 'nomenclatura'];
+    protected $fillable = ['dimension_id', 'comentario_id', 'nombre', 'nomenclatura' , 'activo'];
 
     // --- Relaciones ---
 

@@ -27,6 +27,7 @@ class Criterion extends Model
         'comentario_id',
         'descripcion',
         'nomenclatura',
+        'activo'
     ];
 
     // --- Relaciones ---

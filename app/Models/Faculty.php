@@ -25,7 +25,7 @@ class Faculty extends Model
     public $timestamps = true;
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['universidad_id', 'sede_id', 'nombre'];
+    protected $fillable = ['universidad_id', 'sede_id', 'nombre' , 'activo'];
 
     /**
      * Relación: Una facultad pertenece a una universidad.
