@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatieRole;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Modelo Role que extiende la implementación de Spatie.
@@ -17,12 +18,12 @@ use Spatie\Permission\Models\Role as SpatieRole;
  */
 class Role extends SpatieRole
 {
-    /**
-     * Atributos que pueden asignarse de manera masiva (mass assignment).
-     *
-     *
-     * @var string[]
-     */
+    use HasFactory;
+
+    // Clave primaria
+    protected $primaryKey = 'id';
+
+    // Campos que se pueden asignar masivamente
     protected $fillable = [
         'name',
         'description', // campo adicional para describir el rol

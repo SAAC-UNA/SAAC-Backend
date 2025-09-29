@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Test;
  * Validates endpoints related to roles and their permissions:
  * creation, reading, updating and deletion, plus validation rules.
  */
+
 class RoleFeatureTest extends TestCase
 {
     use RefreshDatabase;
@@ -243,5 +244,4 @@ class RoleFeatureTest extends TestCase
 
         $response->assertStatus(422)
                  ->assertJsonValidationErrors(['permissions.0']);
-    }
 }
