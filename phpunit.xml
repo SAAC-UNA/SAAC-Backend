@@ -37,7 +37,5 @@
     </php>
     <logging>
         <junit outputFile="tests/report.junit.xml"/>
-    </logging>
-
-    
+    </logging>    
 </phpunit>
