@@ -91,4 +91,27 @@ class CareerController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/carreras/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(Request $request, $id)
+    {
+        $career = Career::find($id);
+        if (!$career) {
+            return response()->json(['message' => 'Carrera no encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $career->activo = $validated['active'];
+        $career->save();
+
+        return response()->json([
+            'message' => 'Estado de la carrera actualizado correctamente.',
+            'data'    => $career
+        ], 200);
+    }
 }

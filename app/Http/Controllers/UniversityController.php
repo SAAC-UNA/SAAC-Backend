@@ -76,6 +76,29 @@ class UniversityController extends Controller
         ], 200);
     }
 
+        /**
+         * PATCH /api/universidades/{id}/active
+         * Body JSON: { "active": true }
+         */
+        public function setActive(Request $request, $id)
+        {
+            $university = University::find($id);
+            if (!$university) {
+                return response()->json(['message' => 'Universidad no encontrada.'], 404);
+            }
+
+            $validated = $request->validate([
+                'active' => ['required', 'boolean'],
+            ]);
+
+            $university->activo = $validated['active'];
+            $university->save();
+
+            return response()->json([
+                'message' => 'Estado de la universidad actualizado correctamente.',
+                'data'    => $university
+            ], 200);
+        }
     /**
      * DELETE /api/universidades/{id}
      */

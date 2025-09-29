@@ -88,4 +88,27 @@ class CriterionController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/criterios/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(\Illuminate\Http\Request $request, $id)
+    {
+        $criterion = Criterion::find($id);
+        if (!$criterion) {
+            return response()->json(['message' => 'Criterio no encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $criterion->activo = $validated['active'];
+        $criterion->save();
+
+        return response()->json([
+            'message' => 'Estado del criterio actualizado correctamente.',
+            'data'    => $criterion
+        ], 200);
+    }
 }

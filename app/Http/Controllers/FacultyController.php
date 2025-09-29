@@ -93,4 +93,27 @@ class FacultyController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/facultades/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(Request $request, $id)
+    {
+        $faculty = Faculty::find($id);
+        if (!$faculty) {
+            return response()->json(['message' => 'Facultad no encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $faculty->activo = $validated['active'];
+        $faculty->save();
+
+        return response()->json([
+            'message' => 'Estado de la facultad actualizado correctamente.',
+            'data'    => $faculty
+        ], 200);
+    }
 }

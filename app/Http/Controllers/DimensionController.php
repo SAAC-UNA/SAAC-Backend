@@ -88,4 +88,27 @@ class DimensionController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/dimensiones/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(\Illuminate\Http\Request $request, $id)
+    {
+        $dimension = Dimension::find($id);
+        if (!$dimension) {
+            return response()->json(['message' => 'Dimensión no encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $dimension->activo = $validated['active'];
+        $dimension->save();
+
+        return response()->json([
+            'message' => 'Estado de la dimensión actualizado correctamente.',
+            'data'    => $dimension
+        ], 200);
+    }
 }

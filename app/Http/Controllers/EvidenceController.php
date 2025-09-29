@@ -87,4 +87,27 @@ class EvidenceController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $qe->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/evidencias/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(\Illuminate\Http\Request $request, $id)
+    {
+        $evidence = Evidence::find($id);
+        if (!$evidence) {
+            return response()->json(['message' => 'Evidencia no encontrada.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $evidence->activo = $validated['active'];
+        $evidence->save();
+
+        return response()->json([
+            'message' => 'Estado de la evidencia actualizado correctamente.',
+            'data'    => $evidence
+        ], 200);
+    }
 }

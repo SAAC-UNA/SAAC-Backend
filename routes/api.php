@@ -23,15 +23,24 @@ use App\Http\Controllers\DevCommentController;
 // CRUD completo de cada endpoint
 //Route::apiResource('estructura/universidades', UniversityController::class)->parameters(['universidades' => 'universidad'])->only(['index','store','show','update','destroy']);
 Route::apiResource('estructura/universidades', UniversityController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive']);
 Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
 Route::apiResource('estructura/facultades', FacultyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/facultades/{id}/active', [FacultyController::class, 'setActive']);
 Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive']);
 Route::apiResource('estructura/dimensiones', DimensionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive']);
 Route::apiResource('estructura/componentes', ComponentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive']);
 Route::apiResource('estructura/criterios', CriterionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
 Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
 
 // Solo para pruebas
 if (App::environment('local')) {

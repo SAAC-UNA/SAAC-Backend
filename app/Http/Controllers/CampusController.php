@@ -104,4 +104,27 @@ class CampusController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
         }
     }
+    /**
+     * PATCH /api/campuses/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(Request $request, $id)
+    {
+        $campus = Campus::find($id);
+        if (!$campus) {
+            return response()->json(['message' => 'Campus no encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $campus->activo = $validated['active'];
+        $campus->save();
+
+        return response()->json([
+            'message' => 'Estado del campus actualizado correctamente.',
+            'data'    => $campus
+        ], 200);
+    }
 }

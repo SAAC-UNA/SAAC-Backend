@@ -84,4 +84,27 @@ class StandardController extends Controller
             return response()->json(['message' => 'No se puede eliminar.'], 409);
         }
     }
+    /**
+     * PATCH /api/estructura/estandares/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(\Illuminate\Http\Request $request, $id)
+    {
+        $standar = Standard::find($id);
+        if (!$standar) {
+            return response()->json(['message' => 'Estándar no encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $standar->activo = $validated['active'];
+        $standar->save();
+
+        return response()->json([
+            'message' => 'Estado del estándar actualizado correctamente.',
+            'data'    => $standar
+        ], 200);
+    }
 }

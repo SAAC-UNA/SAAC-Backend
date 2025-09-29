@@ -99,4 +99,27 @@ class ComponentController extends Controller
             ], 500);
         }
     }
+    /**
+     * PATCH /api/estructura/componentes/{id}/active
+     * Body JSON: { "active": true }
+     */
+    public function setActive(\Illuminate\Http\Request $request, $id)
+    {
+        $component = Component::find($id);
+        if (!$component) {
+            return response()->json(['message' => 'Componente no encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        $component->activo = $validated['active'];
+        $component->save();
+
+        return response()->json([
+            'message' => 'Estado del componente actualizado correctamente.',
+            'data'    => $component
+        ], 200);
+    }
 }
