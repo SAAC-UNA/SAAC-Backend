@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('universidad_id')->constrained('UNIVERSIDAD', 'universidad_id')->onDelete('cascade');
             // Nombre de la sede
             $table->string('nombre', 250);
+            // Estado de la sede
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

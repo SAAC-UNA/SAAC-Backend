@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('facultad_id')->constrained('FACULTAD', 'facultad_id')->onDelete('cascade');
             // Nombre de la carrera
             $table->string('nombre', 250);
+            // Estado de la carrera
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

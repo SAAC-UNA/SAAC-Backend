@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('criterio_id')->constrained('CRITERIO')->name('criterio_id');
             // Descripción del estándar
             $table->string('descripcion', 250)->name('descripcion');
+            // Estado del estándar
+            $table->boolean('activo')->default(true)->name('activo');
             // Timestamps de creación y actualización
             $table->timestamps();
         });

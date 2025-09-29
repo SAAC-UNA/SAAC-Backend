@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('nombre', 80);
             // Nomenclatura del componente
             $table->string('nomenclatura', 20);
+            // Estado del componente
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

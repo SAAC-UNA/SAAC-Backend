@@ -17,6 +17,8 @@ return new class extends Migration
             $table->id()->name('universidad_id');
             // Nombre de la universidad
             $table->string('nombre', 250);
+            // Estado de la universidad
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

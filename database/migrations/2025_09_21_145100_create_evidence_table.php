@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('descripcion', 80);
             // Nomenclatura de la evidencia
             $table->string('nomenclatura', 20);
+            // Estado de la evidencia
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

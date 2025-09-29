@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('nombre', 100);
             // Nomenclatura de la dimensión
             $table->string('nomenclatura', 20);
+            // Estado de la dimensión
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });

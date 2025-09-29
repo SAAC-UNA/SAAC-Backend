@@ -23,6 +23,8 @@ return new class extends Migration
             $table->string('descripcion', 300);
             // Nomenclatura del criterio
             $table->string('nomenclatura', 20);
+            // Estado del criterio
+            $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
         });
