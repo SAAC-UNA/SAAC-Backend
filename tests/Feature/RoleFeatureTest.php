@@ -245,3 +245,4 @@ class RoleFeatureTest extends TestCase
         $response->assertStatus(422)
                  ->assertJsonValidationErrors(['permissions.0']);
 }
+}
