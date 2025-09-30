@@ -16,7 +16,12 @@ class FacultyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre'         => ['required','string','max:250'],
+            'nombre'         => [
+                'required',
+                'string',
+                'max:250',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'universidad_id' => ['required','integer','exists:UNIVERSIDAD,universidad_id'],
             'sede_id'        => ['required','integer','exists:SEDE,sede_id'],
         ];
@@ -26,6 +31,7 @@ class FacultyRequest extends FormRequest
     {
         return [
             'nombre.required'         => 'El nombre es obligatorio.',
+            'nombre.regex'            => 'El nombre solo puede contener letras y espacios.',
             'universidad_id.required' => 'La universidad es obligatoria.',
             'universidad_id.exists'   => 'La universidad no existe.',
             'sede_id.required'        => 'La sede es obligatoria.',

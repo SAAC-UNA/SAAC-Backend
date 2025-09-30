@@ -19,7 +19,12 @@ class DimensionRequest extends FormRequest
 
         $rules = [
             'comentario_id' => ['required','integer','exists:COMENTARIO,comentario_id'],
-            'nombre'        => ['required','string','max:100'],
+            'nombre'        => [
+                'required',
+                'string',
+                'max:100',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'nomenclatura'  => ['required','string','max:20'],
         ];
 
@@ -40,6 +45,7 @@ class DimensionRequest extends FormRequest
             'comentario_id.required' => 'El comentario es obligatorio.',
             'comentario_id.exists'   => 'El comentario no existe.',
             'nombre.required'        => 'El nombre es obligatorio.',
+            'nombre.regex'           => 'El nombre solo puede contener letras y espacios.',
             'nomenclatura.required'  => 'La nomenclatura es obligatoria.',
             'nomenclatura.unique'    => $this->route('dimension') || $this->route('id')
                                         ? 'Ya existe otra dimensión con esa nomenclatura.'

@@ -38,7 +38,12 @@ class EvidenceRequest extends FormRequest
         $rules = [
             'criterio_id'         => [$isUpdate ? 'sometimes' : 'required','integer','exists:CRITERIO,criterio_id'],
             'estado_evidencia_id' => [$isUpdate ? 'sometimes' : 'required','integer','exists:ESTADO_EVIDENCIA,estado_evidencia_id'],
-            'descripcion'         => [$isUpdate ? 'sometimes' : 'required','string','max:80'],
+            'descripcion'         => [
+                $isUpdate ? 'sometimes' : 'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'nomenclatura'        => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
         ];
 
@@ -83,7 +88,8 @@ class EvidenceRequest extends FormRequest
             'criterio_id.exists'           => 'El criterio no existe.',
             'estado_evidencia_id.required' => 'El estado es obligatorio.',
             'estado_evidencia_id.exists'   => 'El estado no existe.',
-            'descripcion.required'         => 'El nombre de la evidencia es obligatorio.',
+            'descripcion.required'         => 'La descripción es obligatoria.',
+            'descripcion.regex'            => 'La descripción solo puede contener letras y espacios.',
             'descripcion.unique'           => 'Ya existe una evidencia con ese nombre en este componente.',
             'nomenclatura.required'        => 'La nomenclatura es obligatoria.',
             'nomenclatura.unique'          => 'Ya existe una evidencia con esa nomenclatura en este criterio.',

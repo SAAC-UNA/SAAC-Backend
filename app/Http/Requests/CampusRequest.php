@@ -19,7 +19,12 @@ class CampusRequest extends FormRequest
         $id    = $this->route('campus') ?? $this->route('id');
 
         $rules = [
-            'nombre' => ['required', 'string', 'max:250'],
+            'nombre' => [
+                'required',
+                'string',
+                'max:250',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'universidad_id' => ['required','integer','exists:UNIVERSIDAD,universidad_id'],
         ];
 
@@ -35,6 +40,7 @@ class CampusRequest extends FormRequest
     {
         return [
             'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.regex'    => 'El nombre solo puede contener letras y espacios.',
             'universidad_id.required' => 'La universidad es obligatoria.',
             'universidad_id.exists'   => 'La universidad no existe.',
         ];
