@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
 
 class RoleRequest extends FormRequest 
 {
@@ -57,9 +59,7 @@ class RoleRequest extends FormRequest
             
         ];
     }
-}
-//required = el campo ni siquiera llegó en el request.
-//min = el campo sí llegó, pero está vacío ([]).
+
     /**
      * Override the default validation error response to keep API format consistent.
      * Keys are in English, but messages remain in Spanish for the user.
