@@ -33,8 +33,8 @@ class RoleRequest extends FormRequest
                 Rule::unique('roles', 'name')->ignore($this->route('id')),
             ],
             'description' => 'nullable|string|max:255',
-            'permissions'   => 'required|array|min:1',                 // ✅ aceptar arreglo
-            'permissions.*' => 'exists:permissions,name', // ✅ cada permiso debe existir
+            'permissions'   => 'required|array|min:1',                 //aceptar arreglo
+            'permissions.*' => 'exists:permissions,name', //cada permiso debe existir
         ];
     }
 
@@ -57,7 +57,6 @@ class RoleRequest extends FormRequest
             
         ];
     }
-}
 //required = el campo ni siquiera llegó en el request.
 //min = el campo sí llegó, pero está vacío ([]).
     /**
@@ -74,5 +73,3 @@ class RoleRequest extends FormRequest
         throw new ValidationException($validator, $response);
     }
 }
-
-
