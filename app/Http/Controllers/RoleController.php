@@ -43,7 +43,7 @@ class RoleController extends Controller
                 ];
             });
 
-        return response()->json(['datos' => $roles], 200);
+    return response()->json(['data' => $roles], 200);
     }
 
     /**
@@ -57,8 +57,8 @@ class RoleController extends Controller
         $rol = $this->rolServicio->crearRol($request->validated());
 
         return response()->json([
-            'mensaje' => 'Rol creado con éxito',
-            'datos'   => [
+            'message' => 'Rol creado con éxito',
+            'data'   => [
                 'id'          => $rol->id,
                 'name'        => $rol->name,
                 'description' => $rol->description,
@@ -78,10 +78,10 @@ class RoleController extends Controller
         $rol = Role::with('permissions')->find($id);
 
         if (!$rol) {
-            return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
+            return response()->json(['errorMessage' => 'Rol no encontrado'], 404);
         }
 
-        return response()->json(['datos' => $rol], 200);
+        return response()->json(['data' => $rol], 200);
     }
 
     /**
@@ -97,7 +97,7 @@ class RoleController extends Controller
         $rol = $this->rolServicio->obtenerRol($id);
 
         if (!$rol) {
-            return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
+            return response()->json(['errorMessage' => 'Rol no encontrado'], 404);
         }
 
         // Guardar estado original antes de actualizar
@@ -120,8 +120,8 @@ class RoleController extends Controller
         // Determinar si hubo cambios
         if ($original == $nuevo) {
             return response()->json([
-                'mensaje' => 'No se realizaron cambios en el rol',
-                'datos'   => [
+                'message' => 'No se realizaron cambios en el rol',
+                'data'   => [
                     'id'          => $rolActualizado->id,
                     'name'        => $rolActualizado->name,
                     'description' => $rolActualizado->description,
@@ -132,8 +132,8 @@ class RoleController extends Controller
 
         // Si hubo cambios
         return response()->json([
-            'mensaje' => 'Rol actualizado con éxito',
-            'datos'   => [
+            'message' => 'Rol actualizado con éxito',
+            'data'   => [
                 'id'          => $rolActualizado->id,
                 'name'        => $rolActualizado->name,
                 'description' => $rolActualizado->description,
@@ -151,6 +151,6 @@ class RoleController extends Controller
     {
         $permisos = $this->rolServicio->listarPermisos();
 
-        return response()->json(['datos' => $permisos], 200);
+    return response()->json(['data' => $permisos], 200);
     }
 }

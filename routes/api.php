@@ -13,6 +13,7 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
+use App\Http\Controllers\RoleController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -63,3 +64,23 @@ Route::get('/ping', function () {
 
 // Ruta de prueba sin controller
 Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
+
+Route::prefix('roles')->group(function () {
+    // Listar todos los roles
+    Route::get('/', [RoleController::class, 'listarRoles'])->name('roles.index');
+
+    // Crear un nuevo rol
+    Route::post('/crear', [RoleController::class, 'crearRol'])->name('roles.create');
+
+    // Listar todos los permisos disponibles
+    Route::get('/permisos', [RoleController::class, 'listarPermisos'])->name('roles.permissions');
+
+    // Mostrar un rol específico
+    Route::get('/{id}', [RoleController::class, 'mostrarRol'])->name('roles.show');
+
+    // Actualizar un rol existente
+    Route::put('/{id}', [RoleController::class, 'actualizarRol'])->name('roles.update');
+
+    // Eliminar un rol
+    Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
+});
