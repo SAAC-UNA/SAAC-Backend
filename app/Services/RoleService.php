@@ -102,4 +102,33 @@ class RoleService
     {
         return Permission::all()->pluck('name');
     }
+
+    /**
+     * Eliminar un rol existente por su ID.
+     * Se desasocian permisos antes de la eliminación y se manejan eventos.
+     *
+     * @param int $id Identificador del rol a eliminar.
+     * @return Role|null Rol eliminado o null si no existe.
+     */
+    public function deleteRole(int $id): ?Role
+    {
+        return DB::transaction(function () use ($id) {
+            $role = Role::find($id);
+
+            if (!$role) {
+                return null;
+            }
+
+            // Se desactiva el despachador de eventos para evitar conflictos con Spatie
+            Model::unsetEventDispatcher();
+
+            $role->permissions()->detach();
+            $role->delete();
+
+            // Se restaura el despachador de eventos
+            Model::setEventDispatcher(app('events'));
+
+            return $role;
+        });
+    }
 }
