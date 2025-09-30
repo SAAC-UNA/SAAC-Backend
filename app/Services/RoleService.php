@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Database\Eloquent\Model;
 
 class RoleService
 {
