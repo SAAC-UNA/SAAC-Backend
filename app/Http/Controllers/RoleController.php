@@ -153,4 +153,24 @@ class RoleController extends Controller
 
     return response()->json(['data' => $permisos], 200);
     }
+
+    /**
+     * Delete an existing role by its ID.
+     *
+     * @param int $id Unique identifier of the role to delete.
+     * @return JsonResponse
+     */
+    public function deleteRole(int $id): JsonResponse
+    {
+        $result = $this->rolServicio->deleteRole($id);
+
+        if (!$result) {
+            return response()->json([
+                'error'   => 'Not Found',
+                'message' => 'Rol no encontrado',
+            ], 404);
+        }
+
+        return response()->json(['message' => 'Rol eliminado con éxito'], 200);
+    }
 }
