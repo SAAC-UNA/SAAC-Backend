@@ -19,7 +19,12 @@ class ComponentRequest extends FormRequest
         $rules = [
             'dimension_id'  => [$isUpdate ? 'sometimes' : 'required','integer','exists:DIMENSION,dimension_id'],
             'comentario_id' => ['nullable','integer','exists:COMENTARIO,comentario_id'],
-            'nombre'        => [$isUpdate ? 'sometimes' : 'required','string','max:80'],
+            'nombre'        => [
+                $isUpdate ? 'sometimes' : 'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'nomenclatura'  => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
         ];
 
@@ -47,6 +52,7 @@ class ComponentRequest extends FormRequest
             'dimension_id.required_with' => 'Debes enviar la dimensión cuando actualizas el nombre.', // NUEVO
             'comentario_id.exists'   => 'El comentario no existe.',
             'nombre.required'        => 'El nombre es obligatorio.',
+            'nombre.regex'           => 'El nombre solo puede contener letras y espacios.',
             'nombre.unique'          => 'Ya existe un componente con ese nombre en esta dimensión.', // NUEVO
             'nomenclatura.required'  => 'La nomenclatura es obligatoria.',
         ];
