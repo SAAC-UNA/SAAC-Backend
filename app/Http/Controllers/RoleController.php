@@ -4,145 +4,153 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\RoleRequest;
-use App\Http\Resources\RoleResource;
+use App\Models\Role;
 use App\Services\RoleService;
+use Illuminate\Http\Request;
+use Spatie\Permission\Models\Permission;
 
 /**
- * Controller that manages operations related to Roles.
- * Provides endpoints to list, create, show, update, and delete roles.
+ * Controlador para la gestión de roles y sus permisos.
  */
 class RoleController extends Controller
 {
-    private RoleService $roleService;
+    private RoleService $rolServicio;
 
-    public function __construct(RoleService $roleService)
+    /**
+     * Constructor del controlador.
+     *
+     * @param RoleService $rolServicio Servicio para la gestión de roles.
+     */
+    public function __construct(RoleService $rolServicio)
     {
-        $this->roleService = $roleService;
+        $this->rolServicio = $rolServicio;
     }
 
     /**
-     * List all roles with their associated permissions.
+     * Listar todos los roles con sus permisos asociados.
      *
-     * @return JsonResponse
+     * @return JsonResponse JSON con la lista de roles y sus permisos.
      */
-    public function listRoles(): JsonResponse
+    public function listarRoles(): JsonResponse
     {
-        $roles = $this->roleService->listRoles();
-        return response()->json(['data' => RoleResource::collection($roles)], 200);
+        $roles = Role::with('permissions:id,name')->get()
+            ->map(function ($rol) {
+                return [
+                    'id'          => $rol->id,
+                    'name'        => $rol->name,
+                    'description' => $rol->description,
+                    'permissions' => $rol->permissions->pluck('name'), // solo nombres
+                ];
+            });
+
+        return response()->json(['datos' => $roles], 200);
     }
 
     /**
-     * Create a new role with its permissions.
+     * Crear un nuevo rol con sus permisos.
      *
-     * @param RoleRequest $request Validated data to create the role.
-     * @return JsonResponse
+     * @param RoleRequest $request Datos validados para crear el rol.
+     * @return JsonResponse JSON con el rol creado y sus permisos.
      */
-    public function createRole(RoleRequest $request): JsonResponse
+    public function crearRol(RoleRequest $request): JsonResponse
     {
-        $role = $this->roleService->createRole($request->validated());
+        $rol = $this->rolServicio->crearRol($request->validated());
 
         return response()->json([
-            'message' => 'Rol creado con éxito',
-            'data'    => new RoleResource($role),
+            'mensaje' => 'Rol creado con éxito',
+            'datos'   => [
+                'id'          => $rol->id,
+                'name'        => $rol->name,
+                'description' => $rol->description,
+                'permissions' => $rol->permissions->pluck('name'),
+            ],
         ], 201);
     }
 
     /**
-     * Show a specific role by its ID.
+     * Mostrar un rol específico.
      *
-     * @param int $id Unique identifier of the role.
-     * @return JsonResponse
+     * @param int $id Identificador del rol.
+     * @return JsonResponse JSON con los datos del rol o un error si no existe.
      */
-    public function showRole(int $id): JsonResponse
+    public function mostrarRol(int $id): JsonResponse
     {
-        $role = $this->roleService->getRole($id);
+        $rol = Role::with('permissions')->find($id);
 
-        if (!$role) {
-            return response()->json([
-                'error'   => 'Not Found',
-                'message' => 'Rol no encontrado',
-            ], 404);
+        if (!$rol) {
+            return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
         }
 
-        return response()->json(['data' => new RoleResource($role)], 200);
+        return response()->json(['datos' => $rol], 200);
     }
 
     /**
-     * Update an existing role.
-     * Compares the original data with the new one to detect changes.
+     * Actualizar un rol existente.
      *
-     * @param RoleRequest $request Validated role data.
-     * @param int $id Identifier of the role to update.
-     * @return JsonResponse
+     * @param RoleRequest $request Datos validados para actualizar el rol.
+     * @param int $id Identificador del rol a actualizar.
+     * @return JsonResponse JSON con el rol actualizado o un error si no existe.
      */
-    public function updateRole(RoleRequest $request, int $id): JsonResponse
+    public function actualizarRol(RoleRequest $request, int $id): JsonResponse
     {
-        $role = $this->roleService->getRole($id);
+        // Buscar el rol
+        $rol = $this->rolServicio->obtenerRol($id);
 
-        if (!$role) {
-            return response()->json([
-                'error'   => 'Not Found',
-                'message' => 'Rol no encontrado',
-            ], 404);
+        if (!$rol) {
+            return response()->json(['mensajeError' => 'Rol no encontrado'], 404);
         }
 
-        // Original state before update
+        // Guardar estado original antes de actualizar
         $original = [
-            'name'        => $role->name,
-            'description' => $role->description,
-            'permissions' => $role->permissions->pluck('name')->sort()->values()->toArray(),
+            'name'        => $rol->name,
+            'description' => $rol->description,
+            'permissions' => $rol->permissions->pluck('name')->sort()->values()->toArray(),
         ];
 
-        $updatedRole = $this->roleService->updateRole($role, $request->validated());
+        // Ejecutar actualización (devuelve un Role)
+        $rolActualizado = $this->rolServicio->actualizarRol($rol, $request->validated());
 
-        // New state after update
-        $newData = [
-            'name'        => $updatedRole->name,
-            'description' => $updatedRole->description,
-            'permissions' => $updatedRole->permissions->pluck('name')->sort()->values()->toArray(),
+        // Guardar estado nuevo después de actualizar
+        $nuevo = [
+            'name'        => $rolActualizado->name,
+            'description' => $rolActualizado->description,
+            'permissions' => $rolActualizado->permissions->pluck('name')->sort()->values()->toArray(),
         ];
 
-        if ($original == $newData) {
+        // Determinar si hubo cambios
+        if ($original == $nuevo) {
             return response()->json([
-                'message' => 'No se realizaron cambios en el rol',
-                'data'    => new RoleResource($updatedRole),
+                'mensaje' => 'No se realizaron cambios en el rol',
+                'datos'   => [
+                    'id'          => $rolActualizado->id,
+                    'name'        => $rolActualizado->name,
+                    'description' => $rolActualizado->description,
+                    'permissions' => $rolActualizado->permissions->pluck('name'),
+                ],
             ], 200);
         }
 
+        // Si hubo cambios
         return response()->json([
-            'message' => 'Rol actualizado con éxito',
-            'data'    => new RoleResource($updatedRole),
+            'mensaje' => 'Rol actualizado con éxito',
+            'datos'   => [
+                'id'          => $rolActualizado->id,
+                'name'        => $rolActualizado->name,
+                'description' => $rolActualizado->description,
+                'permissions' => $rolActualizado->permissions->pluck('name'),
+            ],
         ], 200);
     }
 
     /**
-     * List all available permissions.
+     * Listar todos los permisos disponibles.
      *
      * @return JsonResponse
      */
-    public function listPermissions(): JsonResponse
+    public function listarPermisos(): JsonResponse
     {
-        $permissions = $this->roleService->listPermissions();
-        return response()->json(['data' => $permissions], 200);
-    }
+        $permisos = $this->rolServicio->listarPermisos();
 
-    /**
-     * Delete an existing role by its ID.
-     *
-     * @param int $id Unique identifier of the role to delete.
-     * @return JsonResponse
-     */
-    public function deleteRole(int $id): JsonResponse
-    {
-        $result = $this->roleService->deleteRole($id);
-
-        if (!$result) {
-            return response()->json([
-                'error'   => 'Not Found',
-                'message' => 'Rol no encontrado',
-            ], 404);
-        }
-
-        return response()->json(['message' => 'Rol eliminado con éxito'], 200);
+        return response()->json(['datos' => $permisos], 200);
     }
 }
