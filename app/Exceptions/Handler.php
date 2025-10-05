@@ -66,7 +66,7 @@ class Handler extends ExceptionHandler
             }
         });
 
-        // 500 - Error interno del servidor (fallback para errores inesperados)
+        // 500 - Error interno genérico
         $this->renderable(function (Throwable $exception, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
