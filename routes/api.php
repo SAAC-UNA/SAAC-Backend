@@ -13,11 +13,12 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
-
+use App\Http\Controllers\UserController;
 //solo para pruebas
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\DevUserController;
 use App\Http\Controllers\DevCommentController;
+use Illuminate\Http\Request;
 
 
 // CRUD completo de cada endpoint
@@ -41,6 +42,25 @@ Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 's
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+
+Route::prefix('admin/users')->group(function () {
+    // Activa un usuario cambiando su estado a "active"
+    // Ejemplo: POST /api/admin/users/5/activate
+    Route::post('{user}/activate',   [UserController::class, 'activate'])
+        ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
+    //Desactiva un usuario cambiando su estado a "inactive"
+    // Ejemplo: POST /api/admin/users/5/deactivate
+    Route::post('{user}/deactivate', [UserController::class, 'deactivate'])
+        ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
+    Route::put('{user}/role', [UserController::class, 'assignRole'])
+         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
+    Route::put('{user}/permissions', [UserController::class, 'assignPermissions'])
+        ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
+});
+
+// Ejemplos de uso cuando actives autenticación en Sprint 3:
+// Route::middleware('can:evidencias.view')->get('/evidencias', [EvidenceController::class, 'index']);
+// Route::middleware('can:reportes.generate')->get('/reportes/generar', [ReportController::class, 'generate']);
 
 // Solo para pruebas
 if (App::environment('local')) {
