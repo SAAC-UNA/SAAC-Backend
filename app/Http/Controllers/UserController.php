@@ -112,7 +112,7 @@ class UserController extends Controller
        // Gate::forUser($acting)->authorize('usuarios.edit'); // lanza 403 si no tiene permiso
         // TODO Sprint 3: quitar forUser y usar usuario autenticado (LDAP
         // o: if (\Gate::denies('usuarios.edit')) abort(403, 'No tiene permiso para editar usuarios');
-        
+        //trim() limpia la cadena para asegurar que el valor del rol sea exacto y no contenga espacios extra antes o después.
         $roleName = $request->string('role')->trim();// Ya esta validado
         //delegar la asignación de rol al servicio
         $this->userAdmin->assignRole($user, $roleName);
@@ -135,8 +135,9 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
-            'granted' => $user->getDirectPermissions()->pluck('name')->values(),
+            'granted' => $user->getDirectPermissions()->pluck('name')->values(), 
         ], 200);
     }
     
+    // pluck('name') significa que extrae únicamente el valor del campo name de cada permiso que tiene el usuario.
 }

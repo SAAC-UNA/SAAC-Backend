@@ -22,7 +22,7 @@ class AssignRoleRequest extends FormRequest
             'string',
             'max:64',
             // debe existir en la tabla roles, columna name, y con guard_name = 'api'
-            Rule::exists('roles', 'name')->where(fn ($q) => $q->where('guard_name', 'api')),
+            Rule::exists('roles', 'name')->where(fn ($query) => $query->where('guard_name', 'api')),
             ],
         ];
     }

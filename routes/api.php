@@ -46,11 +46,11 @@ Route::patch('estructura/estandares/{id}/active', [StandardController::class, 's
 Route::prefix('admin/users')->group(function () {
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: POST /api/admin/users/5/activate
-    Route::post('{user}/activate',   [UserController::class, 'activate'])
+    Route::patch('{user}/activate',   [UserController::class, 'activate'])
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     //Desactiva un usuario cambiando su estado a "inactive"
     // Ejemplo: POST /api/admin/users/5/deactivate
-    Route::post('{user}/deactivate', [UserController::class, 'deactivate'])
+    Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/role', [UserController::class, 'assignRole'])
          ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
