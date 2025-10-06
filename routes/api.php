@@ -44,6 +44,7 @@ Route::apiResource('estructura/estandares', StandardController::class)->only(['i
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
 
 Route::prefix('admin/users')->group(function () {
+    Route::get('/', [UserController::class, 'index']);
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
     Route::patch('{user}/activate',   [UserController::class, 'activate'])

@@ -23,11 +23,18 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    /**
+ * Listar todos los usuarios con sus roles y estado
+    */
+        public function index()
     {
-        //
+        $users = User::with(['roles', 'permissions'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return response()->json($users, 200); // Retorna JSON
     }
-
+    
     /**
      * Show the form for creating a new resource.
      */
