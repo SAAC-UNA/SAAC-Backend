@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: saac-una
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: saac
+      MYSQL_USER: saac
+      MYSQL_PASSWORD: 12345678
+    ports:
+      - "3307:3306"   # Puerto 3306 del contenedor mapeado al 3307 de la máquina
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - saac
+
+volumes:
+  db_data:
+
+networks:
+  saac:
+    driver: bridge
