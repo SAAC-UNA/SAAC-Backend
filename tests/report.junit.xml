@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="C:\Users\itsjo\Universidad\SAAC-UNA\backend\phpunit.xml" tests="188" assertions="325" errors="0" failures="0" skipped="0" time="8.150835">
-    <testsuite name="Unit" tests="109" assertions="109" errors="0" failures="0" skipped="0" time="5.557838">
-      <testsuite name="Tests\Unit\AccreditationCycleTest" file="C:\Users\itsjo\Universidad\SAAC-UNA\backend\tests\Unit\AccreditationCycleTest.php" tests="6" assertions="6" errors="0" failures="0" skipped="0" time="2.272686">
-        <testcase name="it_creates_an_accreditation_cycle" file="C:\Users\itsjo\Universidad\SAAC-UNA\backend\tests\Unit\AccreditationCycleTest.php" line="14" class="Tests\Unit\AccreditationCycleTest" classname="Tests.Unit.AccreditationCycleTest" assertions="1" time="2.104326">
   <testsuite name="C:\Users\khrizk\Desktop\SAAC-Backend\phpunit.xml" tests="194" assertions="344" errors="0" failures="0" skipped="0" time="15.684337">
     <testsuite name="Unit" tests="109" assertions="109" errors="0" failures="0" skipped="0" time="10.790681">
       <testsuite name="Tests\Unit\AccreditationCycleTest" file="C:\Users\khrizk\Desktop\SAAC-Backend\tests\Unit\AccreditationCycleTest.php" tests="6" assertions="6" errors="0" failures="0" skipped="0" time="4.989683">
