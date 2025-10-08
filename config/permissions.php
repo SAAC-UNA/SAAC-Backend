@@ -32,4 +32,13 @@ return [
 
     ],
 
+    // Matriz oficial de módulos y acciones atómicas (HU-02)
+    'modules' => [
+        'usuarios'   => ['view', 'create', 'edit', 'delete'],
+        'evidencias' => ['view', 'create', 'edit', 'delete'],
+        'reportes'   => ['generate'],
+        'ciclos'     => ['view', 'create', 'edit', 'delete'],
+    ],
+
+
 ];

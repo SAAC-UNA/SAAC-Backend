@@ -14,6 +14,7 @@ use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -60,6 +61,10 @@ Route::prefix('admin/users')->group(function () {
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
 });
 
+
+
+// Para vista de permisos
+Route::get('admin/permissions', [PermissionController::class, 'index']);
 // Ejemplos de uso cuando actives autenticación en Sprint 3:
 // Route::middleware('can:evidencias.view')->get('/evidencias', [EvidenceController::class, 'index']);
 // Route::middleware('can:reportes.generate')->get('/reportes/generar', [ReportController::class, 'generate']);

@@ -26,12 +26,12 @@ class UserController extends Controller
     /**
  * Listar todos los usuarios con sus roles y estado
     */
-        public function index()
+    public function index()
     {
         $users = User::with(['roles', 'permissions'])
             ->orderBy('created_at', 'desc')
             ->get();
-        
+            
         return response()->json($users, 200); // Retorna JSON
     }
     
