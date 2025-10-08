@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Autoevaluation extends Model
+class Autoevaluation extends BaseCareer
 {
     /** @use HasFactory<\Database\Factories\AutoevaluationFactory> */
     use HasFactory;
@@ -28,4 +28,5 @@ class Autoevaluation extends Model
     {
         return $this->belongsTo(Process::class, 'proceso_id', 'proceso_id');
     }
+    
 }

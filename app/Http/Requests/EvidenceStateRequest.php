@@ -24,6 +24,11 @@ class EvidenceStateRequest extends FormRequest
                 // unique: tabla, columna, ignorar_id, columna_pk
                 'unique:ESTADO_EVIDENCIA,nombre' . ($isUpdate && $id ? ",$id,estado_evidencia_id" : '')
             ],
+             //'carrera_id' => [
+              //   $isUpdate ? 'sometimes' : 'required',
+               //  'integer',
+                // 'exists:CARRERA,carrera_id'
+            //],
         ];
     }
 
@@ -35,6 +40,9 @@ class EvidenceStateRequest extends FormRequest
             'nombre.unique'   => 'Ya existe un estado de evidencia con ese nombre.',
             'nombre.max'      => 'El nombre no puede superar los 100 caracteres.',
             'nombre.string'   => 'El nombre debe ser una cadena de texto.',
+            'carrera_id.required' => 'La carrera es obligatoria.',
+            'carrera_id.integer'  => 'El campo carrera_id debe ser un número entero.',
+            'carrera_id.exists'   => 'La carrera indicada no existe.',
         ];
     }
 

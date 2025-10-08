@@ -15,10 +15,13 @@ use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\RoleController;
 
+
 //solo para pruebas
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\DevUserController;
 use App\Http\Controllers\DevCommentController;
+use App\Http\Controllers\ProcessController;
+use App\Http\Controllers\AccreditationCycleController;
 
 
 // CRUD completo de cada endpoint
@@ -42,6 +45,26 @@ Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 's
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+
+
+// CICLOS DE ACREDITACIÓN
+// CICLOS DE ACREDITACIÓN
+Route::prefix('estructura/ciclos-acreditacion')->group(function () {
+    Route::get('/', [AccreditationCycleController::class, 'index']);           // Listar todos
+    Route::get('/{id}', [AccreditationCycleController::class, 'show']);        // Ver uno
+    Route::post('/', [AccreditationCycleController::class, 'store']);          // Crear nuevo
+    Route::put('/{id}', [AccreditationCycleController::class, 'update']);      // Actualizar
+    Route::delete('/{id}', [AccreditationCycleController::class, 'destroy']);  // Eliminar
+    Route::patch('/{id}/active', [AccreditationCycleController::class, 'setActive']); // Activar/desactivar
+});
+
+
+// PROCESOS
+Route::apiResource('estructura/procesos', ProcessController::class)
+    ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive']);
+
 
 // Solo para pruebas
 if (App::environment('local')) {

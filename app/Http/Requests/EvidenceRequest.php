@@ -38,6 +38,7 @@ class EvidenceRequest extends FormRequest
         $rules = [
             'criterio_id'         => [$isUpdate ? 'sometimes' : 'required','integer','exists:CRITERIO,criterio_id'],
             'estado_evidencia_id' => [$isUpdate ? 'sometimes' : 'required','integer','exists:ESTADO_EVIDENCIA,estado_evidencia_id'],
+           // 'carrera_id'    => ['required', 'integer', 'exists:CARRERA,carrera_id'],
             'descripcion'         => [
                 $isUpdate ? 'sometimes' : 'required',
                 'string',

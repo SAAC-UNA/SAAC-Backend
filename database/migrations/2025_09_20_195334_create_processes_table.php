@@ -18,6 +18,9 @@ return new class extends Migration
             // Relación con ciclo de acreditación
             $table->foreignId('ciclo_acreditacion_id')->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')->onDelete('cascade');
             // Timestamps de creación y actualización
+              //  Indica si el proceso está vigente o en curso
+            $table->boolean('activo')->default(true); //nnuevo
+            $table->string('nombre', 100); //nuevo
             $table->timestamps();
         });
     }

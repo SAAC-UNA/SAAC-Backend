@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Component extends Model
+class Component extends  Model
 {
     /** @use HasFactory<\Database\Factories\ComponentFactory> */
     use HasFactory;
@@ -40,6 +40,11 @@ class Component extends Model
     {
         return $this->belongsTo(Dimension::class, 'dimension_id', 'dimension_id');
     }
+     //  Un componente pertenece a una carrera
+    //public function career()
+    //{
+        //return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
+    //}
 
     /**
      * Relación: Un componente pertenece a un comentario.

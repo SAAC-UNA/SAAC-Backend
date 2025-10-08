@@ -1,6 +1,7 @@
 <?php
 
 return [
+      
 
     'models' => [
 
@@ -25,6 +26,8 @@ return [
          */
 
         'role' => \App\Models\Role::class,
+        'user' => App\Models\User::class,
+
 
     ],
 
@@ -203,4 +206,8 @@ return [
 ],
 
     ],
+    'defaults' => [
+    'guard' => 'api',
+],
+
 ];

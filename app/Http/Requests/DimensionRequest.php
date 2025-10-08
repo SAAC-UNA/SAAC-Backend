@@ -19,6 +19,7 @@ class DimensionRequest extends FormRequest
 
         $rules = [
             'comentario_id' => ['required','integer','exists:COMENTARIO,comentario_id'],
+            //'carrera_id'    => ['required', 'integer', 'exists:CARRERA,carrera_id'],
             'nombre'        => [
                 'required',
                 'string',
@@ -44,6 +45,8 @@ class DimensionRequest extends FormRequest
         return [
             'comentario_id.required' => 'El comentario es obligatorio.',
             'comentario_id.exists'   => 'El comentario no existe.',
+            'carrera_id.required'    => 'La carrera es obligatoria.',
+            'carrera_id.exists'      => 'La carrera indicada no existe.',
             'nombre.required'        => 'El nombre es obligatorio.',
             'nombre.regex'           => 'El nombre solo puede contener letras y espacios.',
             'nomenclatura.required'  => 'La nomenclatura es obligatoria.',

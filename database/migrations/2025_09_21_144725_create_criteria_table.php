@@ -19,6 +19,10 @@ return new class extends Migration
             $table->foreignId('componente_id')->constrained('COMPONENTE', 'componente_id');
             // Relación con comentario
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id');
+           // $table->foreignId('carrera_id')->constrained('CARRERA', 'carrera_id')->onDelete('cascade');
+            
+
+
             // Descripción del criterio
             $table->string('descripcion', 300);
             // Nomenclatura del criterio

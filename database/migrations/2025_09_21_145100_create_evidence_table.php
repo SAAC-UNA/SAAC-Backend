@@ -18,6 +18,8 @@ return new class extends Migration
             // Relación con criterio
             $table->foreignId('criterio_id')->constrained('CRITERIO', 'criterio_id');
             // Relación con estado de evidencia
+                // 🔹 Relación con proceso (muy importante para el filtro por carrera)
+           // $table->foreignId('proceso_id') ->constrained('PROCESO', 'proceso_id') ->onDelete('cascade');
             $table->foreignId('estado_evidencia_id')->constrained('ESTADO_EVIDENCIA', 'estado_evidencia_id');
             // Descripción de la evidencia
             $table->string('descripcion', 80);

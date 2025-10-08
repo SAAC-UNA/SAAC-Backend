@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreignId('dimension_id')->constrained('DIMENSION', 'dimension_id')->onDelete('cascade');
             // Relación con comentario
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
+            //$table->foreignId('carrera_id') ->constrained('CARRERA', 'carrera_id')->onDelete('cascade');
+
             // Nombre del componente
             $table->string('nombre', 80);
             // Nomenclatura del componente

@@ -16,6 +16,7 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('estado_evidencia_id');
             // Nombre del estado
+           // $table->foreignId('carrera_id')->constrained('CARRERA', 'carrera_id')->onDelete('cascade');/// duda
             $table->string('nombre', 30);
             // Timestamps de creación y actualización
             $table->timestamps();

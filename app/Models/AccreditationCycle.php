@@ -5,20 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-
-class AccreditationCycle extends Model
+class AccreditationCycle extends BaseCareer
 {
-    /** @use HasFactory<\Database\Factories\AccreditationCycleFactory> */
     use HasFactory;
 
-    // Nombre de la tabla en la base de datos
     protected $table = 'CICLO_ACREDITACION';
-
-    // Clave primaria
     protected $primaryKey = 'ciclo_acreditacion_id';
 
-    // Campos que se pueden asignar masivamente
-    protected $fillable = ['carrera_sede_id', 'nombre'];
+    protected $fillable = [
+        'nombre',
+        'activo',
+        'fecha_inicio',
+        'fecha_fin',
+        'carrera_sede_id'
+    ];
+
 
     /**
      * Relación: Un ciclo de acreditación pertenece a una sede de carrera.
@@ -40,5 +41,10 @@ class AccreditationCycle extends Model
     {
         // Relación con Process
         return $this->hasMany(Process::class, 'ciclo_acreditacion_id');
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
     }
 }

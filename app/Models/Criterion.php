@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Criterion extends Model
+class Criterion extends BaseCareer
 {
     use HasFactory;
 
@@ -24,13 +24,18 @@ class Criterion extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'componente_id',
+       // 'carrera_id'  ,
         'comentario_id',
         'descripcion',
         'nomenclatura',
         'activo'
     ];
 
-    // --- Relaciones ---
+     //  Un criterio pertenece a una carrera
+    public function career()
+    {
+        return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
+    }
 
     /**
      * Relación: Un criterio tiene muchas evidencias.

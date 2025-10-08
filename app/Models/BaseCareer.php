@@ -1,44 +1,68 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema; // importación correcta
+use Illuminate\Support\Facades\Request;
 
 abstract class BaseCareer extends Model
 {
     protected static function booted()
     {
-        static::addGlobalScope('byCarrera', function (Builder $query) {
+        static::addGlobalScope('byCareer', function (Builder $query) {
+            /** @var \App\Models\User|\Spatie\Permission\Traits\HasRoles $user */
 
-            //  Evita error si no hay sesión
-            if (!Auth::check()) {
-                return;
-            }
-
-            /** @var \App\Models\User|null $user */
             $user = Auth::user();
+            $careerParam = Request::get('career_id');
 
-            //  Superadmin ve todo
-            if ($user && $user->hasRole('SuperUsuario')) {
-                return;
-            }
+            // 🔹 Detecta el modelo actual
+            $model = $query->getModel();
+            $modelName = class_basename($model);
+            $table = $model->getTable();
 
-            //  Administrador: filtra por carreras asignadas
-            if ($user && $user->hasRole('Administrador')) {
-                $ids = $user->careers->pluck('carrera_id')->toArray();
-
-                if (!empty($ids)) {
-                    $query->whereIn('carrera_id', $ids);
+            //  Evitar recursión: si ya se está resolviendo una relación accreditationCycle, no aplicar nada
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
+                if (!empty($trace['function']) && str_contains($trace['function'], 'accreditationCycle')) {
+                    return;
                 }
             }
 
-            //  Opcional: filtra solo activos si la tabla tiene esa columna
-            if (Schema::hasColumn((new static)->getTable(), 'activo')) {
-                $query->where('activo', true);
+            //  Sin usuario pero con parámetro → modo Postman
+            if (!$user && $careerParam) {
+                static::applyFilter($query, $modelName, [$careerParam]);
+                return;
             }
+
+            //  Sin usuario ni parámetro → modo Tinker libre
+            if (!$user) return;
+
+            //  SuperUsuario → ver todo
+            if ($user->hasRole('SuperUsuario')) return;
+
+            //  Usuario normal → filtrar por carreras
+            $careerIds = $user->careers->pluck('carrera_id')->toArray();
+            static::applyFilter($query, $modelName, $careerIds);
         });
+    }
+
+    /**
+     * Aplica el filtro de acuerdo al tipo de modelo
+     */
+    protected static function applyFilter(Builder $query, string $modelName, array $careerIds)
+    {
+        switch ($modelName) {
+            case 'AccreditationCycle':
+                $query->whereHas('careerCampus.career', function ($q) use ($careerIds) {
+                    $q->whereIn('carrera_id', $careerIds);
+                });
+                break;
+
+            default:
+                $query->whereHas('accreditationCycle.careerCampus.career', function ($q) use ($careerIds) {
+                    $q->whereIn('carrera_id', $careerIds);
+                });
+                break;
+        }
     }
 }

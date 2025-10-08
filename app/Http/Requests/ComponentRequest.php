@@ -18,6 +18,7 @@ class ComponentRequest extends FormRequest
 
         $rules = [
             'dimension_id'  => [$isUpdate ? 'sometimes' : 'required','integer','exists:DIMENSION,dimension_id'],
+            //'carrera_id'   => ['required', 'integer', 'exists:CARRERA,carrera_id'],
             'comentario_id' => ['nullable','integer','exists:COMENTARIO,comentario_id'],
             'nombre'        => [
                 $isUpdate ? 'sometimes' : 'required',

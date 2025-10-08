@@ -2,65 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Process;
-use App\Http\Requests\StoreProcessRequest;
-use App\Http\Requests\UpdateProcessRequest;
+use App\Services\ProcessService;
+use App\Http\Requests\ProcessRequest;
 
 class ProcessController extends Controller
 {
+    protected $processService;
+
+    public function __construct(ProcessService $processService)
+    {
+        $this->processService = $processService;
+    }
+
     /**
-     * Display a listing of the resource.
+     *  Listar todos los procesos (sin autenticación)
      */
     public function index()
     {
-        //
+        $procesos = $this->processService->getAll();
+        return response()->json($procesos, 200);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * 👁 Mostrar un proceso por su ID
      */
-    public function create()
+    public function show($id)
     {
-        //
+        try {
+            $proceso = $this->processService->getById($id);
+            return response()->json($proceso, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Proceso no encontrado'], 404);
+        }
     }
 
     /**
-     * Store a newly created resource in storage.
+     * ➕ Crear un nuevo proceso
      */
-    public function store(StoreProcessRequest $request)
+    public function store(ProcessRequest $request)
     {
-        //
+        $proceso = $this->processService->create($request->validated());
+
+        return response()->json([
+            'message' => 'Proceso creado correctamente',
+            'data' => $proceso
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * ✏️ Actualizar un proceso existente
      */
-    public function show(Process $process)
+    public function update(ProcessRequest $request, $id)
     {
-        //
+        $updated = $this->processService->update($id, $request->validated());
+
+        return response()->json([
+            'message' => 'Proceso actualizado correctamente',
+            'data' => $updated
+        ], 200);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * 🗑 Eliminar un proceso
      */
-    public function edit(Process $process)
+    public function destroy($id)
     {
-        //
-    }
+        $this->processService->delete($id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateProcessRequest $request, Process $process)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Process $process)
-    {
-        //
+        return response()->json(['message' => 'Proceso eliminado correctamente'], 200);
     }
 }

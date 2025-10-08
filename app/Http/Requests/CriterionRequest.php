@@ -29,6 +29,7 @@ class CriterionRequest extends FormRequest
 
         $rules = [
             'componente_id' => [$isUpdate ? 'sometimes' : 'required','integer','exists:COMPONENTE,componente_id'],
+           // 'carrera_id'   => ['required', 'integer', 'exists:CARRERA,carrera_id'],
             'comentario_id' => ['nullable','integer','exists:COMENTARIO,comentario_id'],
             'descripcion'   => [
                 $isUpdate ? 'sometimes' : 'required',

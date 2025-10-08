@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unique(['carrera_id', 'usuario_id'], 'uq_carrera_usuario');// Restricción de unicidad para evitar duplicados
             $table->timestamps();
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.

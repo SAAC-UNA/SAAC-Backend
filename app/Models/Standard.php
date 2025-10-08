@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Standard extends Model
+class Standard extends  Model
 {
     use HasFactory;
 
@@ -20,6 +20,12 @@ class Standard extends Model
 
     // Timestamps automáticos
     public $timestamps = true;
+
+     //  Un estándar pertenece a una carrera
+   // public function career()
+    //{
+        //return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
+    //}
 
     /**
      * Relación: Un estándar pertenece a un criterio.
