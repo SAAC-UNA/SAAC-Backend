@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PermissionSeeder::class,
+             #UserRoleCareerSeeder::class,
+              #ProcessCycleSeeder::class,
             
             
         ]);
