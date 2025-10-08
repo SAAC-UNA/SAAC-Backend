@@ -23,18 +23,28 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     /**
- * Listar todos los usuarios con sus roles y estado
-    */
+     * Listar todos los usuarios con sus roles, permisos directos
+     * y permisos efectivos (roles + directos).
+     */
     public function index()
     {
+        // Cargamos roles y permisos directos para evitar N+1
         $users = User::with(['roles', 'permissions'])
             ->orderBy('created_at', 'desc')
-            ->get();
-            
-        return response()->json($users, 200); // Retorna JSON
+            ->get()
+            ->map(function ($u) {
+                // Permisos efectivos (Spatie: directos + heredados por rol)
+                $u->all_permissions = $u->getAllPermissions()->pluck('name')->values();
+                return $u;
+            });
+
+        return response()->json($users, 200);
     }
-    
+
+
+
     /**
      * Show the form for creating a new resource.
      */
