@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 //use Illuminate\Support\Facades\Gate; 3 sprint
 
@@ -33,14 +34,9 @@ class UserController extends Controller
         // Cargamos roles y permisos directos para evitar N+1
         $users = User::with(['roles', 'permissions'])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($u) {
-                // Permisos efectivos (Spatie: directos + heredados por rol)
-                $u->all_permissions = $u->getAllPermissions()->pluck('name')->values();
-                return $u;
-            });
+            ->get();
 
-        return response()->json($users, 200);
+        return UserResource::collection($users);
     }
 
 
