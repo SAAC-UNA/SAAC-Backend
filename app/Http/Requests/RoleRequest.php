@@ -35,7 +35,7 @@ class RoleRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:50',
                 // Solo permite letras (con o sin tildes), ñ/Ñ y espacios
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
                 // Unique constraint with exception on update
@@ -57,10 +57,10 @@ class RoleRequest extends FormRequest
         return [
             'name.required' => 'El nombre del rol es obligatorio.',
             'name.unique'   => 'Ya existe un rol con este nombre.',
-            'name.max'      => 'El nombre no puede superar los 255 caracteres.',
+            'name.max'      => 'El nombre no puede superar los 50 caracteres.',
             'name.regex'    => 'El nombre solo puede contener letras y espacios, sin caracteres especiales.',
             
-            'description.max'  => 'La descripción no puede superar los 255 caracteres.',
+            'description.max'  => 'La descripción no puede superar los 20 caracteres.',
             'permissions.required' => 'Debe seleccionar al menos un permiso.',
             'permissions.array'    => 'El formato de los permisos no es válido.',
             'permissions.min'      => 'Debe elegir al menos un permiso.',
@@ -75,7 +75,7 @@ class RoleRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         $response = response()->json([
-            'error'   => 'Validation Error',
+            'error'   => 'Error de validación',
             'errors'  => $validator->errors(), // mensajes siguen en español
         ], 422);
 
