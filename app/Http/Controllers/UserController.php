@@ -20,9 +20,7 @@ use App\Http\Requests\AssignPermissionsRequest;
 class UserController extends Controller
 {
     public function __construct(private UserAdminService $userAdmin) {}
-    /**
-     * Display a listing of the resource.
-     */
+   
 
     /**
      * Listar todos los usuarios con sus roles, permisos directos
