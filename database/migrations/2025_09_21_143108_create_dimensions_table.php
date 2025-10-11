@@ -18,8 +18,6 @@ return new class extends Migration
             // Relación con comentario
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
              //  Relación con carrera
-           // $table->foreignId('carrera_id') ->constrained('CARRERA', 'carrera_id')->onDelete('cascade'); // preunta paar esto 
-            // Nombre de la dimensión
             $table->string('nombre', 100);
             // Nomenclatura de la dimensión
             $table->string('nomenclatura', 20);

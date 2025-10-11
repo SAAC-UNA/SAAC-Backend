@@ -72,3 +72,4 @@ class AuditLogTest extends TestCase
         $this->assertEquals($actionType->tipo_accion_id, $auditLog->actionType->tipo_accion_id);
     }
 }
+

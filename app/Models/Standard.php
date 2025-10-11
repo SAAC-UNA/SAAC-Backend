@@ -20,13 +20,6 @@ class Standard extends  Model
 
     // Timestamps automáticos
     public $timestamps = true;
-
-     //  Un estándar pertenece a una carrera
-   // public function career()
-    //{
-        //return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
-    //}
-
     /**
      * Relación: Un estándar pertenece a un criterio.
      *

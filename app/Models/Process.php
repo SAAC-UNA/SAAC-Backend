@@ -19,8 +19,7 @@ class Process extends BaseCareer
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'ciclo_acreditacion_id',
-        'nombre',
-        'activo'
+        'tipo_proceso',
     ];
 
     /**

@@ -2,104 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AccreditationCycleRequest;
-use App\Services\AccreditationCycleService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Models\AccreditationCycle;
+use App\Http\Requests\StoreAccreditationCycleRequest;
+use App\Http\Requests\UpdateAccreditationCycleRequest;
 
 class AccreditationCycleController extends Controller
 {
-    protected AccreditationCycleService $cycleService;
-
-    public function __construct(AccreditationCycleService $cycleService)
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        $this->cycleService = $cycleService;
+        //
     }
 
     /**
-     * 📋 Listar todos los ciclos de acreditación.
+     * Show the form for creating a new resource.
      */
-    public function index(): JsonResponse
+    public function create()
     {
-        $cycles = $this->cycleService->getAll();
-        return response()->json($cycles, 200);
+        //
     }
 
     /**
-     * 👁 Mostrar un ciclo específico por ID.
+     * Store a newly created resource in storage.
      */
-    public function show(int $id): JsonResponse
+    public function store(StoreAccreditationCycleRequest $request)
     {
-        try {
-            $cycle = $this->cycleService->getById($id);
-            return response()->json($cycle, 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Ciclo no encontrado.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al obtener el ciclo.'], 500);
-        }
+        //
     }
 
     /**
-     * ➕ Crear un nuevo ciclo de acreditación.
+     * Display the specified resource.
      */
-    public function store(AccreditationCycleRequest $request): JsonResponse
+    public function show(AccreditationCycle $accreditationCycle)
     {
-        try {
-            $cycle = $this->cycleService->create($request->validated());
-
-            return response()->json([
-                'message' => 'Ciclo de acreditación creado correctamente.',
-                'data' => $cycle
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'No se pudo crear el ciclo.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
-     * ✏️ Actualizar un ciclo existente.
+     * Show the form for editing the specified resource.
      */
-    public function update(AccreditationCycleRequest $request, int $id): JsonResponse
+    public function edit(AccreditationCycle $accreditationCycle)
     {
-        try {
-            $cycle = $this->cycleService->update($id, $request->validated());
-
-            return response()->json([
-                'message' => 'Ciclo de acreditación actualizado correctamente.',
-                'data' => $cycle
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Ciclo no encontrado.'], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'No se pudo actualizar el ciclo.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
-     * 🗑 Eliminar un ciclo de acreditación.
+     * Update the specified resource in storage.
      */
-    public function destroy(int $id): JsonResponse
+    public function update(UpdateAccreditationCycleRequest $request, AccreditationCycle $accreditationCycle)
     {
-        try {
-            $this->cycleService->delete($id);
+        //
+    }
 
-            return response()->json([
-                'message' => 'Ciclo de acreditación eliminado correctamente.'
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Ciclo no encontrado.'], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'No se pudo eliminar el ciclo.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(AccreditationCycle $accreditationCycle)
+    {
+        //
     }
 }

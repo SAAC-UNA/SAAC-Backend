@@ -18,11 +18,6 @@ class Dimension extends Model
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['comentario_id', 'nombre', 'nomenclatura' , 'activo'];
-    
-    //public function career()
-    //{
-      //  return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
-    //}
     /**
      * Relación: Una dimensión tiene muchos componentes.
      *
@@ -33,11 +28,9 @@ class Dimension extends Model
     {
         return $this->hasMany(Component::class, 'dimension_id', 'dimension_id');
     }
-     /**
-     * Relación: Una dimensión puede tener un comentario.
-     */
-    //public function comment()
-    //{
-       // return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
-    //} dudosa procedencia de chat nose si ya estaba esto si no sirve fijo ay que descomentarlo
+    //Revisar lo de comentario
+    public function comment()
+    {
+        return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
+    }
 }

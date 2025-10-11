@@ -24,18 +24,11 @@ class Criterion extends BaseCareer
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'componente_id',
-       // 'carrera_id'  ,
         'comentario_id',
         'descripcion',
         'nomenclatura',
         'activo'
     ];
-
-     //  Un criterio pertenece a una carrera
-    public function career()
-    {
-        return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
-    }
 
     /**
      * Relación: Un criterio tiene muchas evidencias.

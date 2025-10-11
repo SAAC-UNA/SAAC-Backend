@@ -18,14 +18,6 @@ class Evidence extends BaseCareer
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['criterio_id','estado_evidencia_id', 'descripcion', 'nomenclatura', 'activo'];
-
-
-
-      // Una evidencia pertenece a una carrera
-   // public function career()
-   // {
-       // return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
-    //}
     /**
      * Relación: Una evidencia pertenece a un criterio.
      *
@@ -49,13 +41,4 @@ class Evidence extends BaseCareer
     {
     return $this->belongsTo(Process::class, 'proceso_id', 'proceso_id');
     }
-
-/**
- * Alias para que BaseCareer pueda aplicar el filtro por carrera.
- * (Esto evita el error "undefined method accreditationCycle()")
- */
-   public function accreditationCycle()
-   {
-    return $this->process()->with('accreditationCycle');
-   }
 }

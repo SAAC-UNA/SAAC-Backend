@@ -40,11 +40,6 @@ class Component extends  Model
     {
         return $this->belongsTo(Dimension::class, 'dimension_id', 'dimension_id');
     }
-     //  Un componente pertenece a una carrera
-    //public function career()
-    //{
-        //return $this->belongsTo(Career::class, 'carrera_id', 'carrera_id');
-    //}
 
     /**
      * Relación: Un componente pertenece a un comentario.

@@ -16,7 +16,7 @@ abstract class BaseCareer extends Model
             $user = Auth::user();
             $careerParam = Request::get('career_id');
 
-            // 🔹 Detecta el modelo actual
+            // Detecta el modelo actual
             $model = $query->getModel();
             $modelName = class_basename($model);
             $table = $model->getTable();

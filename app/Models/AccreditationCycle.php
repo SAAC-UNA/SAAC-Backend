@@ -14,9 +14,6 @@ class AccreditationCycle extends BaseCareer
 
     protected $fillable = [
         'nombre',
-        'activo',
-        'fecha_inicio',
-        'fecha_fin',
         'carrera_sede_id'
     ];
 
@@ -41,10 +38,5 @@ class AccreditationCycle extends BaseCareer
     {
         // Relación con Process
         return $this->hasMany(Process::class, 'ciclo_acreditacion_id');
-    }
-
-    public function scopeActivos($query)
-    {
-        return $query->where('activo', true);
     }
 }

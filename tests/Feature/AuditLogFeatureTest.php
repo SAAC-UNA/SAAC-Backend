@@ -22,3 +22,4 @@ class AuditLogFeatureTest extends TestCase
         $this->assertEquals('Logout funcional', $found->detalle);
     }
 }
+

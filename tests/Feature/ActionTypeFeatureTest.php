@@ -22,3 +22,4 @@ class ActionTypeFeatureTest extends TestCase
         $this->assertEquals('Tipo de Acción 2', $found->descripcion);
     }
 }
+
