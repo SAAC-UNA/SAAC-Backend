@@ -91,8 +91,8 @@ class EvidenceAssignmentService
                     continue;
                 }
 
-                // Obtener usuarios que tienen este rol usando Spatie
-                $usuariosConRol = User::role($role->name)->get();
+                // Obtener usuarios activos que tienen este rol usando Spatie
+                $usuariosConRol = User::role($role->name)->active()->get();
                 
                 foreach ($usuariosConRol as $usuario) {
                     $asignacion = $this->createAssignment(
