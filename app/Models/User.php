@@ -19,11 +19,13 @@ class User extends Authenticatable
         'cedula',
         'nombre',
         'email',
-       // 'password',
-       // 'activo',
+    
     ];
 
-    //protected $hidden = ['password'];
+     public function comment()
+    {
+        return $this->hasMany(Comment::class, 'usuario_id', 'usuario_id');
+    }
 
     public function careers()
     {

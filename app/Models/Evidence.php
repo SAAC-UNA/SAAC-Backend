@@ -37,8 +37,5 @@ class Evidence extends BaseCareer
     {
         return $this->belongsTo(EvidenceState::class, 'estado_evidencia_id', 'estado_evidencia_id');
     }
-    public function process()
-    {
-    return $this->belongsTo(Process::class, 'proceso_id', 'proceso_id');
-    }
+   
 }

@@ -5,18 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AccreditationCycle extends BaseCareer
+
+class AccreditationCycle extends Model
 {
+    /** @use HasFactory<\Database\Factories\AccreditationCycleFactory> */
     use HasFactory;
 
+    // Nombre de la tabla en la base de datos
     protected $table = 'CICLO_ACREDITACION';
+
+    // Clave primaria
     protected $primaryKey = 'ciclo_acreditacion_id';
 
-    protected $fillable = [
-        'nombre',
-        'carrera_sede_id'
-    ];
-
+    // Campos que se pueden asignar masivamente
+    protected $fillable = ['carrera_sede_id', 'nombre'];
 
     /**
      * Relación: Un ciclo de acreditación pertenece a una sede de carrera.

@@ -32,22 +32,6 @@ class Process extends BaseCareer
         return $this->belongsTo(AccreditationCycle::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
     }
     
-
-     //public function careerCampus()
-    //{
-       // return $this->hasOneThrough(
-          //  CareerCampus::class,          // Modelo destino
-           // AccreditationCycle::class,    // Modelo intermedio
-           // 'ciclo_acreditacion_id',      // FK en AccreditationCycle
-           // 'carrera_sede_id',            // FK en CareerCampus
-           //// 'ciclo_acreditacion_id',      // PK local en PROCESO
-           // 'carrera_sede_id'             // PK en AccreditationCycle
-       // );
-   // }
-
-    
-
-   
     /**
      * Relación: Un proceso tiene una autoevaluación.
      *
