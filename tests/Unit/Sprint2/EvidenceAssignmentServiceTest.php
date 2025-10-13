@@ -3,13 +3,12 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Services\EvidenceAssignmentService;
-use App\Models\EvidenceAssignment;
-use App\Models\User;
 use App\Models\Process;
+use App\Models\EvidenceAssignment;
 use App\Models\Evidence;
+use App\Models\User;
+use App\Services\EvidenceAssignmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 
 class EvidenceAssignmentServiceTest extends TestCase
 {
