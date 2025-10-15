@@ -42,7 +42,7 @@ class EvidenceRequest extends FormRequest
                 $isUpdate ? 'sometimes' : 'required',
                 'string',
                 'max:80',
-                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ .,\-:;]+$/',
             ],
             'nomenclatura'        => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
         ];
@@ -89,7 +89,7 @@ class EvidenceRequest extends FormRequest
             'estado_evidencia_id.required' => 'El estado es obligatorio.',
             'estado_evidencia_id.exists'   => 'El estado no existe.',
             'descripcion.required'         => 'La descripción es obligatoria.',
-            'descripcion.regex'            => 'La descripción solo puede contener letras y espacios.',
+            'descripcion.regex'            => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
             'descripcion.unique'           => 'Ya existe una evidencia con ese nombre en este componente.',
             'nomenclatura.required'        => 'La nomenclatura es obligatoria.',
             'nomenclatura.unique'          => 'Ya existe una evidencia con esa nomenclatura en este criterio.',
