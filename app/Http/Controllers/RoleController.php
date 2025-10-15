@@ -122,17 +122,12 @@ class RoleController extends Controller
      */
    public function listPermissions(): \Illuminate\Http\JsonResponse
    {
-        // Obtenemos los permisos técnicos desde el servicio (ej: "gestion_roles")
+        // Obtenemos los permisos desde el servicio, ya incluye id, name y label
         $permissions = $this->roleService->listPermissions();
 
-         // Convertimos la colección a sus etiquetas legibles definidas en config/permissions.php
-        $permissionsConvertidos = collect($permissions)->map(function ($permiso) {
-             return config('permissions.descriptions')[$permiso] ?? $permiso;
-        })->values(); // values() reindexa la colección para que salga como arreglo limpio
-
-    // Devolvemos el resultado convertido
+        // El servicio ya retorna los permisos con sus etiquetas legibles
         return response()->json([
-            'data' => $permissionsConvertidos
+            'data' => $permissions
         ], 200);
     }
 
