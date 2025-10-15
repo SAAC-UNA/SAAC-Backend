@@ -11,6 +11,7 @@ use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;use App\Http\Controllers\RoleController;
@@ -45,6 +46,13 @@ Route::apiResource('estructura/criterios', CriterionController::class)->only(['i
 Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
 Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
+
+// Rutas para asignaciones de evidencias (HU-007)
+Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
+Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
+Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
+
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);

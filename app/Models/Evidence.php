@@ -37,5 +37,25 @@ class Evidence extends BaseCareer
     {
         return $this->belongsTo(EvidenceState::class, 'estado_evidencia_id', 'estado_evidencia_id');
     }
-   
+
+    /**
+     * Relación: Una evidencia tiene muchas asignaciones.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function assignments()
+    {
+        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id');
+    }
+
+    /**
+     * Relación: Una evidencia tiene muchas asignaciones activas.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function activeAssignments()
+    {
+        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')->where('activo', true);
+    }
+
 }

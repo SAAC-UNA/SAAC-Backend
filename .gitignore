@@ -24,3 +24,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Testing Coverage Reports
+/tests/coverage-html/
+/tests/coverage.txt
+/tests/report.junit.xml
