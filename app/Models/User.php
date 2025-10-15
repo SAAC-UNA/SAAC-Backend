@@ -58,7 +58,7 @@ class User extends Authenticatable
     public function getRouteKeyName(): string
     {
     return 'usuario_id';
-
+    }
 
     public function careers()
     {
