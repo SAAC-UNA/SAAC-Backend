@@ -17,6 +17,14 @@ class AccreditationCycleFactory extends Factory
     public function definition(): array
     {
         return [
+               /**
+             * Relación con el modelo CareerCampus.
+             * 
+             * Cada ciclo de acreditación se asocia automáticamente con
+             * un registro falso generado por la factory de CareerCampus.
+             * Esto garantiza la integridad referencial de la relación
+             * `carrera_sede_id`.
+             */
             'carrera_sede_id' => \App\Models\CareerCampus::factory(),
             'nombre' => $this->faker->words(2, true),
         ];

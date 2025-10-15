@@ -2,90 +2,106 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Illuminate\Support\Facades\Log;
 
 class Handler extends ExceptionHandler
 {
     /**
-     * Lista de las excepciones que no deben reportarse.
-     *
-     * @var array<int, class-string<\Throwable>>
-     */
-    protected $dontReport = [];
-
-    /**
-     * Registra las devoluciones de llamada para el manejo de excepciones.
+     * Registra los manejadores de excepciones de la aplicación.
      */
     public function register(): void
     {
-        //
+        //  404 - Ruta o recurso no encontrado
+        $this->renderable(function (NotFoundHttpException $exception, $request) {
+            if ($request->expectsJson()) {
+                return $this->jsonError(
+                    'Ruta no encontrada. Verifique la URL o el recurso solicitado.',
+                    404
+                );
+            }
+        });
+
+        // 404 - Modelo no encontrado (por ejemplo, findOrFail())
+        $this->renderable(function (ModelNotFoundException $exception, $request) {
+            if ($request->expectsJson()) {
+                $model = $exception->getModel()
+                    ? class_basename($exception->getModel())
+                    : 'Desconocido';
+
+                return $this->jsonError(
+                    'Recurso no encontrado en la base de datos.',
+                    404,
+                    ['model' => $model]
+                );
+            }
+        });
+
+        //  400 - Solicitud mal formada o JSON inválido
+        $this->renderable(function (BadRequestHttpException $exception, $request) {
+            if ($request->expectsJson()) {
+                return $this->jsonError(
+                    'Solicitud inválida. Verifique el formato o los datos enviados.',
+                    400
+                );
+            }
+        });
+
+        //  401 - No autenticado
+        $this->renderable(function (AuthenticationException $exception, $request) {
+            if ($request->expectsJson()) {
+                return $this->jsonError(
+                    'No autenticado. Debe iniciar sesión para acceder a este recurso.',
+                    401
+                );
+            }
+        });
+
+        // 403 - No autorizado (falta de permisos)
+        $this->renderable(function (AuthorizationException $exception, $request) {
+            if ($request->expectsJson()) {
+                return $this->jsonError(
+                    $exception->getMessage() ?: 'Acción no autorizada. No tiene permisos suficientes.',
+                    403
+                );
+            }
+        });
+
+        // 500 - Error interno del servidor
+        $this->renderable(function (Throwable $exception, $request) {
+            if ($request->expectsJson()) {
+                $debug = config('app.debug');
+
+                return $this->jsonError(
+                    $debug
+                        ? ($exception->getMessage() ?: 'Error interno del servidor.')
+                        : 'Error interno del servidor. Contacte al administrador del sistema.',
+                    500,
+                    $debug ? [
+                        'type' => class_basename($exception),
+                        'trace' => $exception->getTraceAsString(),
+                    ] : null
+                );
+            }
+        });
     }
 
     /**
-     * Manejo global de errores: devuelve siempre JSON en peticiones API.
+     * Estructura de respuesta JSON estandarizada para errores.
      */
-    public function render($request, Throwable $e)
+    private function jsonError(string $message, int $status, ?array $details = null)
     {
-        // Si la petición espera JSON (Postman, frontend, etc.)
-        if ($request->expectsJson()) {
-
-            // Determinar el código de estado HTTP (evita warnings de Intelephense)
-            $status = ($e instanceof HttpException)
-                ? $e->getStatusCode()
-                : 500;
-
-            // 🔹 Registrar el error en los logs
-            Log::channel('single')->error($e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            // 🔹 También registrarlo en el log personalizado de SAAC
-            Log::channel('saac')->error($e->getMessage(), [
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'url' => $request->fullUrl(),
-                //'user_id' => auth()->id() ?? 'guest',
-            ]);
-
-            // Detectar tipo de error y definir mensaje personalizado
-            if ($e instanceof ModelNotFoundException) {
-                $status = 404;
-                $message = 'El recurso solicitado no existe.';
-            } elseif ($e instanceof NotFoundHttpException) {
-                $status = 404;
-                $message = 'La ruta no fue encontrada.';
-            } elseif ($e instanceof MethodNotAllowedHttpException) {
-                $status = 405;
-                $message = 'Método HTTP no permitido para esta ruta.';
-            } elseif ($e instanceof QueryException) {
-                $status = 500;
-                $message = 'Error de base de datos: ' . $e->getMessage();
-            } else {
-                $message = $e->getMessage() ?: 'Error interno del servidor.';
-            }
-
-            // Respuesta JSON estandarizada
-            return response()->json([
-                'error' => class_basename($e),
-                'message' => $message,
-                'status' => $status,
-                'timestamp' => now()->toDateTimeString(),
-                'path' => $request->path(),
-                //'user' => auth()->user()->email ?? 'No autenticado',
-            ], $status);
-        }
-
-        // Si no es una petición JSON, usar el render normal (HTML)
-        return parent::render($request, $e);
+        return response()->json([
+            'status'    => 'error',
+            'code'      => $status,
+            'message'   => $message,
+            'details'   => $details,
+            'timestamp' => now()->toDateTimeString(),
+        ], $status);
     }
 }

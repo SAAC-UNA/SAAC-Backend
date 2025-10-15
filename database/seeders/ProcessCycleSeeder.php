@@ -18,31 +18,31 @@ class ProcessCycleSeeder extends Seeder
         $this->command->info('Iniciando seeder de ciclos y procesos por carrera (según usuario administrador)...');
 
         /** 
-         *  1️ Buscar administradores por carrera
-          */
+         *  Buscar administradores por carrera
+         */
         $adminInge = User::where('email', 'cristopher.montero.jimenez@una.ac.cr')->first(); 
-        $adminEdu  = User::where('email', 'ian.villegas.jimenez@est.una.ac.cr')->first();
+        $adminQuimi  = User::where('email', 'alejandro.ugalde.villalobos@est.una.ac.cr')->first();
 
-        if (!$adminInge || !$adminEdu) {
+        if (!$adminInge || !$adminQuimi) {
             $this->command->error(' Faltan los usuarios administradores. Ejecuta primero UserRoleCareerSeeder.');
             return;
         }
 
         /** 
-         *  2️ Procesar Ingeniería (como administrador.inge)
-         **/
+         *  Procesar Ingeniería en Sistemas
+         */
         Auth::setUser($adminInge);
-        $this->crearCiclosYProcesos('Ingeniería');
+        $this->crearCiclosYProcesos('Ingeniería en Sistemas ');
 
         /** 
-         *  3️ Procesar Educación (como administrador.edu)
-         *  */
-        Auth::setUser($adminEdu);
-        $this->crearCiclosYProcesos('Educación');
+         *  Procesar Química
+         */
+        Auth::setUser($adminQuimi);
+        $this->crearCiclosYProcesos('Química');
 
         /** 
-         *   Confirmación final
-         *  */
+         *  Confirmación final
+         */
         $this->command->info(' Ciclos y procesos creados correctamente para cada carrera (según usuario autenticado).');
     }
 
@@ -51,6 +51,7 @@ class ProcessCycleSeeder extends Seeder
      */
     private function crearCiclosYProcesos(string $nombreCarrera): void
     {
+        $nombreCarrera = trim($nombreCarrera); // 🔹 elimina espacios accidentales
         $this->command->info(" Creando datos para carrera: {$nombreCarrera}...");
 
         // Buscar carrera existente
@@ -63,14 +64,14 @@ class ProcessCycleSeeder extends Seeder
 
         /** 
          *  Si no existe relación carrera-sede, crearla automáticamente
-         **/
+         */
         $careerCampus = CareerCampus::where('carrera_id', $career->carrera_id)->first();
 
         if (!$careerCampus) {
             // Buscar la primera sede disponible
             $sede = Campus::first();
             if (!$sede) {
-                $this->command->error("No existe ninguna sede en la base de datos.");
+                $this->command->error(" No existe ninguna sede en la base de datos.");
                 return;
             }
 
@@ -92,7 +93,7 @@ class ProcessCycleSeeder extends Seeder
 
         /** 
          *  Crear proceso asociado
-         **/
+         */
         Process::firstOrCreate([
             'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
             'tipo_proceso' => 'Evaluación',

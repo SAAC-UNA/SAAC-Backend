@@ -17,8 +17,64 @@ class FilterByRoleCareerTest extends TestCase
 {
     use RefreshDatabase;
 
-     #[Test]
+    #[Test]
     public function admin_carrera_only_sees_processes_of_his_own_career()
+    {
+        // Crear roles base
+        Role::create(['name' => 'SuperUsuario', 'guard_name' => 'web']);
+        Role::create(['name' => 'Administrador', 'guard_name' => 'web']);
+
+        // Crear carreras y campus
+        $careerIng = Career::factory()->create(['nombre' => 'Ingeniería']);
+        $careerQuimi = Career::factory()->create(['nombre' => 'Química']);
+        $campus = Campus::factory()->create();
+
+        // Asociar carreras con la sede (CareerCampus)
+        $careerCampusIng = CareerCampus::factory()->create([
+            'carrera_id' => $careerIng->carrera_id,
+            'sede_id' => $campus->sede_id,
+        ]);
+        $careerCampusQuimi = CareerCampus::factory()->create([
+            'carrera_id' => $careerQuimi->carrera_id,
+            'sede_id' => $campus->sede_id,
+        ]);
+
+        // Crear ciclos de acreditación para cada carrera
+        $cycleIng = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampusIng->carrera_sede_id]);
+        $cycleQuimi = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampusQuimi->carrera_sede_id]);
+
+        // Crear procesos asociados a cada ciclo
+        $processIng = Process::factory()->create(['ciclo_acreditacion_id' => $cycleIng->ciclo_acreditacion_id]);
+        $processQuimi = Process::factory()->create(['ciclo_acreditacion_id' => $cycleQuimi->ciclo_acreditacion_id]);
+
+        // Crear usuario administrador de Ingeniería
+        /** @var \App\Models\User $adminInge */
+        $adminInge = User::factory()->create(['email' => 'cristopher.montero.jimenez@una.ac.cr']);
+        $adminInge->assignRole('Administrador');
+        $adminInge->careers()->attach($careerIng->carrera_id);
+
+        // Autenticación del usuario administrador
+        $this->actingAs($adminInge);
+
+        // Realizar la solicitud al endpoint protegido
+        $response = $this->getJson('/api/estructura/procesos');
+
+        // Validaciones
+        $response->assertStatus(200);
+
+        // Debe incluir el proceso de Ingeniería
+        $response->assertJsonFragment([
+            'proceso_id' => $processIng->proceso_id
+        ]);
+
+        // No debe incluir el proceso de Química
+        $response->assertJsonMissing([
+            'proceso_id' => $processQuimi->proceso_id
+        ]);
+    }
+
+    #[Test]
+    public function superusuario_can_see_all_processes()
     {
         // Crear roles
         Role::create(['name' => 'SuperUsuario', 'guard_name' => 'web']);
@@ -26,62 +82,10 @@ class FilterByRoleCareerTest extends TestCase
 
         // Crear carreras y campus
         $careerIng = Career::factory()->create(['nombre' => 'Ingeniería']);
-        $careerEdu = Career::factory()->create(['nombre' => 'Educación']);
+        $careerQuimi = Career::factory()->create(['nombre' => 'Química']);
         $campus = Campus::factory()->create();
 
-        // Relación carrera-sede
-        $careerCampusIng = CareerCampus::factory()->create([
-            'carrera_id' => $careerIng->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $careerCampusEdu = CareerCampus::factory()->create([
-            'carrera_id' => $careerEdu->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-
-        //  Crear ciclos y procesos
-        $cycleIng = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampusIng->carrera_sede_id]);
-        $cycleEdu = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampusEdu->carrera_sede_id]);
-
-        $processIng = Process::factory()->create(['ciclo_acreditacion_id' => $cycleIng->ciclo_acreditacion_id]);
-        $processEdu = Process::factory()->create(['ciclo_acreditacion_id' => $cycleEdu->ciclo_acreditacion_id]);
-
-        //  Crear usuario administrador de Ingeniería
-        /** @var \App\Models\User $adminInge */
-        $adminInge = User::factory()->create(['email' => 'cristopher.montero.jimenez@una.ac.cr']);
-        $adminInge->assignRole('Administrador');
-        $adminInge->careers()->attach($careerIng->carrera_id);
-
-        // Autenticarse como el admin de Ingeniería
-        $this->actingAs($adminInge);
-
-        //  Hacer la solicitud al endpoint real
-        $response = $this->getJson('/api/estructura/procesos');
-
-        // Validar resultados
-        $response->assertStatus(200);
-
-        // Debe contener solo el proceso de su carrera
-        $response->assertJsonFragment([
-            'proceso_id' => $processIng->proceso_id
-        ]);
-
-        // No debe mostrar procesos de otra carrera
-        $response->assertJsonMissing([
-            'proceso_id' => $processEdu->proceso_id
-        ]);
-    }
-
-     #[Test]
-    public function superusuario_can_see_all_processes()
-    {
-        Role::create(['name' => 'SuperUsuario', 'guard_name' => 'web']);
-        Role::create(['name' => 'Administrador', 'guard_name' => 'web']);
-
-        $careerIng = Career::factory()->create(['nombre' => 'Ingeniería']);
-        $careerEdu = Career::factory()->create(['nombre' => 'Educación']);
-        $campus = Campus::factory()->create();
-
+        // Crear ciclos de acreditación con sus relaciones carrera-sede
         $cycleIng = AccreditationCycle::factory()->create([
             'carrera_sede_id' => CareerCampus::factory()->create([
                 'carrera_id' => $careerIng->carrera_id,
@@ -89,26 +93,33 @@ class FilterByRoleCareerTest extends TestCase
             ])->carrera_sede_id
         ]);
 
-        $cycleEdu = AccreditationCycle::factory()->create([
+        $cycleQuimi = AccreditationCycle::factory()->create([
             'carrera_sede_id' => CareerCampus::factory()->create([
-                'carrera_id' => $careerEdu->carrera_id,
+                'carrera_id' => $careerQuimi->carrera_id,
                 'sede_id' => $campus->sede_id
             ])->carrera_sede_id
         ]);
 
+        // Crear procesos asociados a cada ciclo
         $processIng = Process::factory()->create(['ciclo_acreditacion_id' => $cycleIng->ciclo_acreditacion_id]);
-        $processEdu = Process::factory()->create(['ciclo_acreditacion_id' => $cycleEdu->ciclo_acreditacion_id]);
+        $processQuimi = Process::factory()->create(['ciclo_acreditacion_id' => $cycleQuimi->ciclo_acreditacion_id]);
+
+        // Crear usuario con rol SuperUsuario
         /** @var \App\Models\User $super */
         $super = User::factory()->create(['email' => 'pablo.castillo.quesada@una.cr']);
         $super->assignRole('SuperUsuario');
 
+        // Autenticarse como SuperUsuario
         $this->actingAs($super);
 
+        // Realizar la solicitud
         $response = $this->getJson('/api/estructura/procesos');
+
+        // Validaciones
         $response->assertStatus(200);
 
-        // El superusuario ve ambos procesos
+        // Debe ver ambos procesos (sin restricción de carrera)
         $response->assertJsonFragment(['proceso_id' => $processIng->proceso_id]);
-        $response->assertJsonFragment(['proceso_id' => $processEdu->proceso_id]);
+        $response->assertJsonFragment(['proceso_id' => $processQuimi->proceso_id]);
     }
 }

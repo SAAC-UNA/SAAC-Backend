@@ -6,24 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('CARRERA_USUARIO', function (Blueprint $table) {
             //Clave primaria
             $table->id()->name('carrera_usuario_id');
+            // Llave foránea hacia la tabla USUARIO
             $table->foreignId('usuario_id')->constrained('USUARIO','usuario_id')->onDelete('cascade');
+            // Llave foránea hacia la tabla CARRERA
             $table->foreignId('carrera_id')->constrained('CARRERA','carrera_id')->onDelete('cascade');
-            $table->unique(['carrera_id', 'usuario_id'], 'uq_carrera_usuario');// Restricción de unicidad para evitar duplicados
+            // Restricción de unicidad para evitar duplicados
+            $table->unique(['carrera_id', 'usuario_id'], 'uq_carrera_usuario');
+            // Campos de auditoría (created_at, updated_at)
             $table->timestamps();
         });
     } 
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('CARRERA_USUARIO');

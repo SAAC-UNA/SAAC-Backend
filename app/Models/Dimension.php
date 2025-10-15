@@ -28,7 +28,7 @@ class Dimension extends Model
     {
         return $this->hasMany(Component::class, 'dimension_id', 'dimension_id');
     }
-    //Revisar lo de comentario
+    
     public function comment()
     {
         return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');

@@ -29,11 +29,11 @@ class UserRoleCareerSeeder extends Seeder
         /**
          * Buscar carreras existentes
          */
-        $careerIng = Career::where('nombre', 'LIKE', '%Ingeniería%')->first();
-        $careerEdu = Career::where('nombre', 'LIKE', '%Educación%')->first();
+        $careerIng = Career::where('nombre', '=', 'Ingeniería en Sistemas ')->first();
+        $careerQuimi = Career::where('nombre', '=', 'Química')->first();
 
-        if (!$careerIng || !$careerEdu) {
-            $this->command->error(' No se encontraron las carreras Ingeniería o Educación. Cárgalas primero desde Postman.');
+        if (!$careerIng || !$careerQuimi) {
+            $this->command->error(' No se encontraron las carreras Ingeniería en Sistemas  o Química. Cárgalas primero desde Postman.');
             return;
         }
 
@@ -52,7 +52,7 @@ class UserRoleCareerSeeder extends Seeder
         );
         $super->assignRole('SuperUsuario');
 
-        // 🔹 Administrador Ingeniería
+        // Administrador Ingeniería en Sistemas 
         $adminInge = User::firstOrCreate(
             [
                 'email' => 'cristopher.montero.jimenez@una.ac.cr',
@@ -64,24 +64,24 @@ class UserRoleCareerSeeder extends Seeder
         );
         $adminInge->assignRole('Administrador');
 
-        // 🔹 Administrador Educación
-        $adminEdu = User::firstOrCreate(
+        // Administrador Química
+        $adminQuimi = User::firstOrCreate(
             [
-                'email' => 'ian.villegas.jimenez@est.una.ac.cr',
+                'email' => 'alejandro.ugalde.villalobos@est.una.ac.cr',
                 'cedula' => '202038940',
             ],
             [
-                'nombre' => 'Ian Villegas Jimenez',
+                'nombre' => 'Alejandro Ugalde Villalobos',
             ]
         );
-        $adminEdu->assignRole('Administrador');
+        $adminQuimi->assignRole('Administrador');
 
         /**
          * Asignar carreras a los usuarios (tabla CARRERA_USUARIO)
          */
         DB::table('CARRERA_USUARIO')->whereIn('usuario_id', [
             $adminInge->usuario_id,
-            $adminEdu->usuario_id
+            $adminQuimi->usuario_id
         ])->delete();
 
         DB::table('CARRERA_USUARIO')->insert([
@@ -92,15 +92,15 @@ class UserRoleCareerSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'usuario_id' => $adminEdu->usuario_id,
-                'carrera_id' => $careerEdu->carrera_id,
+                'usuario_id' => $adminQuimi->usuario_id,
+                'carrera_id' => $careerQuimi->carrera_id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
         ]);
 
         /**
-         *Confirmación final
+         * Confirmación final
          */
         $this->command->info(' Usuarios simulados creados y vinculados correctamente a sus carreras.');
     }

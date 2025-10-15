@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+// Hereda de BaseCareer para aplicar automáticamente filtros
 class Process extends BaseCareer
 {
     /** @use HasFactory<\Database\Factories\ProcessFactory> */
