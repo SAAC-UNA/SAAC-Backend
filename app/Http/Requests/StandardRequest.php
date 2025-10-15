@@ -27,7 +27,7 @@ class StandardRequest extends FormRequest
                 $isUpdate ? 'sometimes' : 'required',
                 'string',
                 'max:250',
-                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9 ]+$/',
+                    'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9 .,\-:;]+$/',
             ],
         ];
 
@@ -54,7 +54,7 @@ class StandardRequest extends FormRequest
             'criterio_id.exists'   => 'El criterio no existe.',
             'criterio_id.required_with' => 'Debes enviar el criterio cuando actualizas la descripción.', // NUEVO
             'descripcion.required' => 'La descripción es obligatoria.',
-            'descripcion.regex'    => 'La descripción solo puede contener letras, números y espacios.',
+                'descripcion.regex'    => 'La descripción solo puede contener letras, números, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
             'descripcion.max'      => 'La descripción no puede superar los 250 caracteres.',
             'descripcion.unique'   => 'Ya existe un estándar con esa descripción en este criterio.', // NUEVO
         ];
