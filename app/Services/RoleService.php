@@ -104,13 +104,19 @@ class RoleService
     }
 
     /**
-     * Listar todos los permisos disponibles en el sistema.
+     * Listar todos los permisos disponibles con sus etiquetas legibles.
      *
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Support\Collection Colección de permisos con name y label.
      */
     public function listPermissions()
     {
-        return Permission::all()->pluck('name');
+        return Permission::all()->map(function ($permission) {
+            return [
+                'id' => $permission->id,
+                'name' => $permission->name,
+                'label' => config('permissions.descriptions')[$permission->name] ?? $permission->name
+            ];
+        });
     }
 
     /**
