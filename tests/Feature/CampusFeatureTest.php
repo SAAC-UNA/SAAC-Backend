@@ -22,3 +22,4 @@ class CampusFeatureTest extends TestCase
         $this->assertEquals('Campus Norte', $found->nombre);
     }
 }
+

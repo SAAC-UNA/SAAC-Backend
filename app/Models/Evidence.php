@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Evidence extends Model
+class Evidence extends BaseCareer
 {
     /** @use HasFactory<\Database\Factories\EvidenceFactory> */
     use HasFactory;
@@ -17,8 +17,7 @@ class Evidence extends Model
     protected $primaryKey = 'evidencia_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['criterio_id', 'estado_evidencia_id', 'descripcion', 'nomenclatura', 'activo'];
-
+    protected $fillable = ['criterio_id','estado_evidencia_id', 'descripcion', 'nomenclatura', 'activo'];
     /**
      * Relación: Una evidencia pertenece a un criterio.
      *
@@ -58,4 +57,5 @@ class Evidence extends Model
     {
         return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')->where('activo', true);
     }
+
 }

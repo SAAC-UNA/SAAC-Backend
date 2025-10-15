@@ -57,3 +57,4 @@ class ActionTypeTest extends TestCase
         $this->assertTrue($actionType->auditLogs->contains($auditLog));
     }
 }
+

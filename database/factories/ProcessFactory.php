@@ -18,6 +18,7 @@ class ProcessFactory extends Factory
     {
         return [
             'ciclo_acreditacion_id' => \App\Models\AccreditationCycle::factory(),
+                  'tipo_proceso' => 'Autoevaluación',
         ];
     }
 }

@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         // Tabla de procesos
@@ -18,13 +15,13 @@ return new class extends Migration
             // Relación con ciclo de acreditación
             $table->foreignId('ciclo_acreditacion_id')->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')->onDelete('cascade');
             // Timestamps de creación y actualización
+              //  Indica si el proceso está vigente o en curso
+            //$table->boolean('activo')->default(true); //nnuevo
+            $table->string('tipo_proceso', 50); //nuevo
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         // Elimina la tabla de procesos

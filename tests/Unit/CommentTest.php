@@ -48,3 +48,4 @@ class CommentTest extends TestCase
         $this->assertDatabaseMissing('COMENTARIO', ['comentario_id' => $comment->comentario_id]);
     }
 }
+
