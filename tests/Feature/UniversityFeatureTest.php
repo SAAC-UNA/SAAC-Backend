@@ -22,3 +22,4 @@ class UniversityFeatureTest extends TestCase
         $this->assertEquals('Universidad Estatal', $found->nombre);
     }
 }
+

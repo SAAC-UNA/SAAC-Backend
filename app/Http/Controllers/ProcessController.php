@@ -61,6 +61,6 @@ class ProcessController extends Controller
      */
     public function destroy(Process $process)
     {
-        //
+        
     }
 }

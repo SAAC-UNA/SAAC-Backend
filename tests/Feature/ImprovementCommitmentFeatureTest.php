@@ -20,3 +20,4 @@ class ImprovementCommitmentFeatureTest extends TestCase
         $this->assertEquals($commitment->compromiso_mejora_id, $found->compromiso_mejora_id);
     }
 }
+

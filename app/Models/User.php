@@ -2,29 +2,33 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable; // necesario para Auth
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Traits\HasRoles; //  importa el trait correcto
 
-class User extends Model
+class User extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable, HasRoles; //  incluye el trait aquí
 
-    // Nombre de la tabla en la base de datos
     protected $table = 'USUARIO';
-
-    // Clave primaria
     protected $primaryKey = 'usuario_id';
+    public $timestamps = true;
 
-    // Campos que se pueden asignar masivamente
-    protected $fillable = ['cedula', 'nombre', 'email'];
+    protected $fillable = [
+        'cedula',
+        'nombre',
+        'email',
+    
+    ];
 
-    /**
-     * Relación: Un usuario tiene muchos comentarios.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function comments()
+     public function comment()
     {
         return $this->hasMany(Comment::class, 'usuario_id', 'usuario_id');
+    }
+
+    public function careers()
+    {
+        return $this->belongsToMany(Career::class, 'CARRERA_USUARIO', 'usuario_id', 'carrera_id');
     }
 }

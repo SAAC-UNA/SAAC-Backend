@@ -15,10 +15,13 @@ use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\RoleController;
 
+
 //solo para pruebas
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\DevUserController;
 use App\Http\Controllers\DevCommentController;
+use App\Models\Process;
+use App\Models\AccreditationCycle;
 
 
 // CRUD completo de cada endpoint
@@ -42,7 +45,6 @@ Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 's
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
-
 // Solo para pruebas
 if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
@@ -63,24 +65,70 @@ Route::get('/ping', function () {
 
 
 // Ruta de prueba sin controller
-Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
+//Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
 
 Route::prefix('roles')->group(function () {
-    // Listar todos los roles
     Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
-
-    // Crear un nuevo rol
-    Route::post('/crear', [RoleController::class, 'createRole'])->name('roles.create');
-
-    // Listar todos los permisos disponibles
+    Route::post('/', [RoleController::class, 'createRole'])->name('roles.create');
     Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
-
-    // Mostrar un rol específico
     Route::get('/{id}', [RoleController::class, 'showRole'])->name('roles.show');
-
-    // Actualizar un rol existente
     Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
-
-    // Eliminar un rol
     Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
+
+    
 });
+// Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).
+Route::get('estructura/procesos', function () {
+    return Process::with('accreditationCycle.careerCampus.career')->get();
+});
+//  Ciclos filtrados automáticamente (solo los de la carrera del usuario simulado)
+Route::get('estructura/ciclos-acreditacion', function () {
+    return AccreditationCycle::with('careerCampus.career')->get();
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
