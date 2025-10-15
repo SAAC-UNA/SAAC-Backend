@@ -39,7 +39,13 @@ class UniversityRequest extends FormRequest
         }
 
         return [
-            'nombre' => ['required', 'string', 'max:250', $unique],
+            'nombre' => [
+                'required',
+                'string',
+                'max:250',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+                $unique,
+            ],
         ];
     }
 
@@ -51,6 +57,7 @@ class UniversityRequest extends FormRequest
             'nombre.unique'   => $this->route('universidad') || $this->route('id')
                                 ? 'Ya existe otra universidad con ese nombre.'
                                 : 'Ya existe una universidad con ese nombre.',
+            'nombre.regex'    => 'El nombre solo puede contener letras y espacios.',
         ];
     }
 }

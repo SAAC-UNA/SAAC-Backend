@@ -4,55 +4,60 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role; 
+use Spatie\Permission\Models\Role;
+use App\Models\User; // Para asignar el rol al usuario admin
 
-/**
- * Seeder que gestiona los permisos oficiales del sistema.
- *
- * - Inserta o actualiza los permisos definidos en config/permissions.php.
- * - Elimina los permisos obsoletos que ya no estén en el archivo de configuración,
- *   siempre y cuando no estén asignados a ningún rol.
- */
 class PermissionSeeder extends Seeder
 {
-    /**
-     * Ejecuta la siembra de permisos en la base de datos.
-     *
-     * @return void
-     */
     public function run(): void
     {
-        // Permisos oficiales definidos en config/permissions.php
-        $permissions = config('permissions.list');
+        // 1️ Permiso maestro (HU-02)
+        Permission::firstOrCreate(['name' => 'admin.super', 'guard_name' => 'api']);
 
-        // Crear o actualizar los permisos definidos en config
-        foreach ($permissions as $permission) {
-            Permission::updateOrCreate(
-                ['name' => $permission, 'guard_name' => 'api'], // criterio de búsqueda
-                [] // en el futuro se pueden añadir más columnas aquí
-            );
+        // 2️ Módulos y acciones atómicas (solo para los que usarás en HU-02)
+        $modules = [
+            'usuarios'   => ['view','create','edit','delete'],
+            'evidencias' => ['view','create','edit','delete'],
+            'reportes'   => ['generate'],
+            'ciclos'     => ['view','create','edit','delete'],
+            // 'programas' solo alias gestion_ (si el FE lo usa, lo mantenemos)
+            // 'roles'     si el FE usa gestion_roles, lo mantenemos como alias
+        ];
+
+        // 3️ Aliases que el FE ya usa (no se cambian)
+        $aliases = [
+            'gestion_usuarios',
+            'gestion_evidencias',
+            'gestion_reportes',
+            'gestion_ciclos',
+            'gestion_programas',
+            'gestion_roles',
+        ];
+
+        foreach ($aliases as $alias) {
+            Permission::firstOrCreate(['name' => $alias, 'guard_name' => 'api']);
         }
 
-        // Detectar permisos obsoletos (los que ya no están en config)
-        $permissionsToDelete = Permission::whereNotIn('name', $permissions)->get();
-
-        foreach ($permissionsToDelete as $permission) {
-            if ($permission->roles()->exists()) {
-                // El permiso sigue asignado a roles → no se elimina
-                logger()->warning(
-                    "El permiso [ID: {$permission->id}, NAME: {$permission->name}] no se eliminó porque aún está asignado a roles."
-                );
-                continue;
+        // 4️ Crear permisos atómicos con "modulo.accion"
+        foreach ($modules as $module => $actions) {
+            foreach ($actions as $action) {
+                Permission::firstOrCreate([
+                    'name'       => "{$module}.{$action}",
+                    'guard_name' => 'api',
+                ]);
             }
+        }
 
-            $id = $permission->id;
-            $name = $permission->name;
-            $permission->delete();
+        // 5️ Crear el rol "Superusuario" (si no existe)
+        $superRole = Role::firstOrCreate(['name' => 'Superusuario', 'guard_name' => 'api']);
 
-            logger()->info(
-                "Permiso eliminado [ID: {$id}, NAME: {$name}] por estar obsoleto y sin uso."
-            );
+        // 6️ Asignar todos los permisos al rol Superusuario
+        $superRole->syncPermissions(Permission::all());
+
+        // 7️ Asignar el rol al usuario admin (si ya existe)
+        $admin = User::where('email', 'admin@saacuna.local')->first();
+        if ($admin) {
+            $admin->assignRole($superRole);
         }
     }
 }
-

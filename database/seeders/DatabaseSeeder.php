@@ -6,10 +6,6 @@ use Illuminate\Database\Seeder;
 
 /**
  * Seeder principal que ejecuta los demás seeders del sistema.
- *
- * Este seeder centraliza la ejecución de los seeders individuales.
- * Desde aquí se pueden agregar más seeders conforme se amplíen
- * las entidades del sistema (roles, usuarios, reportes, etc.).
  */
 class DatabaseSeeder extends Seeder
 {
@@ -20,9 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        
         $this->call([
-            PermissionSeeder::class,
-            // Agregar aquí otros seeders cuando sean necesarios
-        ]);
+        PermissionSeeder::class, // Seeder de permisos
+        UserSeeder::class,       // Seeder de usuarios (lo que acabás de crear)
+    ]);
+
     }
 }

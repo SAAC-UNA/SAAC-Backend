@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Standard extends Model
+class Standard extends  Model
 {
     use HasFactory;
 
@@ -20,7 +20,6 @@ class Standard extends Model
 
     // Timestamps automáticos
     public $timestamps = true;
-
     /**
      * Relación: Un estándar pertenece a un criterio.
      *

@@ -30,7 +30,12 @@ class CriterionRequest extends FormRequest
         $rules = [
             'componente_id' => [$isUpdate ? 'sometimes' : 'required','integer','exists:COMPONENTE,componente_id'],
             'comentario_id' => ['nullable','integer','exists:COMENTARIO,comentario_id'],
-            'descripcion'   => [$isUpdate ? 'sometimes' : 'required','string','max:300'],
+            'descripcion'   => [
+                $isUpdate ? 'sometimes' : 'required',
+                'string',
+                'max:300',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
+            ],
             'nomenclatura'  => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
         ];
 
@@ -58,6 +63,7 @@ class CriterionRequest extends FormRequest
             'componente_id.exists'   => 'El componente no existe.',
             'comentario_id.exists'   => 'El comentario no existe.',
             'descripcion.required'   => 'La descripción es obligatoria.',
+            'descripcion.regex'      => 'La descripción solo puede contener letras y espacios.',
             'nomenclatura.required'  => 'La nomenclatura es obligatoria.',
             'nomenclatura.unique'    => 'Ya existe un criterio con esa nomenclatura en este componente.',
         ];

@@ -25,3 +25,4 @@ class UserFeatureTest extends TestCase
         $this->assertEquals('maria@example.com', $found->email);
     }
 }
+

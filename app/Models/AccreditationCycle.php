@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 
-class AccreditationCycle extends Model
+// Hereda de BaseCareer para aplicar automáticamente filtros
+class AccreditationCycle extends BaseCareer
 {
+    // Habilita la generación de instancias mediante la factory correspondiente.
     /** @use HasFactory<\Database\Factories\AccreditationCycleFactory> */
     use HasFactory;
 

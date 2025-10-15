@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Career extends Model
 {
@@ -36,4 +37,10 @@ class Career extends Model
     {
         return $this->belongsTo(Faculty::class, 'facultad_id', 'facultad_id');
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'CARRERA_USUARIO', 'carrera_id', 'usuario_id');
+    }
+
 }

@@ -20,3 +20,4 @@ class AutoevaluationFeatureTest extends TestCase
         $this->assertEquals($autoevaluation->autoevaluacion_id, $found->autoevaluacion_id);
     }
 }
+

@@ -13,9 +13,12 @@ class CareerRequest extends FormRequest
 
     public function rules(): array
     {
-          return [
+        return [
             'nombre' => [
-                'required','string','max:250',
+                'required',
+                'string',
+                'max:250',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
                 Rule::unique('CARRERA','nombre')
                     ->where(fn($q) => $q->where('facultad_id', $this->input('facultad_id')))
             ],
@@ -27,6 +30,7 @@ class CareerRequest extends FormRequest
     {
         return [
             'nombre.required'      => 'El nombre es obligatorio.',
+            'nombre.regex'         => 'El nombre solo puede contener letras y espacios.',
             'nombre.unique'        => 'Ya existe una carrera con ese nombre en la misma facultad.',
             'facultad_id.required' => 'La facultad es obligatoria.',
             'facultad_id.exists'   => 'La facultad no existe.',

@@ -3,6 +3,8 @@
 .env
 .env.backup
 .env.production
+.env.xampp
+.env.docker
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -22,3 +24,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Testing Coverage Reports
+/tests/coverage-html/
+/tests/coverage.txt
+/tests/report.junit.xml

@@ -22,3 +22,4 @@ class AccreditationCycleFeatureTest extends TestCase
         $this->assertEquals('Ciclo 2026', $found->nombre);
     }
 }
+
