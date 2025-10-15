@@ -14,9 +14,10 @@ use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
-use App\Http\Controllers\UserController;use App\Http\Controllers\RoleController;
-use App\Http\Controllers\PermissionController;
 
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -101,6 +102,7 @@ Route::get('/ping', function () {
 
 
 // Ruta de prueba sin controller
+
 //Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
 
 Route::prefix('roles')->group(function () {
@@ -121,6 +123,7 @@ Route::get('estructura/procesos', function () {
 Route::get('estructura/ciclos-acreditacion', function () {
     return AccreditationCycle::with('careerCampus.career')->get();
 });
+
 
 
 

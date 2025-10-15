@@ -29,7 +29,7 @@ class RoleRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:50',
                 // Solo permite letras (con o sin tildes), ñ/Ñ y espacios
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
                 // Unique constraint with exception on update
@@ -69,7 +69,7 @@ class RoleRequest extends FormRequest
     protected function failedValidation(Validator $validator)
     {
         $response = response()->json([
-            'error'   => 'Validation Error',
+            'error'   => 'Error de validación',
             'errors'  => $validator->errors(), // mensajes siguen en español
         ], 422);
 

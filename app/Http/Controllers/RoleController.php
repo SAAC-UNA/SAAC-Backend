@@ -120,10 +120,20 @@ class RoleController extends Controller
      *
      * @return JsonResponse
      */
-    public function listPermissions(): JsonResponse
-    {
+   public function listPermissions(): \Illuminate\Http\JsonResponse
+   {
+        // Obtenemos los permisos técnicos desde el servicio (ej: "gestion_roles")
         $permissions = $this->roleService->listPermissions();
-        return response()->json(['data' => $permissions], 200);
+
+         // Convertimos la colección a sus etiquetas legibles definidas en config/permissions.php
+        $permissionsConvertidos = collect($permissions)->map(function ($permiso) {
+             return config('permissions.descriptions')[$permiso] ?? $permiso;
+        })->values(); // values() reindexa la colección para que salga como arreglo limpio
+
+    // Devolvemos el resultado convertido
+        return response()->json([
+            'data' => $permissionsConvertidos
+        ], 200);
     }
 
     /**
