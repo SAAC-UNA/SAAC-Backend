@@ -96,3 +96,4 @@ class CampusTest extends TestCase
         $this->assertTrue($campus->faculties->contains($faculty));
     }
 }
+

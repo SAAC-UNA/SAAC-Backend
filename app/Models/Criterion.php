@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Criterion extends Model
+class Criterion extends BaseCareer
 {
     use HasFactory;
 
@@ -29,8 +29,6 @@ class Criterion extends Model
         'nomenclatura',
         'activo'
     ];
-
-    // --- Relaciones ---
 
     /**
      * Relación: Un criterio tiene muchas evidencias.

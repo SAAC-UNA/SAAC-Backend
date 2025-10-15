@@ -18,14 +18,19 @@ class Dimension extends Model
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['comentario_id', 'nombre', 'nomenclatura' , 'activo'];
-
     /**
      * Relación: Una dimensión tiene muchos componentes.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
+
     public function components()
     {
         return $this->hasMany(Component::class, 'dimension_id', 'dimension_id');
+    }
+    
+    public function comment()
+    {
+        return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
     }
 }

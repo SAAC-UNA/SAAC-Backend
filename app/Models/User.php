@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable; // necesario para Auth
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable; // Para autenticación
-use Spatie\Permission\Traits\HasRoles; // Para roles y permisos spatie
-//use Illuminate\Database\Eloquent\Model;
-
 /**
  * Modelo de Usuario del sistema.
  *
@@ -20,14 +18,15 @@ use Spatie\Permission\Traits\HasRoles; // Para roles y permisos spatie
  * También implementa HasRoles (Spatie) para la gestión de roles y permisos,
  * y define el campo "status" para activar o desactivar usuarios.
  */
+use Spatie\Permission\Traits\HasRoles; //  importa el trait correcto
 
-class User extends Authenticatable // Cambiado a Authenticatable en models
+class User extends Authenticatable
 {
-    use HasFactory, HasRoles; // Usar los traits
-    // Nombre de la tabla en la base de datos
+    use HasFactory, Notifiable, HasRoles; //  incluye el trait aquí
+
     protected $table = 'USUARIO';
-    // Clave primaria
     protected $primaryKey = 'usuario_id';
+    public $timestamps = true;
 
     // Spatie usará este guard (coincide con lo que estás usando)
     protected $guard_name = 'api';
@@ -45,12 +44,8 @@ class User extends Authenticatable // Cambiado a Authenticatable en models
     public function deactivate(): void    { $this->update(['status' => self::STATUS_INACTIVE]); }
     public function scopeActive($q)       { return $q->where('status', self::STATUS_ACTIVE); }
 
-    /**
-     * Relación: Un usuario tiene muchos comentarios.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function comments()
+
+     public function comment()
     {
         return $this->hasMany(Comment::class, 'usuario_id', 'usuario_id');
     }
@@ -63,5 +58,11 @@ class User extends Authenticatable // Cambiado a Authenticatable en models
     public function getRouteKeyName(): string
     {
     return 'usuario_id';
+
+
+    public function careers()
+    {
+        return $this->belongsToMany(Career::class, 'CARRERA_USUARIO', 'usuario_id', 'carrera_id');
+
     }
 }

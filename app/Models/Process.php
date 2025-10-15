@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Process extends Model
+// Hereda de BaseCareer para aplicar automáticamente filtros
+class Process extends BaseCareer
 {
     /** @use HasFactory<\Database\Factories\ProcessFactory> */
     use HasFactory;
@@ -17,7 +18,10 @@ class Process extends Model
     protected $primaryKey = 'proceso_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['ciclo_acreditacion_id'];
+    protected $fillable = [
+        'ciclo_acreditacion_id',
+        'tipo_proceso',
+    ];
 
     /**
      * Relación: Un proceso pertenece a un ciclo de acreditación.
@@ -28,7 +32,7 @@ class Process extends Model
     {
         return $this->belongsTo(AccreditationCycle::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
     }
-
+    
     /**
      * Relación: Un proceso tiene una autoevaluación.
      *

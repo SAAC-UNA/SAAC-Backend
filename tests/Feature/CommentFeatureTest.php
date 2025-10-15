@@ -22,3 +22,4 @@ class CommentFeatureTest extends TestCase
         $this->assertEquals('Comentario funcional', $found->texto);
     }
 }
+

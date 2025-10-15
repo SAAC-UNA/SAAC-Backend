@@ -21,5 +21,6 @@ class DatabaseSeeder extends Seeder
         PermissionSeeder::class, // Seeder de permisos
         UserSeeder::class,       // Seeder de usuarios (lo que acabás de crear)
     ]);
+
     }
 }
