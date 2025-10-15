@@ -15,10 +15,10 @@ return new class extends Migration
         Schema::create('BITACORA', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('bitacora_id');
-            // Relación con tipo de acción
-            $table->foreignId('tipo_accion_id')->constrained('TIPO_ACCION', 'tipo_accion_id')->onDelete('cascade');
-            // Relación con usuario
-            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('cascade');
+            // Relación con tipo de acción (restrict: mantener integridad de catálogo)
+            $table->foreignId('tipo_accion_id')->constrained('TIPO_ACCION', 'tipo_accion_id')->onDelete('restrict');
+            // Relación con usuario (restrict: mantener historial de auditoría)
+            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             // Fecha y hora de la acción
             $table->timestamp('fecha_hora')->useCurrent();
             // Detalle de la acción (opcional)

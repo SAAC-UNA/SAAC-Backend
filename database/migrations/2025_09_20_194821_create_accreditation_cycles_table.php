@@ -14,7 +14,7 @@ return new class extends Migration
             // Clave primaria 
             $table->id()->name('ciclo_acreditacion_id');
             // Relación con carrera_sede
-            $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('cascade');
+            $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('restrict');
             // Nombre del ciclo
             $table->string('nombre', 50);
             // Timestamps de creación y actualización

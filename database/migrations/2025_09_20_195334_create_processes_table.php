@@ -13,7 +13,7 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('proceso_id');
             // Relación con ciclo de acreditación
-            $table->foreignId('ciclo_acreditacion_id')->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')->onDelete('cascade');
+            $table->foreignId('ciclo_acreditacion_id')->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')->onDelete('restrict');
             // Timestamps de creación y actualización
               //  Indica si el proceso está vigente o en curso
             //$table->boolean('activo')->default(true); //nnuevo

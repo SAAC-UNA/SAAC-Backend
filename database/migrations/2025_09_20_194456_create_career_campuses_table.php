@@ -16,9 +16,9 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('carrera_sede_id');
             // Relación con carrera
-            $table->foreignId('carrera_id')->constrained('CARRERA', 'carrera_id')->onDelete('cascade');
+            $table->foreignId('carrera_id')->constrained('CARRERA', 'carrera_id')->onDelete('restrict');
             // Relación con sede
-            $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('cascade');
+            $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('restrict');
             // Timestamps de creación y actualización
             $table->timestamps();
         });

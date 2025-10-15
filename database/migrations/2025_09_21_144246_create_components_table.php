@@ -15,9 +15,9 @@ return new class extends Migration
         Schema::create('COMPONENTE', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('componente_id');
-            // Relación con dimensión
-            $table->foreignId('dimension_id')->constrained('DIMENSION', 'dimension_id')->onDelete('cascade');
-            // Relación con comentario
+            // Relación con dimensión (restrict: no borrar dimensión si tiene componentes)
+            $table->foreignId('dimension_id')->constrained('DIMENSION', 'dimension_id')->onDelete('restrict');
+            // Relación con comentario (cascade: si se borra el comentario, se borra el componente)
             $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
             // Nombre del componente
             $table->string('nombre', 80);

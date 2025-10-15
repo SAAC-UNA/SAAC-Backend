@@ -15,14 +15,14 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('evidencia_asignacion_id');
             
-            // Relación con proceso
+            // Relación con proceso (cascade: si se borra el proceso, se borran sus asignaciones)
             $table->foreignId('proceso_id')->constrained('PROCESO', 'proceso_id')->onDelete('cascade');
             
-            // Relación con evidencia
-            $table->foreignId('evidencia_id')->constrained('EVIDENCIA', 'evidencia_id')->onDelete('cascade');
+            // Relación con evidencia (restrict: no borrar evidencia si tiene asignaciones)
+            $table->foreignId('evidencia_id')->constrained('EVIDENCIA', 'evidencia_id')->onDelete('restrict');
             
-            // Relación con usuario
-            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('cascade');
+            // Relación con usuario (restrict: no borrar usuario si tiene asignaciones)
+            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             
             // Estado de la asignación (varchar de 30)
             $table->string('estado', 30)->default('pendiente');

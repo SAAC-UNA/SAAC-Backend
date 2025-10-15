@@ -15,8 +15,8 @@ return new class extends Migration
         Schema::create('COMENTARIO', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('comentario_id');
-            // Relación con usuario
-            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('cascade');
+            // Relación con usuario (restrict: no borrar usuario si tiene comentarios)
+            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             // Texto del comentario
             $table->text('texto', 300);
             // Fecha de creación del comentario (opcional)

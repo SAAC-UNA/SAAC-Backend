@@ -15,8 +15,8 @@ return new class extends Migration
         Schema::create('ESTANDAR', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('estandar_id');
-            // Relación con criterio
-            $table->foreignId('criterio_id')->constrained('CRITERIO')->name('criterio_id');
+            // Relación con criterio (restrict: no borrar criterio si tiene estándares)
+            $table->foreignId('criterio_id')->constrained('CRITERIO')->name('criterio_id')->onDelete('restrict');
             // Descripción del estándar
             $table->string('descripcion', 250)->name('descripcion');
             // Estado del estándar

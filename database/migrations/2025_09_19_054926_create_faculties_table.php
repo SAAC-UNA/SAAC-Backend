@@ -16,9 +16,9 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('facultad_id');
             // Relación con universidad
-            $table->foreignId('universidad_id')->constrained('UNIVERSIDAD', 'universidad_id')->onDelete('cascade');
+            $table->foreignId('universidad_id')->constrained('UNIVERSIDAD', 'universidad_id')->onDelete('restrict');
             // Relación con sede
-            $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('cascade');
+            $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('restrict');
             // Nombre de la facultad
             $table->string('nombre', 250);
             // Estado de la facultad

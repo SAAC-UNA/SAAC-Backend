@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable; // necesario para Auth
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Sanctum\HasApiTokens; // Sanctum para autenticación API
 /**
  * Modelo de Usuario del sistema.
  *
@@ -22,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles; //  importa el trait correcto
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles; //  incluye el trait aquí
+    use HasFactory, Notifiable, HasRoles, HasApiTokens; //  incluye los traits necesarios
 
     protected $table = 'USUARIO';
     protected $primaryKey = 'usuario_id';
