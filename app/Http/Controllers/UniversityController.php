@@ -91,11 +91,49 @@ class UniversityController extends Controller
                 'active' => ['required', 'boolean'],
             ]);
 
-            $university->activo = $validated['active'];
+            $newActiveState = $validated['active'];
+
+            // Actualizar el estado de la universidad
+            $university->activo = $newActiveState;
             $university->save();
 
+            // Aplicar cambio en cascada a todos los elementos hijos
+            // Procesar campus hijos
+            foreach ($university->campuses as $campus) {
+                $campus->activo = $newActiveState;
+                $campus->save();
+
+                // Aplicar a facultades del campus
+                foreach ($campus->faculties as $faculty) {
+                    $faculty->activo = $newActiveState;
+                    $faculty->save();
+
+                    // Aplicar a carreras de la facultad
+                    foreach ($faculty->careers as $career) {
+                        $career->activo = $newActiveState;
+                        $career->save();
+                    }
+                }
+            }
+
+            // Procesar facultades directas de la universidad (que no tienen campus)
+            foreach ($university->faculties as $faculty) {
+                $faculty->activo = $newActiveState;
+                $faculty->save();
+
+                // Aplicar a carreras de la facultad
+                foreach ($faculty->careers as $career) {
+                    $career->activo = $newActiveState;
+                    $career->save();
+                }
+            }
+
+            $cascadeMessage = $newActiveState 
+                ? ' Elementos hijos activados en cascada.' 
+                : ' Elementos hijos desactivados en cascada.';
+
             return response()->json([
-                'message' => 'Estado de la universidad actualizado correctamente.',
+                'message' => 'Estado de la universidad actualizado correctamente.' . $cascadeMessage,
                 'data'    => $university
             ], 200);
         }

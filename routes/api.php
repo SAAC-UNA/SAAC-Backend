@@ -117,11 +117,11 @@ Route::prefix('roles')->group(function () {
 });
 // Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).
 Route::get('estructura/procesos', function () {
-    return Process::with('accreditationCycle.careerCampus.career')->get();
+    return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
 });
 //  Ciclos filtrados automáticamente (solo los de la carrera del usuario simulado)
 Route::get('estructura/ciclos-acreditacion', function () {
-    return AccreditationCycle::with('careerCampus.career')->get();
+    return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
 });
 
 

@@ -108,11 +108,24 @@ class FacultyController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $faculty->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado de la facultad
+        $faculty->activo = $newActiveState;
         $faculty->save();
 
+        // Aplicar cambio en cascada a todos los elementos hijos
+        foreach ($faculty->careers as $career) {
+            $career->activo = $newActiveState;
+            $career->save();
+        }
+
+        $cascadeMessage = $newActiveState 
+            ? ' Elementos hijos activados en cascada.' 
+            : ' Elementos hijos desactivados en cascada.';
+
         return response()->json([
-            'message' => 'Estado de la facultad actualizado correctamente.',
+            'message' => 'Estado de la facultad actualizado correctamente.' . $cascadeMessage,
             'data'    => $faculty
         ], 200);
     }

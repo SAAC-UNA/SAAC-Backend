@@ -103,11 +103,31 @@ class CriterionController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $criterion->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado del criterio
+        $criterion->activo = $newActiveState;
         $criterion->save();
 
+        // Aplicar cambio en cascada a todos los elementos hijos
+        // Aplicar a estándares del criterio
+        foreach ($criterion->standards as $standard) {
+            $standard->activo = $newActiveState;
+            $standard->save();
+        }
+
+        // Aplicar a evidencias del criterio
+        foreach ($criterion->evidences as $evidence) {
+            $evidence->activo = $newActiveState;
+            $evidence->save();
+        }
+
+        $cascadeMessage = $newActiveState 
+            ? ' Elementos hijos activados en cascada.' 
+            : ' Elementos hijos desactivados en cascada.';
+
         return response()->json([
-            'message' => 'Estado del criterio actualizado correctamente.',
+            'message' => 'Estado del criterio actualizado correctamente.' . $cascadeMessage,
             'data'    => $criterion
         ], 200);
     }
