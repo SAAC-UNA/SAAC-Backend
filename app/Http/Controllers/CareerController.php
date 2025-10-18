@@ -106,8 +106,14 @@ class CareerController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $career->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado de la carrera
+        $career->activo = $newActiveState;
         $career->save();
+
+        // Nota: Career no tiene elementos hijos en la jerarquía actual
+        // Si en el futuro se agregan elementos hijos, se implementará aquí la cascada
 
         return response()->json([
             'message' => 'Estado de la carrera actualizado correctamente.',

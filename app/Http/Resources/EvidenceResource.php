@@ -18,6 +18,7 @@ class EvidenceResource extends JsonResource
             'estado_evidencia_id' => $this->estado_evidencia_id,
             'descripcion'         => $this->descripcion,
             'nomenclatura'        => $this->nomenclatura,
+            'activo'              => $this->activo ?? true, // Agregar campo activo
             'created_at'          => optional($this->created_at)->toISOString(),
             'updated_at'          => optional($this->updated_at)->toISOString(),
             // Si luego activas relaciones, aquí puedes anidar:

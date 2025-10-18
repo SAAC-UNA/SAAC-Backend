@@ -14,6 +14,7 @@ class CriterionResource extends JsonResource
             'comentario_id' => $this->comentario_id,
             'descripcion'   => $this->descripcion,
             'nomenclatura'  => $this->nomenclatura,
+            'activo'        => $this->activo ?? true, // Agregar campo activo
         ];
     }
 }

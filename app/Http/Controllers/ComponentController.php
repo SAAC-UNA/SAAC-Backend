@@ -114,11 +114,36 @@ class ComponentController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $component->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado del componente
+        $component->activo = $newActiveState;
         $component->save();
 
+        // Aplicar cambio en cascada a todos los elementos hijos
+        foreach ($component->criteria as $criterion) {
+            $criterion->activo = $newActiveState;
+            $criterion->save();
+
+            // Aplicar a estándares del criterio
+            foreach ($criterion->standards as $standard) {
+                $standard->activo = $newActiveState;
+                $standard->save();
+            }
+
+            // Aplicar a evidencias del criterio
+            foreach ($criterion->evidences as $evidence) {
+                $evidence->activo = $newActiveState;
+                $evidence->save();
+            }
+        }
+
+        $cascadeMessage = $newActiveState 
+            ? ' Elementos hijos activados en cascada.' 
+            : ' Elementos hijos desactivados en cascada.';
+
         return response()->json([
-            'message' => 'Estado del componente actualizado correctamente.',
+            'message' => 'Estado del componente actualizado correctamente.' . $cascadeMessage,
             'data'    => $component
         ], 200);
     }

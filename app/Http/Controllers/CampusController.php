@@ -119,11 +119,30 @@ class CampusController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $campus->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado del campus
+        $campus->activo = $newActiveState;
         $campus->save();
 
+        // Aplicar cambio en cascada a todos los elementos hijos
+        foreach ($campus->faculties as $faculty) {
+            $faculty->activo = $newActiveState;
+            $faculty->save();
+
+            // Aplicar a carreras de la facultad
+            foreach ($faculty->careers as $career) {
+                $career->activo = $newActiveState;
+                $career->save();
+            }
+        }
+
+        $cascadeMessage = $newActiveState 
+            ? ' Elementos hijos activados en cascada.' 
+            : ' Elementos hijos desactivados en cascada.';
+
         return response()->json([
-            'message' => 'Estado del campus actualizado correctamente.',
+            'message' => 'Estado del campus actualizado correctamente.' . $cascadeMessage,
             'data'    => $campus
         ], 200);
     }

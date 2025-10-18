@@ -103,11 +103,42 @@ class DimensionController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        $dimension->activo = $validated['active'];
+        $newActiveState = $validated['active'];
+
+        // Actualizar el estado de la dimensión
+        $dimension->activo = $newActiveState;
         $dimension->save();
 
+        // Aplicar cambio en cascada a todos los elementos hijos
+        foreach ($dimension->components as $component) {
+            $component->activo = $newActiveState;
+            $component->save();
+
+            // Aplicar a criterios del componente
+            foreach ($component->criteria as $criterion) {
+                $criterion->activo = $newActiveState;
+                $criterion->save();
+
+                // Aplicar a estándares del criterio
+                foreach ($criterion->standards as $standard) {
+                    $standard->activo = $newActiveState;
+                    $standard->save();
+                }
+
+                // Aplicar a evidencias del criterio
+                foreach ($criterion->evidences as $evidence) {
+                    $evidence->activo = $newActiveState;
+                    $evidence->save();
+                }
+            }
+        }
+
+        $cascadeMessage = $newActiveState 
+            ? ' Elementos hijos activados en cascada.' 
+            : ' Elementos hijos desactivados en cascada.';
+
         return response()->json([
-            'message' => 'Estado de la dimensión actualizado correctamente.',
+            'message' => 'Estado de la dimensión actualizado correctamente.' . $cascadeMessage,
             'data'    => $dimension
         ], 200);
     }
