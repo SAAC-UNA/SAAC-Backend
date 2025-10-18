@@ -22,7 +22,7 @@ class UserRoleCareerSeeder extends Seeder
         foreach ($roles as $role) {
             Role::firstOrCreate([
                 'name' => $role,
-                'guard_name' => 'web'
+                'guard_name' => 'api'
             ]);
         }
 
@@ -44,7 +44,7 @@ class UserRoleCareerSeeder extends Seeder
         $super = User::firstOrCreate(
             [
                 'email' => 'pablo.castillo.quesada@una.cr',
-                'cedula' => '101010101',
+                'cedula' => '999999999',
             ],
             [
                 'nombre' => 'Pablo Castillo Quesada',
