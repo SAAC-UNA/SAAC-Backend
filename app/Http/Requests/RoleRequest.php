@@ -35,7 +35,13 @@ class RoleRequest extends FormRequest
                 // Unique constraint with exception on update
                 Rule::unique('roles', 'name')->ignore($this->route('id')),
             ],
-            'description' => 'nullable|string|max:255',
+              'description' => [
+                'nullable',
+                'string',
+                'max:255',
+                // Se aplica lógica segura al campo descripción
+                 'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,;:\-_()¿?!¡\[\]\/]+$/u',
+            ],
             'permissions'   => 'required|array|min:1',                 // aceptar arreglo
             'permissions.*' => 'exists:permissions,name', //cada permiso debe existir
         ];
@@ -52,7 +58,7 @@ class RoleRequest extends FormRequest
             'name.max'      => 'El nombre no puede superar los 255 caracteres.',
             'description.max' => 'La descripción no puede superar los 255 caracteres.',
             'name.regex'    => 'El nombre solo puede contener letras y espacios, sin caracteres especiales.',
-            'description.max'  => 'La descripción no puede superar los 255 caracteres.',
+            'description.regex'  => 'La descripción contiene caracteres no permitidos.',
             'permissions.required' => 'Debe seleccionar al menos un permiso.',
             'permissions.array'    => 'El formato de los permisos no es válido.',
             'permissions.min'      => 'Debe elegir al menos un permiso.',

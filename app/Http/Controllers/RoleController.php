@@ -8,8 +8,8 @@ use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
 
 /**
- * Controller that manages operations related to Roles.
- * Provides endpoints to list, create, show, update, and delete roles.
+ * Controlador que gestiona las operaciones relacionadas con los Roles.
+ * Proporciona los endpoints para listar, crear, mostrar, actualizar y eliminar roles.
  */
 class RoleController extends Controller
 {
@@ -21,7 +21,7 @@ class RoleController extends Controller
     }
 
     /**
-     * List all roles with their associated permissions.
+     * Lista todos los roles junto con sus permisos asociados.
      *
      * @return JsonResponse
      */
@@ -32,9 +32,9 @@ class RoleController extends Controller
     }
 
     /**
-     * Create a new role with its permissions.
+     * Crea un nuevo rol junto con sus permisos.
      *
-     * @param RoleRequest $request Validated data to create the role.
+     * @param RoleRequest 
      * @return JsonResponse
      */
     public function createRole(RoleRequest $request): JsonResponse
@@ -48,9 +48,8 @@ class RoleController extends Controller
     }
 
     /**
-     * Show a specific role by its ID.
-     *
-     * @param int $id Unique identifier of the role.
+     *  Muestra la información de un rol específico según su ID.
+     * @param int 
      * @return JsonResponse
      */
     public function showRole(int $id): JsonResponse
@@ -68,8 +67,9 @@ class RoleController extends Controller
     }
 
     /**
-     * Update an existing role.
-     * Compares the original data with the new one to detect changes.
+     * Actualiza un rol existente.
+     * Compara los datos originales con los nuevos para detectar si hubo cambios.
+     *
      *
      * @param RoleRequest $request Validated role data.
      * @param int $id Identifier of the role to update.
@@ -86,7 +86,7 @@ class RoleController extends Controller
             ], 404);
         }
 
-        // Original state before update
+          // Estado original antes de la actualización
         $original = [
             'name'        => $role->name,
             'description' => $role->description,
@@ -95,7 +95,7 @@ class RoleController extends Controller
 
         $updatedRole = $this->roleService->updateRole($role, $request->validated());
 
-        // New state after update
+         // Estado nuevo después de la actualización
         $newData = [
             'name'        => $updatedRole->name,
             'description' => $updatedRole->description,
@@ -116,7 +116,8 @@ class RoleController extends Controller
     }
 
     /**
-     * List all available permissions.
+     *Lista todos los permisos disponibles.
+     *
      *
      * @return JsonResponse
      */
