@@ -48,15 +48,29 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        // 5️ Crear el rol "Superusuario" (si no existe)
-        $superRole = Role::firstOrCreate(['name' => 'Superusuario', 'guard_name' => 'api']);
+        // 5️⃣ Crear roles del sistema
+        $roles = [
+            'Superusuario',
+            'Administrador',
+            'Profesor',
+            'Encargado de Acreditación',
+            'Docente',
+            'Evaluador',
+        ];
 
-        // 6️ Asignar todos los permisos al rol Superusuario
-        $superRole->syncPermissions(Permission::all());
+        foreach ($roles as $roleName) {
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'api']);
+        }
 
-        // 7️ Asignar el rol al usuario admin (si ya existe)
+        // 6️⃣ Asignar todos los permisos al rol Superusuario
+        $superRole = Role::where('name', 'Superusuario')->first();
+        if ($superRole) {
+            $superRole->syncPermissions(Permission::all());
+        }
+
+        // 7️⃣ Asignar el rol al usuario admin (si ya existe)
         $admin = User::where('email', 'admin@saacuna.local')->first();
-        if ($admin) {
+        if ($admin && $superRole) {
             $admin->assignRole($superRole);
         }
     }
