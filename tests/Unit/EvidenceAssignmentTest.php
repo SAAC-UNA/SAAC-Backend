@@ -41,10 +41,12 @@ class EvidenceAssignmentTest extends TestCase
             'evidencia_id' => $evidence->evidencia_id,
             'usuarios' => [$user->usuario_id],
             'fecha_limite' => now()->addDays(7),
+            'comentario' => 'Este es un comentario de prueba para la asignación.',
         ];
         $result = $service->assignEvidence($data);
         $this->assertEquals(1, $result['total_asignaciones']);
         $this->assertCount(1, $result['asignaciones']);
         $this->assertEquals(0, $result['total_errores']);
+        $this->assertEquals('Este es un comentario de prueba para la asignación.', $result['asignaciones'][0]->comentario);
     }
 }

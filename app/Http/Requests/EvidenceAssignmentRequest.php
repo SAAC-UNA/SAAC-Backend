@@ -32,7 +32,12 @@ class EvidenceAssignmentRequest extends FormRequest
             'roles' => 'sometimes|array|min:1', 
             'roles.*' => 'integer|exists:roles,id',
             'fecha_limite' => 'nullable|date|after:now',
-            'comentario' => 'nullable|string|max:500',
+            'comentario' => [
+                'nullable',
+                'string',
+                'max:500',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,;:\-_()¿?¡!\[\]\/]+$/'
+            ],
             
             // Al menos uno de usuarios o roles debe estar presente
             '_validate_assignment' => [
@@ -62,6 +67,8 @@ class EvidenceAssignmentRequest extends FormRequest
             'roles.*.exists' => 'Uno o más roles especificados no existen.',
             'fecha_limite.after' => 'La fecha límite debe ser posterior a la fecha actual.',
             'fecha_limite.date' => 'La fecha límite debe ser una fecha válida.',
+            'comentario.max' => 'El comentario no puede exceder los 500 caracteres.',
+            'comentario.regex' => 'El comentario contiene caracteres no permitidos. Solo se permiten letras, números, espacios y signos de puntuación básicos.',
         ];
     }
 

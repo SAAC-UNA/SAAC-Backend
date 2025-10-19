@@ -33,6 +33,9 @@ return new class extends Migration
             // Fecha límite de entrega
             $table->datetime('fecha_limite')->nullable();
             
+            // Comentario de la asignación (varchar de 500)
+            $table->string('comentario', 500)->nullable();
+            
             // Timestamps de creación y actualización
             $table->timestamps();
             

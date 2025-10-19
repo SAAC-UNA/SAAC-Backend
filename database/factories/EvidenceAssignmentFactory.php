@@ -21,6 +21,7 @@ class EvidenceAssignmentFactory extends Factory
             'estado' => $this->faker->randomElement(['pendiente', 'completado', 'rechazado']),
             'fecha_asignacion' => $this->faker->dateTimeBetween('-1 month', 'now'),
             'fecha_limite' => $this->faker->dateTimeBetween('now', '+1 month'),
+            'comentario' => $this->faker->optional(0.7)->sentence(12),
         ];
     }
 }

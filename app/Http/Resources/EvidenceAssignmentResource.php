@@ -22,6 +22,7 @@ class EvidenceAssignmentResource extends JsonResource
             'estado' => $this->estado,
             'fecha_asignacion' => optional($this->fecha_asignacion)->toISOString(),
             'fecha_limite' => optional($this->fecha_limite)->toISOString(),
+            'comentario' => $this->comentario,
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             

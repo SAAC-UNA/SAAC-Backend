@@ -22,7 +22,8 @@ class EvidenceAssignment extends Model
         'usuario_id',
         'estado',
         'fecha_asignacion',
-        'fecha_limite'
+        'fecha_limite',
+        'comentario'
     ];
 
     // Cast de tipos

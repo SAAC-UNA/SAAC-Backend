@@ -156,6 +156,7 @@ class EvidenceAssignmentService
             'estado' => 'pendiente',
             'fecha_asignacion' => now(),
             'fecha_limite' => $fechaLimite,
+            'comentario' => $comentario,
         ]);
     }
 
