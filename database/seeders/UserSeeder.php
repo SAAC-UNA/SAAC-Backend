@@ -92,7 +92,7 @@ class UserSeeder extends Seeder
                     'email' => 'maria.gonzalez@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Docente', 'Evaluador'],
+                'roles' => ['Profesor', 'Encargado de Acreditación'],
                 'careers' => [$careerIngSistemas->carrera_id],
             ];
             
@@ -103,7 +103,7 @@ class UserSeeder extends Seeder
                     'email' => 'jose.hernandez@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Docente'],
+                'roles' => ['Profesor'],
                 'careers' => [$careerIngSistemas->carrera_id],
             ];
         }
@@ -131,7 +131,7 @@ class UserSeeder extends Seeder
                     'email' => 'patricia.rojas@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Docente', 'Evaluador'],
+                'roles' => ['Profesor', 'Encargado de Acreditación'],
                 'careers' => [$careerQuimica->carrera_id],
             ];
         }
@@ -147,7 +147,7 @@ class UserSeeder extends Seeder
                     'email' => 'fernando.soto@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Administrador', 'Docente'],
+                'roles' => ['Administrador', 'Profesor'],
                 'careers' => [$careerAdministracion->carrera_id],
             ];
             
@@ -158,7 +158,7 @@ class UserSeeder extends Seeder
                     'email' => 'laura.vindas@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Docente'],
+                'roles' => ['Profesor'],
                 'careers' => [$careerAdministracion->carrera_id],
             ];
         }
@@ -174,7 +174,7 @@ class UserSeeder extends Seeder
                     'email' => 'roberto.smith@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Administrador', 'Docente'],
+                'roles' => ['Administrador', 'Profesor'],
                 'careers' => [$careerIngles->carrera_id],
             ];
             
@@ -185,12 +185,12 @@ class UserSeeder extends Seeder
                     'email' => 'gabriela.solis@una.cr',
                     'status' => User::STATUS_ACTIVE,
                 ],
-                'roles' => ['Docente', 'Evaluador'],
+                'roles' => ['Profesor', 'Encargado de Acreditación'],
                 'careers' => [$careerIngles->carrera_id],
             ];
         }
 
-        // Evaluador general
+        // Encargado de Acreditación general
         $this->command->info('🔍 Usuarios generales...');
         
         $users[] = [
@@ -200,7 +200,7 @@ class UserSeeder extends Seeder
                 'email' => 'ricardo.perez@una.cr',
                 'status' => User::STATUS_ACTIVE,
             ],
-            'roles' => ['Evaluador'],
+            'roles' => ['Encargado de Acreditación'],
             'careers' => array_filter([
                 $careerIngSistemas?->carrera_id,
                 $careerQuimica?->carrera_id,
@@ -215,12 +215,12 @@ class UserSeeder extends Seeder
                 'email' => 'usuario.inactivo@una.cr',
                 'status' => User::STATUS_INACTIVE,
             ],
-            'roles' => ['Docente'],
+            'roles' => ['Profesor'],
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 
         /**
-         * PASO 5: Guardar usuarios
+         * PASO 5: Guardar usuarios con roles y permisos
          */
         $this->command->info('💾 Guardando usuarios...');
         
@@ -230,10 +230,28 @@ class UserSeeder extends Seeder
                 $userData['user_data']
             );
 
+            // Asignar roles
             if (!empty($userData['roles'])) {
                 $user->syncRoles($userData['roles']);
+                
+                // Asignar permisos directos basados en los roles para que el frontend los vea
+                $permissions = [];
+                foreach ($userData['roles'] as $roleName) {
+                    $role = \Spatie\Permission\Models\Role::where('name', $roleName)
+                        ->where('guard_name', 'api')
+                        ->first();
+                    if ($role) {
+                        $permissions = array_merge($permissions, $role->permissions->pluck('name')->toArray());
+                    }
+                }
+                
+                // Sincronizar permisos directos (sin duplicados)
+                if (!empty($permissions)) {
+                    $user->syncPermissions(array_unique($permissions));
+                }
             }
 
+            // Asignar carreras
             if (!empty($userData['careers'])) {
                 DB::table('CARRERA_USUARIO')
                     ->where('usuario_id', $user->usuario_id)

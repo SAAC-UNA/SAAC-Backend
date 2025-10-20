@@ -54,18 +54,70 @@ class PermissionSeeder extends Seeder
             'Administrador',
             'Profesor',
             'Encargado de Acreditación',
-            'Docente',
-            'Evaluador',
         ];
 
         foreach ($roles as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'api']);
         }
 
-        // 6️⃣ Asignar todos los permisos al rol Superusuario
+        // 6️⃣ Asignar permisos por rol
+        
+        // Superusuario: todos los permisos
         $superRole = Role::where('name', 'Superusuario')->first();
         if ($superRole) {
             $superRole->syncPermissions(Permission::all());
+        }
+
+        // Administrador: gestión completa de su carrera
+        $adminRole = Role::where('name', 'Administrador')->first();
+        if ($adminRole) {
+            $adminRole->syncPermissions([
+                'gestion_usuarios',
+                'usuarios.view',
+                'usuarios.create',
+                'usuarios.edit',
+                'usuarios.delete',
+                'gestion_evidencias',
+                'evidencias.view',
+                'evidencias.create',
+                'evidencias.edit',
+                'evidencias.delete',
+                'gestion_reportes',
+                'reportes.generate',
+                'gestion_ciclos',
+                'ciclos.view',
+                'ciclos.create',
+                'ciclos.edit',
+                'ciclos.delete',
+                'gestion_programas',
+            ]);
+        }
+
+        // Profesor: gestión de evidencias y visualización
+        $profesorRole = Role::where('name', 'Profesor')->first();
+        if ($profesorRole) {
+            $profesorRole->syncPermissions([
+                'gestion_evidencias',
+                'evidencias.view',
+                'evidencias.create',
+                'evidencias.edit',
+                'reportes.generate',
+                'gestion_reportes',
+            ]);
+        }
+
+        // Encargado de Acreditación: evaluación de evidencias y reportes
+        $encargadoRole = Role::where('name', 'Encargado de Acreditación')->first();
+        if ($encargadoRole) {
+            $encargadoRole->syncPermissions([
+                'gestion_evidencias',
+                'evidencias.view',
+                'evidencias.edit',
+                'gestion_reportes',
+                'reportes.generate',
+                'gestion_ciclos',
+                'ciclos.view',
+            ]);
         }
 
         // 7️⃣ Asignar el rol al usuario admin (si ya existe)
