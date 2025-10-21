@@ -52,9 +52,6 @@ return [
         'ciclos.create'                => 'Crear Ciclos',
         'ciclos.edit'                  => 'Editar Ciclos',
         'ciclos.delete'                => 'Eliminar Ciclos',
-        
-        // Permiso maestro
-        'admin.super'                  => 'Super Administrador',
     ],
 
     // Matriz oficial de módulos y acciones atómicas (HU-02)

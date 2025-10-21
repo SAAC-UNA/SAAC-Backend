@@ -110,16 +110,10 @@ class RoleService
      */
     public function listPermissions()
     {
-       /* return Permission::all()->map(function ($permission) {
-            return [
-                'id' => $permission->id,
-                'name' => $permission->name,
-                'label' => config('permissions.descriptions')[$permission->name] ?? $permission->name
-            ];
-        });*/ // Se Cambio para luego filtrar en el controlador porque salia admin ahi entonces si funciona asi se quita
+        // Retorna TODOS los permisos del sistema
+        // Esto permite que al editar roles se muestren todos los permisos asignados correctamente
         return Permission::query()
         ->where('guard_name', 'api')
-        ->where('name', '!=', 'admin.super')  // oculta SOLO admin.super
         ->orderBy('name')
         ->get(['id','name'])
         ->map(function ($permission) {

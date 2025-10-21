@@ -11,10 +11,7 @@ class PermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1️ Permiso maestro (HU-02)
-        Permission::firstOrCreate(['name' => 'admin.super', 'guard_name' => 'api']);
-
-        // 2️ Módulos y acciones atómicas (solo para los que usarás en HU-02)
+        // 1 Módulos y acciones atómicas (solo para los que usarás en HU-02)
         $modules = [
             'usuarios'   => ['view','create','edit','delete'],
             'evidencias' => ['view','create','edit','delete'],
@@ -24,7 +21,7 @@ class PermissionSeeder extends Seeder
             // 'roles'     si el FE usa gestion_roles, lo mantenemos como alias
         ];
 
-        // 3️ Aliases que el FE ya usa (no se cambian)
+        // 2 Aliases que el FE ya usa (no se cambian)
         $aliases = [
             'gestion_usuarios',
             'gestion_evidencias',
@@ -38,7 +35,7 @@ class PermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $alias, 'guard_name' => 'api']);
         }
 
-        // 4️ Crear permisos atómicos con "modulo.accion"
+        // 3 Crear permisos atómicos con "modulo.accion"
         foreach ($modules as $module => $actions) {
             foreach ($actions as $action) {
                 Permission::firstOrCreate([
@@ -48,7 +45,7 @@ class PermissionSeeder extends Seeder
             }
         }
 
-        // 5️⃣ Crear roles del sistema
+        // 4 Crear roles del sistema
         $roles = [
             'Superusuario',
             'Administrador',
@@ -60,7 +57,7 @@ class PermissionSeeder extends Seeder
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'api']);
         }
 
-        // 6️⃣ Asignar permisos por rol
+        // 5 Asignar permisos por rol
         
         // Superusuario: todos los permisos
         $superRole = Role::where('name', 'Superusuario')->first();
@@ -120,7 +117,7 @@ class PermissionSeeder extends Seeder
             ]);
         }
 
-        // 7️⃣ Asignar el rol al usuario admin (si ya existe)
+        // 6 Asignar el rol al usuario admin (si ya existe)
         $admin = User::where('email', 'admin@saacuna.local')->first();
         if ($admin && $superRole) {
             $admin->assignRole($superRole);

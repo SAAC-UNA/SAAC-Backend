@@ -24,9 +24,13 @@ class RoleResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
-            //  Permisos convertidos directamente en texto legible (sin guiones)
+            // Permisos con estructura completa para el frontend (id, name, label)
             'permissions' => $this->permissions->map(function ($permission) {
-                return config('permissions.descriptions')[$permission->name] ?? $permission->name;
+                return [
+                    'id'    => $permission->id,
+                    'name'  => $permission->name,
+                    'label' => config('permissions.descriptions')[$permission->name] ?? $permission->name,
+                ];
             }),
               'creadoEl'  => $this->created_at?->format('Y-m-d H:i:s'),
              'actualizadoEl' => $this->updated_at?->format('Y-m-d H:i:s'),
