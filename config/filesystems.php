@@ -47,6 +47,27 @@ return [
             'report' => false,
         ],
 
+        // Disk de simulación NAS para desarrollo local
+        // Se comporta como un NAS pero es una carpeta local
+        'simulated_nas' => [
+            'driver' => 'local',
+            'root' => storage_path('app/simulated_nas'),
+            'throw' => true,
+        ],
+
+        // Disk de producción para el NAS de la universidad (SFTP)
+        // Configurar las credenciales en .env cuando esté disponible
+        'production_nas' => [
+            'driver' => 'sftp',
+            'host' => env('NAS_HOST'),
+            'username' => env('NAS_USERNAME'),
+            'password' => env('NAS_PASSWORD'),
+            'port' => env('NAS_PORT', 22),
+            'root' => env('NAS_ROOT', '/mnt/data/saac'),
+            'timeout' => 30,
+            'throw' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
