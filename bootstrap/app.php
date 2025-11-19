@@ -25,5 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+
+        // Middleware para renovar sesión en Redis en cada petición autenticada
+        $middleware->alias([
+            'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {})->create();
