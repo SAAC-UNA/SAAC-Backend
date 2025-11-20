@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
 use App\Services\LdapService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -62,8 +63,12 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // Generar token de Sanctum
-            $token = $user->createToken('auth-token')->plainTextToken;
+            // SEGURIDAD: Invalidar todas las sesiones y tokens previos del usuario
+            $user->tokens()->delete();
+            Redis::del("session:user:{$user->usuario_id}");
+
+            // Generar nuevo token de Sanctum
+            $token = $user->createToken('auth-token', ['*'], now()->addHours(24))->plainTextToken;
 
             // Cargar relaciones
             $user->load(['roles', 'permissions', 'careers']);
@@ -72,29 +77,32 @@ class AuthController extends Controller
             $sessionKey = "session:user:{$user->usuario_id}";
             $sessionData = [
                 'usuario_id' => $user->usuario_id,
-                'cedula' => $user->cedula,
+                'cedula' => substr($user->cedula, -4), // Solo últimos 4 dígitos por seguridad
                 'nombre' => $user->nombre,
                 'email' => $user->email,
                 'roles' => $user->roles->pluck('name'),
                 'login_at' => now()->toDateTimeString(),
+                'ip' => request()->ip(),
             ];
             
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
 
             return response()->json([
-                'message' => 'Inicio de sesión exitoso',
-                'user' => $user,
+                'user' => new UserResource($user),
                 'token' => $token,
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error en login: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            Log::error('Error en login', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
             ]);
 
+            // SEGURIDAD: No exponer detalles del error al cliente
             return response()->json([
                 'message' => 'Error al procesar la solicitud de inicio de sesión',
-                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -156,10 +164,9 @@ class AuthController extends Controller
             
             // Cargar relaciones necesarias
             $user->load(['roles', 'permissions', 'careers']);
-
+            
             return response()->json([
-                'user' => $user,
-                'session' => json_decode($sessionData, true),
+                'user' => new UserResource($user),
             ], 200);
 
         } catch (\Exception $e) {

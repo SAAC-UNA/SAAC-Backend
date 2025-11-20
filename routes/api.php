@@ -31,7 +31,9 @@ use App\Models\AccreditationCycle;
 /**
  * Rutas de Autenticación (públicas)
  */
-Route::post('auth/login', [AuthController::class, 'login']);
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('auth/login', [AuthController::class, 'login']);
+});
 
 /**
  * Rutas de Autenticación (protegidas)

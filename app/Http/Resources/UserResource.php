@@ -27,8 +27,7 @@ class UserResource extends JsonResource
             'email'       => $this->email,
             'status'      => $this->status,
             'cedula'      => $this->cedula,
-            'created_at'  => $this->created_at,
-            'updated_at'  => $this->updated_at,
+            // NO exponer created_at y updated_at por seguridad
             
             // Roles del usuario
             'roles' => $this->roles->map(function ($role) {

@@ -37,7 +37,10 @@ class LdapService
             $userDn = "uid={$cedula},ou=profesores,ou=users," . config('ldap.connections.default.base_dn');
             
             if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticación LDAP exitosa para cédula: {$cedula} (profesor)");
+                Log::info("Autenticación LDAP exitosa (profesor)", [
+                    'cedula_hash' => hash('sha256', $cedula),
+                    'cedula_last4' => substr($cedula, -4),
+                ]);
                 return $this->getUserDataFromLdap($cedula, $connection);
             }
             
@@ -45,17 +48,26 @@ class LdapService
             $userDn = "uid={$cedula},ou=estudiantes,ou=users," . config('ldap.connections.default.base_dn');
             
             if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticación LDAP exitosa para cédula: {$cedula} (estudiante)");
+                Log::info("Autenticación LDAP exitosa (estudiante)", [
+                    'cedula_hash' => hash('sha256', $cedula),
+                    'cedula_last4' => substr($cedula, -4),
+                ]);
                 return $this->getUserDataFromLdap($cedula, $connection);
             }
             
-            Log::warning("Autenticación LDAP fallida para cédula: {$cedula}");
+            Log::warning("Autenticación LDAP fallida", [
+                'cedula_hash' => hash('sha256', $cedula),
+                'cedula_last4' => substr($cedula, -4),
+                'ip' => request()->ip(),
+            ]);
             return null;
             
         } catch (Exception $e) {
-            Log::error("Error en autenticación LDAP: " . $e->getMessage(), [
-                'cedula' => $cedula,
-                'exception' => get_class($e)
+            Log::error("Error en autenticación LDAP", [
+                'cedula_hash' => hash('sha256', $cedula),
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
+                'ip' => request()->ip(),
             ]);
             return null;
         }
@@ -78,7 +90,9 @@ class LdapService
             $users = $query->where('uid', '=', $cedula)->get();
             
             if (count($users) === 0) {
-                Log::warning("Usuario no encontrado en LDAP: {$cedula}");
+                Log::warning("Usuario no encontrado en LDAP", [
+                    'cedula_hash' => hash('sha256', $cedula),
+                ]);
                 return null;
             }
             
@@ -92,9 +106,10 @@ class LdapService
             ];
             
         } catch (Exception $e) {
-            Log::error("Error obteniendo datos de LDAP: " . $e->getMessage(), [
-                'cedula' => $cedula,
-                'exception' => get_class($e)
+            Log::error("Error obteniendo datos de LDAP", [
+                'cedula_hash' => hash('sha256', $cedula),
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
             ]);
             return null;
         }
