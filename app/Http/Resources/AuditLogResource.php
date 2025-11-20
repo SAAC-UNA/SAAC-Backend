@@ -25,6 +25,7 @@ class AuditLogResource extends JsonResource
                 'tipo_accion_id' => $this->actionType->tipo_accion_id,
                 'descripcion' => $this->actionType->descripcion,
             ],
+            'modulo' => $this->modulo,
             'detalle' => $this->detalle,
             'fecha_hora' => $this->fecha_hora,
             'created_at' => $this->created_at,

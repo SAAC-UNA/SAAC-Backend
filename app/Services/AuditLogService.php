@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\ActionType;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AuditLogService
 {
@@ -13,8 +14,10 @@ class AuditLogService
      *
      * @param string $actionName  Nombre de la acción (crear, editar, eliminar, consultar, login, logout)
      * @param string|null $detail Detalle opcional de la acción
+     * @param string|null $modulo Módulo del sistema donde ocurrió la acción
+     * @return bool Retorna true si se registró exitosamente, false si falló
      */
-    public static function log(string $actionName, ?string $detail = null): void
+    public static function log(string $actionName, ?string $detail = null, ?string $modulo = null): bool
     {
         try {
             // ID del usuario autenticado (puede ser null en login_failed)
@@ -24,27 +27,37 @@ class AuditLogService
             $actionType = ActionType::where('descripcion', $actionName)->first();
 
             if (!$actionType) {
-                // Si no existe el tipo de acción, no registrar nada
-                return;
+                // Si no existe el tipo de acción, registrar en log y retornar false
+                Log::warning("Tipo de acción '{$actionName}' no encontrado en catálogo");
+                return false;
             }
 
             // Registrar en la bitácora
             AuditLog::create([
                 'usuario_id'     => $userId,
                 'tipo_accion_id' => $actionType->tipo_accion_id,
+                'modulo'         => $modulo,
                 'detalle'        => $detail,
                 'fecha_hora'     => now(),
             ]);
+
+            return true;
         } catch (\Exception $e) {
-            // Si ocurre un error, no romper la aplicación
-            // Opcional: Log::error('Error en AuditLog: ' . $e->getMessage());
+            // Registrar error en log para que superusuario/admin técnico lo vea
+            Log::error('Error al registrar en bitácora', [
+                'action' => $actionName,
+                'module' => $modulo,
+                'error'  => $e->getMessage(),
+                'user'   => Auth::id()
+            ]);
+            return false;
         }
     }
 
     /**
      * Listar registros de bitácora con filtros opcionales.
      *
-     * @param array $filters Filtros opcionales (usuario_id, tipo_accion_id, fecha_desde, fecha_hasta)
+     * @param array $filters Filtros opcionales (usuario_id, tipo_accion_id, modulo, fecha_desde, fecha_hasta)
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function list(array $filters = [])
@@ -56,9 +69,20 @@ class AuditLogService
             $query->where('usuario_id', $filters['usuario_id']);
         }
 
-        // Filtro por tipo de acción
+        // Filtro por tipo de acción (acepta ID o nombre)
         if (!empty($filters['tipo_accion_id'])) {
             $query->where('tipo_accion_id', $filters['tipo_accion_id']);
+        } elseif (!empty($filters['tipo_accion'])) {
+            // Buscar el ID por nombre de acción
+            $actionType = ActionType::where('descripcion', $filters['tipo_accion'])->first();
+            if ($actionType) {
+                $query->where('tipo_accion_id', $actionType->tipo_accion_id);
+            }
+        }
+
+        // Filtro por módulo
+        if (!empty($filters['modulo'])) {
+            $query->where('modulo', $filters['modulo']);
         }
 
         // Filtro por rango de fechas

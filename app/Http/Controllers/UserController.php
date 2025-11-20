@@ -102,7 +102,8 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'activar',
-            "Usuario activado: {$user->nombre} (ID: {$user->usuario_id})"
+            "Usuario activado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
         );
         
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'activate' ...));
@@ -124,7 +125,8 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'desactivar',
-            "Usuario desactivado: {$user->nombre} (ID: {$user->usuario_id})"
+            "Usuario desactivado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
         );
         
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'deactivate' ...));
@@ -146,7 +148,8 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'asignar_rol',
-            "Rol '{$roleName}' asignado a: {$user->nombre} (ID: {$user->usuario_id})"
+            "Rol '{$roleName}' asignado a: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
         );
     
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_role' ...));
@@ -167,7 +170,8 @@ class UserController extends Controller
         $permisosAsignados = $user->getDirectPermissions()->pluck('name')->values()->toArray();
         AuditLogService::log(
             'asignar_permisos',
-            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados)
+            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados),
+            'Usuarios'
         );
         
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_permissions' ...));

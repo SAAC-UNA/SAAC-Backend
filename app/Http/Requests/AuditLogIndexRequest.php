@@ -22,6 +22,8 @@ class AuditLogIndexRequest extends FormRequest
         return [
             'usuario_id' => 'nullable|integer|exists:USUARIO,usuario_id',
             'tipo_accion_id' => 'nullable|integer|exists:TIPO_ACCION,tipo_accion_id',
+            'tipo_accion' => 'nullable|string|exists:TIPO_ACCION,descripcion',
+            'modulo' => 'nullable|string|max:100',
             'fecha_desde' => 'nullable|date',
             'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
         ];
