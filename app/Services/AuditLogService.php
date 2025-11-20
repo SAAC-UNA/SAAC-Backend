@@ -40,4 +40,43 @@ class AuditLogService
             // Opcional: Log::error('Error en AuditLog: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Listar registros de bitácora con filtros opcionales.
+     *
+     * @param array $filters Filtros opcionales (usuario_id, tipo_accion_id, fecha_desde, fecha_hasta)
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function list(array $filters = [])
+    {
+        $query = AuditLog::query();
+
+        // Filtro por usuario
+        if (!empty($filters['usuario_id'])) {
+            $query->where('usuario_id', $filters['usuario_id']);
+        }
+
+        // Filtro por tipo de acción
+        if (!empty($filters['tipo_accion_id'])) {
+            $query->where('tipo_accion_id', $filters['tipo_accion_id']);
+        }
+
+        // Filtro por rango de fechas
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fecha_hora', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fecha_hora', '<=', $filters['fecha_hasta']);
+        }
+
+        // Incluir relaciones
+        $query->with(['user', 'actionType']);
+
+        // Ordenar por fecha descendente
+        $query->orderBy('fecha_hora', 'desc');
+
+        // Paginar resultados
+        return $query->paginate(15);
+    }
 }

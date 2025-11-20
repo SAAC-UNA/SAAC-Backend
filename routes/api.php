@@ -18,6 +18,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\AuditLogController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -76,6 +77,13 @@ Route::prefix('admin/users')->group(function () {
 
 // Para vista de permisos
 Route::get('admin/permissions', [PermissionController::class, 'index']);
+
+// Rutas de Bitácora del Sistema (HU-005) - Solo Superusuario
+Route::prefix('bitacora')->middleware(['role:Superusuario'])->group(function () {
+    Route::get('/', [AuditLogController::class, 'index']);
+    Route::get('/{auditLog}', [AuditLogController::class, 'show']);
+});
+
 // Ejemplos de uso cuando actives autenticación en Sprint 3:
 // Route::middleware('can:evidencias.view')->get('/evidencias', [EvidenceController::class, 'index']);
 // Route::middleware('can:reportes.generate')->get('/reportes/generar', [ReportController::class, 'generate']);
@@ -87,6 +95,11 @@ if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
         Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
         Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
+        
+        // Autenticación temporal para pruebas de middleware
+        Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
+        Route::post('/logout', [\App\Http\Controllers\DevAuthController::class, 'logout'])->middleware('auth:sanctum');
+        Route::get('/me', [\App\Http\Controllers\DevAuthController::class, 'me'])->middleware('auth:sanctum');
     });
 }
 

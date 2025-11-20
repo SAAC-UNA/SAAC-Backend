@@ -25,5 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
+
+        // Alias de middlewares personalizados
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+        ]);
+
+        // Configurar respuestas JSON para rutas API cuando falla autenticación
+        $middleware->redirectGuestsTo(fn () => throw new \Illuminate\Auth\AuthenticationException());
     })
     ->withExceptions(function (Exceptions $exceptions): void {})->create();

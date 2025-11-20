@@ -3,64 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
-use App\Http\Requests\StoreAuditLogRequest;
-use App\Http\Requests\UpdateAuditLogRequest;
+use Illuminate\Http\Request;
+use App\Services\AuditLogService;
+use App\Http\Requests\AuditLogIndexRequest;
+use App\Http\Resources\AuditLogResource;
 
 class AuditLogController extends Controller
 {
+    public function __construct(private AuditLogService $auditLogService) {}
+
     /**
-     * Display a listing of the resource.
+     * Listar registros de bitácora con filtros opcionales.
      */
-    public function index()
+    public function index(AuditLogIndexRequest $request)
     {
-        //
+        $auditLogs = $this->auditLogService->list($request->validated());
+        
+        return AuditLogResource::collection($auditLogs);
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreAuditLogRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
+     * Mostrar detalle de un registro específico de bitácora.
      */
     public function show(AuditLog $auditLog)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(AuditLog $auditLog)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAuditLogRequest $request, AuditLog $auditLog)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AuditLog $auditLog)
-    {
-        //
+        // Cargar relaciones
+        $auditLog->load(['user', 'actionType']);
+        
+        // Retornar con Resource
+        return new AuditLogResource($auditLog);
     }
 }
