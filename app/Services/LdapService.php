@@ -27,6 +27,15 @@ class LdapService
     public function authenticate(string $cedula, string $password): ?array
     {
         try {
+            // Verificar si LDAP está disponible antes de intentar conectar
+            if (empty(config('ldap.connections.default.hosts.0'))) {
+                Log::warning("LDAP no configurado, autenticación fallida", [
+                    'cedula_hash' => hash('sha256', $cedula),
+                    'cedula_last4' => substr($cedula, -4),
+                ]);
+                return null;
+            }
+            
             $connection = Container::getConnection('default');
             
             // Construir el DN del usuario basado en la cédula

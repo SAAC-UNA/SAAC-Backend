@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Services\LdapService;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
@@ -33,6 +34,9 @@ class AuthController extends Controller
 
             // Autenticar contra LDAP
             if (!$this->ldapService->authenticate($cedula, $password)) {
+                // Registrar intento fallido en bitácora
+                AuditLogService::log('login_fallido', "Intento de login con cédula: {$cedula}", 'Autenticación');
+                
                 return response()->json([
                     'message' => 'Credenciales inválidas',
                 ], 401);
@@ -58,6 +62,9 @@ class AuthController extends Controller
 
             // Verificar que el usuario esté activo
             if (!$user->isActive()) {
+                // Registrar intento de usuario inactivo en bitácora
+                AuditLogService::log('login_fallido', "Usuario inactivo: {$user->nombre} (Cédula: {$cedula})", 'Autenticación');
+                
                 return response()->json([
                     'message' => 'Usuario inactivo. Contacte al administrador.',
                 ], 403);
@@ -86,6 +93,9 @@ class AuthController extends Controller
             ];
             
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
+
+            // Registrar login exitoso en bitácora
+            AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación');
 
             return response()->json([
                 'user' => new UserResource($user),
@@ -117,6 +127,9 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
+            
+            // Registrar cierre de sesión en bitácora
+            AuditLogService::log('logout', "Usuario {$user->nombre} cerró sesión", 'Autenticación');
             
             // Eliminar sesión de Redis
             $sessionKey = "session:user:{$user->usuario_id}";
