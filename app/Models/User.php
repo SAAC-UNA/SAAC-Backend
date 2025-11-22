@@ -10,14 +10,13 @@ use Laravel\Sanctum\HasApiTokens; // Sanctum para autenticación API
  * Modelo de Usuario del sistema.
  *
  * Este modelo extiende de Authenticatable para permitir la autenticación
- * mediante Laravel (local) y, en el futuro, integración con LDAP.
+ * mediante LDAP. Los usuarios se sincronizan automáticamente desde LDAP
+ * a la base de datos local para gestión de roles y permisos.
  *
- * - Actualmente, se utiliza para usuarios locales durante el desarrollo.
- * - En el Sprint 3 se conectará con el servicio LDAP institucional
- *   a través de un adaptador (sin cambiar esta clase).
- *
- * También implementa HasRoles (Spatie) para la gestión de roles y permisos,
- * y define el campo "status" para activar o desactivar usuarios.
+ * - Autenticación: Se valida contra servidor LDAP
+ * - Sincronización: Al primer login se crea/actualiza desde LDAP
+ * - BD Local: Almacena roles, permisos y relaciones (Spatie)
+ * - Password: Campo requerido por Authenticatable, siempre NULL
  */
 use Spatie\Permission\Traits\HasRoles; //  importa el trait correcto
 
@@ -33,9 +32,20 @@ class User extends Authenticatable
     protected $guard_name = 'api';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['cedula', 'nombre', 'email', 'status'];
+    protected $fillable = [
+        'cedula',    // uid de LDAP
+        'nombre',    // cn de LDAP
+        'email',     // mail de LDAP
+        'password',  // Requerido por Authenticatable (siempre NULL)
+        'status'     // Estado local del usuario
+    ];
 
-     // Estados
+    // Campos ocultos en serialización (seguridad)
+    protected $hidden = [
+        'password',  // Nunca exponer, siempre NULL
+    ];
+
+    // Estados del usuario
     public const STATUS_ACTIVE   = 'active';
     public const STATUS_INACTIVE = 'inactive';
 

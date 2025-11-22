@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Alias de middlewares personalizados
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
         ]);
 
         // Configurar respuestas JSON para rutas API cuando falla autenticación
