@@ -70,11 +70,15 @@ class FileController extends Controller
     {
         $validated = $request->validated();
 
-        // TODO: Cuando se implemente autenticación (HU-001), cambiar a:
-        // $usuarioId = auth()->id();
+        // Obtener el usuario autenticado
+        $usuarioId = auth()->id();
         
-        // Por ahora, para pruebas, tomar del request
-        $usuarioId = $validated['usuario_id'];
+        if (!$usuarioId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario no autenticado.',
+            ], 401);
+        }
 
         // Subir archivo usando el servicio
         $archivo = $this->fileService->uploadFile(

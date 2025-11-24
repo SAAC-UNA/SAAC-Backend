@@ -13,14 +13,16 @@ class StoreFileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // TODO: Habilitar cuando se implemente autenticación (HU-001)
-        // return Gate::allows('upload', [
-        //     \App\Models\File::class,
-        //     $this->input('evidencia_id')
-        // ]);
+        // Si no hay usuario autenticado, denegar
+        if (!auth()->check()) {
+            return false;
+        }
         
-        // Por ahora permitir para pruebas
-        return true;
+        // Autorizar si el usuario puede subir archivos a esta evidencia
+        return Gate::allows('upload', [
+            \App\Models\File::class,
+            $this->input('evidencia_id')
+        ]);
     }
 
     /**
@@ -47,13 +49,6 @@ class StoreFileRequest extends FormRequest
                 'integer',
                 'exists:PROCESO,proceso_id',
             ],
-            // Para pruebas: permitir especificar usuario_id manualmente
-            // TODO: Remover cuando se implemente autenticación (HU-001)
-            'usuario_id' => [
-                'required',
-                'integer',
-                'exists:USUARIO,usuario_id',
-            ],
         ];
     }
 
@@ -77,10 +72,6 @@ class StoreFileRequest extends FormRequest
             'proceso_id.required' => 'Debe especificar el proceso asociado.',
             'proceso_id.integer' => 'El ID de proceso debe ser un número entero.',
             'proceso_id.exists' => 'El proceso especificado no existe.',
-            
-            'usuario_id.required' => 'Debe especificar el usuario (para pruebas).',
-            'usuario_id.integer' => 'El ID de usuario debe ser un número entero.',
-            'usuario_id.exists' => 'El usuario especificado no existe.',
         ];
     }
 
