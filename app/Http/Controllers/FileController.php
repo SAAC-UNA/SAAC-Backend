@@ -5,62 +5,284 @@ namespace App\Http\Controllers;
 use App\Models\File;
 use App\Http\Requests\StoreFileRequest;
 use App\Http\Requests\UpdateFileRequest;
+use App\Http\Resources\FileResource;
+use App\Services\FileService;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class FileController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    protected FileService $fileService;
+
+    public function __construct(FileService $fileService)
     {
-        //
+        $this->fileService = $fileService;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Listar archivos de una evidencia específica.
+     * GET /api/archivos?evidencia_id={id}
+     * GET /api/archivos?proceso_id={id}
      */
-    public function create()
+    public function index(Request $request): JsonResponse
     {
-        //
+        $request->validate([
+            'evidencia_id' => 'sometimes|integer|exists:EVIDENCIA,evidencia_id',
+            'proceso_id' => 'sometimes|integer|exists:PROCESO,proceso_id',
+        ]);
+
+        $query = File::query()->with(['evidence', 'user', 'process']);
+
+        // Filtrar por evidencia si se proporciona
+        if ($request->has('evidencia_id')) {
+            $evidenciaId = $request->input('evidencia_id');
+            
+            // Verificar autorización para ver archivos de esta evidencia
+            Gate::authorize('viewAny', [File::class, $evidenciaId]);
+            
+            $query->where('evidencia_id', $evidenciaId);
+        }
+
+        // Filtrar por proceso si se proporciona
+        if ($request->has('proceso_id')) {
+            $query->where('proceso_id', $request->input('proceso_id'));
+        }
+
+        $archivos = $query->orderBy('fecha_subida', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => FileResource::collection($archivos),
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Subir un nuevo archivo.
+     * POST /api/archivos
+     * 
+     * Body (multipart/form-data):
+     * - archivo: file (max 50MB)
+     * - evidencia_id: integer
+     * - proceso_id: integer
      */
-    public function store(StoreFileRequest $request)
+    public function store(StoreFileRequest $request): JsonResponse
     {
-        //
+        $validated = $request->validated();
+
+        // TODO: Cuando se implemente autenticación (HU-001), cambiar a:
+        // $usuarioId = auth()->id();
+        
+        // Por ahora, para pruebas, tomar del request
+        $usuarioId = $validated['usuario_id'];
+
+        // Subir archivo usando el servicio
+        $archivo = $this->fileService->uploadFile(
+            file: $request->file('archivo'),
+            evidenciaId: $validated['evidencia_id'],
+            usuarioId: $usuarioId,
+            procesoId: $validated['proceso_id']
+        );
+
+        // Cargar relaciones para el resource
+        $archivo->load(['evidence', 'user', 'process']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Archivo subido exitosamente.',
+            'data' => new FileResource($archivo),
+        ], 201);
     }
 
     /**
-     * Display the specified resource.
+     * Mostrar metadatos de un archivo específico.
+     * GET /api/archivos/{archivo}
      */
-    public function show(File $file)
+    public function show(File $archivo): JsonResponse
     {
-        //
+        Gate::authorize('view', $archivo);
+
+        $archivo->load(['evidence', 'user', 'process']);
+
+        return response()->json([
+            'success' => true,
+            'data' => new FileResource($archivo),
+        ]);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Eliminar un archivo.
+     * DELETE /api/archivos/{archivo}
      */
-    public function edit(File $file)
+    public function destroy(File $archivo): JsonResponse
     {
-        //
+        Gate::authorize('delete', $archivo);
+
+        $this->fileService->deleteFile($archivo);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Archivo eliminado exitosamente.',
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Hacer público un archivo (generar enlace público).
+     * POST /api/archivos/{archivo}/make-public
+     * 
+     * Body (opcional):
+     * - expires_at: fecha de expiración (default: 1 año)
      */
-    public function update(UpdateFileRequest $request, File $file)
+    public function makePublic(File $archivo, Request $request): JsonResponse
     {
-        //
+        Gate::authorize('makePublic', $archivo);
+
+        $validated = $request->validate([
+            'expires_at' => 'sometimes|date|after:now',
+        ]);
+
+        $expiresAt = isset($validated['expires_at']) 
+            ? new \DateTime($validated['expires_at']) 
+            : null;
+
+        $this->fileService->makePublic($archivo, $expiresAt);
+
+        $archivo->load(['evidence', 'user', 'process']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Archivo marcado como público exitosamente.',
+            'data' => new FileResource($archivo),
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Revocar acceso público de un archivo.
+     * POST /api/archivos/{archivo}/revoke-public
      */
-    public function destroy(File $file)
+    public function revokePublic(File $archivo): JsonResponse
     {
-        //
+        Gate::authorize('revokePublicAccess', $archivo);
+
+        $this->fileService->revokePublicAccess($archivo);
+
+        $archivo->load(['evidence', 'user', 'process']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Acceso público revocado exitosamente.',
+            'data' => new FileResource($archivo),
+        ]);
+    }
+
+    /**
+     * Hacer públicos múltiples archivos masivamente.
+     * POST /api/archivos/bulk-make-public
+     * 
+     * Body:
+     * - archivos_ids: array de IDs
+     * - expires_at: fecha de expiración (opcional)
+     */
+    public function bulkMakePublic(Request $request): JsonResponse
+    {
+        Gate::authorize('bulkMakePublic', File::class);
+
+        $validated = $request->validate([
+            'archivos_ids' => 'required|array|min:1',
+            'archivos_ids.*' => 'integer|exists:ARCHIVO,archivo_id',
+            'expires_at' => 'sometimes|date|after:now',
+        ], [
+            'archivos_ids.required' => 'Debe proporcionar al menos un ID de archivo.',
+            'archivos_ids.*.exists' => 'Uno o más IDs de archivo no existen.',
+        ]);
+
+        $expiresAt = isset($validated['expires_at']) 
+            ? new \DateTime($validated['expires_at']) 
+            : null;
+
+        $archivos = $this->fileService->bulkMakePublic(
+            $validated['archivos_ids'],
+            $expiresAt
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Archivos marcados como públicos exitosamente.',
+            'data' => FileResource::collection($archivos),
+            'count' => count($archivos),
+        ]);
+    }
+
+    // =================================================================
+    // MÉTODOS PARA SERVING DE ARCHIVOS (A IMPLEMENTAR EN EL FUTURO)
+    // =================================================================
+    
+    /**
+     * Descargar archivo (autenticado).
+     * GET /api/archivos/{archivo}/download
+     * 
+     * NOTA: A implementar cuando se programe el serving de archivos.
+     */
+    // public function download(File $archivo): StreamedResponse
+    // {
+    //     Gate::authorize('download', $archivo);
+    //     // Implementar lógica de descarga con Storage::download()
+    // }
+
+    /**
+     * Ver archivo inline (autenticado).
+     * GET /api/archivos/{archivo}/view
+     * 
+     * NOTA: A implementar cuando se programe el serving de archivos.
+     */
+    // public function view(File $archivo): StreamedResponse
+    // {
+    //     Gate::authorize('download', $archivo);
+    //     // Implementar lógica de visualización con Storage::response()
+    // }
+
+    /**
+     * Acceso público a archivo mediante token.
+     * GET /api/p/{token}
+     * 
+     * NOTA: A implementar cuando se programe el serving de archivos.
+     * Esta ruta NO requiere autenticación (para SINAES).
+     */
+    // public function publicAccess(string $token): StreamedResponse
+    // {
+    //     // Buscar archivo por token_publico
+    //     // Validar is_publico y link_expira_en
+    //     // Servir archivo con Storage::response()
+    // }
+
+    // =================================================================
+    // MÉTODOS TEMPORALES PARA PRUEBAS (REMOVER EN PRODUCCIÓN)
+    // =================================================================
+
+    /**
+     * Obtener datos para los selectores del formulario de prueba.
+     * GET /api/archivos/test-data
+     */
+    public function getTestData(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'usuarios' => \App\Models\User::select('usuario_id', 'nombre', 'email')
+                    ->limit(20)
+                    ->get(),
+                'evidencias' => \App\Models\Evidence::select('evidencia_id', 'descripcion', 'nomenclatura')
+                    ->limit(20)
+                    ->get(),
+                'procesos' => \App\Models\Process::with('accreditationCycle')
+                    ->limit(20)
+                    ->get()
+                    ->map(fn($proceso) => [
+                        'proceso_id' => $proceso->proceso_id,
+                        'tipo_proceso' => $proceso->tipo_proceso,
+                        'ciclo' => $proceso->accreditationCycle?->año ?? 'N/A',
+                    ]),
+            ],
+        ]);
     }
 }
