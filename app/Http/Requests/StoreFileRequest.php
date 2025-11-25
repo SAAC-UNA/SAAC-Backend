@@ -33,11 +33,17 @@ class StoreFileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'archivo' => [
+            // Soporte para subida múltiple (máximo 5 archivos)
+            'archivos' => [
                 'required',
+                'array',
+                'min:1', // Al menos 1 archivo
+                'max:5', // Máximo 5 archivos
+            ],
+            'archivos.*' => [
                 'file',
                 'max:51200', // 50MB en kilobytes
-                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,webp,mp4,avi,mov,wmv,mkv,webm,zip,rar,7z',
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,bmp,svg,webp,mp4,avi,mov,wmv,mkv,webm,zip,rar,7z,txt,csv,rtf',
             ],
             'evidencia_id' => [
                 'required',
@@ -60,10 +66,13 @@ class StoreFileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'archivo.required' => 'Debe seleccionar un archivo para subir.',
-            'archivo.file' => 'El archivo proporcionado no es válido.',
-            'archivo.max' => 'El archivo no debe superar los 50MB.',
-            'archivo.mimes' => 'El formato del archivo no está permitido. Formatos válidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, imágenes, videos, archivos comprimidos.',
+            'archivos.required' => 'Debe seleccionar al menos un archivo para subir.',
+            'archivos.array' => 'Los archivos deben estar en formato de array.',
+            'archivos.min' => 'Debe seleccionar al menos 1 archivo.',
+            'archivos.max' => 'Puede subir un máximo de 5 archivos por solicitud.',
+            'archivos.*.file' => 'Uno o más archivos proporcionados no son válidos.',
+            'archivos.*.max' => 'Uno o más archivos no deben superar los 50MB.',
+            'archivos.*.mimes' => 'Uno o más archivos tienen un formato no permitido. Formatos válidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, imágenes, videos, archivos comprimidos.',
             
             'evidencia_id.required' => 'Debe especificar la evidencia asociada.',
             'evidencia_id.integer' => 'El ID de evidencia debe ser un número entero.',

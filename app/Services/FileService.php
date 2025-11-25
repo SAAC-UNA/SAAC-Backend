@@ -7,6 +7,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class FileService
 {
@@ -35,31 +36,40 @@ class FileService
         $uuid = (string) Str::uuid();
         $filename = "{$uuid}.{$extension}";
 
-        // Guardar archivo en el disco configurado
-        $path = Storage::disk($this->disk)->putFileAs('', $file, $filename);
+        // Envolverse en transacción para garantizar integridad
+        // Si la base de datos falla, el archivo no se guarda
+        return DB::transaction(function () use ($file, $extension, $uuid, $filename, $evidenciaId, $usuarioId, $procesoId) {
+            // Guardar archivo en el disco configurado
+            $path = Storage::disk($this->disk)->putFileAs('', $file, $filename);
 
-        // Crear registro en la base de datos
-        $archivo = File::create([
-            'evidencia_id' => $evidenciaId,
-            'usuario_id' => $usuarioId,
-            'proceso_id' => $procesoId,
-            'fecha_subida' => now(),
-            'path' => $path,
-            'nombre_original' => $file->getClientOriginalName(),
-            'is_publico' => false, // Privado por defecto
-            'token_publico' => null,
-            'link_expira_en' => null,
-        ]);
+            // Crear registro en la base de datos
+            $archivo = File::create([
+                'evidencia_id' => $evidenciaId,
+                'usuario_id' => $usuarioId,
+                'proceso_id' => $procesoId,
+                'fecha_subida' => now(),
+                'path' => $path,
+                'nombre_original' => $file->getClientOriginalName(),
+                'is_publico' => false, // Privado por defecto
+                'token_publico' => null,
+                'link_expira_en' => null,
+            ]);
 
-        Log::info('Archivo subido exitosamente', [
-            'archivo_id' => $archivo->archivo_id,
-            'nombre_original' => $archivo->nombre_original,
-            'usuario_id' => $usuarioId,
-            'evidencia_id' => $evidenciaId,
-            'size' => $file->getSize(),
-        ]);
+            // Log de espacio en disco después de guardar
+            $diskFreeSpace = disk_free_path(Storage::disk($this->disk)->path(''));
+            $diskFreeGb = round($diskFreeSpace / (1024 ** 3), 2);
 
-        return $archivo;
+            Log::info('Archivo subido exitosamente', [
+                'archivo_id' => $archivo->archivo_id,
+                'nombre_original' => $archivo->nombre_original,
+                'usuario_id' => $usuarioId,
+                'evidencia_id' => $evidenciaId,
+                'size_kb' => round($file->getSize() / 1024, 2),
+                'disk_free_gb' => $diskFreeGb,
+            ]);
+
+            return $archivo;
+        });
     }
 
     /**

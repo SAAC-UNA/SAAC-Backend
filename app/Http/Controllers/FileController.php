@@ -58,11 +58,11 @@ class FileController extends Controller
     }
 
     /**
-     * Subir un nuevo archivo.
+     * Subir uno o más archivos (máximo 5).
      * POST /api/archivos
      * 
      * Body (multipart/form-data):
-     * - archivo: file (max 50MB)
+     * - archivos: file[] (1-5 archivos, max 50MB cada uno)
      * - evidencia_id: integer
      * - proceso_id: integer
      */
@@ -80,21 +80,46 @@ class FileController extends Controller
             ], 401);
         }
 
-        // Subir archivo usando el servicio
-        $archivo = $this->fileService->uploadFile(
-            file: $request->file('archivo'),
-            evidenciaId: $validated['evidencia_id'],
-            usuarioId: $usuarioId,
-            procesoId: $validated['proceso_id']
-        );
+        // Procesar todos los archivos
+        $archivos = [];
+        $errores = [];
+        
+        foreach ($request->file('archivos', []) as $index => $archivo) {
+            try {
+                $archivoGuardado = $this->fileService->uploadFile(
+                    file: $archivo,
+                    evidenciaId: $validated['evidencia_id'],
+                    usuarioId: $usuarioId,
+                    procesoId: $validated['proceso_id']
+                );
+                
+                $archivoGuardado->load(['evidence', 'user', 'process']);
+                $archivos[] = new FileResource($archivoGuardado);
+            } catch (\Exception $e) {
+                $errores[] = [
+                    'indice' => $index,
+                    'nombre' => $archivo->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
 
-        // Cargar relaciones para el resource
-        $archivo->load(['evidence', 'user', 'process']);
+        // Si hay errores, retornar con status 207 (Multi-Status)
+        if (!empty($errores)) {
+            return response()->json([
+                'success' => count($archivos) > 0,
+                'message' => count($archivos) . ' archivo(s) subido(s), ' . count($errores) . ' error(es).',
+                'data' => $archivos,
+                'errores' => $errores,
+            ], 207);
+        }
 
+        // Éxito total
         return response()->json([
             'success' => true,
-            'message' => 'Archivo subido exitosamente.',
-            'data' => new FileResource($archivo),
+            'message' => count($archivos) . ' archivo(s) subido(s) exitosamente.',
+            'data' => $archivos,
+            'count' => count($archivos),
         ], 201);
     }
 

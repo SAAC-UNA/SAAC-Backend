@@ -67,8 +67,8 @@ Route::prefix('archivos')->group(function () {
     // Listar archivos por evidencia o proceso
     Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
     
-    // Subir nuevo archivo
-    Route::post('/', [FileController::class, 'store']);
+    // Subir nuevo archivo (máximo 10 uploads por minuto)
+    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
     
     // Ver metadatos de un archivo
     Route::get('/{archivo}', [FileController::class, 'show']);
