@@ -20,6 +20,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\ActionTypeController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -95,6 +96,9 @@ Route::get('admin/permissions', [PermissionController::class, 'index']);
 // Rutas de Bitácora del Sistema (HU-005) - Solo Superusuario
 Route::prefix('bitacora')->middleware(['role:Superusuario'])->group(function () {
     Route::get('/', [AuditLogController::class, 'index']);
+    Route::get('/modulos', [AuditLogController::class, 'getModules']);
+    Route::get('/tipos-accion', [ActionTypeController::class, 'index']);
+    Route::get('/export', [AuditLogController::class, 'export']);
     Route::get('/{auditLog}', [AuditLogController::class, 'show']);
 });
 

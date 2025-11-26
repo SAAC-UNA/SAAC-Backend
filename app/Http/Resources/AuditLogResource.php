@@ -16,15 +16,20 @@ class AuditLogResource extends JsonResource
     {
         return [
             'bitacora_id' => $this->bitacora_id,
-            'usuario' => [
+            // ----------- USUARIO (SEGURO) -----------
+            'usuario' => $this->user ? [
                 'usuario_id' => $this->user->usuario_id,
-                'nombre' => $this->user->nombre,
+                'nombre' => $this->user->nombre ?? null,
                 'email' => $this->user->email,
-            ],
-            'tipo_accion' => [
+            ]: null,
+
+            // ----------- TIPO DE ACCIÓN (SEGURO) -----------
+
+            'tipo_accion' =>$this->actionType ? [
                 'tipo_accion_id' => $this->actionType->tipo_accion_id,
-                'descripcion' => $this->actionType->descripcion,
-            ],
+                'descripcion' => $this->actionType->descripcion ?? null,
+            ]: null,
+            
             'modulo' => $this->modulo,
             'detalle' => $this->detalle,
             'fecha_hora' => $this->fecha_hora,

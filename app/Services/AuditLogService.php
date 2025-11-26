@@ -101,6 +101,60 @@ class AuditLogService
         $query->orderBy('fecha_hora', 'desc');
 
         // Paginar resultados
-        return $query->paginate(15);
+        $perPage = $filters['per_page'] ?? 15;
+
+        return $query->paginate($perPage);
     }
+    /**
+     * Obtener la lista de módulos registrados en la bitácora.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getModules()
+    {
+        return AuditLog::query()
+            ->whereNotNull('modulo')
+            ->distinct()
+            ->orderBy('modulo')
+            ->pluck('modulo');
+    }
+    /**
+     * Obtener la lista de acciones registradas en la bitácora.
+     */
+        public function getActionTypes()
+    {
+        return ActionType::query()
+            ->select('tipo_accion_id', 'descripcion')
+            ->orderBy('descripcion')
+            ->get();
+    }
+    /**
+     * Obtener registros de bitácora para exportación en un rango de fechas.
+     *
+     * @param string $desde Fecha de inicio (YYYY-MM-DD)
+     * @param string $hasta Fecha de fin (YYYY-MM-DD)
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getForExport(string $desde, string $hasta)
+    {
+        // límite máximo permitido para exportación, por medio de configuración
+        $exportSafetyLimit = config('saac.export_limit', 20000); 
+
+        $count = AuditLog::whereBetween('fecha_hora', [$desde, $hasta])->count();
+
+        if ($count > $exportSafetyLimit) {
+            throw new \Exception(
+                "El rango seleccionado contiene $count registros. ".
+                "El máximo permitido para exportación es $exportSafetyLimit. ".
+                "Reduzca el rango de fechas y vuelva a intentarlo."
+            );
+        }
+
+        return AuditLog::with(['user', 'actionType'])
+            ->whereBetween('fecha_hora', [$desde, $hasta])
+            ->orderBy('fecha_hora', 'desc')
+            ->get();
+    }
+
+
 }
