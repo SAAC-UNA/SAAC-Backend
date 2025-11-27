@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use App\Services\EvidenceStateService;
 use App\Http\Requests\EvidenceStateRequest;
+use App\Services\AuditLogService;
+
 
 class EvidenceStateController extends Controller
 {
@@ -45,6 +47,12 @@ class EvidenceStateController extends Controller
     {
         try {
             $estado = $this->service->create($request->validated());
+            // Registro en el log de bitácora
+            AuditLogService::log(
+'crear',
+    "Se creó el estado de evidencia \"{$estado->nombre}\" (ID: {$estado->estado_evidencia_id}).",
+    'Estado de Evidencia'
+             );
             return response()->json($estado, 201);
         } catch (\Illuminate\Database\QueryException $ex) {
             return response()->json(['message' => 'Error al crear el estado.'], 500);
@@ -63,6 +71,17 @@ class EvidenceStateController extends Controller
 
         try {
             $estado = $this->service->update($estado, $request->validated());
+            // Registro en el log de bitácora si hubo cambios
+            $oldName = $estado->getOriginal('nombre');
+
+            if ($oldName !== $estado->nombre) {
+                AuditLogService::log(
+        'editar',
+            "Se actualizó el estado de evidencia ID {$estado->estado_id}: ".
+                    "nombre anterior \"{$oldName}\", nuevo nombre \"{$estado->nombre}\".",
+            'Estado de Evidencia'
+                );
+            }
             return response()->json($estado, 200);
         } catch (\Illuminate\Database\QueryException $ex) {
             return response()->json(['message' => 'Error al actualizar el estado.'], 500);
@@ -81,6 +100,12 @@ class EvidenceStateController extends Controller
 
         try {
             $this->service->delete($estado);
+            // Registro en el log de bitácora
+            AuditLogService::log(
+'eliminar',
+    "Se eliminó el estado de evidencia \"{$estado->nombre}\" (ID: {$estado->estado_evidencia_id}).",
+    'Estado de Evidencia'
+            );
             return response()->noContent(); // 204 No Content
         } catch (QueryException $ex) {
             return response()->json(['message' => 'No se puede eliminar: está en uso.'], 409);
