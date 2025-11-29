@@ -18,6 +18,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ImprovementCommitmentController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -115,6 +116,16 @@ Route::prefix('roles')->group(function () {
 
     
 });
+
+Route::prefix('compromisos-de-mejora')->group(function () {
+    Route::get('/', [ImprovementCommitmentController::class, 'listCommitments'])->name('commitments.index');
+    Route::get('/paginated', [ImprovementCommitmentController::class, 'listCommitmentsPaginated'])->name('commitments.paginated');
+    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])->name('commitments.create');
+    Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment'])->name('commitments.show');
+    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])->name('commitments.update');
+    Route::delete('/{id}', [ImprovementCommitmentController::class, 'deleteCommitment'])->name('commitments.delete');
+});
+
 // Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).
 Route::get('estructura/procesos', function () {
     return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();

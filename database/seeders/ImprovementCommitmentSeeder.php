@@ -26,15 +26,21 @@ class ImprovementCommitmentSeeder extends Seeder
         }
 
         $compromisos = [];
+        $index = 1;
 
         foreach ($procesosCompromiso as $proceso) {
             $compromisos[] = [
                 'proceso_id' => $proceso->proceso_id,
+                'entidad_tipo' => 'CRITERIO', // Ejemplo: asociado a un criterio
+                'entidad_id' => $index, // ID del criterio (1, 2, 3, 4...)
+                'descripcion' => "Compromiso de mejora para el ciclo {$proceso->ciclo_acreditacion_id}",
                 'fecha_inicio' => Carbon::now()->subMonths(3), // Iniciado hace 3 meses
                 'fecha_fin' => Carbon::now()->addMonths(9),    // Finalizará en 9 meses
+                'estado' => 'Pendiente',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
+            $index++;
         }
 
         DB::table('COMPROMISO_MEJORA')->insert($compromisos);
