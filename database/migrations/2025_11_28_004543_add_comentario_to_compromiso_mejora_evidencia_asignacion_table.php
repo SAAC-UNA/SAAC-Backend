@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('COMPROMISO_MEJORA_EVIDENCIA_ASIGNACION', function (Blueprint $table) {
-            $table->text('comentario')->nullable()->after('evidencia_asignacion_id');
-        });
+        // Migración vacía - el campo comentario ya se agregó en la creación de la tabla
+        // Esta migración se mantiene solo por historial
     }
 
     /**
@@ -21,8 +20,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('COMPROMISO_MEJORA_EVIDENCIA_ASIGNACION', function (Blueprint $table) {
-            $table->dropColumn('comentario');
-        });
+        // No hay nada que revertir
     }
 };

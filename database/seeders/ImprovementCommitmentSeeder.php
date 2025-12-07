@@ -26,17 +26,16 @@ class ImprovementCommitmentSeeder extends Seeder
         }
 
         $compromisos = [];
-        $index = 1;
+        $index = 0;
 
         foreach ($procesosCompromiso as $proceso) {
             $compromisos[] = [
                 'proceso_id' => $proceso->proceso_id,
-                'entidad_tipo' => 'CRITERIO', // Ejemplo: asociado a un criterio
-                'entidad_id' => $index, // ID del criterio (1, 2, 3, 4...)
                 'descripcion' => "Compromiso de mejora para el ciclo {$proceso->ciclo_acreditacion_id}",
-                'fecha_inicio' => Carbon::now()->subMonths(3), // Iniciado hace 3 meses
-                'fecha_fin' => Carbon::now()->addMonths(9),    // Finalizará en 9 meses
+                'fecha_inicio' => Carbon::now()->subMonths(3),
+                'fecha_fin' => Carbon::now()->addMonths(9),
                 'estado' => 'Pendiente',
+                'activo' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -45,6 +44,33 @@ class ImprovementCommitmentSeeder extends Seeder
 
         DB::table('COMPROMISO_MEJORA')->insert($compromisos);
 
-        $this->command->info("✅ " . count($compromisos) . " compromisos de mejora creados exitosamente");
+        // Vincular evidencias a cada compromiso (tabla pivote COMPROMISO_MEJORA_EVIDENCIA)
+        $compromisosCreados = DB::table('COMPROMISO_MEJORA')
+            ->whereIn('proceso_id', $procesosCompromiso->pluck('proceso_id'))
+            ->get();
+
+        $evidenciasPivot = [];
+        foreach ($compromisosCreados as $compromiso) {
+            // Asignar diferentes evidencias según el compromiso
+            $evidenciasIds = match($compromiso->compromiso_mejora_id % 4) {
+                1 => [1, 2, 3],      // Compromiso 1: evidencias 20, 21, 22
+                2 => [4, 5],         // Compromiso 2: evidencias 23, 24
+                3 => [10, 11, 12],   // Compromiso 3: evidencias 40, 41, 42
+                0 => [7, 8, 9],      // Compromiso 4: evidencias 26, 27, 28
+            };
+
+            foreach ($evidenciasIds as $evidenciaId) {
+                $evidenciasPivot[] = [
+                    'compromiso_mejora_id' => $compromiso->compromiso_mejora_id,
+                    'evidencia_id' => $evidenciaId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        DB::table('COMPROMISO_MEJORA_EVIDENCIA')->insert($evidenciasPivot);
+
+        $this->command->info("✅ " . count($compromisos) . " compromisos de mejora creados con evidencias");
     }
 }

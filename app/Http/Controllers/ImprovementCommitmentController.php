@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ImprovementCommitmentRequest;
+use App\Http\Resources\ImprovementCommitmentResource;
 use App\Services\ImprovementCommitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
@@ -29,7 +30,9 @@ class ImprovementCommitmentController extends Controller
     public function listCommitments(): JsonResponse
     {
         $commitments = $this->commitmentService->listCommitments();
-        return response()->json(['data' => $commitments], 200);
+        return response()->json([
+            'data' => ImprovementCommitmentResource::collection($commitments)
+        ], 200);
     }
 
     /**
@@ -63,7 +66,39 @@ class ImprovementCommitmentController extends Controller
             ], 404);
         }
 
-        return response()->json(['data' => $commitment], 200);
+        return response()->json([
+            'data' => new ImprovementCommitmentResource($commitment)
+        ], 200);
+    }
+
+    /**
+     * Obtener compromisos de mejora filtrados por usuario.
+     *
+     * @param int $usuarioId ID del usuario.
+     * @return JsonResponse Respuesta JSON con los compromisos donde el usuario tiene asignaciones.
+     */
+    public function getByUser(int $usuarioId): JsonResponse
+    {
+        $commitments = $this->commitmentService->getCommitmentsByUser($usuarioId);
+
+        return response()->json([
+            'data' => ImprovementCommitmentResource::collection($commitments)
+        ], 200);
+    }
+
+    /**
+     * Obtener compromisos de mejora filtrados por evidencia.
+     *
+     * @param int $evidenciaId ID de la evidencia.
+     * @return JsonResponse Respuesta JSON con los compromisos donde la evidencia está asignada.
+     */
+    public function getByEvidence(int $evidenciaId): JsonResponse
+    {
+        $commitments = $this->commitmentService->getCommitmentsByEvidence($evidenciaId);
+
+        return response()->json([
+            'data' => ImprovementCommitmentResource::collection($commitments)
+        ], 200);
     }
 
     /**
@@ -77,9 +112,19 @@ class ImprovementCommitmentController extends Controller
         try {
             $commitment = $this->commitmentService->createCommitment($request->validated());
 
+            // Si retorna null, ya existe un compromiso para esta carrera en este ciclo
+            if ($commitment === null) {
+                return response()->json([
+                    'message' => 'Error de validación',
+                    'errors' => [
+                        'ciclo_acreditacion_id' => ['Ya existe un compromiso de mejora para esta carrera en este ciclo de acreditación. Solo se permite un compromiso por carrera en cada ciclo.']
+                    ],
+                ], 422);
+            }
+
             return response()->json([
                 'message' => 'Compromiso de mejora creado con éxito.',
-                'data' => $commitment,
+                'data' => new ImprovementCommitmentResource($commitment),
             ], 201);
 
         } catch (ValidationException $exception) {
@@ -128,9 +173,19 @@ class ImprovementCommitmentController extends Controller
         try {
             $updated = $this->commitmentService->updateCommitment($commitment, $request->validated());
 
+            // Si retorna null, no hubo cambios
+            if ($updated === null) {
+                return response()->json([
+                    'message' => 'No se detectó ningún cambio',
+                    'errors' => [
+                        'general' => ['No se actualizó nada. Los datos proporcionados son idénticos a los actuales.']
+                    ],
+                ], 422);
+            }
+
             return response()->json([
                 'message' => 'Compromiso de mejora actualizado con éxito.',
-                'data' => $updated,
+                'data' => new ImprovementCommitmentResource($updated),
             ], 200);
 
         } catch (ValidationException $exception) {
@@ -149,12 +204,13 @@ class ImprovementCommitmentController extends Controller
     }
 
     /**
-     * Elimina un compromiso de mejora existente.
+    * Activar o desactivar un compromiso de mejora.
+     * Body JSON esperado: {"activo": true} o {"activo": false}
      *
      * @param int $id
      * @return JsonResponse
      */
-    public function deleteCommitment(int $id): JsonResponse
+    public function setActive(int $id): JsonResponse
     {
         $commitment = $this->commitmentService->getCommitment($id);
 
@@ -165,25 +221,35 @@ class ImprovementCommitmentController extends Controller
             ], 404);
         }
 
+        // Validar que se envió el campo 'activo'
+        $activo = request()->input('activo');
+        
+        if ($activo === null) {
+            return response()->json([
+                'error' => 'Validation Error',
+                'message' => 'El campo "activo" es requerido.',
+                'errors' => [
+                    'activo' => ['El campo activo es requerido y debe ser true o false.']
+                ]
+            ], 422);
+        }
+
         try {
-            $this->commitmentService->deleteCommitment($commitment);
+            $updated = $this->commitmentService->setActive($commitment, (bool) $activo);
+            
+            $message = $activo 
+                ? 'Compromiso de mejora activado con éxito.'
+                : 'Compromiso de mejora desactivado con éxito.';
 
             return response()->json([
-                'message' => 'Compromiso de mejora eliminado con éxito.',
+                'message' => $message,
+                'data' => new ImprovementCommitmentResource($updated),
             ], 200);
 
         } catch (QueryException $exception) {
-            if ((int)($exception->errorInfo[1] ?? 0) === 1451) {
-                return response()->json([
-                    'error' => 'Constraint Violation',
-                    'message' => 'No se puede eliminar: el compromiso tiene registros relacionados.',
-                    'code' => 'FK_CONSTRAINT',
-                ], 409);
-            }
-
             return response()->json([
                 'error' => 'Database Error',
-                'message' => 'Error al eliminar el compromiso de mejora.',
+                'message' => 'Error al actualizar el estado del compromiso.',
                 'details' => $exception->getMessage(),
             ], 500);
         }

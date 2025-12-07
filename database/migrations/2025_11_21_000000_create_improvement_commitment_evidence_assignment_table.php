@@ -17,6 +17,9 @@ return new class extends Migration
             $table->unsignedBigInteger('compromiso_mejora_id');
             $table->unsignedBigInteger('evidencia_asignacion_id');
             
+            // Campo pivot para comentarios
+            $table->text('comentario')->nullable();
+            
             // Foreign keys con nombres cortos
             $table->foreign('compromiso_mejora_id', 'fk_cm_evidencia_compromiso')
                 ->references('compromiso_mejora_id')

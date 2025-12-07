@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('COMPROMISO_MEJORA', function (Blueprint $table) {
-            // Eliminar índice primero
-            $table->dropIndex('idx_entidad');
-            
-            // Eliminar columnas obsoletas
-            $table->dropColumn(['entidad_tipo', 'entidad_id']);
-        });
+        // Migración vacía - las columnas entidad_tipo y entidad_id nunca se crearon
+        // Esta migración se mantiene solo por historial
     }
 
     /**
@@ -25,13 +20,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('COMPROMISO_MEJORA', function (Blueprint $table) {
-            // Restaurar columnas
-            $table->enum('entidad_tipo', ['ESTANDAR', 'DIMENSION', 'COMPONENTE', 'CRITERIO', 'EVIDENCIA'])->after('proceso_id');
-            $table->unsignedBigInteger('entidad_id')->after('entidad_tipo');
-            
-            // Restaurar índice
-            $table->index(['entidad_tipo', 'entidad_id'], 'idx_entidad');
-        });
+        // No hay nada que revertir
     }
 };

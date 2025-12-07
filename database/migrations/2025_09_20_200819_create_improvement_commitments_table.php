@@ -29,12 +29,16 @@ return new class extends Migration
             // Estado del compromiso (inicial: Pendiente)
             $table->enum('estado', ['Pendiente', 'En Progreso', 'Completado', 'Vencido'])->default('Pendiente');
             
+            // Campo para activar/desactivar (mostrar/ocultar)
+            $table->boolean('activo')->default(true)->comment('true=visible, false=desactivado');
+            
             // Timestamps de creación y actualización
             $table->timestamps();
             
             // Índices para optimizar consultas
             $table->index('estado', 'idx_estado');
             $table->index(['fecha_inicio', 'fecha_fin'], 'idx_fechas');
+            $table->index('activo', 'idx_activo');
         });
     }
 

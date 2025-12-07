@@ -34,7 +34,8 @@ class ImprovementCommitmentService
             'process',
             'evidences.criterion.component.dimension',
             'evidences.criterion.standards',
-            'assignedEvidences'
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
         ])
         ->orderBy('created_at', 'desc')
         ->get();
@@ -52,7 +53,8 @@ class ImprovementCommitmentService
             'process',
             'evidences.criterion.component.dimension',
             'evidences.criterion.standards',
-            'assignedEvidences'
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
         ])
         ->orderBy('created_at', 'desc')
         ->paginate($perPage);
@@ -69,19 +71,73 @@ class ImprovementCommitmentService
         return ImprovementCommitment::with([
             'process',
             'evidences.criterion.component.dimension',
-            'assignedEvidences'
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
         ])->find($id);
     }
 
     /**
+     * Obtener compromisos de mejora donde un usuario específico tiene asignaciones.
+     *
+     * @param int $usuarioId ID del usuario.
+     * @return \Illuminate\Support\Collection Compromisos donde el usuario tiene asignaciones.
+     */
+    public function getCommitmentsByUser(int $usuarioId)
+    {
+        return ImprovementCommitment::with([
+            'process.accreditationCycle.careerCampus.career',
+            'process.accreditationCycle.careerCampus.campus',
+            'evidences.criterion.component.dimension',
+            'evidences.criterion.standards',
+            'assignedEvidences' => function ($query) use ($usuarioId) {
+                $query->where('usuario_id', $usuarioId);
+            },
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
+        ])
+        ->whereHas('assignedEvidences', function ($query) use ($usuarioId) {
+            $query->where('usuario_id', $usuarioId);
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+    }
+
+    /**
+     * Obtener compromisos de mejora donde una evidencia específica está asignada.
+     * Solo carga las asignaciones que corresponden a esa evidencia.
+     *
+     * @param int $evidenciaId ID de la evidencia.
+     * @return \Illuminate\Support\Collection Compromisos donde la evidencia está asignada.
+     */
+    public function getCommitmentsByEvidence(int $evidenciaId)
+    {
+        return ImprovementCommitment::with([
+            'process.accreditationCycle.careerCampus.career',
+            'process.accreditationCycle.careerCampus.campus',
+            'evidences.criterion.component.dimension',
+            'evidences.criterion.standards',
+            'assignedEvidences' => function ($query) use ($evidenciaId) {
+                $query->where('evidencia_id', $evidenciaId);
+            },
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
+        ])
+        ->whereHas('assignedEvidences', function ($query) use ($evidenciaId) {
+            $query->where('evidencia_id', $evidenciaId);
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+    }
+
+    /**                                          
      * Crear un nuevo compromiso de mejora con sus evidencias.
      * Se usa transacción para garantizar atomicidad en el proceso.
      *
      * @param array<string,mixed> $data Datos validados del compromiso.
-     * @return ImprovementCommitment Compromiso recién creado.
-     * @throws BusinessValidationException Si ya existe un compromiso en el ciclo o validaciones fallan
+     * @return ImprovementCommitment|null Compromiso recién creado o null si ya existe.
+     * @throws BusinessValidationException Si validaciones fallan
      */
-    public function createCommitment(array $data): ImprovementCommitment
+    public function createCommitment(array $data): ?ImprovementCommitment
     {
         return DB::transaction(function () use ($data) {
             // Validar selecciones (duplicados y que tengan evidencias)
@@ -90,14 +146,13 @@ class ImprovementCommitmentService
             // Obtener o crear proceso automáticamente
             $processId = $data['proceso_id'] ?? $this->getOrCreateImprovementProcess($data['ciclo_acreditacion_id']);
 
-            // Validar que NO exista ya un compromiso en este ciclo
+            // Validar que NO exista ya un compromiso en este proceso
+            // Como cada ciclo_acreditacion_id pertenece a una carrera específica (carrera_sede_id),
+            // validar por proceso_id ya garantiza: un compromiso por carrera por ciclo
             $existingCommitment = ImprovementCommitment::where('proceso_id', $processId)->first();
             
             if ($existingCommitment) {
-                $process = Process::find($processId);
-                throw ValidationException::withMessages([
-                    'ciclo_acreditacion_id' => "Ya existe un compromiso de mejora para el ciclo de acreditación ID {$process->ciclo_acreditacion_id}. Solo se permite un compromiso por ciclo."
-                ]);
+                return null; // Retorna null si ya existe un compromiso en este proceso
             }
 
             // Crear nuevo compromiso con estado inicial "Pendiente"
@@ -135,10 +190,12 @@ class ImprovementCommitmentService
             }
 
             return $commitment->refresh()->load([
-                'process',
+                'process.accreditationCycle.careerCampus.career',
+                'process.accreditationCycle.careerCampus.campus',
                 'evidences.criterion.component.dimension',
                 'evidences.criterion.standards',
-                'assignedEvidences'
+                'assignedEvidences.evidence',
+                'assignedEvidences.user'
             ]);
         });
     }
@@ -216,11 +273,9 @@ class ImprovementCommitmentService
                 $hasChanges = true;
             }
 
-            // Lanzar excepción si no hay cambios
+            // Retornar null si no hay cambios
             if (!$hasChanges) {
-                throw ValidationException::withMessages([
-                    'general' => 'No se actualizó nada. No se detectaron cambios en los datos proporcionados.'
-                ]);
+                return null;
             }
 
             // Aplicar cambios
@@ -237,36 +292,32 @@ class ImprovementCommitmentService
                 'process',
                 'evidences.criterion.component.dimension',
                 'evidences.criterion.standards',
-                'assignedEvidences'
+                'assignedEvidences.evidence',
+                'assignedEvidences.user'
             ]);
         });
     }
 
     /**
-     * Eliminar un compromiso de mejora.
+     * Activar o desactivar un compromiso de mejora.
+     * Cuando se desactiva (activo=false), el compromiso se oculta pero preserva todos sus datos.
      *
-     * @param ImprovementCommitment $commitment Compromiso a eliminar.
-     * @return bool True si se eliminó correctamente.
+     * @param ImprovementCommitment $commitment Compromiso a modificar.
+     * @param bool $activo True para activar, false para desactivar.
+     * @return ImprovementCommitment Compromiso actualizado.
      */
-    public function deleteCommitment(ImprovementCommitment $commitment): bool
+    public function setActive(ImprovementCommitment $commitment, bool $activo): ImprovementCommitment
     {
-        return DB::transaction(function () use ($commitment) {
-            // Obtener IDs de las asignaciones antes de desvincular (especificar tabla)
-            $assignmentIds = $commitment->assignedEvidences()
-                ->pluck('EVIDENCIA_ASIGNACION.evidencia_asignacion_id')
-                ->toArray();
-            
-            // Desvincular de las tablas pivot
-            $commitment->assignedEvidences()->detach();
-            $commitment->evidences()->detach();
-            
-            // Eliminar las asignaciones de evidencias huérfanas
-            if (!empty($assignmentIds)) {
-                EvidenceAssignment::whereIn('evidencia_asignacion_id', $assignmentIds)->delete();
-            }
-            
-            return $commitment->delete();
-        });
+        $commitment->activo = $activo;
+        $commitment->save();
+        
+        return $commitment->fresh([
+            'process.accreditationCycle.careerCampus.career',
+            'process.accreditationCycle.careerCampus.campus',
+            'evidences',
+            'assignedEvidences.evidence',
+            'assignedEvidences.user'
+        ]);
     }
 
     /**

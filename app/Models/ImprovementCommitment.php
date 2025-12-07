@@ -35,12 +35,14 @@ class ImprovementCommitment extends Model
         'fecha_inicio',
         'fecha_fin',
         'estado',
+        'activo',
     ];
 
     // Conversión automática de tipos
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+        'activo' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -64,6 +66,7 @@ class ImprovementCommitment extends Model
     }
 
     /**
+     * Relación: Asignaciones de evidencias vinculadas al compromiso (many-to-many con pivot comentario).
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
@@ -74,7 +77,7 @@ class ImprovementCommitment extends Model
             'COMPROMISO_MEJORA_EVIDENCIA_ASIGNACION',
             'compromiso_mejora_id',
             'evidencia_asignacion_id'
-        )->withTimestamps();
+        )->withPivot('comentario')->withTimestamps();
     }
 
     /**
@@ -93,56 +96,6 @@ class ImprovementCommitment extends Model
             'compromiso_mejora_id',
             'evidencia_id'
         )->withTimestamps();
-    }
-
-    /**
-     * Relación: Estándar (si entidad_tipo = ESTANDAR).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function standard()
-    {
-        return $this->belongsTo(Standard::class, 'entidad_id', 'estandar_id');
-    }
-
-    /**
-     * Relación: Dimensión (si entidad_tipo = DIMENSION).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function dimension()
-    {
-        return $this->belongsTo(Dimension::class, 'entidad_id', 'dimension_id');
-    }
-
-    /**
-     * Relación: Componente (si entidad_tipo = COMPONENTE).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function component()
-    {
-        return $this->belongsTo(Component::class, 'entidad_id', 'componente_id');
-    }
-
-    /**
-     * Relación: Criterio (si entidad_tipo = CRITERIO).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function criterion()
-    {
-        return $this->belongsTo(Criterion::class, 'entidad_id', 'criterio_id');
-    }
-
-    /**
-     * Relación: Evidencia (si entidad_tipo = EVIDENCIA).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function evidence()
-    {
-        return $this->belongsTo(Evidence::class, 'entidad_id', 'evidencia_id');
     }
 
     /**

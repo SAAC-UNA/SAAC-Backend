@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('compromiso_mejora_evidencia_asignacion', function (Blueprint $table) {
-            //
-        });
+        // Migración vacía - duplicada por error
+        // Se mantiene solo por historial
     }
 
     /**
