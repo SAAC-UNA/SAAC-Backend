@@ -20,42 +20,138 @@ use Carbon\Carbon;
 class ExtensionRequestService
 {
     /**
-     * Obtener todas las solicitudes con sus relaciones.
+     * Obtener todas las solicitudes con filtros y paginación.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param array $filters
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getAll()
+    public function getAll(array $filters = [])
     {
-        return ExtensionRequest::with(['evidenceAssignment', 'user', 'resolutor'])
-            ->orderBy('fecha_solicitud', 'desc')
-            ->get();
+        $query = ExtensionRequest::query();
+
+        // Filtro por estado
+        if (!empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+
+        // Filtro por usuario
+        if (!empty($filters['usuario_id'])) {
+            $query->where('usuario_id', $filters['usuario_id']);
+        }
+
+        // Filtro por evidencia asignación
+        if (!empty($filters['evidencia_asignacion_id'])) {
+            $query->where('evidencia_asignacion_id', $filters['evidencia_asignacion_id']);
+        }
+
+        // Filtro por rango de fechas
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+        }
+
+        // Incluir relaciones
+        $query->with(['evidenceAssignment', 'user', 'resolutor']);
+
+        // Ordenar por fecha descendente
+        $query->orderBy('fecha_solicitud', 'desc');
+
+        // Paginar resultados (default 15, max 100)
+        $perPage = min($filters['per_page'] ?? 15, 100);
+
+        return $query->paginate($perPage);
     }
 
     /**
-     * Obtener solicitudes pendientes.
+     * Obtener solicitudes pendientes con filtros y paginación.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param array $filters
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getPending()
+    public function getPending(array $filters = [])
     {
-        return ExtensionRequest::with(['evidenceAssignment', 'user'])
-            ->pendientes()
-            ->orderBy('fecha_solicitud', 'asc')
-            ->get();
+        $query = ExtensionRequest::query();
+
+        // Siempre filtrar por pendientes
+        $query->pendientes();
+
+        // Filtro por usuario
+        if (!empty($filters['usuario_id'])) {
+            $query->where('usuario_id', $filters['usuario_id']);
+        }
+
+        // Filtro por evidencia asignación
+        if (!empty($filters['evidencia_asignacion_id'])) {
+            $query->where('evidencia_asignacion_id', $filters['evidencia_asignacion_id']);
+        }
+
+        // Filtro por rango de fechas
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+        }
+
+        // Incluir relaciones
+        $query->with(['evidenceAssignment', 'user']);
+
+        // Ordenar por fecha ascendente (más antiguas primero)
+        $query->orderBy('fecha_solicitud', 'asc');
+
+        // Paginar resultados (default 15, max 100)
+        $perPage = min($filters['per_page'] ?? 15, 100);
+
+        return $query->paginate($perPage);
     }
 
     /**
-     * Obtener solicitudes de un usuario específico.
+     * Obtener solicitudes de un usuario específico con filtros y paginación.
      *
      * @param int $usuarioId
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param array $filters
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getByUser(int $usuarioId)
+    public function getByUser(int $usuarioId, array $filters = [])
     {
-        return ExtensionRequest::with(['evidenceAssignment', 'resolutor'])
-            ->deUsuario($usuarioId)
-            ->orderBy('fecha_solicitud', 'desc')
-            ->get();
+        $query = ExtensionRequest::query();
+
+        // Siempre filtrar por usuario
+        $query->deUsuario($usuarioId);
+
+        // Filtro por estado
+        if (!empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+
+        // Filtro por evidencia asignación
+        if (!empty($filters['evidencia_asignacion_id'])) {
+            $query->where('evidencia_asignacion_id', $filters['evidencia_asignacion_id']);
+        }
+
+        // Filtro por rango de fechas
+        if (!empty($filters['fecha_desde'])) {
+            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+        }
+
+        if (!empty($filters['fecha_hasta'])) {
+            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+        }
+
+        // Incluir relaciones
+        $query->with(['evidenceAssignment', 'resolutor']);
+
+        // Ordenar por fecha descendente
+        $query->orderBy('fecha_solicitud', 'desc');
+
+        // Paginar resultados (default 15, max 100)
+        $perPage = min($filters['per_page'] ?? 15, 100);
+
+        return $query->paginate($perPage);
     }
 
     /**

@@ -38,43 +38,113 @@ class ExtensionRequestController extends Controller
     /**
      * GET /api/solicitudes-ampliacion
      * Listar todas las solicitudes (solo encargados de acreditación).
+     * 
+     * Query params opcionales:
+     * - estado: pendiente|aprobada|rechazada
+     * - usuario_id: ID del usuario
+     * - evidencia_asignacion_id: ID de la asignación
+     * - fecha_desde: YYYY-MM-DD
+     * - fecha_hasta: YYYY-MM-DD
+     * - per_page: registros por página (default 15, max 100)
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ExtensionRequest::class);
 
-        $solicitudes = $this->service->getAll();
+        $filters = $request->only(['estado', 'usuario_id', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
+        $solicitudes = $this->service->getAll($filters);
+        
         return response()->json([
-            'data' => ExtensionRequestResource::collection($solicitudes)
+            'data' => ExtensionRequestResource::collection($solicitudes->items()),
+            'meta' => [
+                'current_page' => $solicitudes->currentPage(),
+                'from' => $solicitudes->firstItem(),
+                'last_page' => $solicitudes->lastPage(),
+                'per_page' => $solicitudes->perPage(),
+                'to' => $solicitudes->lastItem(),
+                'total' => $solicitudes->total(),
+            ],
+            'links' => [
+                'first' => $solicitudes->url(1),
+                'last' => $solicitudes->url($solicitudes->lastPage()),
+                'prev' => $solicitudes->previousPageUrl(),
+                'next' => $solicitudes->nextPageUrl(),
+            ]
         ], 200);
     }
 
     /**
      * GET /api/solicitudes-ampliacion/pendientes
      * Listar solicitudes pendientes (solo encargados de acreditación).
+     * 
+     * Query params opcionales:
+     * - usuario_id: ID del usuario
+     * - evidencia_asignacion_id: ID de la asignación
+     * - fecha_desde: YYYY-MM-DD
+     * - fecha_hasta: YYYY-MM-DD
+     * - per_page: registros por página (default 15, max 100)
      */
-    public function pending(): JsonResponse
+    public function pending(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ExtensionRequest::class);
 
-        $solicitudes = $this->service->getPending();
+        $filters = $request->only(['usuario_id', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
+        $solicitudes = $this->service->getPending($filters);
+        
         return response()->json([
-            'data' => ExtensionRequestResource::collection($solicitudes)
+            'data' => ExtensionRequestResource::collection($solicitudes->items()),
+            'meta' => [
+                'current_page' => $solicitudes->currentPage(),
+                'from' => $solicitudes->firstItem(),
+                'last_page' => $solicitudes->lastPage(),
+                'per_page' => $solicitudes->perPage(),
+                'to' => $solicitudes->lastItem(),
+                'total' => $solicitudes->total(),
+            ],
+            'links' => [
+                'first' => $solicitudes->url(1),
+                'last' => $solicitudes->url($solicitudes->lastPage()),
+                'prev' => $solicitudes->previousPageUrl(),
+                'next' => $solicitudes->nextPageUrl(),
+            ]
         ], 200);
     }
 
     /**
      * GET /api/solicitudes-ampliacion/mis-solicitudes
      * Listar mis propias solicitudes.
+     * 
+     * Query params opcionales:
+     * - estado: pendiente|aprobada|rechazada
+     * - evidencia_asignacion_id: ID de la asignación
+     * - fecha_desde: YYYY-MM-DD
+     * - fecha_hasta: YYYY-MM-DD
+     * - per_page: registros por página (default 15, max 100)
      */
-    public function mySolicitudes(): JsonResponse
+    public function mySolicitudes(Request $request): JsonResponse
     {
         // TEMPORAL: Fallback a usuario ID 1 para pruebas
         $usuarioId = Auth::id() ?? 1;
-        $solicitudes = $this->service->getByUser($usuarioId);
+        
+        $filters = $request->only(['estado', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
+        $solicitudes = $this->service->getByUser($usuarioId, $filters);
         
         return response()->json([
-            'data' => ExtensionRequestResource::collection($solicitudes)
+            'data' => ExtensionRequestResource::collection($solicitudes->items()),
+            'meta' => [
+                'current_page' => $solicitudes->currentPage(),
+                'from' => $solicitudes->firstItem(),
+                'last_page' => $solicitudes->lastPage(),
+                'per_page' => $solicitudes->perPage(),
+                'to' => $solicitudes->lastItem(),
+                'total' => $solicitudes->total(),
+            ],
+            'links' => [
+                'first' => $solicitudes->url(1),
+                'last' => $solicitudes->url($solicitudes->lastPage()),
+                'prev' => $solicitudes->previousPageUrl(),
+                'next' => $solicitudes->nextPageUrl(),
+            ]
         ], 200);
     }
 
