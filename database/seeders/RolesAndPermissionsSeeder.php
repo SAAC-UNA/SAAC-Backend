@@ -22,11 +22,12 @@ class RolesAndPermissionsSeeder extends Seeder
         $profesor = Role::firstOrCreate(['name' => 'Profesor', 'guard_name' => 'api']);
         $encargado = Role::firstOrCreate(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
 
-        // Usuario admin de prueba
+        // Usuario admin de prueba con múltiples roles para testing
         $admin = User::firstOrCreate(
             ['cedula' => '0001', 'email' => 'admin@saacuna.local'],
             ['nombre' => 'Super Admin', 'status' => 'active']
         );
-        $admin->assignRole('Superusuario');
+        // Asignar roles: Superusuario Y Encargado de Acreditación para poder recibir notificaciones
+        $admin->syncRoles(['Superusuario', 'Encargado de Acreditación']);
     }
 }

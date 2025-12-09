@@ -12,6 +12,7 @@ use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceAssignmentController;
+use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 
@@ -53,6 +54,17 @@ Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::clas
 Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
 Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
 Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
+
+// Rutas para solicitudes de ampliación (HU-016)
+Route::prefix('solicitudes-ampliacion')->group(function () {
+    Route::get('/', [ExtensionRequestController::class, 'index']);                    // GET /api/solicitudes-ampliacion
+    Route::get('/pendientes', [ExtensionRequestController::class, 'pending']);        // GET /api/solicitudes-ampliacion/pendientes
+    Route::get('/mis-solicitudes', [ExtensionRequestController::class, 'mySolicitudes']); // GET /api/solicitudes-ampliacion/mis-solicitudes
+    Route::get('/{id}', [ExtensionRequestController::class, 'show']);                 // GET /api/solicitudes-ampliacion/{id}
+    Route::post('/', [ExtensionRequestController::class, 'store']);                   // POST /api/solicitudes-ampliacion
+    Route::post('/{id}/aprobar', [ExtensionRequestController::class, 'approve']);     // POST /api/solicitudes-ampliacion/{id}/aprobar
+    Route::post('/{id}/rechazar', [ExtensionRequestController::class, 'reject']);     // POST /api/solicitudes-ampliacion/{id}/rechazar
+});
 
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
