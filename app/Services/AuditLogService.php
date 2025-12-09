@@ -138,7 +138,9 @@ class AuditLogService
     public function getForExport(string $desde, string $hasta)
     {
         // límite máximo permitido para exportación, por medio de configuración
-        $exportSafetyLimit = config('saac.export_limit', 20000); 
+        $exportSafetyLimit = config('saac.export_limit', 20000);// quitar hardcodeo
+
+         // Contar registros en el rango solicitado 
 
         $count = AuditLog::whereBetween('fecha_hora', [$desde, $hasta])->count();
 
