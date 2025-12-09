@@ -75,7 +75,24 @@ Accept: application/json
 
 **Endpoint:** `GET http://localhost:8000/api/solicitudes-ampliacion/mis-solicitudes`
 
-### Respuesta exitosa (200):
+### Query params opcionales:
+- `estado`: `pendiente`, `aprobada` o `rechazada`
+- `evidencia_asignacion_id`: ID de la asignación específica
+- `fecha_desde`: Fecha desde (YYYY-MM-DD)
+- `fecha_hasta`: Fecha hasta (YYYY-MM-DD)
+- `per_page`: Registros por página (default 15, max 100)
+- `page`: Número de página
+
+### Ejemplos de uso:
+```
+GET /api/solicitudes-ampliacion/mis-solicitudes
+GET /api/solicitudes-ampliacion/mis-solicitudes?estado=pendiente
+GET /api/solicitudes-ampliacion/mis-solicitudes?per_page=25&page=2
+GET /api/solicitudes-ampliacion/mis-solicitudes?fecha_desde=2025-01-01&fecha_hasta=2025-12-31
+GET /api/solicitudes-ampliacion/mis-solicitudes?evidencia_asignacion_id=5&estado=aprobada
+```
+
+### Respuesta exitosa (200) - Con paginación:
 ```json
 {
   "data": [
@@ -88,7 +105,21 @@ Accept: application/json
       "fecha_solicitud": "2025-12-09T03:45:00.000000Z",
       "fecha_sugerida": "2025-12-20T00:00:00.000000Z"
     }
-  ]
+  ],
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 3,
+    "per_page": 15,
+    "to": 15,
+    "total": 42
+  },
+  "links": {
+    "first": "http://localhost:8000/api/solicitudes-ampliacion/mis-solicitudes?page=1",
+    "last": "http://localhost:8000/api/solicitudes-ampliacion/mis-solicitudes?page=3",
+    "prev": null,
+    "next": "http://localhost:8000/api/solicitudes-ampliacion/mis-solicitudes?page=2"
+  }
 }
 ```
 
@@ -101,7 +132,23 @@ Accept: application/json
 ### Requiere:
 - Usuario con rol `encargado_acreditacion` o `admin`
 
-### Respuesta exitosa (200):
+### Query params opcionales:
+- `usuario_id`: Filtrar por usuario solicitante
+- `evidencia_asignacion_id`: ID de la asignación específica
+- `fecha_desde`: Fecha desde (YYYY-MM-DD)
+- `fecha_hasta`: Fecha hasta (YYYY-MM-DD)
+- `per_page`: Registros por página (default 15, max 100)
+- `page`: Número de página
+
+### Ejemplos de uso:
+```
+GET /api/solicitudes-ampliacion/pendientes
+GET /api/solicitudes-ampliacion/pendientes?usuario_id=5
+GET /api/solicitudes-ampliacion/pendientes?per_page=50
+GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&page=1
+```
+
+### Respuesta exitosa (200) - Con paginación:
 ```json
 {
   "data": [
@@ -115,7 +162,21 @@ Accept: application/json
         "email": "maria@example.com"
       }
     }
-  ]
+  ],
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 2,
+    "per_page": 15,
+    "to": 15,
+    "total": 28
+  },
+  "links": {
+    "first": "http://localhost:8000/api/solicitudes-ampliacion/pendientes?page=1",
+    "last": "http://localhost:8000/api/solicitudes-ampliacion/pendientes?page=2",
+    "prev": null,
+    "next": "http://localhost:8000/api/solicitudes-ampliacion/pendientes?page=2"
+  }
 }
 ```
 
@@ -241,7 +302,25 @@ Accept: application/json
 ### Requiere:
 - Usuario con rol `encargado_acreditacion` o `admin`
 
-### Respuesta exitosa (200):
+### Query params opcionales:
+- `estado`: `pendiente`, `aprobada` o `rechazada`
+- `usuario_id`: Filtrar por usuario solicitante
+- `evidencia_asignacion_id`: ID de la asignación específica
+- `fecha_desde`: Fecha desde (YYYY-MM-DD)
+- `fecha_hasta`: Fecha hasta (YYYY-MM-DD)
+- `per_page`: Registros por página (default 15, max 100)
+- `page`: Número de página
+
+### Ejemplos de uso:
+```
+GET /api/solicitudes-ampliacion
+GET /api/solicitudes-ampliacion?estado=pendiente
+GET /api/solicitudes-ampliacion?usuario_id=5&estado=aprobada
+GET /api/solicitudes-ampliacion?fecha_desde=2025-01-01&fecha_hasta=2025-12-31&per_page=50
+GET /api/solicitudes-ampliacion?evidencia_asignacion_id=3&page=2
+```
+
+### Respuesta exitosa (200) - Con paginación:
 ```json
 {
   "data": [
@@ -255,7 +334,21 @@ Accept: application/json
       "estado": "pendiente",
       "fecha_solicitud": "2025-12-09T05:00:00.000000Z"
     }
-  ]
+  ],
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 5,
+    "per_page": 15,
+    "to": 15,
+    "total": 73
+  },
+  "links": {
+    "first": "http://localhost:8000/api/solicitudes-ampliacion?page=1",
+    "last": "http://localhost:8000/api/solicitudes-ampliacion?page=5",
+    "prev": null,
+    "next": "http://localhost:8000/api/solicitudes-ampliacion?page=2"
+  }
 }
 ```
 
