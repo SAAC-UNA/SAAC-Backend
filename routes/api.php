@@ -18,6 +18,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\CriterionApprovalController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -57,6 +58,12 @@ Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::c
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+
+// Rutas para aprobación de criterios por bloques (HU-010)
+Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion']);
+Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion']);
 
 Route::prefix('admin/users')->group(function () {
     Route::get('/', [UserController::class, 'index']);
