@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ImprovementCommitmentRequest;
+use App\Http\Requests\ImprovementCommitmentListRequest;
 use App\Http\Resources\ImprovementCommitmentResource;
 use App\Services\ImprovementCommitmentService;
 use Illuminate\Http\JsonResponse;
@@ -23,30 +24,19 @@ class ImprovementCommitmentController extends Controller
     }
 
     /**
-     * Lista todos los compromisos de mejora con sus relaciones.
+     * Lista compromisos de mejora con paginación obligatoria y filtros dinámicos.
+     * Default: 10 registros por página, máximo 50 (estándar del equipo).
      *
-     * @return JsonResponse
+     * @param ImprovementCommitmentListRequest $request
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function listCommitments(): JsonResponse
+    public function listCommitments(ImprovementCommitmentListRequest $request)
     {
-        $commitments = $this->commitmentService->listCommitments();
-        return response()->json([
-            'data' => ImprovementCommitmentResource::collection($commitments)
-        ], 200);
-    }
-
-    /**
-     * Lista compromisos de mejora con paginación.
-     *
-     * Query param opcional: per_page (default: 10)
-     *
-     * @return JsonResponse
-     */
-    public function listCommitmentsPaginated(): JsonResponse
-    {
-        $perPage = (int) request()->input('per_page', 10);
-        $commitments = $this->commitmentService->listCommitmentsPaginated($perPage);
-        return response()->json($commitments, 200);
+        $perPage = $request->input('per_page', 10);
+        $commitments = $this->commitmentService->listCommitments($perPage, $request->validated());
+        
+        // SIEMPRE retornar con formato paginado (incluye meta y links automáticamente)
+        return ImprovementCommitmentResource::collection($commitments);
     }
 
     /**

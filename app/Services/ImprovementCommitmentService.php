@@ -24,40 +24,51 @@ class ImprovementCommitmentService
     }
 
     /**
-     * Listar todos los compromisos de mejora con sus relaciones.
+     * Listar compromisos de mejora con paginación obligatoria y filtros dinámicos.
      *
-     * @return \Illuminate\Support\Collection Colección de compromisos con relaciones.
-     */
-    public function listCommitments()
-    {
-        return ImprovementCommitment::with([
-            'process',
-            'evidences.criterion.component.dimension',
-            'evidences.criterion.standards',
-            'assignedEvidences.evidence',
-            'assignedEvidences.user'
-        ])
-        ->orderBy('created_at', 'desc')
-        ->get();
-    }
-
-    /**
-     * Listar compromisos de mejora con paginación.
-     *
-     * @param int $perPage Cantidad de registros por página (default: 10)
+     * @param int $perPage Cantidad de registros por página (default: 10).
+     * @param array $filters Filtros opcionales: search, estado, proceso_id, usuario_id
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function listCommitmentsPaginated(int $perPage = 10)
+    public function listCommitments(int $perPage = 10, array $filters = [])
     {
-        return ImprovementCommitment::with([
-            'process',
-            'evidences.criterion.component.dimension',
-            'evidences.criterion.standards',
-            'assignedEvidences.evidence',
-            'assignedEvidences.user'
-        ])
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage);
+        $query = ImprovementCommitment::query()
+            ->with([
+                'process',
+                'evidences.criterion.component.dimension',
+                'evidences.criterion.standards',
+                'assignedEvidences.evidence',
+                'assignedEvidences.user'
+            ]);
+
+        // Filtro de búsqueda por descripción
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('descripcion', 'like', "%{$search}%");
+        }
+
+        // Filtro por estado
+        if (!empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+
+        // Filtro por proceso
+        if (!empty($filters['proceso_id'])) {
+            $query->where('proceso_id', $filters['proceso_id']);
+        }
+
+        // Filtro por usuario asignado (compromisos que tienen asignaciones a ese usuario)
+        if (!empty($filters['usuario_id'])) {
+            $query->whereHas('assignedEvidences', function ($q) use ($filters) {
+                $q->where('usuario_id', $filters['usuario_id']);
+            });
+        }
+
+        // Ordenar por fecha de creación (más recientes primero)
+        $query->orderBy('created_at', 'desc');
+
+        // SIEMPRE retornar paginado (estándar del equipo)
+        return $query->paginate($perPage);
     }
 
     /**
@@ -284,8 +295,10 @@ class ImprovementCommitmentService
             }
 
             // Reemplazar asignaciones si se proporcionan (usando sync)
-            if (!empty($data['evidencias_asignar'])) {
+            // Nota: isset permite detectar si el campo fue enviado, incluso si es array vacío
+            if (isset($data['evidencias_asignar'])) {
                 $this->syncEvidenceAssignments($commitment, $data['evidencias_asignar'], $processId);
+                $hasChanges = true;
             }
 
             return $commitment->refresh()->load([
