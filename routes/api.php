@@ -19,6 +19,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\FileController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -71,6 +72,43 @@ Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::c
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+
+// Rutas para archivos (HU-008 - Subida de Evidencias)
+Route::prefix('archivos')->group(function () {
+    // TEMPORAL: Obtener datos de prueba para formulario
+    Route::get('/test-data', [FileController::class, 'getTestData']);
+    
+    // Listar archivos por evidencia o proceso
+    Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
+    
+    // Subir nuevo archivo (máximo 10 uploads por minuto)
+    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
+    
+    // Ver metadatos de un archivo
+    Route::get('/{archivo}', [FileController::class, 'show']);
+    
+    // Eliminar archivo
+    Route::delete('/{archivo}', [FileController::class, 'destroy']);
+    
+    // Hacer público un archivo (generar enlace público)
+    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
+    
+    // Revocar acceso público
+    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
+    
+    // Operación masiva: hacer públicos múltiples archivos
+    Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
+    
+    // ============================================================
+    // RUTAS PARA SERVING DE ARCHIVOS (A IMPLEMENTAR EN EL FUTURO)
+    // ============================================================
+    // Route::get('/{archivo}/download', [FileController::class, 'download']);
+    // Route::get('/{archivo}/view', [FileController::class, 'view']);
+});
+
+// Ruta pública para acceso mediante token (SIN autenticación - para SINAES)
+// A implementar en el futuro cuando se programe el serving de archivos
+// Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
 
 Route::prefix('admin/users')->group(function () {
     Route::get('/', [UserController::class, 'index']);

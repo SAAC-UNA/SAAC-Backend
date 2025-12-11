@@ -31,7 +31,7 @@ class EvidenceAssignmentService
      */
     public function findById(int $id): ?EvidenceAssignment
     {
-        return EvidenceAssignment::with(['process', 'evidence', 'user'])->find($id);
+        return EvidenceAssignment::with(['process', 'evidence', 'evidence.criterion', 'user'])->find($id);
     }
 
     /**
