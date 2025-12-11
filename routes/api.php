@@ -64,6 +64,7 @@ Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['i
 Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
 
 // Rutas para asignaciones de evidencias (HU-007)
+Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates'])->middleware('auth:sanctum');
 Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
 Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
