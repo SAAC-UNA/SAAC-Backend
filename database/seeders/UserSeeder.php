@@ -11,12 +11,12 @@ use Spatie\Permission\Models\Role;
 class UserSeeder extends Seeder
 {
     /**
-     * Seeder robusto de Usuarios con Roles y Carreras
-     * Campus Alajuela - Sede Regional Central Occidente
+     * Seeder de Usuarios del LDAP
+     * Usuarios importados desde users.ldif
      */
     public function run(): void
     {
-        $this->command->info('👥 Iniciando seeder de usuarios (Campus Alajuela)...');
+        $this->command->info('👥 Iniciando seeder de usuarios del LDAP...');
 
         /**
          * PASO 1: Verificar que existan los roles necesarios
@@ -27,7 +27,6 @@ class UserSeeder extends Seeder
             'Superusuario' => 'Acceso total al sistema',
             'Administrador' => 'Administrador de carrera',
             'Profesor' => 'Docente de la carrera',
-            'Encargado de Acreditación' => 'Evaluador de evidencias',
         ];
 
         foreach ($roles as $roleName => $description) {
@@ -38,189 +37,134 @@ class UserSeeder extends Seeder
         }
 
         /**
-         * PASO 2: Obtener carreras del Campus Alajuela
+         * PASO 2: Obtener la carrera de Ingeniería en Sistemas
          */
-        $this->command->info('🎓 Obteniendo carreras...');
+        $this->command->info('🎓 Obteniendo carrera...');
         
         $careerIngSistemas = Career::where('nombre', 'Ingeniería en Sistemas de Información')->first();
-        $careerQuimica = Career::where('nombre', 'Química Industrial')->first();
-        $careerAdministracion = Career::where('nombre', 'Administración de Empresas')->first();
-        $careerIngles = Career::where('nombre', 'Inglés')->first();
+
+        if (!$careerIngSistemas) {
+            $this->command->warn('⚠️  No se encontró la carrera de Ingeniería en Sistemas.');
+            $this->command->info('Los usuarios se crearán sin asignación de carrera.');
+        } else {
+            $this->command->info("  ✅ Carrera encontrada: {$careerIngSistemas->nombre}");
+        }
 
         /**
-         * PASO 3: Crear SuperUsuario del Sistema
+         * PASO 3: Crear SuperUsuario del Sistema (Pablo Castillo)
+         * dn: uid=203849675,ou=profesores,ou=users,dc=una,dc=local
          */
         $this->command->info('🦸 Creando SuperUsuario...');
         
-        // Pablo Castillo - Funcionario TI
         $superUser = User::firstOrCreate(
             ['email' => 'pablo.castillo.quesada@una.cr'],
             [
                 'cedula' => '203849675',
                 'nombre' => 'Pablo Castillo Quesada',
+                'password' => null, // Usuario LDAP
                 'status' => User::STATUS_ACTIVE,
             ]
         );
         $superUser->syncRoles(['Superusuario']);
-        $this->command->info("  ✅ {$superUser->nombre} - Funcionario TI");
+        $this->command->info("  ✅ {$superUser->nombre} - Superusuario");
 
         /**
-         * PASO 4: Crear usuarios por carrera
+         * PASO 4: Crear usuarios profesores y estudiantes del LDAP
          */
         $users = [];
-        
-        // INGENIERÍA EN SISTEMAS
-        if ($careerIngSistemas) {
-            $this->command->info('💻 Usuarios de Ingeniería en Sistemas...');
-            
-            // Cristopher Montero - Administrador de Carrera de Sistemas
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '203948609',
-                    'nombre' => 'Cristopher Montero Jimenez',
-                    'email' => 'cristopher.montero.jimenez@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Administrador'],
-                'careers' => [$careerIngSistemas->carrera_id],
-            ];
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '102220222',
-                    'nombre' => 'MSc. María González Vega',
-                    'email' => 'maria.gonzalez@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Profesor', 'Encargado de Acreditación'],
-                'careers' => [$careerIngSistemas->carrera_id],
-            ];
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '103330333',
-                    'nombre' => 'Ing. José Hernández Mora',
-                    'email' => 'jose.hernandez@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Profesor'],
-                'careers' => [$careerIngSistemas->carrera_id],
-            ];
-        }
 
-        // QUÍMICA INDUSTRIAL
-        if ($careerQuimica) {
-            $this->command->info('🧪 Usuarios de Química Industrial...');
-            
-            // Alejandro Ugalde - Administrador de Carrera de Química
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '116540678',
-                    'nombre' => 'Alejandro Ugalde Víquez',
-                    'email' => 'alejandro.ugalde.viquez@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Administrador'],
-                'careers' => [$careerQuimica->carrera_id],
-            ];
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '202220222',
-                    'nombre' => 'MSc. Patricia Rojas Quesada',
-                    'email' => 'patricia.rojas@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Profesor', 'Encargado de Acreditación'],
-                'careers' => [$careerQuimica->carrera_id],
-            ];
-        }
+        // PROFESORES (ou=profesores,ou=users,dc=una,dc=local)
+        $this->command->info('👨‍🏫 Profesores...');
 
-        // ADMINISTRACIÓN DE EMPRESAS
-        if ($careerAdministracion) {
-            $this->command->info('� Usuarios de Administración de Empresas...');
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '301110111',
-                    'nombre' => 'MBA. Fernando Soto Méndez',
-                    'email' => 'fernando.soto@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Administrador', 'Profesor'],
-                'careers' => [$careerAdministracion->carrera_id],
-            ];
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '302220222',
-                    'nombre' => 'Lic. Laura Vindas Chacón',
-                    'email' => 'laura.vindas@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Profesor'],
-                'careers' => [$careerAdministracion->carrera_id],
-            ];
-        }
-
-        // ENSEÑANZA DEL INGLÉS
-        if ($careerIngles) {
-            $this->command->info('�️  Usuarios de Enseñanza del Inglés...');
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '401110111',
-                    'nombre' => 'MA. Roberto Smith Johnson',
-                    'email' => 'roberto.smith@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Administrador', 'Profesor'],
-                'careers' => [$careerIngles->carrera_id],
-            ];
-            
-            $users[] = [
-                'user_data' => [
-                    'cedula' => '402220222',
-                    'nombre' => 'BA. Gabriela Solís Núñez',
-                    'email' => 'gabriela.solis@una.cr',
-                    'status' => User::STATUS_ACTIVE,
-                ],
-                'roles' => ['Profesor', 'Encargado de Acreditación'],
-                'careers' => [$careerIngles->carrera_id],
-            ];
-        }
-
-        // Encargado de Acreditación general
-        $this->command->info('🔍 Usuarios generales...');
-        
+        // Cristopher Montero Jimenez - Administrador
+        // dn: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
         $users[] = [
             'user_data' => [
-                'cedula' => '501110111',
-                'nombre' => 'Dr. Ricardo Pérez Álvarez',
-                'email' => 'ricardo.perez@una.cr',
+                'cedula' => '203948609',
+                'nombre' => 'Cristopher Montero Jimenez',
+                'email' => 'cristopher.montero.jimenez@una.cr',
+                'password' => null, // Usuario LDAP
                 'status' => User::STATUS_ACTIVE,
             ],
-            'roles' => ['Encargado de Acreditación'],
-            'careers' => array_filter([
-                $careerIngSistemas?->carrera_id,
-                $careerQuimica?->carrera_id,
-            ]),
+            'roles' => ['Administrador'],
+            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 
-        // Usuario inactivo para pruebas
+        // ESTUDIANTES DEL PROYECTO (ou=estudiantes,ou=users,dc=una,dc=local)
+        $this->command->info('🎓 Estudiantes del proyecto...');
+
+        // Naydelin Nayeli Jiron Castellon
+        // dn: uid=801490957,ou=estudiantes,ou=users,dc=una,dc=local
         $users[] = [
             'user_data' => [
-                'cedula' => '999990000',
-                'nombre' => 'Usuario Inactivo Prueba',
-                'email' => 'usuario.inactivo@una.cr',
-                'status' => User::STATUS_INACTIVE,
+                'cedula' => '801490957',
+                'nombre' => 'Naydelin Nayeli Jiron Castellon',
+                'email' => 'nayidelin.jiron.castellon@est.una.ac.cr',
+                'password' => null, // Usuario LDAP
+                'status' => User::STATUS_ACTIVE,
+            ],
+            'roles' => ['Profesor'],
+            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+        ];
+
+        // Jose Andres Jara Arias
+        // dn: uid=208330811,ou=estudiantes,ou=users,dc=una,dc=local
+        $users[] = [
+            'user_data' => [
+                'cedula' => '208330811',
+                'nombre' => 'Jose Andres Jara Arias',
+                'email' => 'jose.jara.arias@est.una.ac.cr',
+                'password' => null, // Usuario LDAP
+                'status' => User::STATUS_ACTIVE,
+            ],
+            'roles' => ['Profesor'],
+            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+        ];
+
+        // Marisol Hidalgo Murillo
+        // dn: uid=118620669,ou=estudiantes,ou=users,dc=una,dc=local
+        $users[] = [
+            'user_data' => [
+                'cedula' => '118620669',
+                'nombre' => 'Marisol Hidalgo Murillo',
+                'email' => 'marisol.hidalgo.murillo@est.una.ac.cr',
+                'password' => null, // Usuario LDAP
+                'status' => User::STATUS_ACTIVE,
+            ],
+            'roles' => ['Profesor'],
+            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+        ];
+
+        // Ian Enmanuel Villegas Jimenez
+        // dn: uid=207800171,ou=estudiantes,ou=users,dc=una,dc=local
+        $users[] = [
+            'user_data' => [
+                'cedula' => '207800171',
+                'nombre' => 'Ian Enmanuel Villegas Jimenez',
+                'email' => 'ian.villegas.jimenez@est.una.ac.cr',
+                'password' => null, // Usuario LDAP
+                'status' => User::STATUS_ACTIVE,
+            ],
+            'roles' => ['Profesor'],
+            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+        ];
+
+        // Ana Cristina Zuniga Cardenas
+        // dn: uid=206870079,ou=estudiantes,ou=users,dc=una,dc=local
+        $users[] = [
+            'user_data' => [
+                'cedula' => '206870079',
+                'nombre' => 'Ana Cristina Zuniga Cardenas',
+                'email' => 'ana.zuniga.cardenas@est.una.ac.cr',
+                'password' => null, // Usuario LDAP
+                'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Profesor'],
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 
         /**
-         * PASO 5: Guardar usuarios con roles y permisos
+         * PASO 5: Guardar usuarios con roles y carreras
          */
         $this->command->info('💾 Guardando usuarios...');
         
@@ -233,54 +177,39 @@ class UserSeeder extends Seeder
             // Asignar roles
             if (!empty($userData['roles'])) {
                 $user->syncRoles($userData['roles']);
-                
-                // Asignar permisos directos basados en los roles para que el frontend los vea
-                $permissions = [];
-                foreach ($userData['roles'] as $roleName) {
-                    $role = \Spatie\Permission\Models\Role::where('name', $roleName)
-                        ->where('guard_name', 'api')
-                        ->first();
-                    if ($role) {
-                        $permissions = array_merge($permissions, $role->permissions->pluck('name')->toArray());
-                    }
-                }
-                
-                // Sincronizar permisos directos (sin duplicados)
-                if (!empty($permissions)) {
-                    $user->syncPermissions(array_unique($permissions));
-                }
             }
 
-            // Asignar carreras
+            // Asignar carreras (relación CARRERA_USUARIO)
             if (!empty($userData['careers'])) {
-                DB::table('CARRERA_USUARIO')
-                    ->where('usuario_id', $user->usuario_id)
-                    ->delete();
-
                 foreach ($userData['careers'] as $careerId) {
-                    DB::table('CARRERA_USUARIO')->insert([
-                        'usuario_id' => $user->usuario_id,
-                        'carrera_id' => $careerId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    DB::table('CARRERA_USUARIO')->updateOrInsert(
+                        [
+                            'usuario_id' => $user->usuario_id,
+                            'carrera_id' => $careerId,
+                        ],
+                        [
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]
+                    );
                 }
             }
 
-            $rolesStr = implode(', ', $userData['roles'] ?? []);
-            $this->command->info("  ✅ {$user->nombre} ({$rolesStr})");
+            $rolesText = implode(', ', $userData['roles']);
+            $this->command->info("  ✅ {$user->nombre} - {$rolesText}");
         }
 
         /**
          * PASO 6: Resumen
          */
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', User::STATUS_ACTIVE)->count();
+
         $this->command->info('');
-        $this->command->info('📊 RESUMEN:');
-        $this->command->info('  👥 Total usuarios: ' . User::count());
-        $this->command->info('  ✅ Activos: ' . User::where('status', User::STATUS_ACTIVE)->count());
-        $this->command->info('  ❌ Inactivos: ' . User::where('status', User::STATUS_INACTIVE)->count());
-        $this->command->info('  🔗 Asignaciones: ' . DB::table('CARRERA_USUARIO')->count());
+        $this->command->info('📊 Resumen:');
+        $this->command->info("  Total usuarios: {$totalUsers}");
+        $this->command->info("  Usuarios activos: {$activeUsers}");
         $this->command->info('');
-        $this->command->info('🎉 Usuarios creados exitosamente!');
+        $this->command->info('✅ UserSeeder ejecutado exitosamente');
     }
 }

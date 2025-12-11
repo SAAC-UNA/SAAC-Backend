@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 // Importante importa el controlador
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\CampusController;
 use App\Http\Controllers\FacultyController;
@@ -27,7 +28,20 @@ use Illuminate\Http\Request;
 use App\Models\Process;
 use App\Models\AccreditationCycle;
 
+/**
+ * Rutas de Autenticación (públicas)
+ */
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('auth/login', [AuthController::class, 'login']);
+});
 
+/**
+ * Rutas de Autenticación (protegidas)
+ */
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::post('auth/logout', [AuthController::class, 'logout']);
+    Route::get('auth/me', [AuthController::class, 'me']);
+});
 
 // CRUD completo de cada endpoint
 //Route::apiResource('estructura/universidades', UniversityController::class)->parameters(['universidades' => 'universidad'])->only(['index','store','show','update','destroy']);
