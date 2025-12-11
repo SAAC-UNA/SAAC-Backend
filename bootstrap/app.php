@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Habilitar CORS para desarrollo
         $middleware->validateCsrfTokens(except: [
             'api/*',
+        // Middleware para renovar sesión en Redis en cada petición autenticada
+        $middleware->alias([
+            'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {})->create();
