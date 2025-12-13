@@ -1,0 +1,7 @@
+# Mantener la estructura de carpetas pero ignorar archivos
+*
+!.gitignore
+!README.md
+!evidencias/
+!documentos/
+!temp/

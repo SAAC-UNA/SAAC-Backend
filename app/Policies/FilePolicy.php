@@ -4,63 +4,119 @@ namespace App\Policies;
 
 use App\Models\File;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Models\EvidenceAssignment;
 
 class FilePolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Determina si el usuario puede subir archivos a una evidencia específica.
+     * Solo usuarios con asignación activa a la evidencia pueden subir archivos.
      */
-    public function viewAny(User $user): bool
+    public function upload(User $user, int $evidenciaId): bool
     {
-        return false;
+        // Verifica que el usuario tenga una asignación a esta evidencia
+        return EvidenceAssignment::where('usuario_id', $user->usuario_id)
+            ->where('evidencia_id', $evidenciaId)
+            ->exists();
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determina si el usuario puede descargar un archivo.
+     * Puede descargar si:
+     * - El archivo es público y no ha expirado (sin autenticación necesaria)
+     * - Tiene asignación a la evidencia asociada
+     * - Es el usuario que subió el archivo
      */
-    public function view(User $user, File $file): bool
+    public function download(User $user, File $archivo): bool
     {
-        return false;
+        // Si el archivo es público y válido, permitir descarga
+        if ($archivo->isPubliclyAccessible()) {
+            return true;
+        }
+
+        // Si es el usuario que subió el archivo
+        if ($archivo->usuario_id === $user->usuario_id) {
+            return true;
+        }
+
+        // Si tiene asignación a la evidencia
+        return EvidenceAssignment::where('usuario_id', $user->usuario_id)
+            ->where('evidencia_id', $archivo->evidencia_id)
+            ->exists();
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determina si el usuario puede hacer público un archivo.
+     * Solo usuarios con roles específicos pueden generar enlaces públicos:
+     * - Vicerrectoría de Docencia
+     * - Administrador (Coordinador de Carrera)
+     * - Superusuario
      */
-    public function create(User $user): bool
+    public function makePublic(User $user, File $archivo): bool
     {
-        return false;
+        return $user->hasAnyRole([
+            'Superusuario',
+            'Vicerrectoría de Docencia',
+            'Administrador'
+        ]);
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determina si el usuario puede revocar el acceso público de un archivo.
+     * Mismos permisos que makePublic.
      */
-    public function update(User $user, File $file): bool
+    public function revokePublicAccess(User $user, File $archivo): bool
     {
-        return false;
+        return $this->makePublic($user, $archivo);
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determina si el usuario puede eliminar un archivo.
+     * Puede eliminar si:
+     * - Es el usuario que subió el archivo
+     * - Es Administrador o Superusuario
      */
-    public function delete(User $user, File $file): bool
+    public function delete(User $user, File $archivo): bool
     {
-        return false;
+        // Si es el propietario del archivo
+        if ($archivo->usuario_id === $user->usuario_id) {
+            return true;
+        }
+
+        // Si es administrador o superusuario
+        return $user->hasAnyRole(['Superusuario', 'Administrador']);
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determina si el usuario puede ver los metadatos de un archivo.
+     * Mismos criterios que download.
      */
-    public function restore(User $user, File $file): bool
+    public function view(User $user, File $archivo): bool
     {
-        return false;
+        return $this->download($user, $archivo);
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determina si el usuario puede listar archivos de una evidencia.
+     * Solo si tiene asignación a esa evidencia.
      */
-    public function forceDelete(User $user, File $file): bool
+    public function viewAny(User $user, int $evidenciaId): bool
     {
-        return false;
+        return EvidenceAssignment::where('usuario_id', $user->usuario_id)
+            ->where('evidencia_id', $evidenciaId)
+            ->exists();
+    }
+
+    /**
+     * Determina si el usuario puede generar enlaces públicos masivamente.
+     * Solo roles administrativos.
+     */
+    public function bulkMakePublic(User $user): bool
+    {
+        return $user->hasAnyRole([
+            'Superusuario',
+            'Vicerrectoría de Docencia',
+            'Administrador'
+        ]);
     }
 }

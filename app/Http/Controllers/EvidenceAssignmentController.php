@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EvidenceAssignment;
 use App\Http\Requests\EvidenceAssignmentRequest;
+use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
 use App\Http\Resources\EvidenceAssignmentResource;
 use App\Services\EvidenceAssignmentService;
 use Illuminate\Http\Request;
@@ -159,5 +160,36 @@ class EvidenceAssignmentController extends Controller
     {
         $assignments = $this->service->getAssignmentsByProcess((int)$procesoId);
         return EvidenceAssignmentResource::collection($assignments)->response();
+    }
+
+    /**
+     * POST /api/evidencias-asignaciones/validar-duplicados
+     * Validar si existen asignaciones duplicadas antes de crearlas.
+     */
+    public function validateDuplicates(ValidateDuplicateAssignmentsRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        
+        // Buscar asignaciones existentes para la combinación proceso + evidencia + usuarios
+        $duplicados = EvidenceAssignment::where('proceso_id', $validated['proceso_id'])
+            ->where('evidencia_id', $validated['evidencia_id'])
+            ->whereIn('usuario_id', $validated['usuarios'])
+            ->with('user:usuario_id,nombre')
+            ->get()
+            ->map(function ($asignacion) {
+                return [
+                    'usuario_id' => $asignacion->usuario_id,
+                    'usuario_nombre' => $asignacion->user->nombre,
+                    'estado' => $asignacion->estado,
+                    'fecha_asignacion' => $asignacion->fecha_asignacion->format('Y-m-d'),
+                    'asignacion_id' => $asignacion->evidencia_asignacion_id,
+                ];
+            });
+
+        return response()->json([
+            'tiene_duplicados' => $duplicados->isNotEmpty(),
+            'duplicados' => $duplicados->values(),
+            'total_duplicados' => $duplicados->count(),
+        ], 200);
     }
 }
