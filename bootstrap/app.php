@@ -23,10 +23,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Grupo api (sin auth por defecto, solo bindings)
         $middleware->group('api', [
+            \Illuminate\Http\Middleware\HandleCors::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
         // Alias de middlewares personalizados
+        // Habilitar CORS para desarrollo
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
+
+        // Middleware para renovar sesión en Redis en cada petición autenticada
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
