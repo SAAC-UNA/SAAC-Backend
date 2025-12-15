@@ -57,6 +57,9 @@ class DatabaseSeeder extends Seeder
             AutoevaluationSeeder::class,        // 17. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
             ImprovementCommitmentSeeder::class, // 18. Compromisos de mejora (dependen de procesos tipo "Compromiso de mejora")
             
+            // === ASIGNACIONES DE EVIDENCIAS ===
+            EvidenceAssignmentTestSeeder::class, // 19. Asignaciones de evidencias (para pruebas de aprobación)
+            
             // === AUDITORÍA Y LOGS ===
             // ActionTypeSeeder::class,          // 21. Tipos de acción
             // AuditLogSeeder::class,            // 22. Logs de auditoría
