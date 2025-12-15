@@ -167,6 +167,17 @@ class ExtensionRequestService
 
     /**
      * Crear una nueva solicitud de ampliación.
+     * 
+     * HU-16: Implementa notificación por email a encargados de acreditación.
+     * 
+     * MEJORA IMPLEMENTADA: Filtrado por carrera
+     * - Antes: Notificaba a TODOS los encargados de acreditación
+     * - Ahora: Notifica solo a los encargados de la carrera específica
+     * - Ejemplo: Solicitud de Ingeniería → Solo encargados de Ingeniería
+     * - Fallback: Si no hay encargados específicos, notifica a todos (seguridad)
+     * 
+     * Cadena de relaciones para obtener la carrera:
+     * solicitud → evidenceAssignment → proceso → accreditationCycle → careerCampus → career
      *
      * @param array $data
      * @param int $usuarioId ID del usuario solicitante
@@ -208,22 +219,42 @@ class ExtensionRequestService
                 'estado' => ExtensionRequest::ESTADO_PENDIENTE,
             ]);
 
+            // Cargar relaciones necesarias para acceder a la carrera
+            $solicitud->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
+
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
             // Enviar notificación a los encargados de acreditación
             // PARA DESACTIVAR: Comenta desde aquí hasta "NOTIFICACIÓN - FIN"
             try {
-                // Obtener todos los encargados de acreditación usando whereHas
-                // Nota: El rol se llama "Encargado de Acreditación" en el seeder
-                // IMPORTANTE: Spatie usa la columna 'name', no 'nombre'
+                // Obtener la carrera de la solicitud a través de las relaciones
+                // evidenceAssignment -> proceso -> accreditationCycle -> careerCampus -> career
+                $carreraId = $solicitud->evidenceAssignment->proceso->accreditationCycle->careerCampus->carrera_id;
+
+                // Buscar encargados de acreditación específicos de esta carrera
+                // Esto asegura que solo los encargados relevantes reciban la notificación
+                // Ejemplo: Solicitud de Ingeniería → Solo encargados de Ingeniería
                 $encargados = User::whereHas('roles', function ($query) {
                     $query->where('name', 'Encargado de Acreditación');
+                })->whereHas('careers', function ($query) use ($carreraId) {
+                    $query->where('carrera_id', $carreraId);
                 })->get();
+
+                // Fallback: Si no hay encargados específicos para esa carrera,
+                // notificar a TODOS los encargados de acreditación (seguridad)
+                if ($encargados->isEmpty()) {
+                    Log::warning("No hay encargados específicos para carrera ID {$carreraId}, notificando a todos los encargados");
+                    
+                    $encargados = User::whereHas('roles', function ($query) {
+                        $query->where('name', 'Encargado de Acreditación');
+                    })->get();
+                }
                 
-                // Solo enviar si hay encargados
+                // Enviar notificación solo si hay encargados
                 if ($encargados->count() > 0) {
                     Notification::send($encargados, new ExtensionRequestCreated($solicitud));
+                    Log::info("Notificación enviada a {$encargados->count()} encargado(s) de la carrera ID {$carreraId}");
                 } else {
-                    Log::info('No hay usuarios con rol "Encargado de Acreditación" para notificar');
+                    Log::warning('No hay usuarios con rol "Encargado de Acreditación" para notificar');
                 }
             } catch (\Exception $notificationException) {
                 // Si falla el envío de emails, no afecta la creación de la solicitud
@@ -236,10 +267,14 @@ class ExtensionRequestService
             // ========== HU-16: NOTIFICACIÓN - FIN ==========
 
             DB::commit();
-            return $solicitud->load(['evidenceAssignment', 'user']);
-        } catch (\Exception $e) {
+            // Cargar relaciones necesarias incluyendo la cadena hasta carrera
+            return $solicitud->load([
+                'evidenceAssignment.proceso.carreraSede.carrera',
+                'user'
+            ]);
+        } catch (\Exception $exception) {
             DB::rollBack();
-            throw $e;
+            throw $exception;
         }
     }
 
@@ -281,9 +316,9 @@ class ExtensionRequestService
 
             DB::commit();
             return $solicitud->load(['evidenceAssignment', 'user', 'resolutor']);
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
             DB::rollBack();
-            throw $e;
+            throw $exception;
         }
     }
 
@@ -319,9 +354,9 @@ class ExtensionRequestService
 
             DB::commit();
             return $solicitud->load(['evidenceAssignment', 'user', 'resolutor']);
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
             DB::rollBack();
-            throw $e;
+            throw $exception;
         }
     }
 }

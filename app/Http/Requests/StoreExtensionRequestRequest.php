@@ -44,8 +44,10 @@ class StoreExtensionRequestRequest extends FormRequest
                 'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\.,;:\-_()¿?¡!\[\]\/]+$/'
             ],
             
-            // Fecha sugerida: obligatoria, debe ser futura
-            'fecha_sugerida' => 'required|date|after:now',
+            // Fecha sugerida: obligatoria, debe ser futura antes tenia now, 
+            // pero esta es para la hora exacta, mejor tenerlo como today es mas intuitivo
+            // y con today no implica hora, solo fecha
+            'fecha_sugerida' => 'required|date|after:today',
         ];
     }
 
