@@ -20,6 +20,7 @@ return [
         'gestion_usuarios',
         'gestion_reportes',
         'gestion_ciclos',
+        'gestion_solicitudes_ampliacion',// HU-16
     ],
 
     // Etiquetas legibles para frontend
@@ -31,6 +32,7 @@ return [
         'gestion_ciclos'               => 'Gestión de Ciclos',
         'gestion_evidencias'           => 'Gestión de Evidencias',
         'gestion_programas'            => 'Gestión de Programas',
+        'gestion_solicitudes_ampliacion' => 'Gestión de Solicitudes de Ampliación',
         
         // Permisos atómicos de usuarios
         'usuarios.view'                => 'Ver Usuarios',
@@ -52,6 +54,12 @@ return [
         'ciclos.create'                => 'Crear Ciclos',
         'ciclos.edit'                  => 'Editar Ciclos',
         'ciclos.delete'                => 'Eliminar Ciclos',
+        
+        // Permisos atómicos de solicitudes de ampliación (HU-16)
+        'solicitudes_ampliacion.view'  => 'Ver Solicitudes de Ampliación',
+        'solicitudes_ampliacion.create' => 'Crear Solicitudes de Ampliación',
+        'solicitudes_ampliacion.approve' => 'Aprobar Solicitudes de Ampliación',
+        'solicitudes_ampliacion.reject' => 'Rechazar Solicitudes de Ampliación',
     ],
 
     // Matriz oficial de módulos y acciones atómicas (HU-02)
@@ -60,6 +68,7 @@ return [
         'evidencias' => ['view', 'create', 'edit', 'delete'],
         'reportes'   => ['generate'],
         'ciclos'     => ['view', 'create', 'edit', 'delete'],
+        'solicitudes_ampliacion' => ['view', 'create', 'approve', 'reject'],
     ],
 
 
