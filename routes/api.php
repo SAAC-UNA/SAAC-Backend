@@ -19,6 +19,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 
 //solo para pruebas
@@ -74,6 +75,11 @@ Route::apiResource('estructura/estados-evidencia', EvidenceStateController::clas
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
 
+// Rutas para aprobación de criterios por bloques (HU-010)
+Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion']);
+Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion']);
 // Rutas para archivos (HU-008 - Subida de Evidencias)
 Route::prefix('archivos')->group(function () {
     // TEMPORAL: Obtener datos de prueba para formulario
@@ -110,6 +116,7 @@ Route::prefix('archivos')->group(function () {
 // Ruta pública para acceso mediante token (SIN autenticación - para SINAES)
 // A implementar en el futuro cuando se programe el serving de archivos
 // Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
+
 
 Route::prefix('admin/users')->group(function () {
     Route::get('/', [UserController::class, 'index']);
