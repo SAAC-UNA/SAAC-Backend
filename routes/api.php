@@ -19,6 +19,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 
@@ -175,6 +176,17 @@ Route::prefix('roles')->group(function () {
 
     
 });
+
+Route::prefix('compromisos-de-mejora')->group(function () {
+    Route::get('/', [ImprovementCommitmentController::class, 'listCommitments'])->name('commitments.index');
+    Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser'])->name('commitments.by-user');
+    Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence'])->name('commitments.by-evidence');
+    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])->name('commitments.create');
+    Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment'])->name('commitments.show');
+    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])->name('commitments.update');
+    Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])->name('commitments.set-active');
+});
+
 // Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).
 Route::get('estructura/procesos', function () {
     return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
