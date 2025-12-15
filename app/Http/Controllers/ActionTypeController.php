@@ -5,15 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\ActionType;
 use App\Http\Requests\StoreActionTypeRequest;
 use App\Http\Requests\UpdateActionTypeRequest;
+use App\Services\AuditLogService;
 
 class ActionTypeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(AuditLogService $auditLogService)
     {
-        //
+        return response()->json($auditLogService->getActionTypes());
     }
 
     /**

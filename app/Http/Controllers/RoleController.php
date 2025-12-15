@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Requests\RoleRequest;
 use App\Http\Resources\RoleResource;
 use App\Services\RoleService;
+use App\Services\AuditLogService;
 
 /**
  * Controlador que gestiona las operaciones relacionadas con los Roles.
@@ -40,7 +41,12 @@ class RoleController extends Controller
     public function createRole(RoleRequest $request): JsonResponse
     {
         $role = $this->roleService->createRole($request->validated());
-
+        // Registrar en bitácora la creación del rol
+        AuditLogService::log(
+            'crear',
+            "Rol creado: {$role->name} (ID: {$role->id})",
+            'Roles'
+        );
         return response()->json([
             'message' => 'Rol creado con éxito',
             'data'    => new RoleResource($role),
@@ -108,6 +114,12 @@ class RoleController extends Controller
                 'data'    => new RoleResource($updatedRole),
             ], 200);
         }
+        // Registrar en bitácora los cambios realizados
+        AuditLogService::log(
+    'editar',
+        "Rol actualizado: {$updatedRole->name} (ID: {$updatedRole->id})",
+        'Roles'
+        );
 
         return response()->json([
             'message' => 'Rol actualizado con éxito',
@@ -140,14 +152,26 @@ class RoleController extends Controller
      */
     public function deleteRole(int $id): JsonResponse
     {
-        $result = $this->roleService->deleteRole($id);
+        // Verificar si el rol existe
+        $role = $this->roleService->getRole($id);
 
-        if (!$result) {
-            return response()->json([
-                'error'   => 'Not Found',
-                'message' => 'Rol no encontrado',
-            ], 404);
-        }
+        if (!$role) {
+        return response()->json([
+            'error'   => 'Not Found',
+            'message' => 'Rol no encontrado',
+        ], 404);
+    }
+
+    $result = $this->roleService->deleteRole($id);
+
+    if ($result) {
+        AuditLogService::log(
+            'eliminar',
+            "Rol eliminado: {$role->name} (ID: {$role->id})",
+            'Roles'
+        );
+    }
+
 
         return response()->json(['message' => 'Rol eliminado con éxito'], 200);
     }
