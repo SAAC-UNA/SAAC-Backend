@@ -33,4 +33,9 @@ class Career extends Model
         return $this->belongsToMany(User::class, 'CARRERA_USUARIO', 'carrera_id', 'usuario_id');
     }
 
+    public function campuses()
+    {
+        return $this->belongsToMany(Campus::class, 'CARRERA_SEDE', 'carrera_id', 'sede_id');
+    }
+
 }
