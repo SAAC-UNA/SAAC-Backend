@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\CampusController;
-use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
@@ -55,8 +54,6 @@ Route::apiResource('estructura/universidades', UniversityController::class)->onl
 Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive']);
 Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
-Route::apiResource('estructura/facultades', FacultyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/facultades/{id}/active', [FacultyController::class, 'setActive']);
 Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive']);
 Route::apiResource('estructura/dimensiones', DimensionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);

@@ -8,7 +8,7 @@ use Illuminate\Database\Seeder;
  * Seeder principal que ejecuta los demás seeders del sistema.
  * 
  * ORDEN DE EJECUCIÓN (importante para integridad referencial):
- * 1. Estructura organizacional (Universidad -> Campus -> Facultad -> Carrera)
+ * 1. Estructura organizacional (Universidad -> Campus -> Carrera)
  * 2. Permisos y Roles
  * 3. Usuarios
  * 4. Relaciones (Usuarios-Carreras, etc.)
@@ -31,34 +31,33 @@ class DatabaseSeeder extends Seeder
             // === ESTRUCTURA ORGANIZACIONAL ===
             UniversitySeeder::class,            // 1. Universidad
             CampusSeeder::class,                // 2. Campus
-            FacultySeeder::class,               // 3. Facultades
-            CareerSeeder::class,                // 4. Carreras
-            CareerCampusSeeder::class,          // 5. Relación Carrera-Campus
+            CareerSeeder::class,                // 3. Carreras
+            CareerCampusSeeder::class,          // 4. Relación Carrera-Campus
             
             // === SEGURIDAD Y AUTENTICACIÓN ===
-            PermissionSeeder::class,            // 6. Permisos del sistema
+            PermissionSeeder::class,            // 5. Permisos del sistema
             // RolesAndPermissionsSeeder::class, // Opcional: alternativa combinada
             
             // === USUARIOS Y RELACIONES ===
-            UserSeeder::class,                  // 7. Usuarios con roles y carreras
-            CommentSeeder::class,               // 8. Comentarios (temporal - relación será refactorizada)
+            UserSeeder::class,                  // 6. Usuarios con roles y carreras
+            CommentSeeder::class,               // 7. Comentarios (temporal - relación será refactorizada)
             
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
-            DimensionSeeder::class,             // 9. Dimensiones
-            ComponentSeeder::class,             // 10. Componentes (dependen de dimensiones)
-            CriterionSeeder::class,             // 11. Criterios (dependen de componentes)
-            StandardSeeder::class,              // 12. Estándares (dependen de criterios)
-            EvidenceStateSeeder::class,         // 13. Estados de evidencia
-            EvidenceSeeder::class,              // 14. Evidencias (dependen de criterios y estados)
+            DimensionSeeder::class,             // 8. Dimensiones
+            ComponentSeeder::class,             // 9. Componentes (dependen de dimensiones)
+            CriterionSeeder::class,             // 10. Criterios (dependen de componentes)
+            StandardSeeder::class,              // 11. Estándares (dependen de criterios)
+            EvidenceStateSeeder::class,         // 12. Estados de evidencia
+            EvidenceSeeder::class,              // 13. Evidencias (dependen de criterios y estados)
             
             // === CICLOS Y PROCESOS ===
-            AccreditationCycleSeeder::class,    // 15. Ciclos de acreditación (dependen de carrera_sede)
-            ProcessSeeder::class,               // 16. Procesos (dependen de ciclos)
-            AutoevaluationSeeder::class,        // 17. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
-            ImprovementCommitmentSeeder::class, // 18. Compromisos de mejora (dependen de procesos tipo "Compromiso de mejora")
+            AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
+            ProcessSeeder::class,               // 15. Procesos (dependen de ciclos)
+            AutoevaluationSeeder::class,        // 16. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
+            ImprovementCommitmentSeeder::class, // 17. Compromisos de mejora (dependen de procesos tipo "Compromiso de mejora")
             
             // === ASIGNACIONES DE EVIDENCIAS ===
-            EvidenceAssignmentTestSeeder::class, // 19. Asignaciones de evidencias (para pruebas de aprobación)
+            EvidenceAssignmentTestSeeder::class, // 18. Asignaciones de evidencias (para pruebas de aprobación)
             
             // === AUDITORÍA Y LOGS ===
             // ActionTypeSeeder::class,          // 21. Tipos de acción
