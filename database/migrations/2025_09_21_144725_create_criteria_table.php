@@ -17,8 +17,6 @@ return new class extends Migration
             $table->id()->name('criterio_id');
             // Relación con componente (restrict: no borrar componente si tiene criterios)
             $table->foreignId('componente_id')->constrained('COMPONENTE', 'componente_id')->onDelete('restrict');
-            // Relación con comentario (cascade: si se borra el comentario, se borra el criterio)
-            $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
             // Descripción del criterio
             $table->string('descripcion', 300);
             // Nomenclatura del criterio

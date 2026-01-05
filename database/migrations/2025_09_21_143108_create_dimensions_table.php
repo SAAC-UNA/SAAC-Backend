@@ -15,9 +15,7 @@ return new class extends Migration
         Schema::create('DIMENSION', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('dimension_id');
-            // Relación con comentario (cascade: si se borra el comentario, se borra la dimensión)
-            $table->foreignId('comentario_id')->constrained('COMENTARIO', 'comentario_id')->onDelete('cascade');
-             //  Relación con carrera
+            // Nombre de la dimensión
             $table->string('nombre', 100);
             // Nomenclatura de la dimensión
             $table->string('nomenclatura', 20);
