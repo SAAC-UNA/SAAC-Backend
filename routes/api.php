@@ -132,8 +132,13 @@ Route::prefix('archivos')->group(function () {
 // A implementar en el futuro cuando se programe el serving de archivos
 // Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
 
-
-Route::prefix('admin/users')->group(function () {
+// ============================================
+// Rutas de Gestión de Usuarios (HU-002)
+// ============================================
+// Protegidas con:
+// - auth:sanctum: Requiere usuario autenticado con token válido
+// - permission:usuarios.edit: Requiere permiso específico para editar usuarios
+Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.edit'])->group(function () {
     Route::get('/', [UserController::class, 'index']);
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
