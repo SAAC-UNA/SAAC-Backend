@@ -43,7 +43,7 @@ class CheckDeadlines extends Command
      */
     public function handle(): int
     {
-        $this->info('🔍 Verificando plazos próximos a vencer...');
+        $this->info('🔍 Verificando plazos próximos a vencer y vencidos...');
 
         // Obtener días de anticipación desde opciones
         $daysToCheck = array_map('trim', explode(',', $this->option('days')));
@@ -53,12 +53,13 @@ class CheckDeadlines extends Command
 
         $totalNotifications = 0;
 
+        // 1. Verificar plazos próximos a vencer (anticipación)
         foreach ($daysToCheck as $days) {
             $targetDate = now()->addDays($days)->startOfDay();
             
             // Buscar asignaciones que vencen exactamente en N días
             $assignments = EvidenceAssignment::whereDate('fecha_limite', $targetDate)
-                ->where('estado_cumplimiento', '!=', 'completo') // Excluir completadas
+                ->whereIn('estado', ['pendiente', 'en_progreso']) // Excluir completadas
                 ->with(['evidence', 'user'])
                 ->get();
 
@@ -79,15 +80,40 @@ class CheckDeadlines extends Command
             }
         }
 
+        // 2. Verificar plazos VENCIDOS (fecha_limite < hoy)
+        $expiredAssignments = EvidenceAssignment::where('fecha_limite', '<', now()->startOfDay())
+            ->whereIn('estado', ['pendiente', 'en_progreso'])
+            ->with(['evidence', 'user'])
+            ->get();
+
+        $expiredCount = $expiredAssignments->count();
+
+        if ($expiredCount > 0) {
+            $this->error("  🚨 {$expiredCount} evidencias con plazo VENCIDO:");
+
+            foreach ($expiredAssignments as $assignment) {
+                $daysOverdue = now()->startOfDay()->diffInDays($assignment->fecha_limite, false);
+                
+                // Disparar evento con días negativos (plazo vencido)
+                event(new DeadlineApproaching($assignment, (int)$daysOverdue));
+                
+                $this->line("    - Evidencia {$assignment->evidence->nomenclatura} → Usuario {$assignment->user->nombre} (vencido hace " . abs($daysOverdue) . " días)");
+                $totalNotifications++;
+            }
+        } else {
+            $this->line("  ✓ No hay plazos vencidos pendientes");
+        }
+
         if ($totalNotifications > 0) {
-            $this->info("✅ {$totalNotifications} notificaciones de vencimiento creadas");
+            $this->info("✅ {$totalNotifications} notificaciones de vencimiento/expiración creadas");
             
             Log::info('Comando CheckDeadlines ejecutado', [
                 'notificaciones_creadas' => $totalNotifications,
                 'dias_revisados' => $daysToCheck,
+                'plazos_vencidos' => $expiredCount,
             ]);
         } else {
-            $this->info('✅ No hay plazos próximos a vencer');
+            $this->info('✅ No hay plazos próximos a vencer ni vencidos');
         }
 
         return Command::SUCCESS;

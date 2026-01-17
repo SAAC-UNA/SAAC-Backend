@@ -27,18 +27,45 @@ class NotifyDeadlineApproaching implements ShouldQueue
         $evidence = $assignment->evidence;
         $user = $assignment->user;
 
-        // Construir mensaje de urgencia
-        $titulo = $daysRemaining === 1 
-            ? '⚠️ Plazo vence mañana'
-            : "⚠️ Plazo vence en {$daysRemaining} días";
+        // Determinar si el plazo está vencido o próximo a vencer
+        $isExpired = $daysRemaining < 0;
+        $daysAbs = abs($daysRemaining);
 
-        $mensaje = sprintf(
-            'La evidencia "%s" (%s) vence el %s. %s',
-            $evidence->descripcion ?? 'Sin descripción',
-            $evidence->nomenclatura ?? 'N/A',
-            $assignment->fecha_limite->format('d/m/Y'),
-            $daysRemaining <= 3 ? '¡Acción urgente requerida!' : 'Por favor, completa la evidencia a tiempo.'
-        );
+        // Construir mensaje según estado
+        if ($isExpired) {
+            $titulo = "🚨 Plazo VENCIDO hace {$daysAbs} días";
+            $mensaje = sprintf(
+                'URGENTE: La evidencia "%s" (%s) venció el %s. El plazo expiró hace %d días. ¡Requiere atención inmediata!',
+                $evidence->descripcion ?? 'Sin descripción',
+                $evidence->nomenclatura ?? 'N/A',
+                $assignment->fecha_limite->format('d/m/Y'),
+                $daysAbs
+            );
+        } elseif ($daysRemaining === 0) {
+            $titulo = '🔥 Plazo vence HOY';
+            $mensaje = sprintf(
+                'ÚLTIMO DÍA: La evidencia "%s" (%s) vence hoy. ¡Acción urgente requerida!',
+                $evidence->descripcion ?? 'Sin descripción',
+                $evidence->nomenclatura ?? 'N/A'
+            );
+        } elseif ($daysRemaining === 1) {
+            $titulo = '⚠️ Plazo vence mañana';
+            $mensaje = sprintf(
+                'La evidencia "%s" (%s) vence mañana (%s). ¡Acción urgente requerida!',
+                $evidence->descripcion ?? 'Sin descripción',
+                $evidence->nomenclatura ?? 'N/A',
+                $assignment->fecha_limite->format('d/m/Y')
+            );
+        } else {
+            $titulo = "⚠️ Plazo vence en {$daysRemaining} días";
+            $mensaje = sprintf(
+                'La evidencia "%s" (%s) vence el %s. %s',
+                $evidence->descripcion ?? 'Sin descripción',
+                $evidence->nomenclatura ?? 'N/A',
+                $assignment->fecha_limite->format('d/m/Y'),
+                $daysRemaining <= 3 ? '¡Acción urgente requerida!' : 'Por favor, completa la evidencia a tiempo.'
+            );
+        }
 
         $enlace = "/evidencias/{$evidence->evidencia_id}";
 
@@ -56,6 +83,8 @@ class NotifyDeadlineApproaching implements ShouldQueue
                     'dias_restantes' => $daysRemaining,
                     'fecha_limite' => $assignment->fecha_limite->toDateString(),
                     'urgente' => $daysRemaining <= 3,
+                    'vencido' => $isExpired,
+                    'dias_vencido' => $isExpired ? $daysAbs : 0,
                 ],
             ]);
 
@@ -63,6 +92,7 @@ class NotifyDeadlineApproaching implements ShouldQueue
                 'usuario_id' => $user->usuario_id,
                 'evidencia_id' => $evidence->evidencia_id,
                 'dias_restantes' => $daysRemaining,
+                'vencido' => $isExpired,
             ]);
 
         } catch (\Exception $e) {

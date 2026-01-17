@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CriterionApprovalRequest;
 use App\Services\CriterionApprovalService;
 use App\Models\Criterion;
+use App\Events\CriterionApproved;
+use App\Events\CriterionRejected;
 use Illuminate\Http\JsonResponse;
 use Exception;
 
@@ -137,6 +139,9 @@ class CriterionApprovalController extends Controller
                 $request->comentario
             );
 
+            // Disparar evento para notificaciones
+            event(new CriterionApproved($approval));
+
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio aprobado exitosamente.',
@@ -188,6 +193,9 @@ class CriterionApprovalController extends Controller
                 $usuarioId,
                 $request->comentario
             );
+
+            // Disparar evento para notificaciones
+            event(new CriterionRejected($approval));
 
             return response()->json([
                 'success' => true,
