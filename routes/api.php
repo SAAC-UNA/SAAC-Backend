@@ -13,6 +13,7 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
+use App\Http\Controllers\ExtensionTimeRequestController; // RF-15: Controller del profesor
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 
@@ -72,7 +73,7 @@ Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentContr
 Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
 Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
 
-// Rutas para solicitudes de ampliación (HU-016)
+// Rutas para solicitudes de ampliación (HU-016 - ENCARGADO)
 Route::prefix('solicitudes-ampliacion')->group(function () {
     Route::get('/', [ExtensionRequestController::class, 'index']);                    // GET /api/solicitudes-ampliacion
     Route::get('/pendientes', [ExtensionRequestController::class, 'pending']);        // GET /api/solicitudes-ampliacion/pendientes
@@ -82,6 +83,39 @@ Route::prefix('solicitudes-ampliacion')->group(function () {
     Route::post('/{id}/aprobar', [ExtensionRequestController::class, 'approve']);     // POST /api/solicitudes-ampliacion/{id}/aprobar
     Route::post('/{id}/rechazar', [ExtensionRequestController::class, 'reject']);     // POST /api/solicitudes-ampliacion/{id}/rechazar
 });
+
+// Rutas para solicitudes de ampliación de tiempo del PROFESOR (RF-15)
+// AUTENTICACIÓN: Requiere usuario autenticado con token Sanctum
+// ============================================================================
+// RF-15: SOLICITUDES DE AMPLIACIÓN DE TIEMPO (PROFESORES)
+// ============================================================================
+// ESTÁNDAR PL-10: Autenticación + Autorización + Rate Limiting
+// - Middleware: auth:sanctum (autenticación)
+// - Policies: ExtensionTimeRequestPolicy (autorización granular)
+// - Rate Limiting: 60 peticiones/minuto (previene abuso)
+// - Validación: FormRequests con sanitización
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
+    ->prefix('solicitudes-ampliacion-tiempo')
+    ->group(function () {
+        // GET: Listar solicitudes (profesores ven solo las suyas, encargados ven todas)
+        Route::get('/', [ExtensionTimeRequestController::class, 'index']);
+        
+        // GET: Evidencias próximas a vencer (para sugerir en formulario)
+        Route::get('/evidencias/proximas-vencer', [ExtensionTimeRequestController::class, 'upcomingEvidences']);
+        
+        // GET: Ver detalle de solicitud (autorización con Policy)
+        Route::get('/{id}', [ExtensionTimeRequestController::class, 'show']);
+        
+        // POST: Crear solicitud (rate limit más estricto para evitar spam)
+        Route::post('/', [ExtensionTimeRequestController::class, 'store'])
+            ->middleware('throttle:10,1'); // Max 10 creaciones por minuto
+        
+        // PUT: Actualizar solicitud pendiente
+        Route::put('/{id}', [ExtensionTimeRequestController::class, 'update']);
+        
+        // DELETE: Eliminar solicitud pendiente
+        Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
+    });
 
 Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);

@@ -42,12 +42,13 @@ return [
                 // 'mech' => 'GSSAPI',
             ],
             'options' => [
+                // TEMPORAL: Desactivado para desarrollo sin extensión LDAP
                 // Opciones de protocolo LDAP
-                LDAP_OPT_PROTOCOL_VERSION => 3,
-                LDAP_OPT_REFERRALS => 0,
+                // LDAP_OPT_PROTOCOL_VERSION => 3,
+                // LDAP_OPT_REFERRALS => 0,
                 // Deshabilitar verificación de certificados SSL para desarrollo (certificados auto-firmados)
                 // En producción con certificados válidos, cambiar a LDAP_OPT_X_TLS_DEMAND
-                LDAP_OPT_X_TLS_REQUIRE_CERT => env('LDAP_SSL_VERIFY', false) ? LDAP_OPT_X_TLS_DEMAND : LDAP_OPT_X_TLS_NEVER,
+                // LDAP_OPT_X_TLS_REQUIRE_CERT => env('LDAP_SSL_VERIFY', false) ? LDAP_OPT_X_TLS_DEMAND : LDAP_OPT_X_TLS_NEVER,
             ],
         ],
 
