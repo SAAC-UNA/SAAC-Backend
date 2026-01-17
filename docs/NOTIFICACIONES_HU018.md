@@ -303,26 +303,84 @@ protected function schedule(Schedule $schedule)
 
 ## 📧 Configuración de Email
 
-### Variables de Entorno (.env)
+### Desarrollo (Logs)
+Los correos se guardan en `storage/logs/laravel.log`:
 
-**Desarrollo (logs):**
 ```env
 MAIL_MAILER=log
 MAIL_FROM_ADDRESS="noreply@saac.una.ac.cr"
-MAIL_FROM_NAME="Sistema SAAC-UNA"
+MAIL_FROM_NAME="Sistema SAAC - UNA"
 ```
 
-**Producción (SMTP):**
+### Producción Gmail (Pruebas)
+
+**Requisitos:**
+1. Cuenta Gmail con verificación en 2 pasos habilitada
+2. Generar App Password: https://myaccount.google.com/apppasswords
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=tu-email@gmail.com
+MAIL_PASSWORD=abcdefghijklmnop
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="tu-email@gmail.com"
+MAIL_FROM_NAME="Sistema SAAC - UNA"
+```
+
+### Producción UNA
+
 ```env
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.una.ac.cr
 MAIL_PORT=587
 MAIL_USERNAME=saac@una.ac.cr
-MAIL_PASSWORD=***
+MAIL_PASSWORD=*** (solicitar a IT)
 MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS="saac@una.ac.cr"
-MAIL_FROM_NAME="Sistema SAAC-UNA"
+MAIL_FROM_NAME="Sistema SAAC - UNA"
 ```
+
+### Plantillas de Email
+
+Se han creado plantillas HTML profesionales con los colores de la UNA:
+
+**Archivos:**
+- `app/Mail/TestNotificationMail.php` - Mailable de ejemplo
+- `resources/views/emails/notification.blade.php` - Plantilla HTML responsive
+
+**Características:**
+- ✅ Diseño responsive (móvil + desktop)
+- ✅ Colores institucionales UNA (#c8102e)
+- ✅ Botón de acción personalizable
+- ✅ Header con branding SAAC-UNA
+- ✅ Footer con información de contacto
+- ✅ Soporte para mensajes de múltiples líneas
+
+**Probar envío:**
+
+```bash
+# Modo log (desarrollo)
+php artisan email:test test@ejemplo.com --name="Usuario Prueba"
+
+# Modo SMTP (producción)
+# Configurar .env primero, luego:
+php artisan email:test tu-email-real@gmail.com --name="Tu Nombre"
+```
+
+**Vista previa de correo:**
+
+El correo incluye:
+- 📬 Header rojo con logo SAAC-UNA
+- 👤 Saludo personalizado con nombre del usuario
+- 📋 Tarjeta de notificación con título y mensaje
+- 🔘 Botón de acción (si hay enlace)
+- ⚠️ Nota informativa
+- 📅 Fecha y hora de envío
+- 🏛️ Footer institucional con datos de contacto
+
+**Guía completa:** [docs/CONFIGURACION_GMAIL_SMTP.md](CONFIGURACION_GMAIL_SMTP.md)
 
 ## 🧪 Pruebas
 

@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\Model;
  * ]);
  * ```
  */
+use App\Mail\TestNotificationMail;
+
 class NotificationService
 {
     /**
@@ -276,11 +278,14 @@ class NotificationService
             // Marcar como pendiente
             $notificacion->update(['estado_email' => Notification::EMAIL_PENDIENTE]);
 
-            // Enviar email simple (puede ser personalizado con Mailable)
-            Mail::raw($notificacion->mensaje, function ($message) use ($user, $notificacion) {
-                $message->to($user->email, $user->nombre)
-                    ->subject($notificacion->titulo);
-            });
+            // Enviar email con plantilla profesional
+            Mail::to($user->email)->send(new TestNotificationMail(
+                userName: $user->nombre,
+                notificationTitle: $notificacion->titulo,
+                notificationMessage: $notificacion->mensaje,
+                actionUrl: $notificacion->enlace ? config('app.url') . $notificacion->enlace : null,
+                actionText: 'Ver en el sistema'
+            ));
 
             // Marcar como enviado
             $notificacion->update(['estado_email' => Notification::EMAIL_ENVIADO]);
