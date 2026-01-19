@@ -1,0 +1,110 @@
+# Estructura base - OUs
+dn: ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=profesores,ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: profesores
+
+dn: ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: estudiantes
+
+# SuperUsuario - Pablo Castillo
+dn: uid=203849675,ou=profesores,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Pablo Castillo Quesada
+sn: Castillo
+uid: 203849675
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/203849675
+mail: pablo.castillo.quesada@una.cr
+userPassword: una2024
+
+# Administrador - Cristopher Montero
+dn: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Cristopher Montero Jimenez
+sn: Montero
+uid: 203948609
+uidNumber: 1002
+gidNumber: 1002
+homeDirectory: /home/203948609
+mail: cristopher.montero.jimenez@una.cr
+userPassword: una2024
+
+# Profesor - Naydelin Jiron
+dn: uid=801490957,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Naydelin Nayeli Jiron Castellon
+sn: Jiron
+uid: 801490957
+uidNumber: 2001
+gidNumber: 2001
+homeDirectory: /home/801490957
+mail: nayidelin.jiron.castellon@est.una.ac.cr
+userPassword: una2024
+
+# Profesor - Jose Jara
+dn: uid=208330811,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Jose Andres Jara Arias
+sn: Jara
+uid: 208330811
+uidNumber: 2002
+gidNumber: 2002
+homeDirectory: /home/208330811
+mail: jose.jara.arias@est.una.ac.cr
+userPassword: una2024
+
+# Profesor - Marisol Hidalgo
+dn: uid=118620669,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Marisol Hidalgo Murillo
+sn: Hidalgo
+uid: 118620669
+uidNumber: 2003
+gidNumber: 2003
+homeDirectory: /home/118620669
+mail: marisol.hidalgo.murillo@est.una.ac.cr
+userPassword: una2024
+
+# Profesor - Ian Villegas
+dn: uid=207800171,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Ian Enmanuel Villegas Jimenez
+sn: Villegas
+uid: 207800171
+uidNumber: 2004
+gidNumber: 2004
+homeDirectory: /home/207800171
+mail: ian.villegas.jimenez@est.una.ac.cr
+userPassword: una2024
+
+# Profesor - Ana Zuniga
+dn: uid=206870079,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+cn: Ana Cristina Zuniga Cardenas
+sn: Zuniga
+uid: 206870079
+uidNumber: 2005
+gidNumber: 2005
+homeDirectory: /home/206870079
+mail: ana.zuniga.cardenas@est.una.ac.cr
+userPassword: una2024

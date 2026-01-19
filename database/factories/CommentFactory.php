@@ -19,7 +19,13 @@ class CommentFactory extends Factory
         return [
             'usuario_id' => \App\Models\User::factory(),
             'texto' => $this->faker->sentence(8),
-            'fecha_creacion' => $this->faker->dateTime(),
+            // Los campos polimórficos commentable_type y commentable_id deben
+            // ser establecidos manualmente cuando se cree el comentario usando for():
+            // Comment::factory()->for($criterion)->create()
+            // o especificados directamente:
+            // Comment::factory()->create(['commentable_type' => Criterion::class, 'commentable_id' => $criterion->id])
+            // Removido 'fecha_creacion' porque la tabla usa timestamps() de Laravel
+            // que automáticamente crea created_at y updated_at
         ];
     }
 }

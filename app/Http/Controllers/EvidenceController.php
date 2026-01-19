@@ -7,7 +7,10 @@ use Illuminate\Database\QueryException;
 use App\Http\Resources\EvidenceResource;
 use App\Services\EvidenceService;
 use App\Http\Requests\EvidenceRequest;
+use App\Http\Requests\FilterEvidenceRequest;
 use App\Services\AuditLogService;
+use App\Exports\EvidencesExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class EvidenceController extends Controller
@@ -152,5 +155,101 @@ class EvidenceController extends Controller
             'message' => 'Estado de la evidencia actualizado correctamente.',
             'data'    => $evidence
         ], 200);
+    }
+
+    // ============================================================
+    // MÉTODO NUEVO PARA HU-012: Filtrado Avanzado de Evidencias
+    // ============================================================
+
+    /**
+     * GET /api/estructura/evidencias/filter
+     * 
+     * MÉTODO NUEVO - Creado para HU-012
+     * Este método NO modifica el comportamiento de index()
+     * 
+     * Filtrar evidencias con múltiples criterios combinables
+     * 
+     * Cumple con los siguientes Criterios de Aceptación:
+     * - #1: Aplicación de filtros básicos
+     * - #2: Validación de parámetros
+     * - #3: Restricción según rol del usuario
+     * - #4: Ordenamiento de resultados
+     * - #5: Paginación de resultados
+     * - #6: Sin coincidencias (retorna array vacío)
+     * 
+     * Query parameters (todos opcionales):
+     * ?criterio_id=4&responsable_id=15&fecha_desde=2025-01-01&fecha_hasta=2025-12-31
+     * &estado_evidencia_id=2&rol_id=3&sort_by=fecha&sort_order=desc&per_page=20
+     * 
+     * @param FilterEvidenceRequest $request Filtros validados
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function filter(FilterEvidenceRequest $request)
+    {
+        // Obtener usuario autenticado (necesario para restricciones por rol)
+        $user = $request->user();
+
+        // Obtener filtros validados
+        $filters = $request->validated();
+
+        // Llamar al servicio que implementa la lógica de filtrado
+        $paginatedResults = $this->service->filterEvidences($filters, $user);
+
+        // Retornar colección paginada con metadata
+        return EvidenceResource::collection($paginatedResults)->response();
+    }
+
+    /**
+     * HU-012 - Exportar evidencias filtradas a Excel
+     * GET /api/estructura/evidencias/export/excel?criterio_id=1&estado_evidencia_id=2...
+     * 
+     * @param FilterEvidenceRequest $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function exportExcel(FilterEvidenceRequest $request)
+    {
+        $user = $request->user();
+        $filters = $request->validated();
+
+        // Obtener evidencias sin paginación para exportar
+        $filters['per_page'] = 999999; // Sin límite
+        $evidences = $this->service->filterEvidences($filters, $user)->items();
+
+        // Convertir a Collection para el export
+        $collection = collect($evidences);
+
+        // Generar archivo Excel
+        $exporter = new EvidencesExport($collection);
+        $filePath = $exporter->generate();
+
+        // Descargar y eliminar archivo temporal
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * HU-012 - Exportar evidencias filtradas a PDF
+     * GET /api/estructura/evidencias/export/pdf?criterio_id=1&estado_evidencia_id=2...
+     * 
+     * @param FilterEvidenceRequest $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportPDF(FilterEvidenceRequest $request)
+    {
+        $user = $request->user();
+        $filters = $request->validated();
+
+        // Obtener evidencias sin paginación
+        $filters['per_page'] = 999999;
+        $evidences = $this->service->filterEvidences($filters, $user)->items();
+
+        // Convertir a Collection
+        $collection = collect($evidences);
+
+        $pdf = Pdf::loadView('exports.evidences', ['evidences' => $collection])
+            ->setPaper('a4', 'landscape');
+
+        $filename = 'evidencias_' . now()->format('Y-m-d_His') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }
