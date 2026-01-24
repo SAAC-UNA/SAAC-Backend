@@ -94,8 +94,8 @@ class AuthController extends Controller
             
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
 
-            // Registrar login exitoso en bitácora
-            AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación');
+            // Registrar login exitoso en bitácora (pasar usuario_id explícitamente)
+            AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación', $user->usuario_id);
 
             return response()->json([
                 'user' => new UserResource($user),
