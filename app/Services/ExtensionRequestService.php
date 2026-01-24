@@ -220,15 +220,15 @@ class ExtensionRequestService
             ]);
 
             // Cargar relaciones necesarias para acceder a la carrera
-            $extensionRequest->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
+            $extensionRequest->load('evidenceAssignment.process.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
             // Enviar notificación a los encargados de acreditación
             // PARA DESACTIVAR: Comenta desde aquí hasta "NOTIFICACIÓN - FIN"
             try {
                 // Obtener la carrera de la solicitud a través de las relaciones
-                // evidenceAssignment -> proceso -> accreditationCycle -> careerCampus -> career
-                $careerId = $extensionRequest->evidenceAssignment->proceso->accreditationCycle->careerCampus->carrera_id;
+                // evidenceAssignment -> process -> accreditationCycle -> careerCampus -> career
+                $careerId = $extensionRequest->evidenceAssignment->process->accreditationCycle->careerCampus->carrera_id;
 
                 // Buscar encargados de acreditación específicos de esta carrera
                 // Esto asegura que solo los encargados relevantes reciban la notificación

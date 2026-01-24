@@ -56,6 +56,21 @@ abstract class BaseCareer extends Model
                 $query->whereIn('carrera_sede_id', $careerCampusIds);
                 break;
 
+            // Modelos sin relación directa con ciclo de acreditación
+            // Son catálogos generales compartidos entre todos los ciclos
+            case 'Criterion':
+            case 'Evidence':
+            case 'Component':
+            case 'Dimension':
+                // No aplicar filtro para estos modelos
+                break;
+
+            // Process tiene relación directa, pero para simplificar
+            // permitimos que superusuario vea todos sin filtro adicional
+            case 'Process':
+                // No aplicar filtro adicional aquí
+                break;
+
             default:
                 $query->whereHas('accreditationCycle', function ($q) use ($careerCampusIds) {
                     $q->whereIn('carrera_sede_id', $careerCampusIds);
