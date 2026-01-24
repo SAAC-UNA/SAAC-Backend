@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
+use App\Services\AuditLogService;
 
 /**
  * Servicio de Notificaciones del Sistema
@@ -88,18 +89,17 @@ class NotificationService
 
         $notificacion->save();
 
+        // Registrar éxito en bitácora
+        AuditLogService::log(
+            'notificar',
+            "Notificación '{$notificacion->titulo}' creada para usuario #{$notificacion->usuario_id} (Tipo: {$notificacion->tipo_evento}, Canal: {$canal})",
+            'Notificaciones'
+        );
+
         // Enviar por email si es necesario
         if (in_array($canal, [Notification::CANAL_EMAIL, Notification::CANAL_AMBOS])) {
             self::sendEmail($notificacion);
         }
-
-        // Registrar en bitácora
-        AuditLogService::log(
-            'notificacion_creada',
-            "Notificación creada: {$notificacion->titulo} para usuario {$notificacion->usuario_id}",
-            'Notificación',
-            $notificacion->notificacion_id
-        );
 
         return $notificacion;
     }
@@ -295,6 +295,13 @@ class NotificationService
                 'email' => $user->email,
             ]);
 
+            // Registrar envío exitoso en bitácora
+            AuditLogService::log(
+                'notificar',
+                "Email enviado: '{$notificacion->titulo}' a {$user->email}",
+                'Notificaciones'
+            );
+
         } catch (\Exception $e) {
             // Marcar como fallido
             $notificacion->update([
@@ -306,6 +313,13 @@ class NotificationService
                 'notificacion_id' => $notificacion->notificacion_id,
                 'error' => $e->getMessage(),
             ]);
+
+            // Registrar fallo en bitácora
+            AuditLogService::log(
+                'notificar_fallido',
+                "Error enviando email '{$notificacion->titulo}': {$e->getMessage()}",
+                'Notificaciones'
+            );
         }
     }
 }
