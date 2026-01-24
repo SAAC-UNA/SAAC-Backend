@@ -43,6 +43,16 @@ class EvidenceAssignment extends Model
     }
 
     /**
+     * Alias para la relación process (para compatibilidad)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function proceso()
+    {
+        return $this->process();
+    }
+
+    /**
      * Relación: Una asignación pertenece a una evidencia.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

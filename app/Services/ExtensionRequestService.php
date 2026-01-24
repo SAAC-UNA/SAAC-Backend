@@ -223,42 +223,18 @@ class ExtensionRequestService
             $extensionRequest->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
-            // Enviar notificación a los encargados de acreditación
-            // PARA DESACTIVAR: Comenta desde aquí hasta "NOTIFICACIÓN - FIN"
+            // PRUEBA TEMPORAL: Enviar correo directamente al usuario Ana
             try {
-                // Obtener la carrera de la solicitud a través de las relaciones
-                // evidenceAssignment -> proceso -> accreditationCycle -> careerCampus -> career
-                $careerId = $extensionRequest->evidenceAssignment->proceso->accreditationCycle->careerCampus->carrera_id;
-
-                // Buscar encargados de acreditación específicos de esta carrera
-                // Esto asegura que solo los encargados relevantes reciban la notificación
-                // Ejemplo: Solicitud de Ingeniería → Solo encargados de Ingeniería
-                $managers = User::whereHas('roles', function ($query) {
-                    $query->where('name', 'Encargado de Acreditación');
-                })->whereHas('careers', function ($query) use ($careerId) {
-                    $query->where('carrera_id', $careerId);
-                })->get();
-
-                // Fallback: Si no hay encargados específicos para esa carrera,
-                // notificar a TODOS los encargados de acreditación (seguridad)
-                if ($managers->isEmpty()) {
-                    Log::warning("No hay encargados específicos para carrera ID {$careerId}, notificando a todos los encargados");
-                    
-                    $managers = User::whereHas('roles', function ($query) {
-                        $query->where('name', 'Encargado de Acreditación');
-                    })->get();
-                }
+                // Buscar usuario Ana por email
+                $testUser = User::where('email', 'ana.zuniga.cardenas@est.una.ac.cr')->first();
                 
-                // Enviar notificación solo si hay encargados
-                if ($managers->count() > 0) {
-                    Notification::send($managers, new ExtensionRequestCreated($extensionRequest));
-                    Log::info("Notificación enviada a {$managers->count()} encargado(s) de la carrera ID {$careerId}");
+                if ($testUser) {
+                    Notification::send([$testUser], new ExtensionRequestCreated($extensionRequest));
+                    Log::info("Notificación de prueba enviada a: {$testUser->email}");
                 } else {
-                    Log::warning('No hay usuarios con rol "Encargado de Acreditación" para notificar');
+                    Log::warning('Usuario de prueba no encontrado');
                 }
             } catch (\Exception $notificationException) {
-                // Si falla el envío de emails, no afecta la creación de la solicitud
-                // Solo registramos el error en logs
                 Log::warning('No se pudo enviar notificación de solicitud de ampliación', [
                     'solicitud_id' => $extensionRequest->solicitud_ampliacion_id,
                     'error' => $notificationException->getMessage()
