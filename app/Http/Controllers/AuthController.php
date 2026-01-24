@@ -34,8 +34,12 @@ class AuthController extends Controller
 
             // Autenticar contra LDAP
             if (!$this->ldapService->authenticate($cedula, $password)) {
+                // Intentar obtener el usuario_id si existe en BD local
+                $existingUser = \App\Models\User::where('cedula', $cedula)->first();
+                $userId = $existingUser ? $existingUser->usuario_id : null;
+                
                 // Registrar intento fallido en bitácora
-                AuditLogService::log('login_fallido', "Intento de login con cédula: {$cedula}", 'Autenticación');
+                AuditLogService::log('login_fallido', "Intento de login fallido - Credenciales inválidas para cédula: {$cedula}", 'Autenticación', $userId);
                 
                 return response()->json([
                     'message' => 'Credenciales inválidas',
@@ -62,8 +66,8 @@ class AuthController extends Controller
 
             // Verificar que el usuario esté activo
             if (!$user->isActive()) {
-                // Registrar intento de usuario inactivo en bitácora
-                AuditLogService::log('login_fallido', "Usuario inactivo: {$user->nombre} (Cédula: {$cedula})", 'Autenticación');
+                // Registrar intento de usuario inactivo en bitácora con su usuario_id
+                AuditLogService::log('login_fallido', "Intento de login fallido - Usuario inactivo: {$user->nombre} (Cédula: {$cedula})", 'Autenticación', $user->usuario_id);
                 
                 return response()->json([
                     'message' => 'Usuario inactivo. Contacte al administrador.',
@@ -94,8 +98,8 @@ class AuthController extends Controller
             
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
 
-            // Registrar login exitoso en bitácora
-            AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación');
+            // Registrar login exitoso en bitácora con el usuario_id
+            AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación', $user->usuario_id);
 
             return response()->json([
                 'user' => new UserResource($user),
