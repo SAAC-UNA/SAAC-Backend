@@ -7,9 +7,12 @@ use App\Http\Requests\StoreFileRequest;
 use App\Http\Requests\UpdateFileRequest;
 use App\Http\Resources\FileResource;
 use App\Services\FileService;
+use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class FileController extends Controller
 {
@@ -274,15 +277,62 @@ class FileController extends Controller
      * Acceso público a archivo mediante token.
      * GET /api/p/{token}
      * 
-     * NOTA: A implementar cuando se programe el serving de archivos.
-     * Esta ruta NO requiere autenticación (para SINAES).
+     * Esta ruta NO requiere autenticación (para SINAES/informes externos).
      */
-    // public function publicAccess(string $token): StreamedResponse
-    // {
-    //     // Buscar archivo por token_publico
-    //     // Validar is_publico y link_expira_en
-    //     // Servir archivo con Storage::response()
-    // }
+    public function publicAccess(string $token)
+    {
+        // Buscar archivo por token público
+        $archivo = File::where('token_publico', $token)->first();
+
+        if (!$archivo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Archivo no encontrado o enlace inválido.',
+            ], 404);
+        }
+
+        // Validar que el archivo sea público
+        if (!$archivo->is_publico) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este archivo no es público.',
+            ], 403);
+        }
+
+        // Validar que el enlace no haya expirado
+        if ($archivo->hasExpiredLink()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El enlace ha expirado.',
+            ], 410);
+        }
+
+        // Servir el archivo
+        try {
+            $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
+            
+            if (!file_exists($path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no encontrado en el almacenamiento.',
+                ], 404);
+            }
+
+            return response()->download($path, $archivo->nombre_original);
+            
+        } catch (\Exception $e) {
+            Log::error('Error sirviendo archivo público', [
+                'token' => $token,
+                'archivo_id' => $archivo->archivo_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al descargar el archivo.',
+            ], 500);
+        }
+    }
 
     // =================================================================
     // MÉTODOS TEMPORALES PARA PRUEBAS (REMOVER EN PRODUCCIÓN)

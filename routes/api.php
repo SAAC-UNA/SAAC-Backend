@@ -117,17 +117,10 @@ Route::prefix('archivos')->group(function () {
     
     // Operación masiva: hacer públicos múltiples archivos
     Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
-    
-    // ============================================================
-    // RUTAS PARA SERVING DE ARCHIVOS (A IMPLEMENTAR EN EL FUTURO)
-    // ============================================================
-    // Route::get('/{archivo}/download', [FileController::class, 'download']);
-    // Route::get('/{archivo}/view', [FileController::class, 'view']);
 });
 
-// Ruta pública para acceso mediante token (SIN autenticación - para SINAES)
-// A implementar en el futuro cuando se programe el serving de archivos
-// Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
+// Ruta pública para acceso mediante token (SIN autenticación - para SINAES/informes)
+Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
 
 
 Route::prefix('admin/users')->group(function () {

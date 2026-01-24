@@ -17,6 +17,14 @@ class FileService
     private string $disk = 'simulated_nas';
 
     /**
+     * Obtener el disco de almacenamiento configurado.
+     */
+    public function getDisk(): string
+    {
+        return $this->disk;
+    }
+
+    /**
      * Sube un archivo al almacenamiento y crea el registro en la base de datos.
      * 
      * @param UploadedFile $file Archivo subido
