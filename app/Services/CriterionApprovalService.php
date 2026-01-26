@@ -6,6 +6,7 @@ use App\Models\Criterion;
 use App\Models\CriterionApproval;
 use App\Models\EvidenceApproval;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Exception;
 
 /**
@@ -21,14 +22,28 @@ class CriterionApprovalService
 
     /**
      * Listar todas las aprobaciones de criterios con sus relaciones.
+     * Si el usuario es Profesor, solo muestra aprobaciones de criterios donde tiene evidencias asignadas.
      *
      * @return \Illuminate\Database\Eloquent\Collection Colección de aprobaciones.
      */
     public function listApprovals()
     {
-        return CriterionApproval::with(['criterion', 'process', 'user', 'evidenceApprovals.evidence'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = CriterionApproval::with(['criterion', 'process', 'user', 'evidenceApprovals.evidence']);
+
+        /** @var \App\Models\User|\Spatie\Permission\Traits\HasRoles $user */
+        $user = Auth::user();
+
+        // Si es Profesor, filtrar solo criterios donde tiene evidencias asignadas
+        if ($user && $user->hasRole('Profesor')) {
+            $query->whereHas('criterion', function ($criterionQuery) use ($user) {
+                $criterionQuery->withoutGlobalScope('byCareerCampus')
+                  ->whereHas('evidences.assignments', function ($assignmentQuery) use ($user) {
+                      $assignmentQuery->where('usuario_id', $user->usuario_id);
+                  });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**

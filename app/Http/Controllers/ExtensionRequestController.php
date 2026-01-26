@@ -12,6 +12,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
+use App\Events\ExtensionRequestCreated;
+use App\Events\ExtensionRequestApproved;
+use App\Events\ExtensionRequestRejected;
+
 /**
  * Controller para gestionar solicitudes de ampliación de fechas límite.
  * 
@@ -272,6 +276,9 @@ class ExtensionRequestController extends Controller
                 $usuarioId
             );
 
+            // Disparar evento para notificaciones
+            event(new ExtensionRequestCreated($solicitud));
+
             // Retornar 201 (created) con la solicitud creada
             return response()->json([
                 'message' => 'Solicitud de ampliación creada correctamente.',
@@ -352,6 +359,9 @@ class ExtensionRequestController extends Controller
                 $justificacion
             );
 
+            // Disparar evento para notificaciones
+            event(new ExtensionRequestApproved($solicitudAprobada, $justificacion ?? ''));
+
             // Retornar 200 con solicitud aprobada
             return response()->json([
                 'message' => 'Solicitud aprobada correctamente.',
@@ -431,6 +441,9 @@ class ExtensionRequestController extends Controller
                 $resolutorId, 
                 $justificacion
             );
+
+            // Disparar evento para notificaciones
+            event(new ExtensionRequestRejected($solicitudRechazada, $justificacion ?? 'Sin justificación proporcionada'));
 
             // Retornar 200 con solicitud rechazada
             return response()->json([

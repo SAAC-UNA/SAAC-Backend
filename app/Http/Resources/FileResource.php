@@ -29,7 +29,7 @@ class FileResource extends JsonResource
             'is_publico' => $this->is_publico,
             'url_publica' => $this->when(
                 $this->isPubliclyAccessible(),
-                fn() => route('files.public', ['token' => $this->token_publico])
+                fn() => $this->getPublicUrl()
             ),
             'link_expira_en' => $this->when(
                 $this->is_publico && $this->link_expira_en,

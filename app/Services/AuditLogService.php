@@ -15,13 +15,14 @@ class AuditLogService
      * @param string $actionName  Nombre de la acción (crear, editar, eliminar, consultar, login, logout)
      * @param string|null $detail Detalle opcional de la acción
      * @param string|null $modulo Módulo del sistema donde ocurrió la acción
+     * @param int|null $userId ID del usuario (si no se proporciona, usa Auth::id())
      * @return bool Retorna true si se registró exitosamente, false si falló
      */
-    public static function log(string $actionName, ?string $detail = null, ?string $modulo = null): bool
+    public static function log(string $actionName, ?string $detail = null, ?string $modulo = null, ?int $userId = null): bool
     {
         try {
-            // ID del usuario autenticado (puede ser null en login_failed)
-            $userId = Auth::id();
+            // ID del usuario: usar el proporcionado o el autenticado
+            $userId = $userId ?? Auth::id();
 
             // Buscar el tipo de acción por descripción
             $actionType = ActionType::where('descripcion', $actionName)->first();

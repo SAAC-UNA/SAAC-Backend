@@ -19,11 +19,13 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\NotificationController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -33,11 +35,15 @@ use Illuminate\Http\Request;
 use App\Models\Process;
 use App\Models\AccreditationCycle;
 
-/**
- * Rutas de Autenticación (públicas)
- */
-Route::middleware('throttle:5,1')->group(function () {
-    Route::post('auth/login', [AuthController::class, 'login']);
+// ============================================
+// Rutas de Autenticación (públicas)
+// ============================================
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);      // POST /api/auth/login
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->middleware('auth:sanctum');                             // POST /api/auth/logout
+    Route::get('/me', [AuthController::class, 'me'])
+        ->middleware('auth:sanctum');                             // GET /api/auth/me
 });
 
 /**
@@ -92,15 +98,18 @@ Route::apiResource('estructura/estandares', StandardController::class)->only(['i
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
 
 // Rutas para aprobación de criterios por bloques (HU-010)
-Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
-Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
-Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion']);
-Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion']);
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
+    Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+    Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+});
+
 // Rutas para archivos (HU-008 - Subida de Evidencias)
 Route::prefix('archivos')->group(function () {
     // TEMPORAL: Obtener datos de prueba para formulario
     Route::get('/test-data', [FileController::class, 'getTestData']);
-    
+       
     // Listar archivos por evidencia o proceso
     Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
     
@@ -121,17 +130,10 @@ Route::prefix('archivos')->group(function () {
     
     // Operación masiva: hacer públicos múltiples archivos
     Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
-    
-    // ============================================================
-    // RUTAS PARA SERVING DE ARCHIVOS (A IMPLEMENTAR EN EL FUTURO)
-    // ============================================================
-    // Route::get('/{archivo}/download', [FileController::class, 'download']);
-    // Route::get('/{archivo}/view', [FileController::class, 'view']);
 });
 
-// Ruta pública para acceso mediante token (SIN autenticación - para SINAES)
-// A implementar en el futuro cuando se programe el serving de archivos
-// Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
+// Ruta pública para acceso mediante token (SIN autenticación - para SINAES/informes)
+Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
 
 
 Route::prefix('admin/users')->group(function () {
@@ -152,6 +154,15 @@ Route::prefix('admin/users')->group(function () {
 
 // Para vista de permisos
 Route::get('admin/permissions', [PermissionController::class, 'index']);
+
+// Rutas de Notificaciones (HU-018) - Requieren autenticación
+Route::middleware(['auth:sanctum'])->prefix('notificaciones')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);                           // GET /api/notificaciones
+    Route::get('/no-leidas/contador', [NotificationController::class, 'getUnreadCount']); // GET /api/notificaciones/no-leidas/contador
+    Route::post('/marcar-todas-leidas', [NotificationController::class, 'markAllAsRead']); // POST /api/notificaciones/marcar-todas-leidas
+    Route::post('/{id}/marcar-leida', [NotificationController::class, 'markAsRead']);      // POST /api/notificaciones/{id}/marcar-leida
+    Route::delete('/{id}', [NotificationController::class, 'destroy']);                   // DELETE /api/notificaciones/{id}
+});
 
 // Rutas de Bitácora del Sistema (HU-005) - Solo Superusuario
 Route::prefix('bitacora')->middleware(['role:Superusuario'])->group(function () {
