@@ -20,11 +20,11 @@ class AssignCareersToUsersSeeder extends Seeder
         /**
          * Buscar usuarios por email
          */
-        $adminInge = User::where('email', 'cristopher.montero.jimenez@una.ac.cr')->first();
+        $adminInge = User::where('email', 'jose.jara.arias@est.una.ac.cr')->first();
         $adminQuimi = User::where('email', 'alejandro.ugalde.villalobos@est.una.ac.cr')->first();
 
         if (!$adminInge) {
-            $this->command->warn('⚠️  Usuario cristopher.montero.jimenez@una.ac.cr no encontrado');
+            $this->command->warn('⚠️  Usuario jose.jara.arias@est.una.ac.cr no encontrado');
         }
         
         if (!$adminQuimi) {

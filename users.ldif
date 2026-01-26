@@ -23,38 +23,7 @@ ou: estudiantes
 # ============================================
 # PROFESORES
 # ============================================
-
-# Cristopher Montero Jimenez
-dn: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: shadowAccount
-uid: 203948609
-cn: Cristopher Montero Jimenez
-sn: Montero Jimenez
-givenName: Cristopher
-mail: cristopher.montero.jimenez@una.cr
-uidNumber: 10001
-gidNumber: 10001
-homeDirectory: /home/203948609
-loginShell: /bin/bash
-userPassword: password123
-
-# Pablo Castillo Quesada
-dn: uid=203849675,ou=profesores,ou=users,dc=una,dc=local
-objectClass: inetOrgPerson
-objectClass: posixAccount
-objectClass: shadowAccount
-uid: 203849675
-cn: Pablo Castillo Quesada
-sn: Castillo Quesada
-givenName: Pablo
-mail: pablo.castillo.quesada@una.cr
-uidNumber: 10002
-gidNumber: 10001
-homeDirectory: /home/203849675
-loginShell: /bin/bash
-userPassword: password123
+# (vacío - sin profesores en el sistema)
 
 # ============================================
 # ESTUDIANTES - PARTICIPANTES DEL PROYECTO

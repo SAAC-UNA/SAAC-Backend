@@ -51,49 +51,14 @@ class UserSeeder extends Seeder
         }
 
         /**
-         * PASO 3: Crear SuperUsuario del Sistema (Pablo Castillo)
-         * dn: uid=203849675,ou=profesores,ou=users,dc=una,dc=local
-         */
-        $this->command->info('🦸 Creando SuperUsuario...');
-        
-        $superUser = User::firstOrCreate(
-            ['email' => 'pablo.castillo.quesada@una.cr'],
-            [
-                'cedula' => '203849675',
-                'nombre' => 'Pablo Castillo Quesada',
-                'password' => null, // Usuario LDAP
-                'status' => User::STATUS_ACTIVE,
-            ]
-        );
-        $superUser->syncRoles(['Superusuario']);
-        $this->command->info("  ✅ {$superUser->nombre} - Superusuario");
-
-        /**
-         * PASO 4: Crear usuarios profesores y estudiantes del LDAP
+         * PASO 3: Crear usuarios profesores y estudiantes del LDAP
          */
         $users = [];
-
-        // PROFESORES (ou=profesores,ou=users,dc=una,dc=local)
-        $this->command->info('👨‍🏫 Profesores...');
-
-        // Cristopher Montero Jimenez - Administrador
-        // dn: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
-        $users[] = [
-            'user_data' => [
-                'cedula' => '203948609',
-                'nombre' => 'Cristopher Montero Jimenez',
-                'email' => 'cristopher.montero.jimenez@una.cr',
-                'password' => null, // Usuario LDAP
-                'status' => User::STATUS_ACTIVE,
-            ],
-            'roles' => ['Administrador'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
-        ];
 
         // ESTUDIANTES DEL PROYECTO (ou=estudiantes,ou=users,dc=una,dc=local)
         $this->command->info('🎓 Estudiantes del proyecto...');
 
-        // Naydelin Nayeli Jiron Castellon
+        // Naydelin Nayeli Jiron Castellon - Superusuario
         // dn: uid=801490957,ou=estudiantes,ou=users,dc=una,dc=local
         $users[] = [
             'user_data' => [
@@ -103,11 +68,11 @@ class UserSeeder extends Seeder
                 'password' => null, // Usuario LDAP
                 'status' => User::STATUS_ACTIVE,
             ],
-            'roles' => ['Profesor'],
+            'roles' => ['Superusuario'],
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 
-        // Jose Andres Jara Arias
+        // Jose Andres Jara Arias - Administrador
         // dn: uid=208330811,ou=estudiantes,ou=users,dc=una,dc=local
         $users[] = [
             'user_data' => [
@@ -117,7 +82,7 @@ class UserSeeder extends Seeder
                 'password' => null, // Usuario LDAP
                 'status' => User::STATUS_ACTIVE,
             ],
-            'roles' => ['Profesor'],
+            'roles' => ['Administrador'],
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 

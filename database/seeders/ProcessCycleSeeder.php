@@ -18,7 +18,7 @@ class ProcessCycleSeeder extends Seeder
         $this->command->info('Iniciando seeder de ciclos y procesos por carrera (según usuario administrador)...');
 
         // Buscar administradores base
-        $adminInge = User::where('email', 'cristopher.montero.jimenez@una.ac.cr')->first(); 
+        $adminInge = User::where('email', 'jose.jara.arias@est.una.ac.cr')->first();
         $adminQuimi = User::where('email', 'alejandro.ugalde.villalobos@est.una.ac.cr')->first();
 
         if (!$adminInge || !$adminQuimi) {
