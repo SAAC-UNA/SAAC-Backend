@@ -84,10 +84,21 @@ class ImprovementCommitmentRequest extends FormRequest
                 'integer',
                 'exists:EVIDENCIA,evidencia_id',
             ],
-            'evidencias_asignar.*.usuario_id' => [
-                'required',
+            'evidencias_asignar.*.usuarios' => [
+                'nullable',
+                'array',
+            ],
+            'evidencias_asignar.*.usuarios.*' => [
                 'integer',
                 'exists:USUARIO,usuario_id',
+            ],
+            'evidencias_asignar.*.roles' => [
+                'nullable',
+                'array',
+            ],
+            'evidencias_asignar.*.roles.*' => [
+                'integer',
+                'exists:roles,id',
             ],
             'evidencias_asignar.*.fecha_asignacion' => [
                 'nullable',
@@ -134,8 +145,10 @@ class ImprovementCommitmentRequest extends FormRequest
             'evidencias_asignar.array' => 'Las evidencias a asignar deben ser un arreglo.',
             'evidencias_asignar.*.evidencia_id.required' => 'El ID de evidencia es obligatorio.',
             'evidencias_asignar.*.evidencia_id.exists' => 'Una o más evidencias no existen.',
-            'evidencias_asignar.*.usuario_id.required' => 'El ID de usuario es obligatorio.',
-            'evidencias_asignar.*.usuario_id.exists' => 'Uno o más usuarios no existen.',
+            'evidencias_asignar.*.usuarios.array' => 'Los usuarios deben ser un arreglo.',
+            'evidencias_asignar.*.usuarios.*.exists' => 'Uno o más usuarios no existen.',
+            'evidencias_asignar.*.roles.array' => 'Los roles deben ser un arreglo.',
+            'evidencias_asignar.*.roles.*.exists' => 'Uno o más roles no existen.',
         ];
     }
 }

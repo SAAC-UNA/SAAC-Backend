@@ -11,6 +11,16 @@ use Illuminate\Database\Eloquent\Model;
  * Registra compromisos de mejora relacionados con el proceso de acreditación,
  * vinculando entidades del repositorio (estándares, dimensiones, componentes,
  * criterios o evidencias) con evidencias específicas que requieren mejora.
+ *
+ * @property int $compromiso_mejora_id
+ * @property int $proceso_id
+ * @property string $descripcion
+ * @property \Illuminate\Support\Carbon|null $fecha_inicio
+ * @property \Illuminate\Support\Carbon|null $fecha_fin
+ * @property string $estado
+ * @property bool|null $activo
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  */
 class ImprovementCommitment extends Model
 {

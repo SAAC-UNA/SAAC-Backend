@@ -42,8 +42,7 @@ return [
                 // 'mech' => 'GSSAPI',
             ],
             'options' => [
-                // TEMPORAL: Desactivado para desarrollo sin extensión LDAP
-                // Opciones de protocolo LDAP
+                // Opciones de protocolo LDAP (solo si la extensión está instalada)
                 // LDAP_OPT_PROTOCOL_VERSION => 3,
                 // LDAP_OPT_REFERRALS => 0,
                 // Deshabilitar verificación de certificados SSL para desarrollo (certificados auto-firmados)

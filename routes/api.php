@@ -285,14 +285,31 @@ Route::prefix('roles')->group(function () {
     
 });
 
-Route::prefix('compromisos-de-mejora')->group(function () {
-    Route::get('/', [ImprovementCommitmentController::class, 'listCommitments'])->name('commitments.index');
-    Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser'])->name('commitments.by-user');
-    Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence'])->name('commitments.by-evidence');
-    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])->name('commitments.create');
-    Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment'])->name('commitments.show');
-    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])->name('commitments.update');
-    Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])->name('commitments.set-active');
+Route::middleware([
+    'auth:sanctum',
+    'refresh.session',
+    'role:Superusuario|Administrador|Encargado de Acreditación',
+])->group(function () {
+    Route::prefix('compromisos-de-mejora')->group(function () {
+        Route::get('/', [ImprovementCommitmentController::class, 'listCommitments'])->name('commitments.index');
+        Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser'])->name('commitments.by-user');
+        Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence'])->name('commitments.by-evidence');
+        Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])->name('commitments.create');
+        Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment'])->name('commitments.show');
+        Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])->name('commitments.update');
+        Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])->name('commitments.set-active');
+    });
+
+    // Alias de compatibilidad (docs/colecciones Postman viejas): /api/compromisos-mejora
+    Route::prefix('compromisos-mejora')->group(function () {
+        Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
+        Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
+        Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
+        Route::post('/', [ImprovementCommitmentController::class, 'createCommitment']);
+        Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
+        Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment']);
+        Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive']);
+    });
 });
 
 // Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).

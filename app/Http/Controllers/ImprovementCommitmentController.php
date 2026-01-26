@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ImprovementCommitmentRequest;
 use App\Http\Requests\ImprovementCommitmentListRequest;
+use App\Http\Requests\UpdateImprovementCommitmentRequest;
 use App\Http\Resources\ImprovementCommitmentResource;
+use App\Services\AuditLogService;
 use App\Services\ImprovementCommitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
@@ -34,6 +36,12 @@ class ImprovementCommitmentController extends Controller
     {
         $perPage = $request->input('per_page', 10);
         $commitments = $this->commitmentService->listCommitments($perPage, $request->validated());
+
+        AuditLogService::log(
+            'consultar',
+            'Listado de compromisos de mejora',
+            'Compromisos de mejora'
+        );
         
         // SIEMPRE retornar con formato paginado (incluye meta y links automáticamente)
         return ImprovementCommitmentResource::collection($commitments);
@@ -56,6 +64,12 @@ class ImprovementCommitmentController extends Controller
             ], 404);
         }
 
+        AuditLogService::log(
+            'consultar',
+            "Consulta de compromiso de mejora ID {$id}",
+            'Compromisos de mejora'
+        );
+
         return response()->json([
             'data' => new ImprovementCommitmentResource($commitment)
         ], 200);
@@ -71,6 +85,12 @@ class ImprovementCommitmentController extends Controller
     {
         $commitments = $this->commitmentService->getCommitmentsByUser($usuarioId);
 
+        AuditLogService::log(
+            'consultar',
+            "Consulta de compromisos de mejora por usuario {$usuarioId}",
+            'Compromisos de mejora'
+        );
+
         return response()->json([
             'data' => ImprovementCommitmentResource::collection($commitments)
         ], 200);
@@ -85,6 +105,12 @@ class ImprovementCommitmentController extends Controller
     public function getByEvidence(int $evidenciaId): JsonResponse
     {
         $commitments = $this->commitmentService->getCommitmentsByEvidence($evidenciaId);
+
+        AuditLogService::log(
+            'consultar',
+            "Consulta de compromisos de mejora por evidencia {$evidenciaId}",
+            'Compromisos de mejora'
+        );
 
         return response()->json([
             'data' => ImprovementCommitmentResource::collection($commitments)
@@ -111,6 +137,12 @@ class ImprovementCommitmentController extends Controller
                     ],
                 ], 422);
             }
+
+            AuditLogService::log(
+                'crear',
+                'Creación de compromiso de mejora ID '.$commitment->compromiso_mejora_id,
+                'Compromisos de mejora'
+            );
 
             return response()->json([
                 'message' => 'Compromiso de mejora creado con éxito.',
@@ -145,11 +177,11 @@ class ImprovementCommitmentController extends Controller
     /**
      * Actualiza un compromiso de mejora existente.
      *
-     * @param ImprovementCommitmentRequest $request
+     * @param UpdateImprovementCommitmentRequest $request
      * @param int $id
      * @return JsonResponse
      */
-    public function updateCommitment(ImprovementCommitmentRequest $request, int $id): JsonResponse
+    public function updateCommitment(UpdateImprovementCommitmentRequest $request, int $id): JsonResponse
     {
         $commitment = $this->commitmentService->getCommitment($id);
 
@@ -166,12 +198,19 @@ class ImprovementCommitmentController extends Controller
             // Si retorna null, no hubo cambios
             if ($updated === null) {
                 return response()->json([
-                    'message' => 'No se detectó ningún cambio',
+                    'message' => 'Solicitud válida, pero no se aplicaron cambios.',
                     'errors' => [
-                        'general' => ['No se actualizó nada. Los datos proporcionados son idénticos a los actuales.']
+                        'general' => ['No se detectaron diferencias entre los datos enviados y el registro actual.']
                     ],
                 ], 422);
             }
+
+            $changedKeys = implode(', ', array_keys($request->validated()));
+            AuditLogService::log(
+                'editar',
+                "Actualización de compromiso de mejora ID {$id}. Campos: {$changedKeys}",
+                'Compromisos de mejora'
+            );
 
             return response()->json([
                 'message' => 'Compromiso de mejora actualizado con éxito.',
@@ -226,10 +265,24 @@ class ImprovementCommitmentController extends Controller
 
         try {
             $updated = $this->commitmentService->setActive($commitment, (bool) $activo);
+            $updated = $updated->refresh()->load([
+                'process.accreditationCycle.careerCampus.career',
+                'process.accreditationCycle.careerCampus.campus',
+                'evidences.criterion.component.dimension',
+                'evidences.criterion.standards',
+                'assignedEvidences.evidence',
+                'assignedEvidences.user'
+            ]);
             
             $message = $activo 
                 ? 'Compromiso de mejora activado con éxito.'
                 : 'Compromiso de mejora desactivado con éxito.';
+
+            AuditLogService::log(
+                'editar',
+                "Cambio de estado activo={$updated->activo} en compromiso de mejora ID {$id}",
+                'Compromisos de mejora'
+            );
 
             return response()->json([
                 'message' => $message,

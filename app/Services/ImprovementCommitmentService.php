@@ -8,6 +8,7 @@ use App\Models\Process;
 use App\Models\Evidence;
 use App\Models\Dimension;
 use App\Models\Standard;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -146,7 +147,7 @@ class ImprovementCommitmentService
      *
      * @param array<string,mixed> $data Datos validados del compromiso.
      * @return ImprovementCommitment|null Compromiso recién creado o null si ya existe.
-     * @throws BusinessValidationException Si validaciones fallan
+     * @throws ValidationException Si las validaciones fallan.
      */
     public function createCommitment(array $data): ?ImprovementCommitment
     {
@@ -217,10 +218,10 @@ class ImprovementCommitmentService
      *
      * @param ImprovementCommitment $commitment Compromiso a actualizar.
      * @param array<string,mixed> $data Nuevos datos del compromiso.
-     * @return ImprovementCommitment Compromiso actualizado.
-     * @throws BusinessValidationException Si no hay cambios o validaciones fallan
+     * @return ImprovementCommitment|null Compromiso actualizado, o null si no hubo cambios.
+     * @throws ValidationException Si las validaciones fallan.
      */
-    public function updateCommitment(ImprovementCommitment $commitment, array $data): ImprovementCommitment
+    public function updateCommitment(ImprovementCommitment $commitment, array $data): ?ImprovementCommitment
     {
         return DB::transaction(function () use ($commitment, $data) {
             $hasChanges = false;
@@ -249,11 +250,8 @@ class ImprovementCommitmentService
                 $fieldsToUpdate['descripcion'] = $data['descripcion'];
                 $hasChanges = true;
             }
-            if (isset($data['fecha_inicio']) && $data['fecha_inicio'] !== $commitment->fecha_inicio->format('Y-m-d')) {
-                $fieldsToUpdate['fecha_inicio'] = $data['fecha_inicio'];
-                $hasChanges = true;
-            }
-            if (isset($data['fecha_fin']) && $data['fecha_fin'] !== $commitment->fecha_fin->format('Y-m-d')) {
+            $currentFechaFin = $commitment->fecha_fin?->format('Y-m-d');
+            if (isset($data['fecha_fin']) && $data['fecha_fin'] !== $currentFechaFin) {
                 $fieldsToUpdate['fecha_fin'] = $data['fecha_fin'];
                 $hasChanges = true;
             }
@@ -334,14 +332,14 @@ class ImprovementCommitmentService
     }
 
     /**
-     * Crea asignaciones de evidencias a usuarios.
+     * Crea asignaciones de evidencias a usuarios y/o roles.
      * IMPORTANTE: Solo asigna evidencias que YA están vinculadas al compromiso.
      *
      * @param ImprovementCommitment $commitment
-     * @param array $assignmentsData Array con datos [evidencia_id, usuario_id, fecha_limite (opcional)]
+     * @param array $assignmentsData Array con datos [evidencia_id, usuarios[], roles[], fecha_limite (opcional)]
      * @param int $processId
      * @return void
-     * @throws BusinessValidationException Si se intenta asignar una evidencia que no está en el compromiso o ya está asignada
+     * @throws ValidationException Si se intenta asignar una evidencia que no está en el compromiso o ya está asignada
      */
     private function createEvidenceAssignments(ImprovementCommitment $commitment, array $assignmentsData, int $processId): void
     {
@@ -360,31 +358,80 @@ class ImprovementCommitmentService
                 ]);
             }
 
-            // Verificar si ya existe una asignación para esta evidencia Y usuario (evitar duplicados exactos)
-            $existingAssignment = EvidenceAssignment::where('proceso_id', $processId)
-                ->where('evidencia_id', $assignment['evidencia_id'])
-                ->where('usuario_id', $assignment['usuario_id'])
-                ->first();
+            $evidenciaId = $assignment['evidencia_id'];
+            $usuarios = $assignment['usuarios'] ?? [];
+            $roles = $assignment['roles'] ?? [];
+            $fechaLimite = $assignment['fecha_limite'] ?? null;
+            $comentario = $assignment['comentario'] ?? null;
+            
+            // Asignar a usuarios directamente
+            foreach ($usuarios as $usuarioId) {
+                // Verificar si ya existe una asignación para esta evidencia Y usuario (evitar duplicados exactos)
+                $existingAssignment = EvidenceAssignment::where('proceso_id', $processId)
+                    ->where('evidencia_id', $evidenciaId)
+                    ->where('usuario_id', $usuarioId)
+                    ->first();
 
-            if ($existingAssignment) {
-                throw ValidationException::withMessages([
-                    'evidencias_asignar' => "La evidencia con ID {$assignment['evidencia_id']} ya está asignada al usuario con ID {$assignment['usuario_id']} en este proceso. No se pueden crear asignaciones duplicadas."
+                if ($existingAssignment) {
+                    throw ValidationException::withMessages([
+                        'evidencias_asignar' => "La evidencia con ID {$evidenciaId} ya está asignada al usuario con ID {$usuarioId} en este proceso. No se pueden crear asignaciones duplicadas."
+                    ]);
+                }
+                
+                $evidenceAssignment = EvidenceAssignment::create([
+                    'proceso_id' => $processId,
+                    'evidencia_id' => $evidenciaId,
+                    'usuario_id' => $usuarioId,
+                    'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
+                    'fecha_limite' => $fechaLimite,
+                    'estado' => 'Pendiente',
                 ]);
+                
+                // Usar evidencia_asignacion_id como clave y guardar comentario
+                $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
+                    'comentario' => $comentario
+                ];
             }
             
-            $evidenceAssignment = EvidenceAssignment::create([
-                'proceso_id' => $processId,
-                'evidencia_id' => $assignment['evidencia_id'],
-                'usuario_id' => $assignment['usuario_id'],
-                'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
-                'fecha_limite' => $assignment['fecha_limite'] ?? null,
-                'estado' => 'Pendiente',
-            ]);
-            
-            // Usar evidencia_asignacion_id como clave y guardar comentario
-            $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
-                'comentario' => $assignment['comentario'] ?? null
-            ];
+            // Asignar a usuarios que tienen los roles especificados
+            foreach ($roles as $roleId) {
+                $role = \App\Models\Role::find($roleId);
+                if (!$role) {
+                    throw ValidationException::withMessages([
+                        'evidencias_asignar' => "El rol con ID {$roleId} no existe."
+                    ]);
+                }
+
+                // Obtener usuarios activos que tienen este rol usando Spatie
+                $usuariosConRol = User::role($role->name)->active()->get();
+                
+                foreach ($usuariosConRol as $usuario) {
+                    // Verificar si ya existe una asignación para esta evidencia Y usuario
+                    $existingAssignment = EvidenceAssignment::where('proceso_id', $processId)
+                        ->where('evidencia_id', $evidenciaId)
+                        ->where('usuario_id', $usuario->usuario_id)
+                        ->first();
+
+                    if ($existingAssignment) {
+                        // Si ya existe, omitir silenciosamente (puede haber sido asignado directamente o por otro rol)
+                        continue;
+                    }
+                    
+                    $evidenceAssignment = EvidenceAssignment::create([
+                        'proceso_id' => $processId,
+                        'evidencia_id' => $evidenciaId,
+                        'usuario_id' => $usuario->usuario_id,
+                        'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
+                        'fecha_limite' => $fechaLimite,
+                        'estado' => 'Pendiente',
+                    ]);
+                    
+                    // Usar evidencia_asignacion_id como clave y guardar comentario
+                    $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
+                        'comentario' => $comentario
+                    ];
+                }
+            }
         }
         
         // Vincular las asignaciones creadas al compromiso con comentarios
@@ -394,11 +441,11 @@ class ImprovementCommitmentService
     }
 
     /**
-     * Sincroniza (reemplaza) las asignaciones de evidencias a usuarios en UPDATE.
+     * Sincroniza (reemplaza) las asignaciones de evidencias a usuarios y/o roles en UPDATE.
      * IMPORTANTE: Solo asigna evidencias que YA están vinculadas al compromiso.
      *
      * @param ImprovementCommitment $commitment
-     * @param array $assignmentsData Array con datos [evidencia_id, usuario_id, fecha_limite (opcional)]
+     * @param array $assignmentsData Array con datos [evidencia_id, usuarios[], roles[], fecha_limite (opcional)]
      * @param int $processId
      * @return void
      * @throws ValidationException Si se intenta asignar una evidencia que no está en el compromiso
@@ -420,32 +467,83 @@ class ImprovementCommitmentService
                 ]);
             }
 
-            // Buscar o crear la asignación
-            $evidenceAssignment = EvidenceAssignment::where('proceso_id', $processId)
-                ->where('evidencia_id', $assignment['evidencia_id'])
-                ->where('usuario_id', $assignment['usuario_id'])
-                ->first();
+            $evidenciaId = $assignment['evidencia_id'];
+            $usuarios = $assignment['usuarios'] ?? [];
+            $roles = $assignment['roles'] ?? [];
+            $fechaLimite = $assignment['fecha_limite'] ?? null;
+            $comentario = $assignment['comentario'] ?? null;
+            
+            // Asignar a usuarios directamente
+            foreach ($usuarios as $usuarioId) {
+                // Buscar o crear la asignación
+                $evidenceAssignment = EvidenceAssignment::where('proceso_id', $processId)
+                    ->where('evidencia_id', $evidenciaId)
+                    ->where('usuario_id', $usuarioId)
+                    ->first();
 
-            if (!$evidenceAssignment) {
-                $evidenceAssignment = EvidenceAssignment::create([
-                    'proceso_id' => $processId,
-                    'evidencia_id' => $assignment['evidencia_id'],
-                    'usuario_id' => $assignment['usuario_id'],
-                    'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
-                    'fecha_limite' => $assignment['fecha_limite'] ?? null,
-                    'estado' => 'Pendiente',
-                ]);
-            } else {
-                // Actualizar fecha_limite si cambió
-                if (isset($assignment['fecha_limite'])) {
-                    $evidenceAssignment->update(['fecha_limite' => $assignment['fecha_limite']]);
+                if (!$evidenceAssignment) {
+                    $evidenceAssignment = EvidenceAssignment::create([
+                        'proceso_id' => $processId,
+                        'evidencia_id' => $evidenciaId,
+                        'usuario_id' => $usuarioId,
+                        'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
+                        'fecha_limite' => $fechaLimite,
+                        'estado' => 'Pendiente',
+                    ]);
+                } else {
+                    // Actualizar fecha_limite si cambió
+                    if (isset($assignment['fecha_limite'])) {
+                        $evidenceAssignment->update(['fecha_limite' => $fechaLimite]);
+                    }
                 }
+                
+                // Usar evidencia_asignacion_id como clave y guardar comentario
+                $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
+                    'comentario' => $comentario
+                ];
             }
             
-            // Usar evidencia_asignacion_id como clave y guardar comentario
-            $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
-                'comentario' => $assignment['comentario'] ?? null
-            ];
+            // Asignar a usuarios que tienen los roles especificados
+            foreach ($roles as $roleId) {
+                $role = \App\Models\Role::find($roleId);
+                if (!$role) {
+                    throw ValidationException::withMessages([
+                        'evidencias_asignar' => "El rol con ID {$roleId} no existe."
+                    ]);
+                }
+
+                // Obtener usuarios activos que tienen este rol usando Spatie
+                $usuariosConRol = User::role($role->name)->active()->get();
+                
+                foreach ($usuariosConRol as $usuario) {
+                    // Buscar o crear la asignación
+                    $evidenceAssignment = EvidenceAssignment::where('proceso_id', $processId)
+                        ->where('evidencia_id', $evidenciaId)
+                        ->where('usuario_id', $usuario->usuario_id)
+                        ->first();
+
+                    if (!$evidenceAssignment) {
+                        $evidenceAssignment = EvidenceAssignment::create([
+                            'proceso_id' => $processId,
+                            'evidencia_id' => $evidenciaId,
+                            'usuario_id' => $usuario->usuario_id,
+                            'fecha_asignacion' => $assignment['fecha_asignacion'] ?? now(),
+                            'fecha_limite' => $fechaLimite,
+                            'estado' => 'Pendiente',
+                        ]);
+                    } else {
+                        // Actualizar fecha_limite si cambió
+                        if (isset($assignment['fecha_limite'])) {
+                            $evidenceAssignment->update(['fecha_limite' => $fechaLimite]);
+                        }
+                    }
+                    
+                    // Usar evidencia_asignacion_id como clave y guardar comentario
+                    $assignmentIds[$evidenceAssignment->evidencia_asignacion_id] = [
+                        'comentario' => $comentario
+                    ];
+                }
+            }
         }
         
         // Usar sync() con comentarios para reemplazar completamente las asignaciones
@@ -460,7 +558,7 @@ class ImprovementCommitmentService
      * Valida las selecciones antes de crear o actualizar un compromiso.
      * 
      * @param array $selecciones Array de selecciones con entidad_tipo y entidad_id
-     * @throws BusinessValidationException Si hay duplicados o entidades sin evidencias
+     * @throws ValidationException Si hay duplicados o entidades sin evidencias.
      */
     private function validateSelections(array $selecciones): void
     {
