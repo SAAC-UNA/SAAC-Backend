@@ -147,7 +147,7 @@ class ImprovementCommitmentService
      *
      * @param array<string,mixed> $data Datos validados del compromiso.
      * @return ImprovementCommitment|null Compromiso recién creado o null si ya existe.
-     * @throws BusinessValidationException Si validaciones fallan
+     * @throws ValidationException Si las validaciones fallan.
      */
     public function createCommitment(array $data): ?ImprovementCommitment
     {
@@ -218,10 +218,10 @@ class ImprovementCommitmentService
      *
      * @param ImprovementCommitment $commitment Compromiso a actualizar.
      * @param array<string,mixed> $data Nuevos datos del compromiso.
-     * @return ImprovementCommitment Compromiso actualizado.
-     * @throws BusinessValidationException Si no hay cambios o validaciones fallan
+     * @return ImprovementCommitment|null Compromiso actualizado, o null si no hubo cambios.
+     * @throws ValidationException Si las validaciones fallan.
      */
-    public function updateCommitment(ImprovementCommitment $commitment, array $data): ImprovementCommitment
+    public function updateCommitment(ImprovementCommitment $commitment, array $data): ?ImprovementCommitment
     {
         return DB::transaction(function () use ($commitment, $data) {
             $hasChanges = false;
@@ -250,11 +250,8 @@ class ImprovementCommitmentService
                 $fieldsToUpdate['descripcion'] = $data['descripcion'];
                 $hasChanges = true;
             }
-            if (isset($data['fecha_inicio']) && $data['fecha_inicio'] !== $commitment->fecha_inicio->format('Y-m-d')) {
-                $fieldsToUpdate['fecha_inicio'] = $data['fecha_inicio'];
-                $hasChanges = true;
-            }
-            if (isset($data['fecha_fin']) && $data['fecha_fin'] !== $commitment->fecha_fin->format('Y-m-d')) {
+            $currentFechaFin = $commitment->fecha_fin?->format('Y-m-d');
+            if (isset($data['fecha_fin']) && $data['fecha_fin'] !== $currentFechaFin) {
                 $fieldsToUpdate['fecha_fin'] = $data['fecha_fin'];
                 $hasChanges = true;
             }
@@ -561,7 +558,7 @@ class ImprovementCommitmentService
      * Valida las selecciones antes de crear o actualizar un compromiso.
      * 
      * @param array $selecciones Array de selecciones con entidad_tipo y entidad_id
-     * @throws BusinessValidationException Si hay duplicados o entidades sin evidencias
+     * @throws ValidationException Si hay duplicados o entidades sin evidencias.
      */
     private function validateSelections(array $selecciones): void
     {

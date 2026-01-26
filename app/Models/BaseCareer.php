@@ -56,6 +56,14 @@ abstract class BaseCareer extends Model
                 $query->whereIn('carrera_sede_id', $careerCampusIds);
                 break;
 
+            case 'Criterion':
+            case 'Evidence':
+            case 'Component':
+            case 'Dimension':
+                // Estos modelos no tienen relación directa con accreditationCycle
+                // No aplicar filtro
+                break;
+
             default:
                 $query->whereHas('accreditationCycle', function ($q) use ($careerCampusIds) {
                     $q->whereIn('carrera_sede_id', $careerCampusIds);
