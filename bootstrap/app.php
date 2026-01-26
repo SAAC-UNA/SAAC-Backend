@@ -38,6 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware para renovar sesión en Redis en cada petición autenticada
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
         ]);
     })

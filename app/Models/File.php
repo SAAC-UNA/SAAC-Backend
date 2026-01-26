@@ -140,7 +140,7 @@ class File extends Model
             return null;
         }
 
-        return route('files.public', ['token' => $this->token_publico]);
+        return url('/api/p/' . $this->token_publico);
     }
 
     /**

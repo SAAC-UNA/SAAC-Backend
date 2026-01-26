@@ -1,0 +1,112 @@
+# Estructura base
+dn: ou=users,dc=saac,dc=una,dc=cr
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=profesores,ou=users,dc=saac,dc=una,dc=cr
+objectClass: organizationalUnit
+ou: profesores
+
+dn: ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: organizationalUnit
+ou: estudiantes
+
+# PROFESORES
+dn: uid=203849675,ou=profesores,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 203849675
+cn: Pablo Castillo Quesada
+sn: Castillo
+givenName: Pablo
+mail: pablo.castillo.quesada@una.cr
+userPassword: password123
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/203849675
+
+dn: uid=203948609,ou=profesores,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 203948609
+cn: Cristopher Montero Jimenez
+sn: Montero
+givenName: Cristopher
+mail: cristopher.montero.jimenez@una.cr
+userPassword: password123
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/203948609
+
+# ESTUDIANTES
+dn: uid=801490957,ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 801490957
+cn: Naydelin Nayeli Jiron Castellon
+sn: Jiron
+givenName: Naydelin
+mail: nayidelin.jiron.castellon@est.una.ac.cr
+userPassword: password123
+uidNumber: 20001
+gidNumber: 20001
+homeDirectory: /home/801490957
+
+dn: uid=208330811,ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 208330811
+cn: Jose Andres Jara Arias
+sn: Jara
+givenName: Jose
+mail: jose.jara.arias@est.una.ac.cr
+userPassword: password123
+uidNumber: 20002
+gidNumber: 20002
+homeDirectory: /home/208330811
+
+dn: uid=118620669,ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 118620669
+cn: Marisol Hidalgo Murillo
+sn: Hidalgo
+givenName: Marisol
+mail: marisol.hidalgo.murillo@est.una.ac.cr
+userPassword: password123
+uidNumber: 20003
+gidNumber: 20003
+homeDirectory: /home/118620669
+
+dn: uid=207800171,ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 207800171
+cn: Ian Enmanuel Villegas Jimenez
+sn: Villegas
+givenName: Ian
+mail: ian.villegas.jimenez@est.una.ac.cr
+userPassword: password123
+uidNumber: 20004
+gidNumber: 20004
+homeDirectory: /home/207800171
+
+dn: uid=206870079,ou=estudiantes,ou=users,dc=saac,dc=una,dc=cr
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 206870079
+cn: Ana Cristina Zuniga Cardenas
+sn: Zuniga
+givenName: Ana
+mail: ana.zuniga.cardenas@est.una.ac.cr
+userPassword: password123
+uidNumber: 20005
+gidNumber: 20005
+homeDirectory: /home/206870079

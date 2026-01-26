@@ -7,24 +7,19 @@ use App\Models\Career;
 class CareerService
 {
     /**
-     * Lista carreras con filtro opcional por facultad_id.
+     * Lista todas las carreras con sus campus asociados.
      */
-    public function getAll(?int $facultadId = null)
+    public function getAll()
     {
-        $q = Career::query()
-            ->with('faculty')
-            ->orderBy('nombre');
-
-        if (!is_null($facultadId)) {
-            $q->where('facultad_id', $facultadId);
-        }
-
-        return $q->get();
+        return Career::query()
+            ->with('campuses')
+            ->orderBy('nombre')
+            ->get();
     }
 
     public function findById(int $id): ?Career
     {
-        return Career::with('faculty')->find($id);
+        return Career::with('campuses')->find($id);
     }
 
     public function create(array $data): Career

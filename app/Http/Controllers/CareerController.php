@@ -19,12 +19,11 @@ class CareerController extends Controller
         $this->service = $service;
     }
     /**
-     * GET /api/estructura/carreras?facultad_id=#
+     * GET /api/estructura/carreras
      */
     public function index(Request $request)
     {
-        $facultadId = $request->filled('facultad_id') ? (int) $request->input('facultad_id') : null;
-        $items = $this->service->getAll($facultadId);
+        $items = $this->service->getAll();
         return response()->json($items, 200);
     }
 
@@ -52,8 +51,7 @@ class CareerController extends Controller
         // Registro en el log de bitacora
         AuditLogService::log(
 'crear',
-    "Se creó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}), ".
-            "perteneciente a la facultad ID {$career->facultad_id}.",
+    "Se creó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}).",
     'Carrera'
         );
         // Respuesta con código 201 y Location header

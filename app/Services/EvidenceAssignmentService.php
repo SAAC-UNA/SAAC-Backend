@@ -6,6 +6,7 @@ use App\Models\EvidenceAssignment;
 use App\Models\Evidence;
 use App\Models\User;
 use App\Models\Role;
+use App\Events\EvidenceAssigned;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
@@ -149,7 +150,7 @@ class EvidenceAssignmentService
             return null; // Ya existe una asignación activa en este proceso
         }
 
-        return EvidenceAssignment::create([
+        $assignment = EvidenceAssignment::create([
             'proceso_id' => $procesoId,
             'evidencia_id' => $evidenciaId,
             'usuario_id' => $usuarioId,
@@ -158,6 +159,11 @@ class EvidenceAssignmentService
             'fecha_limite' => $fechaLimite,
             'comentario' => $comentario,
         ]);
+
+        // Disparar evento de asignación de evidencia para notificaciones
+        event(new EvidenceAssigned($assignment));
+
+        return $assignment;
     }
 
     /**

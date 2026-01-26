@@ -17,7 +17,7 @@ class Component extends  Model
     protected $primaryKey = 'componente_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['dimension_id', 'comentario_id', 'nombre', 'nomenclatura' , 'activo'];
+    protected $fillable = ['dimension_id', 'nombre', 'nomenclatura', 'activo'];
 
     // --- Relaciones ---
 
@@ -42,12 +42,12 @@ class Component extends  Model
     }
 
     /**
-     * Relación: Un componente pertenece a un comentario.
+     * Relación polimórfica: Un componente puede tener muchos comentarios.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
-    public function comment()
+    public function comments()
     {
-        return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Run the migration
      */
     public function up(): void
     {
@@ -25,23 +25,20 @@ return new class extends Migration
                 ->constrained('USUARIO', 'usuario_id')
                 ->onDelete('restrict');
             
-            // Fecha y hora cuando se creó la solicitud
-            $table->datetime('fecha_solicitud');
-            
-            // Motivo de la solicitud de ampliación (varchar 300)
-            $table->string('motivo', 300);
+            // Motivo de la solicitud de ampliación (varchar 1000) - RF-15: Explicación detallada del atraso
+            $table->string('motivo', 1000);
             
             // Fecha sugerida para la nueva fecha límite
             $table->datetime('fecha_sugerida');
             
-            // Estado de la solicitud (varchar 30)
+            // Estado de la solicitud: pendiente, aprobada, rechazada
             $table->string('estado', 30)->default('pendiente');
             
             // Fecha y hora cuando se resolvió la solicitud (nullable)
             $table->datetime('fecha_resolucion')->nullable();
             
             // Usuario que resolvió la solicitud - FK a USUARIO (nullable)
-            $table->foreignId('usuario_resolutor_id')
+            $table->foreignId('usuario_resolutor_id') 
                 ->nullable()
                 ->constrained('USUARIO', 'usuario_id')
                 ->onDelete('restrict');
@@ -57,7 +54,7 @@ return new class extends Migration
             $table->index('usuario_id');
             $table->index('usuario_resolutor_id');
             $table->index('estado');
-            $table->index('fecha_solicitud');
+            $table->index('created_at'); // Índice para ordenar por fecha de creación
         });
     }
 

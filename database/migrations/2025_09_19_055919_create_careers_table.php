@@ -15,8 +15,6 @@ return new class extends Migration
         Schema::create('CARRERA', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('carrera_id');
-            // Relación con facultad
-            $table->foreignId('facultad_id')->constrained('FACULTAD', 'facultad_id')->onDelete('restrict');
             // Nombre de la carrera
             $table->string('nombre', 250);
             // Estado de la carrera
