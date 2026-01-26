@@ -220,15 +220,22 @@ class ExtensionRequestService
             ]);
 
             // Cargar relaciones necesarias para acceder a la carrera
-            $extensionRequest->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
+            $extensionRequest->load('evidenceAssignment.process.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
-            // Enviar notificación a los encargados de acreditación
-            // PARA DESACTIVAR: Comenta desde aquí hasta "NOTIFICACIÓN - FIN"
+            // PRUEBA TEMPORAL: Enviar correo directamente al usuario Ana
             try {
+                // Buscar usuario Ana por email
+                $testUser = User::where('email', 'ana.zuniga.cardenas@est.una.ac.cr')->first();
+                
+                if ($testUser) {
+                    Notification::send([$testUser], new ExtensionRequestCreated($extensionRequest));
+                    Log::info("Notificación de prueba enviada a: {$testUser->email}");
+                } else {
+                    Log::warning('Usuario de prueba no encontrado');
                 // Obtener la carrera de la solicitud a través de las relaciones
-                // evidenceAssignment -> proceso -> accreditationCycle -> careerCampus -> career
-                $careerId = $extensionRequest->evidenceAssignment->proceso->accreditationCycle->careerCampus->carrera_id;
+                // evidenceAssignment -> process -> accreditationCycle -> careerCampus -> career
+                $careerId = $extensionRequest->evidenceAssignment->process->accreditationCycle->careerCampus->carrera_id;
 
                 // Buscar encargados de acreditación específicos de esta carrera
                 // Esto asegura que solo los encargados relevantes reciban la notificación
@@ -257,8 +264,6 @@ class ExtensionRequestService
                     Log::warning('No hay usuarios con rol "Encargado de Acreditación" para notificar');
                 }
             } catch (\Exception $notificationException) {
-                // Si falla el envío de emails, no afecta la creación de la solicitud
-                // Solo registramos el error en logs
                 Log::warning('No se pudo enviar notificación de solicitud de ampliación', [
                     'solicitud_id' => $extensionRequest->solicitud_ampliacion_id,
                     'error' => $notificationException->getMessage()

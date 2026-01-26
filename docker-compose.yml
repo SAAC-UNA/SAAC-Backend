@@ -55,3 +55,88 @@ volumes:
 networks:
   saac:
     driver: bridge
+  # MySQL - Reemplaza XAMPP
+  mysql:
+    image: mysql:8.0
+    container_name: saac_mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"  # Puerto 3307 en host (igual que tu XAMPP)
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: saac_una
+      MYSQL_USER: saac_user
+      MYSQL_PASSWORD: saac_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - saac_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Para sesiones
+  redis:
+    image: redis:7-alpine
+    container_name: saac_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - saac_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # OpenLDAP - Para autenticación
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: saac_openldap
+    restart: unless-stopped
+    ports:
+      - "1389:389"   # Cambiado a 1389 para evitar conflicto
+      - "1636:636"   # Cambiado a 1636
+    environment:
+      LDAP_ORGANISATION: "Universidad Nacional"
+      LDAP_DOMAIN: "una.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "true"
+      LDAP_TLS_CRT_FILENAME: "ldap.crt"
+      LDAP_TLS_KEY_FILENAME: "ldap.key"
+      LDAP_TLS_DH_PARAM_FILENAME: "dhparam.pem"
+      LDAP_TLS_CA_CRT_FILENAME: "ca.crt"
+      LDAP_TLS_ENFORCE: "false"
+      LDAP_TLS_CIPHER_SUITE: "SECURE256:-VERS-SSL3.0"
+      LDAP_TLS_VERIFY_CLIENT: "demand"
+      LDAP_REPLICATION: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_SSL_HELPER_PREFIX: "ldap"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - saac_network
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "dc=una,dc=local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  saac_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  ldap_data:
+    driver: local
+  ldap_config:
+    driver: local
