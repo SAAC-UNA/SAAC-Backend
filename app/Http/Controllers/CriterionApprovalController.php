@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CriterionApprovalRequest;
 use App\Services\CriterionApprovalService;
+use App\Services\AuditLogService;
 use App\Models\Criterion;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Auth\Access\AuthorizationException;
 use Exception;
 
 /**
@@ -14,6 +18,8 @@ use Exception;
  */
 class CriterionApprovalController extends Controller
 {
+    use AuthorizesRequests;
+
     private CriterionApprovalService $approvalService;
 
     public function __construct(CriterionApprovalService $approvalService)
@@ -28,6 +34,8 @@ class CriterionApprovalController extends Controller
      */
     public function listApprovals(): JsonResponse
     {
+        $this->authorize('viewAny', \App\Models\CriterionApproval::class);
+
         try {
             $approvals = $this->approvalService->listApprovals();
 
@@ -63,6 +71,8 @@ class CriterionApprovalController extends Controller
                 ], 404);
             }
 
+            $this->authorize('view', $approval);
+
             return response()->json([
                 'success' => true,
                 'data' => $approval
@@ -88,6 +98,7 @@ class CriterionApprovalController extends Controller
     public function approveCriterion(CriterionApprovalRequest $request, int $criterioId): JsonResponse
     {
         try {
+            $this->authorize('approve', \App\Models\CriterionApproval::class);
             // Validar que el criterio existe
             $criterion = Criterion::find($criterioId);
             if (!$criterion) {
@@ -126,9 +137,7 @@ class CriterionApprovalController extends Controller
                 ], 400);
             }
 
-            // TODO: Obtener el usuario autenticado cuando implementes autenticación
-            // $usuarioId = auth()->user()->usuario_id;
-            $usuarioId = 1; // Temporal - hardcoded
+            $usuarioId = Auth::id();
 
             $approval = $this->approvalService->approveCriterion(
                 $criterioId,
@@ -137,12 +146,24 @@ class CriterionApprovalController extends Controller
                 $request->comentario
             );
 
+            // Registrar en bitácora
+            AuditLogService::log(
+                'aprobar',
+                "Criterio aprobado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                'Aprobación Criterios'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio aprobado exitosamente.',
                 'data' => $approval
             ], 201);
 
+        } catch (AuthorizationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta acción.'
+            ], 403);
         } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
@@ -161,6 +182,7 @@ class CriterionApprovalController extends Controller
     public function rejectCriterion(CriterionApprovalRequest $request, int $criterioId): JsonResponse
     {
         try {
+            $this->authorize('reject', \App\Models\CriterionApproval::class);
             // Validar que el criterio existe
             $criterion = Criterion::find($criterioId);
             if (!$criterion) {
@@ -178,9 +200,7 @@ class CriterionApprovalController extends Controller
                 ], 400);
             }
 
-            // TODO: Obtener el usuario autenticado cuando implementes autenticación
-            // $usuarioId = auth()->user()->usuario_id;
-            $usuarioId = 1; // Temporal - hardcoded
+            $usuarioId = Auth::id();
 
             $approval = $this->approvalService->rejectCriterion(
                 $criterioId,
@@ -189,12 +209,24 @@ class CriterionApprovalController extends Controller
                 $request->comentario
             );
 
+            // Registrar en bitácora
+            AuditLogService::log(
+                'rechazar',
+                "Criterio rechazado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                'Aprobación Criterios'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio rechazado exitosamente.',
                 'data' => $approval
             ], 201);
 
+        } catch (AuthorizationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta acción.'
+            ], 403);
         } catch (Exception $exception) {
             return response()->json([
                 'success' => false,

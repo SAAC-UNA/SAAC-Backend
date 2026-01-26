@@ -62,6 +62,8 @@ abstract class BaseCareer extends Model
             case 'Evidence':
             case 'Component':
             case 'Dimension':
+                // Estos modelos no tienen relación directa con accreditationCycle
+                // No aplicar filtro
                 // No aplicar filtro para estos modelos
                 break;
 
