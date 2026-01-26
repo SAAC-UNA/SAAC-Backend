@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tabla de comentarios
+        // Tabla de comentarios (relación polimórfica)
         Schema::create('COMENTARIO', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('comentario_id');
             // Relación con usuario (restrict: no borrar usuario si tiene comentarios)
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
+            // Relación polimórfica: puede comentar en cualquier entidad
+            $table->morphs('commentable'); // Crea commentable_type y commentable_id
             // Texto del comentario
-            $table->text('texto', 300);
-            // Fecha de creación del comentario (opcional)
-            $table->date('fecha_creacion')->nullable();
+            $table->text('texto');
             // Timestamps de creación y actualización
             $table->timestamps();
         });

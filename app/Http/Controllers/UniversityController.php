@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\University;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use App\Services\UniversityService;
 use App\Http\Requests\UniversityRequest;
+use App\Services\AuditLogService;
+
 
 class UniversityController extends Controller
 {
@@ -47,6 +47,12 @@ class UniversityController extends Controller
     public function store(UniversityRequest $request)
     {
         $university = $this->service->create($request->validated());
+        //Metodo para registrar en el log de auditoria
+        AuditLogService::log(
+'crear',
+    "Universidad creada: {$university->nombre} (ID: {$university->universidad_id})",
+    'Universidad'
+        );
 
         return response()
             ->json([
@@ -66,9 +72,20 @@ class UniversityController extends Controller
         if (!$university) {
             return response()->json(['message' => 'Universidad no encontrada.'], 404);
         }
-
+        // Guardar estado original (solo si querés saber qué cambió)
+         $oldName = $university->nombre;
+         
         // Datos ya validados por el FormRequest (incluye la regla unique con ignore)
         $updated = $this->service->update($university, $request->validated());
+
+        // Registrar en bitácora SOLO si hubo cambios reales
+        if ($oldName !== $updated->nombre) {
+            AuditLogService::log(
+                'editar',
+                "Universidad actualizada: {$oldName} → {$updated->nombre} (ID: {$updated->universidad_id})",
+                'Universidad'
+            );
+        }
 
         return response()->json([
             'message' => 'Universidad actualizada correctamente.',
@@ -92,6 +109,7 @@ class UniversityController extends Controller
             ]);
 
             $newActiveState = $validated['active'];
+            $previousState  = $university->activo; // Estado antes del cambio
 
             // Actualizar el estado de la universidad
             $university->activo = $newActiveState;
@@ -131,6 +149,17 @@ class UniversityController extends Controller
             $cascadeMessage = $newActiveState 
                 ? ' Elementos hijos activados en cascada.' 
                 : ' Elementos hijos desactivados en cascada.';
+            // Construcción de texto descriptivo 
+        $estadoAnterior = $previousState ? 'ACTIVA' : 'INACTIVA';
+        $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+
+        AuditLogService::log(
+            'editar',
+            "Se actualizó el estado de la universidad \"{$university->nombre}\" (ID: {$university->universidad_id}). " .
+            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}. " .
+            "El cambio se aplicó también a sus campus, facultades y carreras asociadas.",
+            'Universidad'
+        );
 
             return response()->json([
                 'message' => 'Estado de la universidad actualizado correctamente.' . $cascadeMessage,
@@ -148,8 +177,17 @@ class UniversityController extends Controller
         }
 
         try {
+            $nombre = $university->nombre;     // Guardamos nombre antes de eliminar
+            $universityId  = $university->universidad_id;
             // ahora elimina el service
             $this->service->delete($university);
+            // Registrar en bitácora
+            AuditLogService::log(
+        'eliminar',
+            "Universidad eliminada: {$nombre} (ID: {$universityId})",
+            'Universidad'
+            );
+
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             // Error 1451: violación de FK (registro relacionado)

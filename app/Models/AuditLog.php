@@ -17,7 +17,7 @@ class AuditLog extends Model
     protected $primaryKey = 'bitacora_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['usuario_id', 'tipo_accion_id', 'detalle', 'fecha_hora'];
+    protected $fillable = ['usuario_id', 'tipo_accion_id', 'modulo', 'detalle', 'fecha_hora'];
 
     /**
      * Relación: Un registro de bitácora pertenece a un usuario.

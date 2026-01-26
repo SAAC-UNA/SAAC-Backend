@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 //use App\Models\Role; //modelo que extiende SpatieRole
 use App\Services\UserAdminService;
+use App\Services\AuditLogService;
 use App\Http\Requests\AssignRoleRequest;
 use App\Http\Requests\AssignPermissionsRequest;
 
@@ -97,6 +98,14 @@ class UserController extends Controller
         }
 
         $this->userAdmin->activate($user);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'activar',
+            "Usuario activado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'activate' ...));
         return response()->json(['message' => 'Usuario activado'], 200);
     }
@@ -112,6 +121,14 @@ class UserController extends Controller
         }
 
         $this->userAdmin->deactivate($user);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'desactivar',
+            "Usuario desactivado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'deactivate' ...));
         return response()->json(['message' => 'Usuario desactivado'], 200);
     }
@@ -127,6 +144,13 @@ class UserController extends Controller
         $roleName = $request->string('role')->trim();// Ya esta validado
         //delegar la asignación de rol al servicio
         $this->userAdmin->assignRole($user, $roleName);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'asignar_rol',
+            "Rol '{$roleName}' asignado a: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
     
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_role' ...));
 
@@ -141,12 +165,21 @@ class UserController extends Controller
     {
         $modules = $request->input('modules', []);
         $this->userAdmin->setModulePermissions($user, $modules);
+        
+        // Registrar en bitácora
+        $permisosAsignados = $user->getDirectPermissions()->pluck('name')->values()->toArray();
+        AuditLogService::log(
+            'asignar_permisos',
+            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados),
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_permissions' ...));
 
         return response()->json([
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
-            'granted' => $user->getDirectPermissions()->pluck('name')->values(), 
+            'granted' => $permisosAsignados, 
         ], 200);
     }
     

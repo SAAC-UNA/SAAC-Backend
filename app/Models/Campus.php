@@ -38,12 +38,12 @@ class Campus extends Model
     }
 
     /**
-     * Relación: Un campus tiene muchas facultades.
+     * Relación: Un campus tiene muchas carreras (relación muchos a muchos).
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function faculties()
+    public function careers()
     {
-        return $this->hasMany(Faculty::class, 'sede_id', 'sede_id');
+        return $this->belongsToMany(Career::class, 'CARRERA_SEDE', 'sede_id', 'carrera_id');
     }
 }

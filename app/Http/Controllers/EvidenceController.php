@@ -7,6 +7,8 @@ use Illuminate\Database\QueryException;
 use App\Http\Resources\EvidenceResource;
 use App\Services\EvidenceService;
 use App\Http\Requests\EvidenceRequest;
+use App\Services\AuditLogService;
+
 
 class EvidenceController extends Controller
 {
@@ -42,6 +44,13 @@ class EvidenceController extends Controller
     public function store(EvidenceRequest $request)
     {
         $evidence = $this->service->create($request->validated());
+        // Registro en el log de bitácora
+        AuditLogService::log(
+'crear',
+    "Se creó la evidencia \"{$evidence->nombre}\" (ID: {$evidence->evidencia_id}), ".
+            "perteneciente al criterio ID {$evidence->criterio_id}.",
+    'Evidencia'
+        );
 
         return \App\Http\Resources\EvidenceResource::make($evidence)
             ->response()
@@ -59,6 +68,24 @@ class EvidenceController extends Controller
         }
 
         $updated = $this->service->update($evidence, $request->validated());
+        // Registro en el log de bitácora
+        $oldName = $evidence->nombre;
+        $oldCode = $evidence->codigo ?? null;
+        $oldDesc = $evidence->descripcion ?? null;
+
+        if (
+            $oldName !== $updated->nombre ||
+            $oldCode !== ($updated->codigo ?? null) ||
+            $oldDesc !== ($updated->descripcion ?? null)
+        ) {
+            AuditLogService::log(
+    'editar',
+        "Se actualizó la evidencia ID {$evidence->evidencia_id}: ".
+                "nombre anterior \"{$oldName}\", nuevo nombre \"{$updated->nombre}\"; ".
+                "otros campos modificados según corresponda.",
+        'Evidencia'
+            );
+        }   
 
         return \App\Http\Resources\EvidenceResource::make($updated)
             ->response()
@@ -76,6 +103,13 @@ class EvidenceController extends Controller
 
         try {
             $this->service->delete($evidence); // antes: $e->delete()
+            // Registro en el log de bitácora
+            AuditLogService::log(
+    'eliminar',
+        "Se eliminó la evidencia \"{$evidence->nombre}\" (ID: {$evidence->evidencia_id}), perteneciente al criterio ID {$evidence->criterio_id}.",
+        'Evidencia'
+            );
+
             return response()->noContent(); // 204
         } catch (QueryException $qe) {
             if ((int)($qe->errorInfo[1] ?? 0) === 1451) {
@@ -104,6 +138,15 @@ class EvidenceController extends Controller
 
         $evidence->activo = $validated['active'];
         $evidence->save();
+        // Registro en el log de bitácora
+        $estadoAnterior = $validated['active'] ? 'INACTIVA' : 'ACTIVA';
+        $estadoNuevo    = $validated['active'] ? 'ACTIVA' : 'INACTIVA';
+        AuditLogService::log(
+'editar',
+    "Se actualizó el estado de la evidencia \"{$evidence->nombre}\" (ID: {$evidence->evidencia_id}). ".
+            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}.",
+    'Evidencia'
+        );
 
         return response()->json([
             'message' => 'Estado de la evidencia actualizado correctamente.',

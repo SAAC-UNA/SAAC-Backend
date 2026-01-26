@@ -17,20 +17,25 @@ class Dimension extends Model
     protected $primaryKey = 'dimension_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['comentario_id', 'nombre', 'nomenclatura' , 'activo'];
+    protected $fillable = ['nombre', 'nomenclatura', 'activo'];
+
     /**
      * Relación: Una dimensión tiene muchos componentes.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-
     public function components()
     {
         return $this->hasMany(Component::class, 'dimension_id', 'dimension_id');
     }
     
-    public function comment()
+    /**
+     * Relación polimórfica: Una dimensión puede tener muchos comentarios.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
+    public function comments()
     {
-        return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 }

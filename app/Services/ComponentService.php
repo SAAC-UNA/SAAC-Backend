@@ -8,14 +8,14 @@ class ComponentService
 {
     public function getAll()
     {
-        return Component::with(['dimension','comment'])
+        return Component::with(['dimension'])
             ->orderBy('nombre')
             ->get();
     }
 
     public function findById(int $id): ?Component
     {
-        return Component::with(['dimension','comment'])->find($id);
+        return Component::with(['dimension'])->find($id);
     }
 
     public function create(array $data): Component
@@ -26,7 +26,7 @@ class ComponentService
     public function update(Component $component, array $data): Component
     {
         $component->fill($data)->save();
-        return $component->load(['dimension','comment']);
+        return $component->load(['dimension']);
     }
 
     public function delete(Component $component): void

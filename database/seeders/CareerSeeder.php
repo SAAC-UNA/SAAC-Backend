@@ -4,69 +4,43 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Career;
-use App\Models\Faculty;
+use App\Models\Campus;
 
 class CareerSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('🎓 Creando Carreras del Campus Alajuela...');
+        $this->command->info('🎓 Creando Carreras...');
 
-        $facultadExactas = Faculty::where('nombre', 'LIKE', '%Ciencias Exactas%')->first();
-        $facultadSociales = Faculty::where('nombre', 'LIKE', '%Ciencias Sociales%')->first();
-        $facultadLetras = Faculty::where('nombre', 'LIKE', '%Filosofía y Letras%')->first();
+        // Obtener la primera sede (Campus Central de la UNA)
+        $campusCentral = Campus::where('nombre', 'LIKE', '%Alajuela%')->first();
         
-        if (!$facultadExactas) {
-            $this->command->error('❌ Facultad de Ciencias Exactas y Naturales no encontrada.');
+        if (!$campusCentral) {
+            $this->command->error('❌ No se encontró un campus. Crea sedes primero.');
             return;
         }
 
-        $careers = [];
+        $this->command->info("📍 Asignando carreras a: {$campusCentral->nombre}");
 
-        // INGENIERÍA EN SISTEMAS DE INFORMACIÓN
-        if ($facultadExactas) {
-            $careers[] = [
-                'facultad_id' => $facultadExactas->facultad_id,
-                'nombre' => 'Ingeniería en Sistemas de Información',
-                'activo' => true,
-            ];
+        $careerNames = [
+            'Ingeniería en Sistemas de Información',
+            'Química Industrial',
+            'Administración de Empresas',
+            'Inglés',
+        ];
 
-            // QUÍMICA INDUSTRIAL
-            $careers[] = [
-                'facultad_id' => $facultadExactas->facultad_id,
-                'nombre' => 'Química Industrial',
-                'activo' => true,
-            ];
+        foreach ($careerNames as $careerName) {
+            // Crear o encontrar la carrera
+            $career = Career::firstOrCreate(
+                ['nombre' => $careerName],
+                ['activo' => true]
+            );
+
+            // Asociar con el campus usando syncWithoutDetaching para evitar duplicados
+            $career->campuses()->syncWithoutDetaching([$campusCentral->sede_id]);
+            $this->command->info("✅ {$career->nombre} asociada a {$campusCentral->nombre}");
         }
 
-        // ADMINISTRACIÓN DE EMPRESAS
-        if ($facultadSociales) {
-            $careers[] = [
-                'facultad_id' => $facultadSociales->facultad_id,
-                'nombre' => 'Administración de Empresas',
-                'activo' => true,
-            ];
-        }
-
-        // INGLÉS
-        if ($facultadLetras) {
-            $careers[] = [
-                'facultad_id' => $facultadLetras->facultad_id,
-                'nombre' => 'Inglés',
-                'activo' => true,
-            ];
-        }
-
-        foreach ($careers as $career) {
-            if (isset($career['facultad_id'])) {
-                $created = Career::firstOrCreate(
-                    ['nombre' => $career['nombre'], 'facultad_id' => $career['facultad_id']],
-                    $career
-                );
-                $this->command->info("✅ {$created->nombre}");
-            }
-        }
-
-        $this->command->info('🎉 Carreras creadas');
+        $this->command->info('🎉 Carreras creadas y asociadas');
     }
 }
