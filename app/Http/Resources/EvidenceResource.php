@@ -18,12 +18,23 @@ class EvidenceResource extends JsonResource
             'estado_evidencia_id' => $this->estado_evidencia_id,
             'descripcion'         => $this->descripcion,
             'nomenclatura'        => $this->nomenclatura,
-            'activo'              => $this->activo ?? true, // Agregar campo activo
-            'created_at'          => optional($this->created_at)->toISOString(),
+            'activo'              => $this->activo ?? true,
+            'fecha_publicacion'   => optional($this->created_at)->toISOString(),
             'updated_at'          => optional($this->updated_at)->toISOString(),
-            // Si luego activas relaciones, aquí puedes anidar:
-            // 'criterion'      => new CriterionResource($this->whenLoaded('criterion')),
-            // 'evidence_state' => new EvidenceStateResource($this->whenLoaded('evidenceState')),
+            // Relaciones opcionales
+            'criterion'           => new CriterionResource($this->whenLoaded('criterion')),
+            'estado_evidencia'    => $this->when(
+                $this->relationLoaded('evidenceState') && $this->evidenceState,
+                fn() => ['nombre' => $this->evidenceState->nombre]
+            ),
+            'responsables'        => $this->when(
+                $this->relationLoaded('assignments'),
+                fn() => $this->assignments->map(fn($assignment) => [
+                    'usuario_id' => $assignment->user->usuario_id,
+                    'nombre'     => $assignment->user->nombre,
+                    'email'      => $assignment->user->email,
+                ])
+            ),
         ];
     }
 }

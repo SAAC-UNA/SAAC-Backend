@@ -14,10 +14,9 @@ class ComponentFactory extends Factory
     public function definition(): array
     {
         return [
-            'dimension_id'  => Dimension::factory(),     // 👈 obligatorio en tu tabla
-            'comentario_id' => Comment::factory(),       // si tu schema lo pide
+            'dimension_id'  => Dimension::factory(),
             'nombre'        => 'Componente '.fake()->unique()->word(),
-            'nomenclatura'  => strtoupper(fake()->bothify('COMP-##')), // si es unique, mejor unique()
+            'nomenclatura'  => strtoupper(fake()->bothify('COMP-##')),
         ];
     }
 

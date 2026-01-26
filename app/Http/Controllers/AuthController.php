@@ -22,6 +22,7 @@ class AuthController extends Controller
 
     /**
      * Iniciar sesión con LDAP
+     *
      * 
      * @param LoginRequest $request
      * @return \Illuminate\Http\JsonResponse
@@ -34,8 +35,12 @@ class AuthController extends Controller
 
             // Autenticar contra LDAP
             if (!$this->ldapService->authenticate($cedula, $password)) {
+                // Intentar obtener el usuario_id si existe en BD local
+                $existingUser = \App\Models\User::where('cedula', $cedula)->first();
+                $userId = $existingUser ? $existingUser->usuario_id : null;
+                
                 // Registrar intento fallido en bitácora
-                AuditLogService::log('login_fallido', "Intento de login con cédula: {$cedula}", 'Autenticación');
+                AuditLogService::log('login_fallido', "Intento de login fallido - Credenciales inválidas para cédula: {$cedula}", 'Autenticación', $userId);
                 
                 return response()->json([
                     'message' => 'Credenciales inválidas',
@@ -44,6 +49,7 @@ class AuthController extends Controller
 
             // Obtener datos del usuario desde LDAP
             $ldapData = $this->ldapService->getUserDataFromLdap($cedula);
+
             
             if (!$ldapData) {
                 return response()->json([
@@ -62,8 +68,8 @@ class AuthController extends Controller
 
             // Verificar que el usuario esté activo
             if (!$user->isActive()) {
-                // Registrar intento de usuario inactivo en bitácora
-                AuditLogService::log('login_fallido', "Usuario inactivo: {$user->nombre} (Cédula: {$cedula})", 'Autenticación');
+                // Registrar intento de usuario inactivo en bitácora con su usuario_id
+                AuditLogService::log('login_fallido', "Intento de login fallido - Usuario inactivo: {$user->nombre} (Cédula: {$cedula})", 'Autenticación', $user->usuario_id);
                 
                 return response()->json([
                     'message' => 'Usuario inactivo. Contacte al administrador.',
@@ -91,10 +97,10 @@ class AuthController extends Controller
                 'login_at' => now()->toDateTimeString(),
                 'ip' => request()->ip(),
             ];
-            
+
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
 
-            // Registrar login exitoso en bitácora (pasar usuario_id explícitamente)
+            // Registrar login exitoso en bitácora con el usuario_id
             AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación', $user->usuario_id);
 
             return response()->json([
@@ -119,6 +125,7 @@ class AuthController extends Controller
 
     /**
      * Cerrar sesión (eliminar token actual)
+     *
      * 
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -127,6 +134,11 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
+
+            // Eliminar sesión de Redis
+            $sessionKey = "session:user:{$user->usuario_id}";
+            Redis::del($sessionKey);
+
             
             // Registrar cierre de sesión en bitácora
             AuditLogService::log('logout', "Usuario {$user->nombre} cerró sesión", 'Autenticación');
@@ -153,6 +165,7 @@ class AuthController extends Controller
 
     /**
      * Obtener información del usuario autenticado
+     *
      * 
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -161,7 +174,7 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Verificar sesión en Redis
             $sessionKey = "session:user:{$user->usuario_id}";
             $sessionData = Redis::get($sessionKey);
@@ -171,13 +184,13 @@ class AuthController extends Controller
                     'message' => 'Sesión expirada',
                 ], 401);
             }
-            
+
             // Renovar TTL de la sesión (sliding expiration - 30 minutos más)
             Redis::expire($sessionKey, 1800);
-            
+
             // Cargar relaciones necesarias
             $user->load(['roles', 'permissions', 'careers']);
-            
+
             return response()->json([
                 'user' => new UserResource($user),
             ], 200);

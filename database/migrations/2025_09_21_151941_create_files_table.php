@@ -11,9 +11,50 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('files', function (Blueprint $table) {
-            $table->id();
+        Schema::create('ARCHIVO', function (Blueprint $table) {
+            // Clave primaria
+            $table->id('archivo_id');
+            
+            // Relaciones (LLAVES FORÁNEAS)
+            $table->foreignId('evidencia_id')
+                  ->constrained('EVIDENCIA', 'evidencia_id')
+                  ->onDelete('restrict');
+            
+            $table->foreignId('usuario_id')
+                  ->constrained('USUARIO', 'usuario_id')
+                  ->onDelete('restrict');
+            
+            $table->foreignId('proceso_id')
+                  ->constrained('PROCESO', 'proceso_id')
+                  ->onDelete('restrict');
+            
+            // Fecha de subida
+            $table->timestamp('fecha_subida');
+            
+            // UBICACIÓN FÍSICA ÚNICA - Nombre UUID en TrueNAS
+            $table->string('path', 512);
+            
+            // NUEVO: Nombre original del archivo (legible por humanos)
+            $table->string('nombre_original', 255);
+            
+            // NUEVO: Bandera de acceso público
+            $table->boolean('is_publico')->default(false);
+            
+            // NUEVO: Token UUID para URL pública
+            $table->string('token_publico', 36)->nullable()->unique();
+            
+            // NUEVO: Fecha de expiración del link público
+            $table->timestamp('link_expira_en')->nullable();
+            
+            // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices para optimización
+            $table->index('evidencia_id');
+            $table->index('usuario_id');
+            $table->index('proceso_id');
+            $table->index('token_publico');
+            $table->index(['is_publico', 'link_expira_en']);
         });
     }
 
@@ -22,6 +63,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('files');
+        Schema::dropIfExists('ARCHIVO');
     }
 };

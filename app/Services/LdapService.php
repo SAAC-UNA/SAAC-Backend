@@ -141,13 +141,16 @@ class LdapService
                 'cedula' => $ldapData['cedula'],
                 'nombre' => $ldapData['nombre'],
                 'email' => $ldapData['email'],
-                'password' => null, // Siempre NULL para usuarios LDAP
                 'status' => User::STATUS_ACTIVE,
             ];
             
             if ($user) {
-                // Usuario existe, actualizar datos
-                $user->update($syncData);
+                // Usuario existe, actualizar solo campos sin password
+                $user->cedula = $ldapData['cedula'];
+                $user->nombre = $ldapData['nombre'];
+                $user->email = $ldapData['email'];
+                $user->status = User::STATUS_ACTIVE;
+                $user->save();
                 Log::info("Usuario actualizado desde LDAP: {$ldapData['cedula']}");
             } else {
                 // Usuario nuevo, crear

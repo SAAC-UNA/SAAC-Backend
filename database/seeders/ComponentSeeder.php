@@ -15,14 +15,6 @@ class ComponentSeeder extends Seeder
      */
     public function run(): void
     {
-        // Obtener primer comentario (temporal - relación será refactorizada)
-        $comentario = DB::table('COMENTARIO')->first();
-        
-        if (!$comentario) {
-            $this->command->error('❌ No se encontró ningún comentario. CommentSeeder debe ejecutarse primero.');
-            return;
-        }
-
         // Obtener IDs de las dimensiones
         $dimension1 = DB::table('DIMENSION')->where('nomenclatura', '1')->first();
         $dimension2 = DB::table('DIMENSION')->where('nomenclatura', '2')->first();
@@ -33,7 +25,6 @@ class ComponentSeeder extends Seeder
             // DIMENSIÓN 1: Relación con el contexto
             [
                 'dimension_id' => $dimension1->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Información y promoción',
                 'nomenclatura' => '1.1',
                 'activo' => true,
@@ -42,7 +33,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension1->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Proceso de admisión e ingreso',
                 'nomenclatura' => '1.2',
                 'activo' => true,
@@ -51,7 +41,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension1->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Correspondencia con el contexto',
                 'nomenclatura' => '1.3',
                 'activo' => true,
@@ -62,7 +51,6 @@ class ComponentSeeder extends Seeder
             // DIMENSIÓN 2: Recursos
             [
                 'dimension_id' => $dimension2->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Plan de estudios',
                 'nomenclatura' => '2.1',
                 'activo' => true,
@@ -71,7 +59,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension2->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Personal académico',
                 'nomenclatura' => '2.2',
                 'activo' => true,
@@ -80,7 +67,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension2->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Infraestructura',
                 'nomenclatura' => '2.4',
                 'activo' => true,
@@ -91,7 +77,6 @@ class ComponentSeeder extends Seeder
             // DIMENSIÓN 3: Proceso educativo
             [
                 'dimension_id' => $dimension3->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Desarrollo docente',
                 'nomenclatura' => '3.1',
                 'activo' => true,
@@ -100,7 +85,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension3->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Metodología enseñanza-aprendizaje',
                 'nomenclatura' => '3.2',
                 'activo' => true,
@@ -109,7 +93,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension3->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Gestión de la carrera',
                 'nomenclatura' => '3.3',
                 'activo' => true,
@@ -120,7 +103,6 @@ class ComponentSeeder extends Seeder
             // DIMENSIÓN 4: Resultados
             [
                 'dimension_id' => $dimension4->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Desempeño estudiantil',
                 'nomenclatura' => '4.1',
                 'activo' => true,
@@ -129,7 +111,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension4->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Graduados',
                 'nomenclatura' => '4.2',
                 'activo' => true,
@@ -138,7 +119,6 @@ class ComponentSeeder extends Seeder
             ],
             [
                 'dimension_id' => $dimension4->dimension_id,
-                'comentario_id' => $comentario->comentario_id,
                 'nombre' => 'Proyección de la carrera',
                 'nomenclatura' => '4.3',
                 'activo' => true,

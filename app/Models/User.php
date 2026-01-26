@@ -36,13 +36,12 @@ class User extends Authenticatable
         'cedula',    // uid de LDAP
         'nombre',    // cn de LDAP
         'email',     // mail de LDAP
-        'password',  // Requerido por Authenticatable (siempre NULL)
         'status'     // Estado local del usuario
     ];
 
     // Campos ocultos en serialización (seguridad)
     protected $hidden = [
-        'password',  // Nunca exponer, siempre NULL
+        // password no existe en esta tabla (solo autenticación LDAP)
     ];
 
     // Estados del usuario

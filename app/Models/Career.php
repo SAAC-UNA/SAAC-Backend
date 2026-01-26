@@ -26,21 +26,16 @@ class Career extends Model
     public $timestamps = true;
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['facultad_id', 'nombre' , 'activo'];
-
-    /**
-     * Relación: Una carrera pertenece a una facultad.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function faculty()
-    {
-        return $this->belongsTo(Faculty::class, 'facultad_id', 'facultad_id');
-    }
+    protected $fillable = ['nombre', 'activo'];
 
     public function users()
     {
         return $this->belongsToMany(User::class, 'CARRERA_USUARIO', 'carrera_id', 'usuario_id');
+    }
+
+    public function campuses()
+    {
+        return $this->belongsToMany(Campus::class, 'CARRERA_SEDE', 'carrera_id', 'sede_id');
     }
 
 }

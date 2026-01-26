@@ -24,7 +24,6 @@ class Criterion extends BaseCareer
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'componente_id',
-        'comentario_id',
         'descripcion',
         'nomenclatura',
         'activo'
@@ -51,13 +50,13 @@ class Criterion extends BaseCareer
     }
 
     /**
-     * Relación: Un criterio pertenece a un comentario.
+     * Relación polimórfica: Un criterio puede tener muchos comentarios.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
-    public function comment()
+    public function comments()
     {
-        return $this->belongsTo(Comment::class, 'comentario_id', 'comentario_id');
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /**

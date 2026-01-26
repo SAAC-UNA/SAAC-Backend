@@ -42,3 +42,4 @@ class AutoevaluationSeeder extends Seeder
         $this->command->info("✅ " . count($autoevaluaciones) . " autoevaluaciones creadas exitosamente");
     }
 }
+    

@@ -35,11 +35,19 @@ return [
             'port' => env('LDAP_PORT', 389),
             'base_dn' => env('LDAP_BASE_DN', 'dc=local,dc=com'),
             'timeout' => env('LDAP_TIMEOUT', 5),
-            'use_ssl' => env('LDAP_SSL', false),
-            'use_tls' => env('LDAP_TLS', false),
+            'use_ssl' => env('LDAP_USE_SSL', false),
+            'use_tls' => env('LDAP_USE_TLS', false),
             'use_sasl' => env('LDAP_SASL', false),
             'sasl_options' => [
                 // 'mech' => 'GSSAPI',
+            ],
+            'options' => [
+                // Opciones de protocolo LDAP (solo si la extensión está instalada)
+                // LDAP_OPT_PROTOCOL_VERSION => 3,
+                // LDAP_OPT_REFERRALS => 0,
+                // Deshabilitar verificación de certificados SSL para desarrollo (certificados auto-firmados)
+                // En producción con certificados válidos, cambiar a LDAP_OPT_X_TLS_DEMAND
+                // LDAP_OPT_X_TLS_REQUIRE_CERT => env('LDAP_SSL_VERIFY', false) ? LDAP_OPT_X_TLS_DEMAND : LDAP_OPT_X_TLS_NEVER,
             ],
         ],
 

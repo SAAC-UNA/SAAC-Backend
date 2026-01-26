@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,16 +25,32 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Grupo api (sin auth por defecto, solo bindings)
         $middleware->group('api', [
+            \Illuminate\Http\Middleware\HandleCors::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
         // Alias de middlewares personalizados
-        $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-            'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
+        // Habilitar CORS para desarrollo
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
         ]);
 
-        // Configurar respuestas JSON para rutas API cuando falla autenticación
-        $middleware->redirectGuestsTo(fn () => throw new \Illuminate\Auth\AuthenticationException());
+        // Middleware para renovar sesión en Redis en cada petición autenticada
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {})->create();
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+
+            throw $e;
+        });
+    })->create();
