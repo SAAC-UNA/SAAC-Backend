@@ -7,6 +7,7 @@ use App\Http\Requests\StoreFileRequest;
 use App\Http\Requests\UpdateFileRequest;
 use App\Http\Resources\FileResource;
 use App\Services\FileService;
+use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
@@ -106,6 +107,16 @@ class FileController extends Controller
 
         // Si hay errores, retornar con status 207 (Multi-Status)
         if (!empty($errores)) {
+            // Si se subieron algunos archivos, disparar evento
+            if (count($archivos) >= 2) {
+                $filesData = array_map(fn($resource) => [
+                    'nombre_original' => $resource->nombre_original,
+                    'size_kb' => round($resource->size / 1024, 2),
+                ], $archivos);
+                
+                event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+            }
+            
             return response()->json([
                 'success' => count($archivos) > 0,
                 'message' => count($archivos) . ' archivo(s) subido(s), ' . count($errores) . ' error(es).',
@@ -114,7 +125,17 @@ class FileController extends Controller
             ], 207);
         }
 
-        // Éxito total
+        // Éxito total: Disparar evento si se subieron múltiples archivos (2+)
+        if (count($archivos) >= 2) {
+            $filesData = array_map(fn($resource) => [
+                'archivo_id' => $resource->archivo_id,
+                'nombre_original' => $resource->nombre_original,
+                'size_kb' => round($resource->size / 1024, 2),
+            ], $archivos);
+            
+            event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+        }
+
         return response()->json([
             'success' => true,
             'message' => count($archivos) . ' archivo(s) subido(s) exitosamente.',

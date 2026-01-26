@@ -24,6 +24,7 @@ use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\NotificationController;
 
 //solo para pruebas
 use Illuminate\Support\Facades\App;
@@ -151,6 +152,15 @@ Route::prefix('admin/users')->group(function () {
 
 // Para vista de permisos
 Route::get('admin/permissions', [PermissionController::class, 'index']);
+
+// Rutas de Notificaciones (HU-018) - Requieren autenticación
+Route::middleware(['auth:sanctum'])->prefix('notificaciones')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);                           // GET /api/notificaciones
+    Route::get('/no-leidas/contador', [NotificationController::class, 'getUnreadCount']); // GET /api/notificaciones/no-leidas/contador
+    Route::post('/marcar-todas-leidas', [NotificationController::class, 'markAllAsRead']); // POST /api/notificaciones/marcar-todas-leidas
+    Route::post('/{id}/marcar-leida', [NotificationController::class, 'markAsRead']);      // POST /api/notificaciones/{id}/marcar-leida
+    Route::delete('/{id}', [NotificationController::class, 'destroy']);                   // DELETE /api/notificaciones/{id}
+});
 
 // Rutas de Bitácora del Sistema (HU-005) - Solo Superusuario
 Route::prefix('bitacora')->middleware(['role:Superusuario'])->group(function () {
