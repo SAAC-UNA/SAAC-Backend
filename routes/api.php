@@ -68,6 +68,10 @@ Route::apiResource('estructura/componentes', ComponentController::class)->only([
 Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive']);
 Route::apiResource('estructura/criterios', CriterionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
+// HU-012: Filtrado avanzado de evidencias (DEBE ir ANTES de apiResource)
+Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter'])->middleware('auth:sanctum');
+Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel'])->middleware('auth:sanctum');
+Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF'])->middleware('auth:sanctum');
 Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
 

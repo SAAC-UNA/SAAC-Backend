@@ -56,21 +56,32 @@ abstract class BaseCareer extends Model
                 $query->whereIn('carrera_sede_id', $careerCampusIds);
                 break;
 
-            // Modelos sin relación directa con ciclo de acreditación
-            // Son catálogos generales compartidos entre todos los ciclos
-            case 'Criterion':
             case 'Evidence':
-            case 'Component':
-            case 'Dimension':
-                // Estos modelos no tienen relación directa con accreditationCycle
-                // No aplicar filtro
-                // No aplicar filtro para estos modelos
+                // Evidence → Criterion → Component → Dimension → Comment → Careers
+                $query->whereHas('criterion.component.dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
                 break;
 
-            // Process tiene relación directa, pero para simplificar
-            // permitimos que superusuario vea todos sin filtro adicional
-            case 'Process':
-                // No aplicar filtro adicional aquí
+            case 'Criterion':
+                // Criterion → Component → Dimension → Comment → Careers
+                $query->whereHas('component.dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
+            case 'Component':
+                // Component → Dimension → Comment → Careers
+                $query->whereHas('dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
+            case 'Dimension':
+                // Dimension → Comment → Careers
+                $query->whereHas('comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
                 break;
 
             default:
