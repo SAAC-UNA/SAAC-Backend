@@ -89,15 +89,18 @@ Route::apiResource('estructura/estandares', StandardController::class)->only(['i
 Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
 
 // Rutas para aprobación de criterios por bloques (HU-010)
-Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
-Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
-Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion']);
-Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion']);
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
+    Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+    Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+});
+
 // Rutas para archivos (HU-008 - Subida de Evidencias)
 Route::prefix('archivos')->group(function () {
     // TEMPORAL: Obtener datos de prueba para formulario
     Route::get('/test-data', [FileController::class, 'getTestData']);
-    
+       
     // Listar archivos por evidencia o proceso
     Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
     
