@@ -20,7 +20,6 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
