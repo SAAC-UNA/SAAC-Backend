@@ -1,3 +1,140 @@
+# ========================================
+# Docker Compose - SAAC Backend
+# ========================================
+# Servicios para desarrollo:
+# - OpenLDAP: Servidor de autenticación (puerto 389/636)
+# - Redis: Almacenamiento de sesiones (puerto 6379)
+#
+# Comandos útiles:
+#   docker compose up -d      → Inicia los servicios en segundo plano
+#   docker compose down       → Detiene y elimina los contenedores
+#   docker compose ps         → Lista los contenedores corriendo
+#   docker compose logs       → Ver logs de todos los servicios
+#   docker compose logs ldap  → Ver logs solo de LDAP
+# ========================================
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Servicio 1: OpenLDAP
+  # ========================================
+  # Servidor LDAP para autenticación de usuarios
+  # Base DN: dc=una,dc=local
+  # Usuario admin: cn=admin,dc=una,dc=local
+  # Contraseña: admin
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: saac_openldap
+    hostname: ldap.una.local
+    environment:
+      # Nombre de la organización (UNA - Universidad Nacional)
+      - LDAP_ORGANISATION=UNA
+      
+      # Dominio LDAP (se convierte en dc=una,dc=local)
+      - LDAP_DOMAIN=una.local
+      
+      # Contraseña del usuario administrador
+      - LDAP_ADMIN_PASSWORD=admin
+      
+      # Habilitar SSL/TLS (puerto 636)
+      - LDAP_TLS=true
+      
+      # Desactivar verificación de certificados SSL (solo desarrollo)
+      - LDAP_TLS_VERIFY_CLIENT=never
+      
+      # Nivel de log (256 = conexiones y operaciones)
+      - LDAP_LOG_LEVEL=256
+    
+    ports:
+      # Puerto 389: LDAP sin cifrado (desarrollo)
+      - "389:389"
+      
+      # Puerto 636: LDAPS con cifrado SSL/TLS
+      - "636:636"
+    
+    volumes:
+      # Volumen para base de datos LDAP (datos de usuarios)
+      - ldap_data:/var/lib/ldap
+      
+      # Volumen para configuración del servidor LDAP
+      - ldap_config:/etc/ldap/slapd.d
+    
+    networks:
+      - saac
+    
+    # Reiniciar automáticamente si el contenedor falla
+    restart: unless-stopped
+    
+    # Chequeo de salud: verifica que el servicio LDAP responda
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "dc=una,dc=local", "-LLL"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================================
+  # Servicio 2: Redis
+  # ========================================
+  # Servidor Redis para almacenamiento de sesiones
+  # Puerto: 6379
+  # Sin contraseña (solo desarrollo local)
+  redis:
+    image: redis:7-alpine
+    container_name: saac_redis
+    hostname: redis.una.local
+    
+    ports:
+      # Puerto 6379: Redis estándar
+      - "6379:6379"
+    
+    volumes:
+      # Volumen para persistencia de datos de Redis
+      - redis_data:/data
+    
+    # Comando de inicio con persistencia habilitada (AOF)
+    command: redis-server --appendonly yes
+    
+    networks:
+      - saac
+    
+    # Reiniciar automáticamente si el contenedor falla
+    restart: unless-stopped
+    
+    # Chequeo de salud: verifica que Redis responda
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# ========================================
+# Volúmenes
+# ========================================
+# Almacenamiento persistente (los datos NO se pierden al hacer docker compose down)
+volumes:
+  # Datos de la base de datos LDAP (usuarios, grupos, etc.)
+  ldap_data:
+    driver: local
+  
+  # Configuración del servidor LDAP
+  ldap_config:
+    driver: local
+  
+  # Datos de Redis (sesiones de usuario)
+  redis_data:
+    driver: local
+
+# ========================================
+# Redes
+# ========================================
+# Red interna para comunicación entre contenedores
+networks:
+  saac:
+    driver: bridge
+    name: saac_network
 version: '3.8'
 
 services:

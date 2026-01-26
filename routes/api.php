@@ -169,8 +169,13 @@ Route::prefix('archivos')->group(function () {
 // Ruta pública para acceso mediante token (SIN autenticación - para SINAES/informes)
 Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
 
-
-Route::prefix('admin/users')->group(function () {
+// ============================================
+// Rutas de Gestión de Usuarios (HU-002)
+// ============================================
+// Protegidas con:
+// - auth:sanctum: Requiere usuario autenticado con token válido
+// - permission:usuarios.edit: Requiere permiso específico para editar usuarios
+Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.edit'])->group(function () {
     Route::get('/', [UserController::class, 'index']);
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
