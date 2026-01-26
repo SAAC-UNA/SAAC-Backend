@@ -19,6 +19,7 @@ use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
@@ -34,11 +35,15 @@ use Illuminate\Http\Request;
 use App\Models\Process;
 use App\Models\AccreditationCycle;
 
-/**
- * Rutas de Autenticación (públicas)
- */
-Route::middleware('throttle:5,1')->group(function () {
-    Route::post('auth/login', [AuthController::class, 'login']);
+// ============================================
+// Rutas de Autenticación (públicas)
+// ============================================
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);      // POST /api/auth/login
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->middleware('auth:sanctum');                             // POST /api/auth/logout
+    Route::get('/me', [AuthController::class, 'me'])
+        ->middleware('auth:sanctum');                             // GET /api/auth/me
 });
 
 /**

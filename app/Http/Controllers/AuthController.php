@@ -22,6 +22,7 @@ class AuthController extends Controller
 
     /**
      * Iniciar sesión con LDAP
+     *
      * 
      * @param LoginRequest $request
      * @return \Illuminate\Http\JsonResponse
@@ -48,6 +49,7 @@ class AuthController extends Controller
 
             // Obtener datos del usuario desde LDAP
             $ldapData = $this->ldapService->getUserDataFromLdap($cedula);
+
             
             if (!$ldapData) {
                 return response()->json([
@@ -95,7 +97,7 @@ class AuthController extends Controller
                 'login_at' => now()->toDateTimeString(),
                 'ip' => request()->ip(),
             ];
-            
+
             Redis::setex($sessionKey, 1800, json_encode($sessionData)); // 30 minutos
 
             // Registrar login exitoso en bitácora con el usuario_id
@@ -123,6 +125,7 @@ class AuthController extends Controller
 
     /**
      * Cerrar sesión (eliminar token actual)
+     *
      * 
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -131,6 +134,11 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
+
+            // Eliminar sesión de Redis
+            $sessionKey = "session:user:{$user->usuario_id}";
+            Redis::del($sessionKey);
+
             
             // Registrar cierre de sesión en bitácora
             AuditLogService::log('logout', "Usuario {$user->nombre} cerró sesión", 'Autenticación');
@@ -157,6 +165,7 @@ class AuthController extends Controller
 
     /**
      * Obtener información del usuario autenticado
+     *
      * 
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -165,7 +174,7 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Verificar sesión en Redis
             $sessionKey = "session:user:{$user->usuario_id}";
             $sessionData = Redis::get($sessionKey);
@@ -175,13 +184,13 @@ class AuthController extends Controller
                     'message' => 'Sesión expirada',
                 ], 401);
             }
-            
+
             // Renovar TTL de la sesión (sliding expiration - 30 minutos más)
             Redis::expire($sessionKey, 1800);
-            
+
             // Cargar relaciones necesarias
             $user->load(['roles', 'permissions', 'careers']);
-            
+
             return response()->json([
                 'user' => new UserResource($user),
             ], 200);
