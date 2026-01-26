@@ -7,6 +7,7 @@ use App\Http\Requests\EvidenceAssignmentRequest;
 use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
 use App\Http\Resources\EvidenceAssignmentResource;
 use App\Services\EvidenceAssignmentService;
+use App\Events\EvidenceAssignmentDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -118,7 +119,20 @@ class EvidenceAssignmentController extends Controller
         }
 
         try {
+            // Guardar datos de la asignación antes de eliminarla para la notificación
+            $assignmentData = [
+                'asignacion_evidencia_id' => $assignment->evidencia_asignacion_id,
+                'usuario_id' => $assignment->usuario_id,
+                'evidencia_id' => $assignment->evidencia_id,
+                'evidencia_nombre' => $assignment->evidence->nombre ?? 'Evidencia',
+                'proceso_id' => $assignment->proceso_id,
+                'fecha_asignacion' => $assignment->fecha_asignacion->format('Y-m-d'),
+            ];
+            
             $this->service->deleteAssignment($assignment);
+            
+            // Disparar evento para notificación
+            event(new EvidenceAssignmentDeleted($assignmentData));
             
             return response()->json([
                 'message' => 'Asignación eliminada correctamente.'

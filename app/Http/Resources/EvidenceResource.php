@@ -19,10 +19,22 @@ class EvidenceResource extends JsonResource
             'descripcion'         => $this->descripcion,
             'nomenclatura'        => $this->nomenclatura,
             'activo'              => $this->activo ?? true,
-            'created_at'          => optional($this->created_at)->toISOString(),
+            'fecha_publicacion'   => optional($this->created_at)->toISOString(),
             'updated_at'          => optional($this->updated_at)->toISOString(),
             // Relaciones opcionales
             'criterion'           => new CriterionResource($this->whenLoaded('criterion')),
+            'estado_evidencia'    => $this->when(
+                $this->relationLoaded('evidenceState') && $this->evidenceState,
+                fn() => ['nombre' => $this->evidenceState->nombre]
+            ),
+            'responsables'        => $this->when(
+                $this->relationLoaded('assignments'),
+                fn() => $this->assignments->map(fn($assignment) => [
+                    'usuario_id' => $assignment->user->usuario_id,
+                    'nombre'     => $assignment->user->nombre,
+                    'email'      => $assignment->user->email,
+                ])
+            ),
         ];
     }
 }

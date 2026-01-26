@@ -18,7 +18,7 @@ class Comment extends Model // falta que exienda de lo nuevo este cmentario
     protected $primaryKey = 'comentario_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['usuario_id', 'texto', 'fecha_creacion'];
+    protected $fillable = ['usuario_id', 'commentable_type', 'commentable_id', 'texto'];
 
     /**
      * Relación: Un comentario pertenece a un usuario.
@@ -28,5 +28,15 @@ class Comment extends Model // falta que exienda de lo nuevo este cmentario
     public function user()
     {
         return $this->belongsTo(User::class, 'usuario_id', 'usuario_id');
+    }
+
+    /**
+     * Relación polimórfica: Un comentario puede pertenecer a cualquier entidad.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
+    public function commentable()
+    {
+        return $this->morphTo();
     }
 }

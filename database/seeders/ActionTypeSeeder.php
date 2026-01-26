@@ -36,6 +36,10 @@ class ActionTypeSeeder extends Seeder
             // Otras acciones del sistema
             ['descripcion' => 'exportar'],
             ['descripcion' => 'asignar'],
+            
+            // Acciones de notificaciones (HU-018)
+            ['descripcion' => 'notificar'],
+            ['descripcion' => 'notificar_fallido'],
         ];
         // Recorre cada acción y la crea en la base de datos
         foreach ($actions as $action) {

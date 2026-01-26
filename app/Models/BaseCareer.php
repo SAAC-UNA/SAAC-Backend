@@ -56,6 +56,34 @@ abstract class BaseCareer extends Model
                 $query->whereIn('carrera_sede_id', $careerCampusIds);
                 break;
 
+            case 'Evidence':
+                // Evidence → Criterion → Component → Dimension → Comment → Careers
+                $query->whereHas('criterion.component.dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
+            case 'Criterion':
+                // Criterion → Component → Dimension → Comment → Careers
+                $query->whereHas('component.dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
+            case 'Component':
+                // Component → Dimension → Comment → Careers
+                $query->whereHas('dimension.comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
+            case 'Dimension':
+                // Dimension → Comment → Careers
+                $query->whereHas('comment.careers', function ($q) use ($careerCampusIds) {
+                    $q->whereIn('carrera_sede_id', $careerCampusIds);
+                });
+                break;
+
             default:
                 $query->whereHas('accreditationCycle', function ($q) use ($careerCampusIds) {
                     $q->whereIn('carrera_sede_id', $careerCampusIds);
