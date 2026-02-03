@@ -37,6 +37,13 @@ class EvidenceAssignmentResource extends JsonResource
                 'nombre' => $this->whenLoaded('user', $this->user?->nombre),
                 'email' => $this->whenLoaded('user', $this->user?->email),
             ],
+            
+            // HU-016: Indicar si tiene una solicitud de ampliación pendiente
+            // Usa DB::table para evitar problemas de lazy loading
+            'has_pending_extension_request' => \DB::table('SOLICITUD_AMPLIACION')
+                ->where('evidencia_asignacion_id', $this->evidencia_asignacion_id)
+                ->where('estado', 'pendiente')
+                ->exists(),
         ];
     }
 }
