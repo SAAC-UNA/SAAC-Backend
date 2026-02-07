@@ -136,12 +136,9 @@ class ExtensionTimeRequestController extends Controller
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
             
-            // Crear la solicitud directamente
-            $data = $request->validated();
-            $data['usuario_id'] = $userId;
-            $data['estado'] = 'Pendiente';
-            
-            $extensionRequest = ExtensionRequest::create($data);
+            // CRÍTICO: Usar servicio para validaciones de seguridad
+            // El servicio valida que el usuario sea el propietario de la asignación
+            $extensionRequest = $this->service->createRequest($request->validated(), $userId);
 
             // Registro en bitácora
             AuditLogService::log(

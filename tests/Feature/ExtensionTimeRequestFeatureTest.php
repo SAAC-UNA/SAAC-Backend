@@ -186,13 +186,13 @@ class ExtensionTimeRequestFeatureTest extends TestCase
             ->postJson('/api/solicitudes-ampliacion-tiempo', $payload);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.estado', 'Pendiente')
+            ->assertJsonPath('data.estado', 'pendiente')
             ->assertJsonPath('data.motivo', $payload['motivo']);
 
         $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
             'evidencia_asignacion_id' => $evidenceAssignment->evidencia_asignacion_id,
             'usuario_id' => $this->profesor->usuario_id,
-            'estado' => 'Pendiente',
+            'estado' => 'pendiente',
         ]);
     }
 
