@@ -108,20 +108,20 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
     ->group(function () {
         // GET: Listar solicitudes (profesores ven solo las suyas, encargados ven todas)
         Route::get('/', [ExtensionTimeRequestController::class, 'index']);
-        
+
         // GET: Evidencias próximas a vencer (para sugerir en formulario)
         Route::get('/evidencias/proximas-vencer', [ExtensionTimeRequestController::class, 'upcomingEvidences']);
-        
+
         // GET: Ver detalle de solicitud (autorización con Policy)
         Route::get('/{id}', [ExtensionTimeRequestController::class, 'show']);
-        
+
         // POST: Crear solicitud (rate limit más estricto para evitar spam)
         Route::post('/', [ExtensionTimeRequestController::class, 'store'])
             ->middleware('throttle:10,1'); // Max 10 creaciones por minuto
-        
+
         // PUT: Actualizar solicitud pendiente
         Route::put('/{id}', [ExtensionTimeRequestController::class, 'update']);
-        
+
         // DELETE: Eliminar solicitud pendiente
         Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
     });
@@ -142,25 +142,25 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
 Route::prefix('archivos')->group(function () {
     // TEMPORAL: Obtener datos de prueba para formulario
     Route::get('/test-data', [FileController::class, 'getTestData']);
-       
+
     // Listar archivos por evidencia o proceso
     Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
-    
+
     // Subir nuevo archivo (máximo 10 uploads por minuto)
     Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
-    
+
     // Ver metadatos de un archivo
     Route::get('/{archivo}', [FileController::class, 'show']);
-    
+
     // Eliminar archivo
     Route::delete('/{archivo}', [FileController::class, 'destroy']);
-    
+
     // Hacer público un archivo (generar enlace público)
     Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
-    
+
     // Revocar acceso público
     Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
-    
+
     // Operación masiva: hacer públicos múltiples archivos
     Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
 });
@@ -222,12 +222,12 @@ if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
         Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
         Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
-        
+
         // Autenticación temporal para pruebas de middleware
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
         Route::post('/logout', [\App\Http\Controllers\DevAuthController::class, 'logout'])->middleware('auth:sanctum');
         Route::get('/me', [\App\Http\Controllers\DevAuthController::class, 'me'])->middleware('auth:sanctum');
-        
+
         // Ver bitácora sin autenticación (SOLO PARA PRUEBAS)
         Route::get('/bitacora', function () {
             try {
@@ -245,7 +245,7 @@ if (App::environment('local')) {
                     ->orderBy('BITACORA.fecha_hora', 'desc')
                     ->limit(10)
                     ->get();
-                
+
                 return response()->json($logs);
             } catch (\Exception $e) {
                 return response()->json([
@@ -273,7 +273,14 @@ Route::get('/ping', function () {
 
 //Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
 
-Route::prefix('roles')->group(function () {
+
+
+
+Route::middleware([
+    'auth:sanctum',
+    'refresh.session',
+    'role:Superusuario|Administrador',
+])->prefix('roles')->group(function () {
     Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
     Route::post('/', [RoleController::class, 'createRole'])->name('roles.create');
     Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
@@ -281,7 +288,7 @@ Route::prefix('roles')->group(function () {
     Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
     Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
 
-    
+
 });
 
 Route::middleware([
