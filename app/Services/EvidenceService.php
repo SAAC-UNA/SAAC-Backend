@@ -140,8 +140,8 @@ class EvidenceService
         // ============================================================
 
         // SuperUsuario: ve TODAS las evidencias (sin restricción)
-        if (!$user->hasRole('SuperUsuario')) {
-            
+        // IMPORTANTE: El rol se llama "Superusuario" (no "SuperUsuario")
+        if (!$user->hasRole('Superusuario')) {
             // Administrador/Coordinador: solo ve evidencias de SUS carreras
             if ($user->hasRole(['Administrador', 'Coordinador'])) {
                 $careerIds = $user->careers->pluck('carrera_id')->toArray();
