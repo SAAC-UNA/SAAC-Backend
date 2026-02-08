@@ -13,9 +13,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Configurar redirección de invitados - NO redirigir en API
-        $middleware->redirectGuestsTo(fn (Request $request) => null);
-        
         // Grupo web
         $middleware->group('web', [
             // \App\Http\Middleware\EncryptCookies::class,  hasta que ya este la autenticacion
@@ -29,8 +26,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Grupo api (sin auth por defecto, solo bindings)
         $middleware->group('api', [
             \Illuminate\Http\Middleware\HandleCors::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class, // NECESARIO para enviar cookies
-            \App\Http\Middleware\AddTokenFromCookie::class, // Extraer token de cookie httpOnly
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 

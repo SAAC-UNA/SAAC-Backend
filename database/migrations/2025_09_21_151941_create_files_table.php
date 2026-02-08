@@ -31,14 +31,8 @@ return new class extends Migration
             // Fecha de subida
             $table->timestamp('fecha_subida');
             
-            // TIPO: archivo físico o enlace externo
-            $table->enum('tipo', ['archivo', 'enlace'])->default('archivo');
-            
-            // UBICACIÓN FÍSICA ÚNICA - Nombre UUID en TrueNAS (solo para tipo='archivo')
-            $table->string('path', 512)->nullable();
-            
-            // URL externa (solo para tipo='enlace')
-            $table->text('url')->nullable();
+            // UBICACIÓN FÍSICA ÚNICA - Nombre UUID en TrueNAS
+            $table->string('path', 512);
             
             // NUEVO: Nombre original del archivo (legible por humanos)
             $table->string('nombre_original', 255);

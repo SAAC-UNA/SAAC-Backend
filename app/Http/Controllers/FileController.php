@@ -61,14 +61,11 @@ class FileController extends Controller
     }
 
     /**
-     * Subir archivos o guardar enlaces como evidencia (máximo 5).
+     * Subir uno o más archivos (máximo 5).
      * POST /api/archivos
      * 
-     * Body (JSON o multipart/form-data):
-     * - tipo: string (archivo|enlace)
-     * - archivos: file[] (si tipo=archivo, 1-5 archivos, max 50MB c/u)
-     * - enlaces: string[] (si tipo=enlace, 1-5 URLs)
-     * - enlaces_nombres: string[] (opcional, nombres descriptivos para cada URL)
+     * Body (multipart/form-data):
+     * - archivos: file[] (1-5 archivos, max 50MB cada uno)
      * - evidencia_id: integer
      * - proceso_id: integer
      */
@@ -86,57 +83,27 @@ class FileController extends Controller
             ], 401);
         }
 
+        // Procesar todos los archivos
         $archivos = [];
         $errores = [];
         
-        // Procesar según el tipo
-        if ($validated['tipo'] === 'archivo') {
-            // Procesar archivos físicos
-            foreach ($request->file('archivos', []) as $index => $archivo) {
-                try {
-                    $archivoGuardado = $this->fileService->uploadFile(
-                        file: $archivo,
-                        evidenciaId: $validated['evidencia_id'],
-                        usuarioId: $usuarioId,
-                        procesoId: $validated['proceso_id']
-                    );
-                    
-                    $archivoGuardado->load(['evidence', 'user', 'process']);
-                    $archivos[] = new FileResource($archivoGuardado);
-                } catch (\Exception $e) {
-                    $errores[] = [
-                        'indice' => $index,
-                        'nombre' => $archivo->getClientOriginalName(),
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
-        } else {
-            // Procesar enlaces/URLs
-            $enlaces = $validated['enlaces'] ?? [];
-            $nombres = $validated['enlaces_nombres'] ?? [];
-            
-            foreach ($enlaces as $index => $url) {
-                try {
-                    $nombreDescriptivo = $nombres[$index] ?? null;
-                    
-                    $enlaceGuardado = $this->fileService->saveLink(
-                        url: $url,
-                        evidenciaId: $validated['evidencia_id'],
-                        usuarioId: $usuarioId,
-                        procesoId: $validated['proceso_id'],
-                        nombreDescriptivo: $nombreDescriptivo
-                    );
-                    
-                    $enlaceGuardado->load(['evidence', 'user', 'process']);
-                    $archivos[] = new FileResource($enlaceGuardado);
-                } catch (\Exception $e) {
-                    $errores[] = [
-                        'indice' => $index,
-                        'url' => $url,
-                        'error' => $e->getMessage(),
-                    ];
-                }
+        foreach ($request->file('archivos', []) as $index => $archivo) {
+            try {
+                $archivoGuardado = $this->fileService->uploadFile(
+                    file: $archivo,
+                    evidenciaId: $validated['evidencia_id'],
+                    usuarioId: $usuarioId,
+                    procesoId: $validated['proceso_id']
+                );
+                
+                $archivoGuardado->load(['evidence', 'user', 'process']);
+                $archivos[] = new FileResource($archivoGuardado);
+            } catch (\Exception $e) {
+                $errores[] = [
+                    'indice' => $index,
+                    'nombre' => $archivo->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ];
             }
         }
 
@@ -327,14 +294,14 @@ class FileController extends Controller
     // }
 
     /**
-     * Acceso público a archivo o enlace mediante token.
+     * Acceso público a archivo mediante token.
      * GET /api/p/{token}
      * 
      * Esta ruta NO requiere autenticación (para SINAES/informes externos).
      */
     public function publicAccess(string $token)
     {
-        // Buscar archivo/enlace por token público
+        // Buscar archivo por token público
         $archivo = File::where('token_publico', $token)->first();
 
         if (!$archivo) {
@@ -360,14 +327,7 @@ class FileController extends Controller
             ], 410);
         }
 
-        $tipo = $archivo->tipo ?? 'archivo';
-        
-        // Si es un enlace (URL), redirigir
-        if ($tipo === 'enlace') {
-            return redirect()->away($archivo->url);
-        }
-
-        // Si es un archivo físico, descargarlo
+        // Servir el archivo
         try {
             $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
             
