@@ -140,8 +140,8 @@ class EvidenceService
         // ============================================================
 
         // SuperUsuario: ve TODAS las evidencias (sin restricción)
-        if (!$user->hasRole('SuperUsuario')) {
-            
+        // IMPORTANTE: El rol se llama "Superusuario" (no "SuperUsuario")
+        if (!$user->hasRole('Superusuario')) {
             // Administrador/Coordinador: solo ve evidencias de SUS carreras
             if ($user->hasRole(['Administrador', 'Coordinador'])) {
                 // TODO: Arreglar filtrado por carreras - la relación comment.careers NO existe

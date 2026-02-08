@@ -1,8 +1,5 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
-
-// Importante importa el controlador
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\CampusController;
@@ -13,10 +10,9 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
-use App\Http\Controllers\ExtensionTimeRequestController; // RF-15: Controller del profesor
+use App\Http\Controllers\ExtensionTimeRequestController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
-
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
@@ -129,10 +125,21 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
     ->prefix('solicitudes-ampliacion-tiempo')
     ->group(function () {
         Route::get('/', [ExtensionTimeRequestController::class, 'index']);
+
+        // GET: Evidencias próximas a vencer (para sugerir en formulario)
         Route::get('/evidencias/proximas-vencer', [ExtensionTimeRequestController::class, 'upcomingEvidences']);
+
+        // GET: Ver detalle de solicitud (autorización con Policy)
         Route::get('/{id}', [ExtensionTimeRequestController::class, 'show']);
-        Route::post('/', [ExtensionTimeRequestController::class, 'store'])->middleware('throttle:10,1');
+
+        // POST: Crear solicitud (rate limit más estricto para evitar spam)
+        Route::post('/', [ExtensionTimeRequestController::class, 'store'])
+            ->middleware('throttle:10,1'); // Max 10 creaciones por minuto
+
+        // PUT: Actualizar solicitud pendiente
         Route::put('/{id}', [ExtensionTimeRequestController::class, 'update']);
+
+        // DELETE: Eliminar solicitud pendiente
         Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
     });
 
@@ -191,16 +198,6 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // Permisos
     Route::get('admin/permissions', [PermissionController::class, 'index']);
-    
-    // Roles
-    Route::prefix('roles')->group(function () {
-        Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
-        Route::post('/', [RoleController::class, 'createRole'])->name('roles.create');
-        Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
-        Route::get('/{id}', [RoleController::class, 'showRole'])->name('roles.show');
-        Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
-        Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
-    });
 });
 
 // ============================================
@@ -236,12 +233,12 @@ if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
         Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
         Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
-        
+
         // Autenticación temporal para pruebas de middleware
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
         Route::post('/logout', [\App\Http\Controllers\DevAuthController::class, 'logout'])->middleware('auth:sanctum');
         Route::get('/me', [\App\Http\Controllers\DevAuthController::class, 'me'])->middleware('auth:sanctum');
-        
+
         // Ver bitácora sin autenticación (SOLO PARA PRUEBAS)
         Route::get('/bitacora', function () {
             try {
@@ -259,7 +256,7 @@ if (App::environment('local')) {
                     ->orderBy('BITACORA.fecha_hora', 'desc')
                     ->limit(10)
                     ->get();
-                
+
                 return response()->json($logs);
             } catch (\Exception $e) {
                 return response()->json([
@@ -282,9 +279,29 @@ Route::get('/ping', function () {
     ]);
 });
 
-// ============================================
-// Compromisos de Mejora
-// ============================================
+
+// Ruta de prueba sin controller
+
+//Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
+
+
+
+
+Route::middleware([
+    'auth:sanctum',
+    'refresh.session',
+    'role:Superusuario|Administrador',
+])->prefix('roles')->group(function () {
+    Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
+    Route::post('/', [RoleController::class, 'createRole'])->name('roles.create');
+    Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
+    Route::get('/{id}', [RoleController::class, 'showRole'])->name('roles.show');
+    Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
+    Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
+
+
+});
+
 Route::middleware([
     'auth:sanctum',
     'refresh.session',
