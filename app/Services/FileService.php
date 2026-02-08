@@ -56,7 +56,9 @@ class FileService
                 'usuario_id' => $usuarioId,
                 'proceso_id' => $procesoId,
                 'fecha_subida' => now(),
+                'tipo' => 'archivo', // Tipo: archivo físico
                 'path' => $path,
+                'url' => null, // No hay URL para archivos físicos
                 'nombre_original' => $file->getClientOriginalName(),
                 'is_publico' => false, // Privado por defecto
                 'token_publico' => null,
@@ -77,6 +79,62 @@ class FileService
             ]);
 
             return $archivo;
+        });
+    }
+
+    /**
+     * Guarda un enlace/URL como evidencia en la base de datos.
+     * 
+     * @param string $url URL del enlace
+     * @param int $evidenciaId ID de la evidencia asociada
+     * @param int $usuarioId ID del usuario que guarda el enlace
+     * @param int $procesoId ID del proceso asociado
+     * @param string|null $nombreDescriptivo Nombre descriptivo opcional
+     * @return File Modelo del enlace creado
+     */
+    public function saveLink(
+        string $url,
+        int $evidenciaId,
+        int $usuarioId,
+        int $procesoId,
+        ?string $nombreDescriptivo = null
+    ): File {
+        // Validar que la URL sea válida
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('URL inválida: ' . $url);
+        }
+        
+        // Extraer nombre del dominio si no se proporciona nombre descriptivo
+        if (!$nombreDescriptivo) {
+            $parsedUrl = parse_url($url);
+            $nombreDescriptivo = ($parsedUrl['host'] ?? 'Enlace') . ' - ' . date('Y-m-d H:i:s');
+        }
+        
+        return DB::transaction(function () use ($url, $evidenciaId, $usuarioId, $procesoId, $nombreDescriptivo) {
+            // Crear registro en la base de datos
+            $enlace = File::create([
+                'evidencia_id' => $evidenciaId,
+                'usuario_id' => $usuarioId,
+                'proceso_id' => $procesoId,
+                'fecha_subida' => now(),
+                'tipo' => 'enlace',
+                'url' => $url,
+                'path' => null, // No hay archivo físico
+                'nombre_original' => $nombreDescriptivo,
+                'is_publico' => false,
+                'token_publico' => null,
+                'link_expira_en' => null,
+            ]);
+            
+            Log::info('Enlace guardado exitosamente', [
+                'archivo_id' => $enlace->archivo_id,
+                'url' => $url,
+                'nombre_descriptivo' => $nombreDescriptivo,
+                'usuario_id' => $usuarioId,
+                'evidencia_id' => $evidenciaId,
+            ]);
+            
+            return $enlace;
         });
     }
 
@@ -125,26 +183,30 @@ class FileService
 
     /**
      * Elimina un archivo del almacenamiento y de la base de datos.
+     * Para enlaces, solo elimina el registro de BD (no hay archivo físico).
      * 
-     * @param File $archivo Archivo a eliminar
+     * @param File $archivo Archivo o enlace a eliminar
      * @return bool True si se eliminó correctamente
      */
     public function deleteFile(File $archivo): bool
     {
         $path = $archivo->path;
         $archivoId = $archivo->archivo_id;
+        $tipo = $archivo->tipo ?? 'archivo';
 
-        // Eliminar archivo físico del disco
-        if (Storage::disk($this->disk)->exists($path)) {
+        // Solo eliminar archivo físico si NO es un enlace
+        if ($tipo === 'archivo' && $path && Storage::disk($this->disk)->exists($path)) {
             Storage::disk($this->disk)->delete($path);
         }
 
         // Eliminar registro de la base de datos
         $deleted = $archivo->delete();
 
-        Log::info('Archivo eliminado', [
+        Log::info($tipo === 'enlace' ? 'Enlace eliminado' : 'Archivo eliminado', [
             'archivo_id' => $archivoId,
+            'tipo' => $tipo,
             'path' => $path,
+            'url' => $tipo === 'enlace' ? $archivo->url : null,
         ]);
 
         return $deleted;
