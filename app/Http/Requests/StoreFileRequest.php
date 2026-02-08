@@ -33,18 +33,43 @@ class StoreFileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Soporte para subida múltiple (máximo 5 archivos)
-            'archivos' => [
+            // Tipo de evidencia: archivo físico o enlace/URL
+            'tipo' => [
                 'required',
+                'in:archivo,enlace',
+            ],
+            
+            // Archivos físicos (solo requerido si tipo=archivo)
+            'archivos' => [
+                'required_if:tipo,archivo',
                 'array',
-                'min:1', // Al menos 1 archivo
+                'min:1',
                 'max:5', // Máximo 5 archivos
             ],
             'archivos.*' => [
                 'file',
-                'max:51200', // 50MB en kilobytes
+                'max:51200', // 50MB
                 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,bmp,svg,webp,mp4,avi,mov,wmv,mkv,webm,zip,rar,7z,txt,csv,rtf',
             ],
+            
+            // URLs/enlaces (solo requerido si tipo=enlace)
+            'enlaces' => [
+                'required_if:tipo,enlace',
+                'array',
+                'min:1',
+                'max:5', // Máximo 5 enlaces
+            ],
+            'enlaces.*' => [
+                'url',
+                'max:2048', // Longitud máxima de URL
+            ],
+            'enlaces_nombres.*' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            
+            // Común para ambos tipos
             'evidencia_id' => [
                 'required',
                 'integer',
@@ -66,14 +91,28 @@ class StoreFileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'archivos.required' => 'Debe seleccionar al menos un archivo para subir.',
+            'tipo.required' => 'Debe especificar el tipo de evidencia (archivo o enlace).',
+            'tipo.in' => 'El tipo debe ser "archivo" o "enlace".',
+            
+            // Archivos
+            'archivos.required_if' => 'Debe seleccionar al menos un archivo para subir.',
             'archivos.array' => 'Los archivos deben estar en formato de array.',
             'archivos.min' => 'Debe seleccionar al menos 1 archivo.',
             'archivos.max' => 'Puede subir un máximo de 5 archivos por solicitud.',
             'archivos.*.file' => 'Uno o más archivos proporcionados no son válidos.',
             'archivos.*.max' => 'Uno o más archivos no deben superar los 50MB.',
-            'archivos.*.mimes' => 'Uno o más archivos tienen un formato no permitido. Formatos válidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, imágenes, videos, archivos comprimidos.',
+            'archivos.*.mimes' => 'Uno o más archivos tienen un formato no permitido.',
             
+            // Enlaces
+            'enlaces.required_if' => 'Debe proporcionar al menos un enlace/URL.',
+            'enlaces.array' => 'Los enlaces deben estar en formato de array.',
+            'enlaces.min' => 'Debe proporcionar al menos 1 enlace.',
+            'enlaces.max' => 'Puede agregar un máximo de 5 enlaces por solicitud.',
+            'enlaces.*.url' => 'Uno o más enlaces no tienen un formato de URL válido.',
+            'enlaces.*.max' => 'Uno o más enlaces son demasiado largos (máx. 2048 caracteres).',
+            'enlaces_nombres.*.max' => 'Uno o más nombres de enlace son demasiado largos (máx. 255 caracteres).',
+            
+            // Común
             'evidencia_id.required' => 'Debe especificar la evidencia asociada.',
             'evidencia_id.integer' => 'El ID de evidencia debe ser un número entero.',
             'evidencia_id.exists' => 'La evidencia especificada no existe.',
