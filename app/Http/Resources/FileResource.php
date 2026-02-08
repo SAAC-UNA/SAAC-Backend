@@ -18,14 +18,25 @@ class FileResource extends JsonResource
             'archivo_id' => $this->archivo_id,
             'nombre_original' => $this->nombre_original,
             'fecha_subida' => $this->fecha_subida?->format('Y-m-d H:i:s'),
+            
+            // Tipo de evidencia: archivo o enlace
+            'tipo' => $this->tipo ?? 'archivo',
+            'url' => $this->when(
+                $this->tipo === 'enlace',
+                fn() => $this->url
+            ),
+            
+            // Metadatos (solo para archivos físicos)
             'tamanio' => $this->when(
-                $this->relationLoaded('fileMetadata'),
+                $this->relationLoaded('fileMetadata') && $this->tipo === 'archivo',
                 fn() => $this->fileMetadata->tamanio ?? null
             ),
             'tipo_mime' => $this->when(
-                $this->relationLoaded('fileMetadata'),
+                $this->relationLoaded('fileMetadata') && $this->tipo === 'archivo',
                 fn() => $this->fileMetadata->tipo_mime ?? null
             ),
+            
+            // Acceso público
             'is_publico' => $this->is_publico,
             'url_publica' => $this->when(
                 $this->isPubliclyAccessible(),
