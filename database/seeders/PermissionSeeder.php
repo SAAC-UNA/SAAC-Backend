@@ -29,6 +29,7 @@ class PermissionSeeder extends Seeder
             'gestion_ciclos',
             'gestion_programas',
             'gestion_roles',
+            'asignar_evidencias',
         ];
 
         foreach ($aliases as $alias) {
@@ -79,6 +80,7 @@ class PermissionSeeder extends Seeder
                 'evidencias.create',
                 'evidencias.edit',
                 'evidencias.delete',
+                'asignar_evidencias',
                 'gestion_reportes',
                 'reportes.generate',
                 'gestion_ciclos',
@@ -110,6 +112,7 @@ class PermissionSeeder extends Seeder
                 'gestion_evidencias',
                 'evidencias.view',
                 'evidencias.edit',
+                'asignar_evidencias',
                 'gestion_reportes',
                 'reportes.generate',
                 'gestion_ciclos',
