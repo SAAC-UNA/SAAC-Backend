@@ -19,11 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // En desarrollo permitir todos los orígenes
+    // En desarrollo permitir orígenes específicos (no usar * con credentials)
     // En producción cambiar a los dominios específicos de la UNA
     'allowed_origins' => env('APP_ENV') === 'production' 
         ? explode(',', env('CORS_ALLOWED_ORIGINS', 'https://saac.una.cr'))
-        : ['*'],
+        : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
 
     'allowed_origins_patterns' => [],
 

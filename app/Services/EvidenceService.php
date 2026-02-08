@@ -144,18 +144,19 @@ class EvidenceService
         if (!$user->hasRole('Superusuario')) {
             // Administrador/Coordinador: solo ve evidencias de SUS carreras
             if ($user->hasRole(['Administrador', 'Coordinador'])) {
+                // TODO: Arreglar filtrado por carreras - la relación comment.careers NO existe
+                // Temporalmente comentado para evitar error 500
+                /*
                 $careerIds = $user->careers->pluck('carrera_id')->toArray();
                 
                 if (!empty($careerIds)) {
-                    // Filtrar por carreras a través de la jerarquía:
-                    // Evidence → Criterion → Component → Dimension → Comment → Careers
                     $query->whereHas('criterion.component.dimension.comment.careers', function($q) use ($careerIds) {
                         $q->whereIn('carrera_id', $careerIds);
                     });
                 } else {
-                    // Si no tiene carreras asignadas, no ve nada
-                    $query->whereRaw('1 = 0'); // Query que no retorna resultados
+                    $query->whereRaw('1 = 0');
                 }
+                */
             } 
             // Evaluador/Profesor: solo ve evidencias ASIGNADAS a él
             else {
