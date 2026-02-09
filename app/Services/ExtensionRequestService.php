@@ -223,16 +223,32 @@ class ExtensionRequestService
             $extensionRequest->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
-            // PRUEBA TEMPORAL: Enviar correo directamente al usuario Ana
+            // Enviar notificación a los encargados de acreditación de la carrera
             try {
-                // Buscar usuario Ana por email
-                $testUser = User::where('email', 'ana.zuniga.cardenas@est.una.ac.cr')->first();
-                
-                if ($testUser) {
-                    Notification::send([$testUser], new ExtensionRequestCreated($extensionRequest));
-                    Log::info("Notificación de prueba enviada a: {$testUser->email}");
-                } else {
-                    Log::warning('Usuario de prueba no encontrado');
+                // Obtener la carrera relacionada con la asignación
+                $carrera = $extensionRequest->evidenceAssignment
+                    ->proceso
+                    ->accreditationCycle
+                    ->careerCampus
+                    ->career;
+
+                if ($carrera) {
+                    // Buscar encargados de acreditación asociados a esta carrera
+                    $encargados = User::role('encargado_acreditacion')
+                        ->whereHas('careers', function ($query) use ($carrera) {
+                            $query->where('carrera_id', $carrera->carrera_id);
+                        })
+                        ->get();
+
+                    // Enviar notificación a los encargados encontrados
+                    if ($encargados->isNotEmpty()) {
+                        Notification::send($encargados, new ExtensionRequestCreated($extensionRequest));
+                        Log::info("Notificación enviada a {$encargados->count()} encargado(s) de acreditación");
+                    } else {
+                        Log::warning('No se encontraron encargados de acreditación para la carrera', [
+                            'carrera_id' => $carrera->carrera_id
+                        ]);
+                    }
                 }
             } catch (\Exception $notificationException) {
                 Log::warning('No se pudo enviar notificación de solicitud de ampliación', [
