@@ -135,7 +135,9 @@ class ExtensionTimeRequestController extends Controller
                 Log::warning('Intento de crear solicitud sin autenticación');
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
-
+            
+            // CRÍTICO: Usar servicio para validaciones de seguridad
+            // El servicio valida que el usuario sea el propietario de la asignación
             $extensionRequest = $this->service->createRequest($request->validated(), $userId);
 
             // Registro en bitácora
