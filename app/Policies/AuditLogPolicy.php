@@ -9,23 +9,26 @@ use Illuminate\Auth\Access\Response;
 class AuditLogPolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Determina si el usuario puede ver listados de bitácora.
+     * Solo usuarios con rol Superusuario pueden consultar bitácora.
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determina si el usuario puede ver un registro específico de bitácora.
+     * Solo usuarios con rol Superusuario pueden consultar bitácora.
      */
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 
     /**
-     * Determine whether the user can create models.
+     * La bitácora NO permite creación manual.
+     * Solo se crea automáticamente a través de AuditLogService::log()
      */
     public function create(User $user): bool
     {
@@ -33,7 +36,8 @@ class AuditLogPolicy
     }
 
     /**
-     * Determine whether the user can update the model.
+     * AUDITORÍA INALTERABLE: Ningún usuario puede modificar registros de bitácora.
+     * Criterio de aceptación: "El sistema debe impedir la alteración de los datos ya guardados"
      */
     public function update(User $user, AuditLog $auditLog): bool
     {
@@ -41,7 +45,8 @@ class AuditLogPolicy
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * AUDITORÍA INALTERABLE: Ningún usuario puede eliminar registros de bitácora.
+     * Criterio de aceptación: "El sistema debe impedir la alteración de los datos ya guardados"
      */
     public function delete(User $user, AuditLog $auditLog): bool
     {
@@ -49,7 +54,7 @@ class AuditLogPolicy
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * No se permite restaurar registros eliminados (porque no se pueden eliminar)
      */
     public function restore(User $user, AuditLog $auditLog): bool
     {
@@ -57,7 +62,7 @@ class AuditLogPolicy
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * No se permite eliminación permanente
      */
     public function forceDelete(User $user, AuditLog $auditLog): bool
     {

@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Criterion;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use App\Http\Resources\CriterionResource;
 use App\Services\CriterionService;
 use App\Http\Requests\CriterionRequest;
+use App\Services\AuditLogService;
+
 
 class CriterionController extends Controller
 {
@@ -44,7 +43,13 @@ class CriterionController extends Controller
     public function store(CriterionRequest $request)
     {
         $criterion = $this->service->create($request->validated());
-
+        // registro en el log de bitacora
+        AuditLogService::log(
+'crear',
+    "Se creó el criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}), ".
+            "perteneciente al componente ID {$criterion->componente_id}.",
+    'Criterio'
+        );
         return \App\Http\Resources\CriterionResource::make($criterion)
             ->response()
             ->setStatusCode(201);
@@ -60,6 +65,25 @@ class CriterionController extends Controller
         }
 
         $updated = $this->service->update($criterion, $request->validated());
+        // Registro en el log de bitácora
+        $oldName  = $criterion->nombre;
+        $oldCode  = $criterion->codigo ?? null;
+        $oldDesc  = $criterion->descripcion ?? null;
+
+        if (
+            $oldName !== $updated->nombre ||
+            $oldCode !== ($updated->codigo ?? null) ||
+            $oldDesc !== ($updated->descripcion ?? null)
+        ) {
+            AuditLogService::log(
+                'editar',
+                "Se actualizó el criterio ID {$criterion->criterio_id}: ".
+                "nombre anterior \"{$oldName}\", nuevo nombre \"{$updated->nombre}\"; ".
+                "otros campos actualizados según corresponda.",
+                'Criterio'
+            );
+        }
+
 
         return \App\Http\Resources\CriterionResource::make($updated)
             ->response()
@@ -77,6 +101,14 @@ class CriterionController extends Controller
 
         try {
             $this->service->delete($criterion);
+            // Registro en el log de bitácora
+            AuditLogService::log(
+    'eliminar',
+        "Se eliminó el criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}), ".
+                "perteneciente al componente ID {$criterion->componente_id}.",
+        'Criterio'
+            );
+
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int)($e->errorInfo[1] ?? 0) === 1451) {
@@ -125,6 +157,17 @@ class CriterionController extends Controller
         $cascadeMessage = $newActiveState 
             ? ' Elementos hijos activados en cascada.' 
             : ' Elementos hijos desactivados en cascada.';
+            // === Registrar en bitácora ===
+        $estadoAnterior = $criterion->activo ? 'ACTIVO' : 'INACTIVO';
+        $estadoNuevo    = $newActiveState ? 'ACTIVO' : 'INACTIVO';
+
+        AuditLogService::log(
+'editar',
+    "Se actualizó el estado del criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}). ".
+            "Estado anterior: {$estadoAnterior}. Estado nuevo: {$estadoNuevo}. ".
+            "Se aplicó cambio en cascada a estándares y evidencias.",
+    'Criterio'
+        );
 
         return response()->json([
             'message' => 'Estado del criterio actualizado correctamente.' . $cascadeMessage,

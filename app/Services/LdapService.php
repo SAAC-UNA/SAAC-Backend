@@ -8,28 +8,28 @@ use Illuminate\Support\Facades\Log;
 use Exception;
 
 /**
- * Servicio para autenticaci??n y sincronizaci??n con LDAP.
+ * Servicio para autenticación y sincronización con LDAP.
  * 
  * Este servicio maneja:
- * - Autenticaci??n de usuarios contra el servidor LDAP
- * - Obtenci??n de datos del usuario desde LDAP
- * - Sincronizaci??n autom??tica de usuarios LDAP a la base de datos
+ * - Autenticación de usuarios contra el servidor LDAP
+ * - Obtención de datos del usuario desde LDAP
+ * - Sincronización automática de usuarios LDAP a la base de datos
  */
 class LdapService
 {
     /**
-     * Autentica un usuario contra LDAP usando su c??dula y contrase??a.
+     * Autentica un usuario contra LDAP usando su cédula y contraseña.
      *
-     * @param string $cedula C??dula del usuario
-     * @param string $password Contrase??a del usuario
-     * @return array|null Retorna datos del usuario si autenticaci??n exitosa, null si falla
+     * @param string $cedula Cédula del usuario
+     * @param string $password Contraseña del usuario
+     * @return array|null Retorna datos del usuario si autenticación exitosa, null si falla
      */
     public function authenticate(string $cedula, string $password): ?array
     {
         try {
-            // Verificar si LDAP est?? disponible antes de intentar conectar
+            // Verificar si LDAP está disponible antes de intentar conectar
             if (empty(config('ldap.connections.default.hosts.0'))) {
-                Log::warning("LDAP no configurado, autenticaci??n fallida", [
+                Log::warning("LDAP no configurado, autenticación fallida", [
                     'cedula_hash' => hash('sha256', $cedula),
                     'cedula_last4' => substr($cedula, -4),
                 ]);
@@ -38,7 +38,7 @@ class LdapService
             
             $connection = Container::getConnection('default');
             
-            // Construir el DN del usuario basado en la c??dula
+            // Construir el DN del usuario basado en la cédula
             // Formato: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
             // o: uid=203948609,ou=estudiantes,ou=users,dc=una,dc=local
             
@@ -46,7 +46,7 @@ class LdapService
             $userDn = "uid={$cedula},ou=profesores,ou=users," . config('ldap.connections.default.base_dn');
             
             if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticaci??n LDAP exitosa (profesor)", [
+                Log::info("Autenticación LDAP exitosa (profesor)", [
                     'cedula_hash' => hash('sha256', $cedula),
                     'cedula_last4' => substr($cedula, -4),
                 ]);
@@ -57,14 +57,14 @@ class LdapService
             $userDn = "uid={$cedula},ou=estudiantes,ou=users," . config('ldap.connections.default.base_dn');
             
             if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticaci??n LDAP exitosa (estudiante)", [
+                Log::info("Autenticación LDAP exitosa (estudiante)", [
                     'cedula_hash' => hash('sha256', $cedula),
                     'cedula_last4' => substr($cedula, -4),
                 ]);
                 return $this->getUserDataFromLdap($cedula, $connection);
             }
             
-            Log::warning("Autenticaci??n LDAP fallida", [
+            Log::warning("Autenticación LDAP fallida", [
                 'cedula_hash' => hash('sha256', $cedula),
                 'cedula_last4' => substr($cedula, -4),
                 'ip' => request()->ip(),
@@ -72,7 +72,7 @@ class LdapService
             return null;
             
         } catch (Exception $e) {
-            Log::error("Error en autenticaci??n LDAP", [
+            Log::error("Error en autenticación LDAP", [
                 'cedula_hash' => hash('sha256', $cedula),
                 'message' => $e->getMessage(),
                 'exception' => get_class($e),
@@ -85,8 +85,8 @@ class LdapService
     /**
      * Obtiene los datos del usuario desde LDAP.
      *
-     * @param string $cedula C??dula del usuario
-     * @param \LdapRecord\Connection|null $connection Conexi??n LDAP (opcional)
+     * @param string $cedula Cédula del usuario
+     * @param \LdapRecord\Connection|null $connection Conexión LDAP (opcional)
      * @return array|null Datos del usuario o null si no se encuentra
      */
     public function getUserDataFromLdap(string $cedula, $connection = null): ?array
@@ -134,20 +134,23 @@ class LdapService
     public function syncUserFromLdap(array $ldapData): User
     {
         try {
-            // Buscar usuario por c??dula
+            // Buscar usuario por cédula
             $user = User::where('cedula', $ldapData['cedula'])->first();
             
             $syncData = [
                 'cedula' => $ldapData['cedula'],
                 'nombre' => $ldapData['nombre'],
                 'email' => $ldapData['email'],
-                'password' => null, // Siempre NULL para usuarios LDAP
                 'status' => User::STATUS_ACTIVE,
             ];
             
             if ($user) {
-                // Usuario existe, actualizar datos
-                $user->update($syncData);
+                // Usuario existe, actualizar solo campos sin password
+                $user->cedula = $ldapData['cedula'];
+                $user->nombre = $ldapData['nombre'];
+                $user->email = $ldapData['email'];
+                $user->status = User::STATUS_ACTIVE;
+                $user->save();
                 Log::info("Usuario actualizado desde LDAP: {$ldapData['cedula']}");
             } else {
                 // Usuario nuevo, crear
@@ -167,7 +170,7 @@ class LdapService
     }
 
     /**
-     * Verifica si LDAP est?? habilitado en la configuraci??n.
+     * Verifica si LDAP está habilitado en la configuración.
      *
      * @return bool
      */

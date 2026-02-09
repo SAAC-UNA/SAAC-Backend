@@ -58,4 +58,14 @@ class Evidence extends BaseCareer
         return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')->where('activo', true);
     }
 
+    /**
+     * Relación: Una evidencia tiene muchos archivos/enlaces.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function files()
+    {
+        return $this->hasMany(File::class, 'evidencia_id', 'evidencia_id');
+    }
+
 }

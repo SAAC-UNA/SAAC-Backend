@@ -7,10 +7,11 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
-//use Illuminate\Support\Facades\Gate; 3 sprint
+use Illuminate\Support\Facades\Gate;
 
 //use App\Models\Role; //modelo que extiende SpatieRole
 use App\Services\UserAdminService;
+use App\Services\AuditLogService;
 use App\Http\Requests\AssignRoleRequest;
 use App\Http\Requests\AssignPermissionsRequest;
 
@@ -88,6 +89,8 @@ class UserController extends Controller
     }
     public function activate(User $user): JsonResponse
     {
+        // Verificar autorización - solo usuarios con permiso usuarios.edit
+        Gate::authorize('usuarios.edit');
         
         if ($user->status === User::STATUS_ACTIVE) {
             return response()->json([
@@ -97,12 +100,22 @@ class UserController extends Controller
         }
 
         $this->userAdmin->activate($user);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'activar',
+            "Usuario activado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'activate' ...));
         return response()->json(['message' => 'Usuario activado'], 200);
     }
 
     public function deactivate(User $user): JsonResponse
     {
+        // Verificar autorización - solo usuarios con permiso usuarios.edit
+        Gate::authorize('usuarios.edit');
         
         if ($user->status === User::STATUS_INACTIVE) {
             return response()->json([
@@ -112,21 +125,33 @@ class UserController extends Controller
         }
 
         $this->userAdmin->deactivate($user);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'desactivar',
+            "Usuario desactivado: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'deactivate' ...));
         return response()->json(['message' => 'Usuario desactivado'], 200);
     }
     public function assignRole(AssignRoleRequest $request, User $user)
     {
-        // Verificar autorización (solo usuarios con permiso pueden asignar roles)
-        // DEV: simula usuario que realiza la acción (quien "administra")
-    //$acting = User::where('email', 'admin@saacuna.local')->first(); // o User::find(1/4)
-       // Gate::forUser($acting)->authorize('usuarios.edit'); // lanza 403 si no tiene permiso
-        // TODO Sprint 3: quitar forUser y usar usuario autenticado (LDAP
-        // o: if (\Gate::denies('usuarios.edit')) abort(403, 'No tiene permiso para editar usuarios');
+        // Verificar autorización - solo usuarios con permiso usuarios.edit
+        Gate::authorize('usuarios.edit');
+        
         //trim() limpia la cadena para asegurar que el valor del rol sea exacto y no contenga espacios extra antes o después.
         $roleName = $request->string('role')->trim();// Ya esta validado
         //delegar la asignación de rol al servicio
         $this->userAdmin->assignRole($user, $roleName);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'asignar_rol',
+            "Rol '{$roleName}' asignado a: {$user->nombre} (ID: {$user->usuario_id})",
+            'Usuarios'
+        );
     
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_role' ...));
 
@@ -139,14 +164,26 @@ class UserController extends Controller
     }
     public function assignPermissions(AssignPermissionsRequest $request, User $user): \Illuminate\Http\JsonResponse
     {
+        // Verificar autorización - solo usuarios con permiso usuarios.edit
+        Gate::authorize('usuarios.edit');
+        
         $modules = $request->input('modules', []);
         $this->userAdmin->setModulePermissions($user, $modules);
+        
+        // Registrar en bitácora
+        $permisosAsignados = $user->getDirectPermissions()->pluck('name')->values()->toArray();
+        AuditLogService::log(
+            'asignar_permisos',
+            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados),
+            'Usuarios'
+        );
+        
         // TODO Sprint 3: event(new UserAdminActionPerformed(... 'assign_permissions' ...));
 
         return response()->json([
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
-            'granted' => $user->getDirectPermissions()->pluck('name')->values(), 
+            'granted' => $permisosAsignados, 
         ], 200);
     }
     

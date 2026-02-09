@@ -220,35 +220,39 @@ class ExtensionRequestService
             ]);
 
             // Cargar relaciones necesarias para acceder a la carrera
-            $extensionRequest->load('evidenceAssignment.proceso.accreditationCycle.careerCampus.career');
+            $extensionRequest->load('evidenceAssignment.process.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
-            // Enviar notificación a los encargados de acreditación de la carrera
             try {
-                // Obtener la carrera relacionada con la asignación
-                $carrera = $extensionRequest->evidenceAssignment
-                    ->proceso
-                    ->accreditationCycle
-                    ->careerCampus
-                    ->career;
+                // Obtener la carrera de la solicitud a través de las relaciones
+                // evidenceAssignment -> process -> accreditationCycle -> careerCampus -> career
+                $careerId = $extensionRequest->evidenceAssignment->process->accreditationCycle->careerCampus->carrera_id;
 
-                if ($carrera) {
-                    // Buscar encargados de acreditación asociados a esta carrera
-                    $encargados = User::role('encargado_acreditacion')
-                        ->whereHas('careers', function ($query) use ($carrera) {
-                            $query->where('carrera_id', $carrera->carrera_id);
-                        })
-                        ->get();
+                // Buscar encargados de acreditación específicos de esta carrera
+                // Esto asegura que solo los encargados relevantes reciban la notificación
+                // Ejemplo: Solicitud de Ingeniería → Solo encargados de Ingeniería
+                $managers = User::whereHas('roles', function ($query) {
+                    $query->where('name', 'Encargado de Acreditación');
+                })->whereHas('careers', function ($query) use ($careerId) {
+                    $query->where('carrera_id', $careerId);
+                })->get();
 
-                    // Enviar notificación a los encargados encontrados
-                    if ($encargados->isNotEmpty()) {
-                        Notification::send($encargados, new ExtensionRequestCreated($extensionRequest));
-                        Log::info("Notificación enviada a {$encargados->count()} encargado(s) de acreditación");
-                    } else {
-                        Log::warning('No se encontraron encargados de acreditación para la carrera', [
-                            'carrera_id' => $carrera->carrera_id
-                        ]);
-                    }
+                // Fallback: Si no hay encargados específicos para esa carrera,
+                // notificar a TODOS los encargados de acreditación (seguridad)
+                if ($managers->isEmpty()) {
+                    Log::warning("No hay encargados específicos para carrera ID {$careerId}, notificando a todos los encargados");
+                    
+                    $managers = User::whereHas('roles', function ($query) {
+                        $query->where('name', 'Encargado de Acreditación');
+                    })->get();
+                }
+                
+                // Enviar notificación solo si hay encargados
+                if ($managers->count() > 0) {
+                    Notification::send($managers, new ExtensionRequestCreated($extensionRequest));
+                    Log::info("Notificación enviada a {$managers->count()} encargado(s) de la carrera ID {$careerId}");
+                } else {
+                    Log::warning('No hay usuarios con rol "Encargado de Acreditación" para notificar');
                 }
             } catch (\Exception $notificationException) {
                 Log::warning('No se pudo enviar notificación de solicitud de ampliación', [
@@ -261,7 +265,7 @@ class ExtensionRequestService
             DB::commit();
             // Cargar relaciones necesarias incluyendo la cadena hasta carrera
             return $extensionRequest->load([
-                'evidenceAssignment.proceso.carreraSede.carrera',
+                'evidenceAssignment.process.accreditationCycle.careerCampus.career',
                 'user'
             ]);
         } catch (\Exception $exception) {

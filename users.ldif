@@ -1,0 +1,110 @@
+# Archivo LDIF para importar usuarios del proyecto SAAC
+# Base DN: dc=una,dc=local
+# 
+# Instrucciones de uso:
+# 1. Copiar al contenedor: docker cp users.ldif saac_ldap:/tmp/users.ldif
+# 2. Importar: docker exec saac_ldap ldapadd -x -D "cn=admin,dc=una,dc=local" -w admin -f /tmp/users.ldif
+
+# Unidad Organizacional para usuarios
+dn: ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: users
+
+# Unidad Organizacional para profesores
+dn: ou=profesores,ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: profesores
+
+# Unidad Organizacional para estudiantes
+dn: ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: organizationalUnit
+ou: estudiantes
+
+# ============================================
+# PROFESORES
+# ============================================
+# (vacío - sin profesores en el sistema)
+
+# ============================================
+# ESTUDIANTES - PARTICIPANTES DEL PROYECTO
+# ============================================
+
+# Naydelin Nayeli Jirón Castellón
+dn: uid=801490957,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 801490957
+cn: Naydelin Nayeli Jiron Castellon
+sn: Jiron Castellon
+givenName: Naydelin Nayeli
+mail: nayidelin.jiron.castellon@est.una.ac.cr
+uidNumber: 20001
+gidNumber: 20001
+homeDirectory: /home/801490957
+loginShell: /bin/bash
+userPassword: password123
+
+# José Andrés Jara Arias
+dn: uid=208330811,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 208330811
+cn: Jose Andres Jara Arias
+sn: Jara Arias
+givenName: Jose Andres
+mail: jose.jara.arias@est.una.ac.cr
+uidNumber: 20002
+gidNumber: 20001
+homeDirectory: /home/208330811
+loginShell: /bin/bash
+userPassword: password123
+
+# Marisol Hidalgo Murillo
+dn: uid=118620669,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 118620669
+cn: Marisol Hidalgo Murillo
+sn: Hidalgo Murillo
+givenName: Marisol
+mail: marisol.hidalgo.murillo@est.una.ac.cr
+uidNumber: 20003
+gidNumber: 20001
+homeDirectory: /home/118620669
+loginShell: /bin/bash
+userPassword: password123
+
+# Ian Enmanuel Villegas Jiménez
+dn: uid=207800171,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 207800171
+cn: Ian Enmanuel Villegas Jimenez
+sn: Villegas Jimenez
+givenName: Ian Enmanuel
+mail: ian.villegas.jimenez@est.una.ac.cr
+uidNumber: 20004
+gidNumber: 20001
+homeDirectory: /home/207800171
+loginShell: /bin/bash
+userPassword: password123
+
+# Ana Cristina Zúñiga Cárdenas
+dn: uid=206870079,ou=estudiantes,ou=users,dc=una,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: 206870079
+cn: Ana Cristina Zuniga Cardenas
+sn: Zuniga Cardenas
+givenName: Ana Cristina
+mail: ana.zuniga.cardenas@est.una.ac.cr
+uidNumber: 20005
+gidNumber: 20001
+homeDirectory: /home/206870079
+loginShell: /bin/bash
+userPassword: password123

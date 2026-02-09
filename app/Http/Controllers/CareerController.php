@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Career;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use App\Services\CareerService;
 use App\Http\Requests\CareerRequest;
+use App\Services\AuditLogService;
+
 
 class CareerController extends Controller
 {
@@ -18,12 +19,11 @@ class CareerController extends Controller
         $this->service = $service;
     }
     /**
-     * GET /api/estructura/carreras?facultad_id=#
+     * GET /api/estructura/carreras
      */
     public function index(Request $request)
     {
-        $facultadId = $request->filled('facultad_id') ? (int) $request->input('facultad_id') : null;
-        $items = $this->service->getAll($facultadId);
+        $items = $this->service->getAll();
         return response()->json($items, 200);
     }
 
@@ -48,6 +48,13 @@ class CareerController extends Controller
         $career = $this->service->create($request->validated());
         $primaryKeyName = $career->getKeyName();
 
+        // Registro en el log de bitacora
+        AuditLogService::log(
+'crear',
+    "Se creó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}).",
+    'Carrera'
+        );
+        // Respuesta con código 201 y Location header
         return response()
             ->json(['message' => 'Carrera creada correctamente.', 'data' => $career], 201)
             ->header('Location', route('carreras.show', $career->$primaryKeyName));
@@ -64,6 +71,16 @@ class CareerController extends Controller
         }
 
         $updated = $this->service->update($career, $request->validated());
+        $oldName = $career->nombre;
+        // Registro en el log de bitácora
+        if ($oldName !== $updated->nombre) {
+        AuditLogService::log(
+'editar',
+    "Se actualizó la carrera ID {$career->carrera_id}: ".
+            "nombre anterior \"{$oldName}\", nombre actual \"{$updated->nombre}\",.",
+    'Carrera'
+        );
+        }
 
         return response()->json(['message' => 'Carrera actualizada correctamente.', 'data' => $updated], 200);
     }
@@ -79,7 +96,15 @@ class CareerController extends Controller
         }
 
         try {
+            // antes: $career->delete()
             $this->service->delete($career);
+
+            // Registro en el log de bitácora
+            AuditLogService::log(
+    'eliminar',
+        "Se eliminó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}), perteneciente a la facultad ID {$career->facultad_id}.",
+        'Carrera'
+            );
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
@@ -98,6 +123,8 @@ class CareerController extends Controller
     public function setActive(Request $request, $id)
     {
         $career = Career::find($id);
+        //agregar para log
+        $previousState = $career->activo;
         if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
@@ -111,7 +138,16 @@ class CareerController extends Controller
         // Actualizar el estado de la carrera
         $career->activo = $newActiveState;
         $career->save();
-
+        //agregar para log
+        $estadoAnterior = $previousState ? 'ACTIVA' : 'INACTIVA';
+        $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+        // Registro en el log de bitácora
+        AuditLogService::log(
+'editar',
+    "Se actualizó el estado de la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}). ".
+            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}.",
+    'Carrera'
+        );
         // Nota: Career no tiene elementos hijos en la jerarquía actual
         // Si en el futuro se agregan elementos hijos, se implementará aquí la cascada
 

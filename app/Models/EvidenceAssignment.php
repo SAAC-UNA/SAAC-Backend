@@ -71,4 +71,15 @@ class EvidenceAssignment extends Model
     {
         return $this->belongsTo(User::class, 'usuario_id', 'usuario_id');
     }
+
+    /**
+     * Relación: Una asignación puede tener varias solicitudes de ampliación.
+     * HU-016
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function extensionRequests()
+    {
+        return $this->hasMany(ExtensionRequest::class, 'evidencia_asignacion_id', 'evidencia_asignacion_id');
+    }
 }
