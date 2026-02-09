@@ -25,7 +25,6 @@ class ExtensionRequestResource extends JsonResource
             'solicitud_ampliacion_id' => $this->solicitud_ampliacion_id,
             'evidencia_asignacion_id' => $this->evidencia_asignacion_id,
             'usuario_id' => $this->usuario_id,
-            'fecha_solicitud' => optional($this->fecha_solicitud)->toISOString(),
             'motivo' => $this->motivo,
             'fecha_sugerida' => optional($this->fecha_sugerida)->toISOString(),
             'estado' => $this->estado,

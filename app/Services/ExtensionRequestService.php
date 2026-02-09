@@ -46,18 +46,18 @@ class ExtensionRequestService
 
         // Filtro por rango de fechas
         if (!empty($filters['fecha_desde'])) {
-            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+            $query->where('created_at', '>=', $filters['fecha_desde']);
         }
 
         if (!empty($filters['fecha_hasta'])) {
-            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+            $query->where('created_at', '<=', $filters['fecha_hasta']);
         }
 
         // Incluir relaciones
         $query->with(['evidenceAssignment', 'user', 'resolutor']);
 
         // Ordenar por fecha descendente
-        $query->orderBy('fecha_solicitud', 'desc');
+        $query->orderBy('created_at', 'desc');
 
         // Paginar resultados (default 15, max 100)
         $perPage = min($filters['per_page'] ?? 15, 100);
@@ -90,18 +90,18 @@ class ExtensionRequestService
 
         // Filtro por rango de fechas
         if (!empty($filters['fecha_desde'])) {
-            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+            $query->where('created_at', '>=', $filters['fecha_desde']);
         }
 
         if (!empty($filters['fecha_hasta'])) {
-            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+            $query->where('created_at', '<=', $filters['fecha_hasta']);
         }
 
         // Incluir relaciones
         $query->with(['evidenceAssignment', 'user']);
 
         // Ordenar por fecha ascendente (más antiguas primero)
-        $query->orderBy('fecha_solicitud', 'asc');
+        $query->orderBy('created_at', 'asc');
 
         // Paginar resultados (default 15, max 100)
         $perPage = min($filters['per_page'] ?? 15, 100);
@@ -135,18 +135,18 @@ class ExtensionRequestService
 
         // Filtro por rango de fechas
         if (!empty($filters['fecha_desde'])) {
-            $query->where('fecha_solicitud', '>=', $filters['fecha_desde']);
+            $query->where('created_at', '>=', $filters['fecha_desde']);
         }
 
         if (!empty($filters['fecha_hasta'])) {
-            $query->where('fecha_solicitud', '<=', $filters['fecha_hasta']);
+            $query->where('created_at', '<=', $filters['fecha_hasta']);
         }
 
         // Incluir relaciones
         $query->with(['evidenceAssignment', 'resolutor']);
 
         // Ordenar por fecha descendente
-        $query->orderBy('fecha_solicitud', 'desc');
+        $query->orderBy('created_at', 'desc');
 
         // Paginar resultados (default 15, max 100)
         $perPage = min($filters['per_page'] ?? 15, 100);
@@ -213,7 +213,6 @@ class ExtensionRequestService
             $extensionRequest = ExtensionRequest::create([
                 'evidencia_asignacion_id' => $data['evidencia_asignacion_id'],
                 'usuario_id' => $usuarioId,
-                'fecha_solicitud' => Carbon::now(),
                 'motivo' => $data['motivo'],
                 'fecha_sugerida' => $data['fecha_sugerida'],
                 'estado' => ExtensionRequest::ESTADO_PENDIENTE,
