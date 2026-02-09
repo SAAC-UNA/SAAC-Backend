@@ -143,6 +143,42 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
         Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
     });
 
+Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+
+// Rutas para aprobación de criterios por bloques (HU-010)
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
+    Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+    Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+});
+
+// Rutas para archivos (HU-008 - Subida de Evidencias)
+Route::prefix('archivos')->group(function () {
+    // TEMPORAL: Obtener datos de prueba para formulario
+    Route::get('/test-data', [FileController::class, 'getTestData']);
+
+    // Listar archivos por evidencia o proceso
+    Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
+
+    // Subir nuevo archivo (máximo 10 uploads por minuto)
+    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
+
+    // Ver metadatos de un archivo
+    Route::get('/{archivo}', [FileController::class, 'show']);
+
+    // Eliminar archivo
+    Route::delete('/{archivo}', [FileController::class, 'destroy']);
+
+    // Hacer público un archivo (generar enlace público)
+    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
+
+    // Revocar acceso público
+    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
+
+    // Operación masiva: hacer públicos múltiples archivos
 // ============================================
 // Archivos (HU-008 - Subida de Evidencias)
 // ============================================
@@ -285,9 +321,6 @@ Route::get('/ping', function () {
 
 //Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
 
-
-
-
 Route::middleware([
     'auth:sanctum',
     'refresh.session',
@@ -318,16 +351,7 @@ Route::middleware([
         Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])->name('commitments.set-active');
     });
 
-    // Alias de compatibilidad (docs/colecciones Postman viejas): /api/compromisos-mejora
-    Route::prefix('compromisos-mejora')->group(function () {
-        Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
-        Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
-        Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
-        Route::post('/', [ImprovementCommitmentController::class, 'createCommitment']);
-        Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
-        Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment']);
-        Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive']);
-    });
+
 });
 
 
