@@ -92,6 +92,14 @@ class EvidenceService
                 'assignments' => function($q) {
                     $q->with('user:usuario_id,nombre,email');
                 }
+            ])
+            ->withCount([
+                'files as archivos_count' => function($q) {
+                    $q->where('tipo', 'archivo');
+                },
+                'files as enlaces_count' => function($q) {
+                    $q->where('tipo', 'enlace');
+                }
             ]);
 
         // ============================================================

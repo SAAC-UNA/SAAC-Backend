@@ -66,7 +66,8 @@ class FileService
             ]);
 
             // Log de espacio en disco después de guardar
-            $diskFreeSpace = disk_free_path(Storage::disk($this->disk)->path(''));
+            $diskPath = Storage::disk($this->disk)->path('');
+            $diskFreeSpace = disk_free_space($diskPath);
             $diskFreeGb = round($diskFreeSpace / (1024 ** 3), 2);
 
             Log::info('Archivo subido exitosamente', [
@@ -107,7 +108,7 @@ class FileService
         // Extraer nombre del dominio si no se proporciona nombre descriptivo
         if (!$nombreDescriptivo) {
             $parsedUrl = parse_url($url);
-            $nombreDescriptivo = ($parsedUrl['host'] ?? 'Enlace') . ' - ' . date('Y-m-d H:i:s');
+            $nombreDescriptivo = $parsedUrl['host'] ?? 'Enlace';
         }
         
         return DB::transaction(function () use ($url, $evidenciaId, $usuarioId, $procesoId, $nombreDescriptivo) {

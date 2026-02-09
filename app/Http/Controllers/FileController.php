@@ -10,6 +10,8 @@ use App\Services\FileService;
 use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -305,14 +307,44 @@ class FileController extends Controller
     /**
      * Descargar archivo (autenticado).
      * GET /api/archivos/{archivo}/download
-     * 
-     * NOTA: A implementar cuando se programe el serving de archivos.
      */
-    // public function download(File $archivo): StreamedResponse
-    // {
-    //     Gate::authorize('download', $archivo);
-    //     // Implementar lógica de descarga con Storage::download()
-    // }
+    public function download(File $archivo): BinaryFileResponse|JsonResponse|RedirectResponse
+    {
+        Gate::authorize('view', $archivo);
+
+        $tipo = $archivo->tipo ?? 'archivo';
+        
+        // Si es un enlace (URL), redirigir
+        if ($tipo === 'enlace') {
+            return redirect()->away($archivo->url);
+        }
+
+        // Si es un archivo físico, descargarlo
+        try {
+            $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
+            
+            if (!file_exists($path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no encontrado en el almacenamiento.',
+                ], 404);
+            }
+
+            return response()->download($path, $archivo->nombre_original);
+            
+        } catch (\Exception $e) {
+            Log::error('Error descargando archivo', [
+                'archivo_id' => $archivo->archivo_id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor.',
+            ], 500);
+        }
+    }
 
     /**
      * Ver archivo inline (autenticado).

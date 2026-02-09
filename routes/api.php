@@ -151,6 +151,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->grou
     Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
     Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
     Route::get('/{archivo}', [FileController::class, 'show']);
+    Route::get('/{archivo}/download', [FileController::class, 'download']);
     Route::delete('/{archivo}', [FileController::class, 'destroy']);
     Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
     Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
