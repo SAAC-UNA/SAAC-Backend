@@ -103,10 +103,23 @@ class AuthController extends Controller
             // Registrar login exitoso en bitácora con el usuario_id
             AuditLogService::log('login', "Usuario {$user->nombre} inició sesión exitosamente", 'Autenticación', $user->usuario_id);
 
+            // IMPORTANTE: Configuración de cookie para desarrollo (localhost)
+            $cookie = cookie(
+                name: 'auth_token',
+                value: $token,
+                minutes: 60 * 24 * 7,        // 7 días
+                path: '/',
+                domain: '',                   // Vacío = solo el host actual (no subdomains)
+                secure: false,                // false para HTTP en desarrollo (true para HTTPS en producción)
+                httpOnly: true,               // NO accesible desde JavaScript - SEGURIDAD
+                raw: false,
+                sameSite: 'lax'               // 'lax' permite cookies entre puertos del mismo host
+            );
+            
             return response()->json([
                 'user' => new UserResource($user),
-                'token' => $token,
-            ], 200);
+                // Token NO se envía en JSON, se envía en cookie httpOnly
+            ], 200)->cookie($cookie);
 
         } catch (\Exception $e) {
             Log::error('Error en login', [
@@ -150,9 +163,10 @@ class AuthController extends Controller
             // Eliminar el token actual del usuario
             $user->currentAccessToken()->delete();
 
+            // Limpiar cookie de autenticación
             return response()->json([
                 'message' => 'Sesión cerrada exitosamente',
-            ], 200);
+            ], 200)->cookie(cookie()->forget('auth_token'));
 
         } catch (\Exception $e) {
             Log::error('Error en logout: ' . $e->getMessage());

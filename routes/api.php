@@ -1,8 +1,5 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
-
-// Importante importa el controlador
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\CampusController;
@@ -13,10 +10,9 @@ use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
-use App\Http\Controllers\ExtensionTimeRequestController; // RF-15: Controller del profesor
+use App\Http\Controllers\ExtensionTimeRequestController;
 use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
-
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
@@ -36,77 +32,98 @@ use App\Models\Process;
 use App\Models\AccreditationCycle;
 
 // ============================================
-// Rutas de Autenticación (públicas)
+// Rutas de Autenticación
 // ============================================
-Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);      // POST /api/auth/login
-    Route::post('/logout', [AuthController::class, 'logout'])
-        ->middleware('auth:sanctum');                             // POST /api/auth/logout
-    Route::get('/me', [AuthController::class, 'me'])
-        ->middleware('auth:sanctum');                             // GET /api/auth/me
-});
+// Login es público (no requiere autenticación)
+Route::post('auth/login', [AuthController::class, 'login']);
 
-/**
- * Rutas de Autenticación (protegidas)
- */
+// Logout y Me requieren autenticación
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('auth/me', [AuthController::class, 'me']);
 });
 
-// CRUD completo de cada endpoint
-//Route::apiResource('estructura/universidades', UniversityController::class)->parameters(['universidades' => 'universidad'])->only(['index','store','show','update','destroy']);
-Route::apiResource('estructura/universidades', UniversityController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive']);
-Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
-Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive']);
-Route::apiResource('estructura/dimensiones', DimensionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive']);
-Route::apiResource('estructura/componentes', ComponentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive']);
-Route::apiResource('estructura/criterios', CriterionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
-// HU-012: Filtrado avanzado de evidencias (DEBE ir ANTES de apiResource)
-Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter'])->middleware('auth:sanctum');
-Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel'])->middleware('auth:sanctum');
-Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF'])->middleware('auth:sanctum');
-Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
-
-// Rutas para asignaciones de evidencias (HU-007)
-Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates'])->middleware('auth:sanctum');
-Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
-Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
-Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
-
-// Rutas para solicitudes de ampliación (HU-016 - ENCARGADO)
-Route::prefix('solicitudes-ampliacion')->group(function () {
-    Route::get('/', [ExtensionRequestController::class, 'index']);                    // GET /api/solicitudes-ampliacion
-    Route::get('/pendientes', [ExtensionRequestController::class, 'pending']);        // GET /api/solicitudes-ampliacion/pendientes
-    Route::get('/mis-solicitudes', [ExtensionRequestController::class, 'mySolicitudes']); // GET /api/solicitudes-ampliacion/mis-solicitudes
-    Route::get('/{id}', [ExtensionRequestController::class, 'show']);                 // GET /api/solicitudes-ampliacion/{id}
-    Route::post('/', [ExtensionRequestController::class, 'store']);                   // POST /api/solicitudes-ampliacion
-    Route::post('/{id}/aprobar', [ExtensionRequestController::class, 'approve']);     // POST /api/solicitudes-ampliacion/{id}/aprobar
-    Route::post('/{id}/rechazar', [ExtensionRequestController::class, 'reject']);     // POST /api/solicitudes-ampliacion/{id}/rechazar
+// ============================================
+// Rutas de Estructura (protegidas)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    // Universidades
+    Route::apiResource('estructura/universidades', UniversityController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive']);
+    
+    // Campuses
+    Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
+    
+    // Carreras
+    Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive']);
+    
+    // Dimensiones
+    Route::apiResource('estructura/dimensiones', DimensionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive']);
+    
+    // Componentes
+    Route::apiResource('estructura/componentes', ComponentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive']);
+    
+    // Criterios
+    Route::apiResource('estructura/criterios', CriterionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
+    
+    // Evidencias (HU-012: Filtrado avanzado DEBE ir ANTES de apiResource)
+    Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter']);
+    Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel']);
+    Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF']);
+    Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
+    
+    // Estados de evidencia
+    Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+    
+    // Estándares
+    Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+    Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
+    
+    // Procesos y Ciclos
+    Route::get('estructura/procesos', function () {
+        return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
+    });
+    Route::get('estructura/ciclos-acreditacion', function () {
+        return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+    });
 });
 
-// Rutas para solicitudes de ampliación de tiempo del PROFESOR (RF-15)
-// AUTENTICACIÓN: Requiere usuario autenticado con token Sanctum
-// ============================================================================
-// RF-15: SOLICITUDES DE AMPLIACIÓN DE TIEMPO (PROFESORES)
-// ============================================================================
-// ESTÁNDAR PL-10: Autenticación + Autorización + Rate Limiting
-// - Middleware: auth:sanctum (autenticación)
-// - Policies: ExtensionTimeRequestPolicy (autorización granular)
-// - Rate Limiting: 60 peticiones/minuto (previene abuso)
-// - Validación: FormRequests con sanitización
+// ============================================
+// Rutas para Asignaciones de Evidencias (HU-007)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates']);
+    Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
+    Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
+    Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
+});
+
+// ============================================
+// Solicitudes de Ampliación (HU-016 - ENCARGADO)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('solicitudes-ampliacion')->group(function () {
+    Route::get('/', [ExtensionRequestController::class, 'index']);
+    Route::get('/pendientes', [ExtensionRequestController::class, 'pending']);
+    Route::get('/mis-solicitudes', [ExtensionRequestController::class, 'mySolicitudes']);
+    Route::get('/{id}', [ExtensionRequestController::class, 'show']);
+    Route::post('/', [ExtensionRequestController::class, 'store']);
+    Route::post('/{id}/aprobar', [ExtensionRequestController::class, 'approve']);
+    Route::post('/{id}/rechazar', [ExtensionRequestController::class, 'reject']);
+});
+
+// ============================================
+// Solicitudes de Ampliación de Tiempo (RF-15 - PROFESORES)
+// ============================================
 Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
     ->prefix('solicitudes-ampliacion-tiempo')
     ->group(function () {
-        // GET: Listar solicitudes (profesores ven solo las suyas, encargados ven todas)
         Route::get('/', [ExtensionTimeRequestController::class, 'index']);
 
         // GET: Evidencias próximas a vencer (para sugerir en formulario)
@@ -162,11 +179,33 @@ Route::prefix('archivos')->group(function () {
     Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
 
     // Operación masiva: hacer públicos múltiples archivos
+// ============================================
+// Archivos (HU-008 - Subida de Evidencias)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->group(function () {
+    Route::get('/test-data', [FileController::class, 'getTestData']); // TEMPORAL
+    Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
+    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
+    Route::get('/{archivo}', [FileController::class, 'show']);
+    Route::get('/{archivo}/download', [FileController::class, 'download']);
+    Route::delete('/{archivo}', [FileController::class, 'destroy']);
+    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
+    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
     Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
 });
 
-// Ruta pública para acceso mediante token (SIN autenticación - para SINAES/informes)
-Route::get('/p/{token}', [FileController::class, 'publicAccess'])->withoutMiddleware(['auth:sanctum']);
+// Acceso público mediante token (SIN autenticación - para SINAES/informes)
+Route::get('/p/{token}', [FileController::class, 'publicAccess']);
+
+// ============================================
+// Aprobación de Criterios por Bloques (HU-010)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
+    Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
+    Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
+    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+});
 
 // ============================================
 // Rutas de Gestión de Usuarios (HU-002)
@@ -190,20 +229,29 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
 });
 
-// Para vista de permisos
-Route::get('admin/permissions', [PermissionController::class, 'index']);
-
-// Rutas de Notificaciones (HU-018) - Requieren autenticación
-Route::middleware(['auth:sanctum'])->prefix('notificaciones')->group(function () {
-    Route::get('/', [NotificationController::class, 'index']);                           // GET /api/notificaciones
-    Route::get('/no-leidas/contador', [NotificationController::class, 'getUnreadCount']); // GET /api/notificaciones/no-leidas/contador
-    Route::post('/marcar-todas-leidas', [NotificationController::class, 'markAllAsRead']); // POST /api/notificaciones/marcar-todas-leidas
-    Route::post('/{id}/marcar-leida', [NotificationController::class, 'markAsRead']);      // POST /api/notificaciones/{id}/marcar-leida
-    Route::delete('/{id}', [NotificationController::class, 'destroy']);                   // DELETE /api/notificaciones/{id}
+// ============================================
+// Gestión de Roles y Permisos
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    // Permisos
+    Route::get('admin/permissions', [PermissionController::class, 'index']);
 });
 
-// Rutas de Bitácora del Sistema (HU-005) - Solo Superusuario
-Route::prefix('bitacora')->middleware(['role:Superusuario'])->group(function () {
+// ============================================
+// Notificaciones (HU-018)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('notificaciones')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::get('/no-leidas/contador', [NotificationController::class, 'getUnreadCount']);
+    Route::post('/marcar-todas-leidas', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/{id}/marcar-leida', [NotificationController::class, 'markAsRead']);
+    Route::delete('/{id}', [NotificationController::class, 'destroy']);
+});
+
+// ============================================
+// Bitácora del Sistema (HU-005) - Solo Superusuario
+// ============================================
+Route::prefix('bitacora')->middleware(['auth:sanctum', 'refresh.session', 'role:Superusuario'])->group(function () {
     Route::get('/', [AuditLogController::class, 'index']);
     Route::get('/modulos', [AuditLogController::class, 'getModules']);
     Route::get('/tipos-accion', [ActionTypeController::class, 'index']);
@@ -263,7 +311,7 @@ Route::get('/ping', function () {
     return response()->json([
         'ok'    => true,
         'scope' => 'root',
-        'base'  => base_path(), // <- confirma carpeta
+        'base'  => base_path(),
         'mark'  => 'X1'
     ]);
 });
@@ -272,6 +320,7 @@ Route::get('/ping', function () {
 // Ruta de prueba sin controller
 
 //Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
+
 Route::middleware([
     'auth:sanctum',
     'refresh.session',
@@ -303,15 +352,6 @@ Route::middleware([
     });
 
 
-});
-
-// Devuelve procesos con sus ciclos, sedes y carreras asociadas (datos simulados para pruebas sin autenticación).
-Route::get('estructura/procesos', function () {
-    return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
-});
-//  Ciclos filtrados automáticamente (solo los de la carrera del usuario simulado)
-Route::get('estructura/ciclos-acreditacion', function () {
-    return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
 });
 
 

@@ -223,16 +223,7 @@ class ExtensionRequestService
             $extensionRequest->load('evidenceAssignment.process.accreditationCycle.careerCampus.career');
 
             // ========== HU-16: NOTIFICACIÓN - INICIO ==========
-            // PRUEBA TEMPORAL: Enviar correo directamente al usuario Ana
             try {
-                // Buscar usuario Ana por email
-                $testUser = User::where('email', 'ana.zuniga.cardenas@est.una.ac.cr')->first();
-                
-                if ($testUser) {
-                    Notification::send([$testUser], new ExtensionRequestCreated($extensionRequest));
-                    Log::info("Notificación de prueba enviada a: {$testUser->email}");
-                } else {
-                    Log::warning('Usuario de prueba no encontrado');
                 // Obtener la carrera de la solicitud a través de las relaciones
                 // evidenceAssignment -> process -> accreditationCycle -> careerCampus -> career
                 $careerId = $extensionRequest->evidenceAssignment->process->accreditationCycle->careerCampus->carrera_id;
@@ -274,7 +265,7 @@ class ExtensionRequestService
             DB::commit();
             // Cargar relaciones necesarias incluyendo la cadena hasta carrera
             return $extensionRequest->load([
-                'evidenceAssignment.proceso.carreraSede.carrera',
+                'evidenceAssignment.process.accreditationCycle.careerCampus.career',
                 'user'
             ]);
         } catch (\Exception $exception) {

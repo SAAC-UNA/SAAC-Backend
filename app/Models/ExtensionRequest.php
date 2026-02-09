@@ -19,6 +19,7 @@ class ExtensionRequest extends Model
     protected $fillable = [
         'evidencia_asignacion_id',
         'usuario_id',
+        'fecha_solicitud',
         'motivo',
         'fecha_sugerida',
         'estado',
@@ -29,6 +30,7 @@ class ExtensionRequest extends Model
 
     // Cast de tipos
     protected $casts = [
+        'fecha_solicitud' => 'datetime',
         'fecha_sugerida' => 'datetime',
         'fecha_resolucion' => 'datetime'
     ];
