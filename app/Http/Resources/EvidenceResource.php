@@ -35,6 +35,9 @@ class EvidenceResource extends JsonResource
                     'email'      => $assignment->user->email,
                 ])
             ),
+            // Contadores de recursos
+            'archivos_count'      => $this->archivos_count ?? 0,
+            'enlaces_count'       => $this->enlaces_count ?? 0,
         ];
     }
 }

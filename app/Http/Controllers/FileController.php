@@ -10,6 +10,8 @@ use App\Services\FileService;
 use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -61,11 +63,14 @@ class FileController extends Controller
     }
 
     /**
-     * Subir uno o más archivos (máximo 5).
+     * Subir archivos o guardar enlaces como evidencia (máximo 5).
      * POST /api/archivos
      * 
-     * Body (multipart/form-data):
-     * - archivos: file[] (1-5 archivos, max 50MB cada uno)
+     * Body (JSON o multipart/form-data):
+     * - tipo: string (archivo|enlace)
+     * - archivos: file[] (si tipo=archivo, 1-5 archivos, max 50MB c/u)
+     * - enlaces: string[] (si tipo=enlace, 1-5 URLs)
+     * - enlaces_nombres: string[] (opcional, nombres descriptivos para cada URL)
      * - evidencia_id: integer
      * - proceso_id: integer
      */
@@ -83,27 +88,57 @@ class FileController extends Controller
             ], 401);
         }
 
-        // Procesar todos los archivos
         $archivos = [];
         $errores = [];
         
-        foreach ($request->file('archivos', []) as $index => $archivo) {
-            try {
-                $archivoGuardado = $this->fileService->uploadFile(
-                    file: $archivo,
-                    evidenciaId: $validated['evidencia_id'],
-                    usuarioId: $usuarioId,
-                    procesoId: $validated['proceso_id']
-                );
-                
-                $archivoGuardado->load(['evidence', 'user', 'process']);
-                $archivos[] = new FileResource($archivoGuardado);
-            } catch (\Exception $e) {
-                $errores[] = [
-                    'indice' => $index,
-                    'nombre' => $archivo->getClientOriginalName(),
-                    'error' => $e->getMessage(),
-                ];
+        // Procesar según el tipo
+        if ($validated['tipo'] === 'archivo') {
+            // Procesar archivos físicos
+            foreach ($request->file('archivos', []) as $index => $archivo) {
+                try {
+                    $archivoGuardado = $this->fileService->uploadFile(
+                        file: $archivo,
+                        evidenciaId: $validated['evidencia_id'],
+                        usuarioId: $usuarioId,
+                        procesoId: $validated['proceso_id']
+                    );
+                    
+                    $archivoGuardado->load(['evidence', 'user', 'process']);
+                    $archivos[] = new FileResource($archivoGuardado);
+                } catch (\Exception $e) {
+                    $errores[] = [
+                        'indice' => $index,
+                        'nombre' => $archivo->getClientOriginalName(),
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+        } else {
+            // Procesar enlaces/URLs
+            $enlaces = $validated['enlaces'] ?? [];
+            $nombres = $validated['enlaces_nombres'] ?? [];
+            
+            foreach ($enlaces as $index => $url) {
+                try {
+                    $nombreDescriptivo = $nombres[$index] ?? null;
+                    
+                    $enlaceGuardado = $this->fileService->saveLink(
+                        url: $url,
+                        evidenciaId: $validated['evidencia_id'],
+                        usuarioId: $usuarioId,
+                        procesoId: $validated['proceso_id'],
+                        nombreDescriptivo: $nombreDescriptivo
+                    );
+                    
+                    $enlaceGuardado->load(['evidence', 'user', 'process']);
+                    $archivos[] = new FileResource($enlaceGuardado);
+                } catch (\Exception $e) {
+                    $errores[] = [
+                        'indice' => $index,
+                        'url' => $url,
+                        'error' => $e->getMessage(),
+                    ];
+                }
             }
         }
 
@@ -272,14 +307,44 @@ class FileController extends Controller
     /**
      * Descargar archivo (autenticado).
      * GET /api/archivos/{archivo}/download
-     * 
-     * NOTA: A implementar cuando se programe el serving de archivos.
      */
-    // public function download(File $archivo): StreamedResponse
-    // {
-    //     Gate::authorize('download', $archivo);
-    //     // Implementar lógica de descarga con Storage::download()
-    // }
+    public function download(File $archivo): BinaryFileResponse|JsonResponse|RedirectResponse
+    {
+        Gate::authorize('view', $archivo);
+
+        $tipo = $archivo->tipo ?? 'archivo';
+        
+        // Si es un enlace (URL), redirigir
+        if ($tipo === 'enlace') {
+            return redirect()->away($archivo->url);
+        }
+
+        // Si es un archivo físico, descargarlo
+        try {
+            $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
+            
+            if (!file_exists($path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no encontrado en el almacenamiento.',
+                ], 404);
+            }
+
+            return response()->download($path, $archivo->nombre_original);
+            
+        } catch (\Exception $e) {
+            Log::error('Error descargando archivo', [
+                'archivo_id' => $archivo->archivo_id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor.',
+            ], 500);
+        }
+    }
 
     /**
      * Ver archivo inline (autenticado).
@@ -294,14 +359,14 @@ class FileController extends Controller
     // }
 
     /**
-     * Acceso público a archivo mediante token.
+     * Acceso público a archivo o enlace mediante token.
      * GET /api/p/{token}
      * 
      * Esta ruta NO requiere autenticación (para SINAES/informes externos).
      */
     public function publicAccess(string $token)
     {
-        // Buscar archivo por token público
+        // Buscar archivo/enlace por token público
         $archivo = File::where('token_publico', $token)->first();
 
         if (!$archivo) {
@@ -327,7 +392,14 @@ class FileController extends Controller
             ], 410);
         }
 
-        // Servir el archivo
+        $tipo = $archivo->tipo ?? 'archivo';
+        
+        // Si es un enlace (URL), redirigir
+        if ($tipo === 'enlace') {
+            return redirect()->away($archivo->url);
+        }
+
+        // Si es un archivo físico, descargarlo
         try {
             $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
             

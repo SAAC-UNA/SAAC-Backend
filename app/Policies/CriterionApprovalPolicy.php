@@ -8,7 +8,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 
 /**
  * Policy para autorizar operaciones sobre aprobaciones de criterios.
- * 
+ *
  * Roles permitidos:
  * - Superusuario: Acceso total
  * - Encargado de Acreditación: Puede aprobar/rechazar criterios
@@ -21,7 +21,7 @@ class CriterionApprovalPolicy
 
     /**
      * Determina si el usuario puede ver la lista de aprobaciones.
-     * 
+     *
      * @param User $user
      * @return bool
      */
@@ -38,25 +38,34 @@ class CriterionApprovalPolicy
 
     /**
      * Determina si el usuario puede ver una aprobación específica.
-     * 
+     *
      * @param User $user
      * @param CriterionApproval $approval
      * @return bool
      */
     public function view(User $user, CriterionApproval $approval): bool
     {
-        // Todos los roles autorizados pueden ver cualquier aprobación
-        return $user->hasAnyRole([
-            'Superusuario',
-            'Encargado de Acreditación',
-            'Administrador',
-            'Profesor'
-        ]);
+        // Superusuario, Encargado y Administrador pueden ver todas
+        if ($user->hasAnyRole(['Superusuario', 'Encargado de Acreditación', 'Administrador'])) {
+            return true;
+        }
+
+        // Profesor solo puede ver aprobaciones de criterios donde tiene evidencias asignadas
+        if ($user->hasRole('Profesor')) {
+            return $approval->criterion
+                ->evidences()
+                ->whereHas('assignments', function ($query) use ($user) {
+                    $query->where('usuario_id', $user->usuario_id);
+                })
+                ->exists();
+        }
+
+        return false;
     }
 
     /**
      * Determina si el usuario puede aprobar un criterio.
-     * 
+     *
      * @param User $user
      * @return bool
      */
@@ -68,7 +77,7 @@ class CriterionApprovalPolicy
 
     /**
      * Determina si el usuario puede rechazar un criterio.
-     * 
+     *
      * @param User $user
      * @return bool
      */

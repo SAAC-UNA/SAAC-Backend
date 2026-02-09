@@ -22,8 +22,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class ExtensionTimeRequestController extends Controller
 {
     use AuthorizesRequests;
-    
-    protected $service; 
+
+    protected $service;
 
     public function __construct(ExtensionTimeRequestService $service)
     {
@@ -32,11 +32,11 @@ class ExtensionTimeRequestController extends Controller
 
     /**
      * Lista solicitudes de ampliación con paginación obligatoria y filtros dinámicos.
-     * 
+     *
      * AUTORIZACIÓN:
      * - Profesores: Solo ven SUS propias solicitudes (se fuerza filtro usuario_id)
      * - Encargados/Admins: Ven TODAS las solicitudes del sistema
-     * 
+     *
      * FILTROS OPCIONALES:
      * - estado: pendiente|aprobada|rechazada
      * - evidencia_asignacion_id: ID de asignación de evidencia
@@ -53,17 +53,17 @@ class ExtensionTimeRequestController extends Controller
             $user = Auth::user();
             $perPage = min($request->input('per_page', 15), 100);
             $filters = $request->validated();
-            
+
             // PL-10: FILTRO POR ROL - Profesores SOLO ven sus propias solicitudes
             // SuperUsuario, Admin y Encargado de Acreditación ven TODAS las solicitudes
             if ($user->hasRole('Profesor') && !$user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación'])) {
                 $filters['usuario_id'] = $user->usuario_id;
             }
-            
+
             $requests = $this->service->listRequests($perPage, $filters);
-            
+
             return ExtensionTimeRequestResource::collection($requests);
-            
+
         } catch (\Exception $exception) {
             Log::error('Error listando solicitudes de ampliación', [
                 'usuario_id' => Auth::id(),
@@ -71,14 +71,14 @@ class ExtensionTimeRequestController extends Controller
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine()
             ]);
-            
+
             return response()->json(['message' => 'Ocurrió un error al obtener las solicitudes'], 500);
         }
     }
 
     /**
      * Muestra la información de una solicitud de ampliación específica según su ID.
-     * 
+     *
      * AUTORIZACIÓN:
      * - El creador de la solicitud puede verla
      * - Encargados y admins pueden ver cualquier solicitud
@@ -103,7 +103,7 @@ class ExtensionTimeRequestController extends Controller
             return response()->json([
                 'data' => new ExtensionTimeRequestResource($extensionRequest)
             ], 200);
-            
+
         } catch (\Exception $exception) {
             Log::error('Error al obtener solicitud', [
                 'solicitud_id' => $id,
@@ -115,7 +115,7 @@ class ExtensionTimeRequestController extends Controller
 
     /**
      * Crea una nueva solicitud de ampliación para el profesor autenticado.
-     * 
+     *
      * AUTORIZACIÓN:
      * - Solo profesores y encargados (que también pueden ser profesores)
      * - El service valida que la evidencia esté asignada al usuario
@@ -128,9 +128,9 @@ class ExtensionTimeRequestController extends Controller
         try {
             // PL-10: AUTORIZACIÓN con Policy
             $this->authorize('create', ExtensionRequest::class);
-            
+
             $userId = Auth::id();
-            
+
             if (!$userId) {
                 Log::warning('Intento de crear solicitud sin autenticación');
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
@@ -172,7 +172,7 @@ class ExtensionTimeRequestController extends Controller
 
     /**
      * Actualiza una solicitud de ampliación pendiente del profesor.
-     * 
+     *
      * AUTORIZACIÓN:
      * - Solo el creador puede editar su solicitud (o admin)
      * - Solo solicitudes en estado PENDIENTE
@@ -185,20 +185,20 @@ class ExtensionTimeRequestController extends Controller
     {
         try {
             $extensionRequest = ExtensionRequest::find((int)$id);
-            
+
             if (!$extensionRequest) {
                 return response()->json(['message' => 'Solicitud no encontrada.'], 404);
             }
 
             // PL-10: AUTORIZACIÓN con Policy
             $this->authorize('update', $extensionRequest);
-            
+
             $userId = Auth::id();
-            
+
             if ($extensionRequest->estado !== 'Pendiente' && $extensionRequest->estado !== 'pendiente') {
                 return response()->json(['message' => 'Solo se pueden actualizar solicitudes pendientes'], 422);
             }
-            
+
             $extensionRequest->update($request->validated());
             $extensionRequest->refresh();
 
@@ -242,7 +242,7 @@ class ExtensionTimeRequestController extends Controller
 
     /**
      * Elimina una solicitud de ampliación pendiente del profesor.
-     * 
+     *
      * AUTORIZACIÓN:
      * - Solo el creador puede eliminar su solicitud (o admin)
      * - Solo solicitudes en estado PENDIENTE
@@ -254,20 +254,20 @@ class ExtensionTimeRequestController extends Controller
     {
         try {
             $extensionRequest = ExtensionRequest::find((int)$id);
-            
+
             if (!$extensionRequest) {
                 return response()->json(['message' => 'Solicitud no encontrada.'], 404);
             }
 
             // PL-10: AUTORIZACIÓN con Policy
             $this->authorize('delete', $extensionRequest);
-            
+
             $userId = Auth::id();
-            
+
             if ($extensionRequest->estado !== 'Pendiente' && $extensionRequest->estado !== 'pendiente') {
                 return response()->json(['message' => 'Solo se pueden eliminar solicitudes pendientes'], 422);
             }
-            
+
             $extensionRequest->delete();
 
             // Registro en bitácora
@@ -309,10 +309,10 @@ class ExtensionTimeRequestController extends Controller
 
     /**
      * Obtiene evidencias asignadas al profesor que están próximas a vencer.
-     * 
+     *
      * AUTORIZACIÓN:
      * - Usuario autenticado consulta sus propias evidencias
-     * 
+     *
      * USO: Pantalla de solicitud de ampliación para sugerir evidencias urgentes
      *
      * @return JsonResponse
@@ -322,11 +322,11 @@ class ExtensionTimeRequestController extends Controller
         try {
             // PL-10: Usuario autenticado
             $userId = Auth::id();
-            
+
             if (!$userId) {
                 return response()->json(['message' => 'Usuario no autenticado'], 401);
             }
-            
+
             $evidences = $this->service->getUpcomingEvidences($userId);
 
             return response()->json([
@@ -336,7 +336,7 @@ class ExtensionTimeRequestController extends Controller
                     ? 'No tiene evidencias próximas a vencer en los próximos 7 días.'
                     : 'Evidencias próximas a vencer o ya vencidas.'
             ], 200);
-            
+
         } catch (\Exception $exception) {
             Log::error('Error al obtener evidencias próximas a vencer', [
                 'usuario_id' => Auth::id(),
