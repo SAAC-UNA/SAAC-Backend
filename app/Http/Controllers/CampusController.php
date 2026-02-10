@@ -136,7 +136,18 @@ class CampusController extends Controller
     /**
      * PATCH /api/campuses/{id}/active
      * Body JSON: { "active": true }
+     * 
+     * COMENTADO: Este método intentaba desactivar en cascada carreras a través de facultades,
+     * pero:
+     * 1. No existe la tabla FACULTAD ni el modelo Faculty en la aplicación
+     * 2. Las carreras tienen relación N:M con sedes (CARRERA_SEDE)
+     * 3. Una carrera puede estar en múltiples sedes, por lo que NO debe desactivarse
+     *    en cascada al desactivar una sede específica
+     * 
+     * Si se necesita desactivar la relación específica sede-carrera, se debe trabajar
+     * con la tabla pivote CARRERA_SEDE, no con la carrera directamente.
      */
+    /*
     public function setActive(Request $request, $id)
     {
         $campus = Campus::find($id);
@@ -185,4 +196,5 @@ class CampusController extends Controller
             'data'    => $campus
         ], 200);
     }
+    */
 }

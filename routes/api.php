@@ -57,7 +57,9 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     
     // Campuses
     Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
+    // COMENTADO: Método setActive no implementado correctamente (ver CampusController)
+    // Las carreras tienen relación N:M con sedes, no deben desactivarse en cascada
+    // Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
     
     // Carreras
     Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
