@@ -99,7 +99,7 @@ class UniversityController extends Controller
          */
         public function setActive(Request $request, $id)
         {
-            $university = University::find($id);
+            $university = University::with(['campuses'])->find($id);
             if (!$university) {
                 return response()->json(['message' => 'Universidad no encontrada.'], 404);
             }
@@ -117,33 +117,9 @@ class UniversityController extends Controller
 
             // Aplicar cambio en cascada a todos los elementos hijos
             // Procesar campus hijos
-            foreach ($university->campuses as $campus) {
+            foreach ($university->campuses ?? [] as $campus) {
                 $campus->activo = $newActiveState;
                 $campus->save();
-
-                // Aplicar a facultades del campus
-                foreach ($campus->faculties as $faculty) {
-                    $faculty->activo = $newActiveState;
-                    $faculty->save();
-
-                    // Aplicar a carreras de la facultad
-                    foreach ($faculty->careers as $career) {
-                        $career->activo = $newActiveState;
-                        $career->save();
-                    }
-                }
-            }
-
-            // Procesar facultades directas de la universidad (que no tienen campus)
-            foreach ($university->faculties as $faculty) {
-                $faculty->activo = $newActiveState;
-                $faculty->save();
-
-                // Aplicar a carreras de la facultad
-                foreach ($faculty->careers as $career) {
-                    $career->activo = $newActiveState;
-                    $career->save();
-                }
             }
 
             $cascadeMessage = $newActiveState 
@@ -157,7 +133,7 @@ class UniversityController extends Controller
             'editar',
             "Se actualizó el estado de la universidad \"{$university->nombre}\" (ID: {$university->universidad_id}). " .
             "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}. " .
-            "El cambio se aplicó también a sus campus, facultades y carreras asociadas.",
+            "El cambio se aplicó también a sus campus asociados.",
             'Universidad'
         );
 

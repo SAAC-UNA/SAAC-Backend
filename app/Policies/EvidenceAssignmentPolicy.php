@@ -13,8 +13,8 @@ class EvidenceAssignmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Solo los encargados de acreditación pueden ver todas las asignaciones
-        return $user->hasRole('encargado_acreditacion') || $user->hasRole('admin');
+        // Cualquier usuario autenticado puede ver asignaciones (información de consulta)
+        return true;
     }
 
     /**
@@ -22,10 +22,8 @@ class EvidenceAssignmentPolicy
      */
     public function view(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        // Los usuarios pueden ver sus propias asignaciones o los encargados pueden ver todas
-        return $evidenceAssignment->usuario_id === $user->usuario_id || 
-               $user->hasRole('encargado_acreditacion') || 
-               $user->hasRole('admin');
+        // Cualquier usuario autenticado puede ver una asignación (solo lectura)
+        return true;
     }
 
     /**

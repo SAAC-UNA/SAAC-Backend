@@ -1,5 +1,13 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\App;
+use Illuminate\Http\Request;
+
+// Models
+use App\Models\Process;
+use App\Models\AccreditationCycle;
+
+// Controllers
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UniversityController;
 use App\Http\Controllers\CampusController;
@@ -23,13 +31,9 @@ use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 
-//solo para pruebas
-use Illuminate\Support\Facades\App;
+// Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
 use App\Http\Controllers\DevCommentController;
-use Illuminate\Http\Request;
-use App\Models\Process;
-use App\Models\AccreditationCycle;
 
 // ============================================
 // Rutas de Autenticación
@@ -143,11 +147,9 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
         Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
     });
 
-Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
-Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
-Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
-
-// Rutas para aprobación de criterios por bloques (HU-010)
+// ============================================
+// Aprobación de Criterios por Bloques (HU-010)
+// ============================================
 Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
     Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
     Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
@@ -155,30 +157,6 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
     Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
 });
 
-// Rutas para archivos (HU-008 - Subida de Evidencias)
-Route::prefix('archivos')->group(function () {
-    // TEMPORAL: Obtener datos de prueba para formulario
-    Route::get('/test-data', [FileController::class, 'getTestData']);
-
-    // Listar archivos por evidencia o proceso
-    Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
-
-    // Subir nuevo archivo (máximo 10 uploads por minuto)
-    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
-
-    // Ver metadatos de un archivo
-    Route::get('/{archivo}', [FileController::class, 'show']);
-
-    // Eliminar archivo
-    Route::delete('/{archivo}', [FileController::class, 'destroy']);
-
-    // Hacer público un archivo (generar enlace público)
-    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
-
-    // Revocar acceso público
-    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
-
-    // Operación masiva: hacer públicos múltiples archivos
 // ============================================
 // Archivos (HU-008 - Subida de Evidencias)
 // ============================================
@@ -196,16 +174,6 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->grou
 
 // Acceso público mediante token (SIN autenticación - para SINAES/informes)
 Route::get('/p/{token}', [FileController::class, 'publicAccess']);
-
-// ============================================
-// Aprobación de Criterios por Bloques (HU-010)
-// ============================================
-Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
-    Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
-    Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
-    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
-    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
-});
 
 // ============================================
 // Rutas de Gestión de Usuarios (HU-002)
@@ -237,6 +205,29 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::get('admin/permissions', [PermissionController::class, 'index']);
 });
 
+// Roles (solo Superusuario y Administrador)
+Route::middleware(['auth:sanctum', 'refresh.session', 'role:Superusuario|Administrador'])->prefix('roles')->group(function () {
+    Route::get('/', [RoleController::class, 'listRoles']);
+    Route::post('/', [RoleController::class, 'createRole']);
+    Route::get('/permisos', [RoleController::class, 'listPermissions']);
+    Route::get('/{id}', [RoleController::class, 'showRole']);
+    Route::put('/{id}', [RoleController::class, 'updateRole']);
+    Route::delete('/{id}', [RoleController::class, 'deleteRole']);
+});
+
+// ============================================
+// Compromisos de Mejora
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session', 'role:Superusuario|Administrador|Encargado de Acreditación'])->prefix('compromisos-de-mejora')->group(function () {
+    Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
+    Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
+    Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
+    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment']);
+    Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
+    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment']);
+    Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive']);
+});
+
 // ============================================
 // Notificaciones (HU-018)
 // ============================================
@@ -259,13 +250,9 @@ Route::prefix('bitacora')->middleware(['auth:sanctum', 'refresh.session', 'role:
     Route::get('/{auditLog}', [AuditLogController::class, 'show']);
 });
 
-// Ejemplos de uso cuando actives autenticación en Sprint 3:
-// Route::middleware('can:evidencias.view')->get('/evidencias', [EvidenceController::class, 'index']);
-// Route::middleware('can:reportes.generate')->get('/reportes/generar', [ReportController::class, 'generate']);
-
-
-
-// Solo para pruebas
+// ============================================
+// Rutas de Desarrollo (solo para ambiente local)
+// ============================================
 if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
         Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
@@ -306,7 +293,9 @@ if (App::environment('local')) {
     });
 }
 
-// Ping raíz (para confirmar que el archivo se carga)
+// ============================================
+// Rutas de Prueba
+// ============================================
 Route::get('/ping', function () {
     return response()->json([
         'ok'    => true,
@@ -315,89 +304,3 @@ Route::get('/ping', function () {
         'mark'  => 'X1'
     ]);
 });
-
-
-// Ruta de prueba sin controller
-
-//Route::get('/estructura/ping2', fn() => response()->json(['ok' => true, 'scope' => 'ping2']));
-
-Route::middleware([
-    'auth:sanctum',
-    'refresh.session',
-    'role:Superusuario|Administrador',
-])->prefix('roles')->group(function () {
-    Route::get('/', [RoleController::class, 'listRoles'])->name('roles.index');
-    Route::post('/', [RoleController::class, 'createRole'])->name('roles.create');
-    Route::get('/permisos', [RoleController::class, 'listPermissions'])->name('roles.permissions');
-    Route::get('/{id}', [RoleController::class, 'showRole'])->name('roles.show');
-    Route::put('/{id}', [RoleController::class, 'updateRole'])->name('roles.update');
-    Route::delete('/{id}', [RoleController::class, 'deleteRole'])->name('roles.delete');
-
-
-});
-
-Route::middleware([
-    'auth:sanctum',
-    'refresh.session',
-    'role:Superusuario|Administrador|Encargado de Acreditación',
-])->group(function () {
-    Route::prefix('compromisos-de-mejora')->group(function () {
-        Route::get('/', [ImprovementCommitmentController::class, 'listCommitments'])->name('commitments.index');
-        Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser'])->name('commitments.by-user');
-        Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence'])->name('commitments.by-evidence');
-        Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])->name('commitments.create');
-        Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment'])->name('commitments.show');
-        Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])->name('commitments.update');
-        Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])->name('commitments.set-active');
-    });
-
-
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

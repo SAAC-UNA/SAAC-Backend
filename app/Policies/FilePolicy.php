@@ -89,22 +89,23 @@ class FilePolicy
 
     /**
      * Determina si el usuario puede ver los metadatos de un archivo.
-     * Mismos criterios que download.
+     * Cualquier usuario autenticado puede ver metadatos (solo lectura).
      */
     public function view(User $user, File $archivo): bool
     {
-        return $this->download($user, $archivo);
+        // Permitir ver metadatos a cualquier usuario autenticado
+        return true;
     }
 
     /**
      * Determina si el usuario puede listar archivos de una evidencia.
-     * Solo si tiene asignación a esa evidencia.
+     * Cualquier usuario autenticado puede listar (solo lectura).
      */
     public function viewAny(User $user, int $evidenciaId): bool
     {
-        return EvidenceAssignment::where('usuario_id', $user->usuario_id)
-            ->where('evidencia_id', $evidenciaId)
-            ->exists();
+        // Permitir listar archivos a cualquier usuario autenticado
+        // Es solo información de consulta, no modificación
+        return true;
     }
 
     /**

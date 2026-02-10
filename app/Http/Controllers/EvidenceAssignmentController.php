@@ -179,6 +179,7 @@ class EvidenceAssignmentController extends Controller
     /**
      * POST /api/evidencias-asignaciones/validar-duplicados
      * Validar si existen asignaciones duplicadas antes de crearlas.
+     * Esta ruta es accesible para cualquier usuario autenticado.
      */
     public function validateDuplicates(ValidateDuplicateAssignmentsRequest $request): JsonResponse
     {

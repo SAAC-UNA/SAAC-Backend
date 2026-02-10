@@ -35,14 +35,4 @@ class University extends Model
     {
         return $this->hasMany(Campus::class, 'universidad_id', 'universidad_id');
     }
-
-    /**
-     * Relación: Una universidad tiene muchas facultades.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function faculties()
-    {
-        return $this->hasMany(Faculty::class, 'universidad_id', 'universidad_id');
-    }
 }
