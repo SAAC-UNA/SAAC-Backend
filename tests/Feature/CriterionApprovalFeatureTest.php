@@ -30,7 +30,7 @@ it('allows superusuario to list all approvals', function () {
     Sanctum::actingAs($user);
 
     // Crear datos de prueba
-$approval = featureCreateApprovalWithData();
+    $approval = featureCreateApprovalWithData();
 
     $response = $this->getJson('/api/aprobaciones-criterios');
 
@@ -58,21 +58,21 @@ it('allows encargado to approve criterion', function () {
             'success' => false,
             'message' => 'No se puede aprobar el criterio. Faltan 0 evidencia(s) por completar.'
         ]);
-        // Prueba alternativa: aprobar ignorando validación (crear aprobación directamente)
-        $this->assertTrue(true); // Skip por ahora
-    } else {
-        $response->assertStatus(201)
-                 ->assertJson([
-                     'success' => true,
-                     'message' => 'Criterio aprobado exitosamente.'
-                 ]);
-
-        $this->assertDatabaseHas('APROBACION_CRITERIO', [
-            'criterio_id' => $criterion->criterio_id,
-            'proceso_id' => $process->proceso_id,
-            'estado' => 'aprobado'
-        ]);
+        $this->assertTrue(true);
+        return;
     }
+
+    $response->assertStatus(201)
+             ->assertJson([
+                 'success' => true,
+                 'message' => 'Criterio aprobado exitosamente.'
+             ]);
+
+    $this->assertDatabaseHas('APROBACION_CRITERIO', [
+        'criterio_id' => $criterion->criterio_id,
+        'proceso_id' => $process->proceso_id,
+        'estado' => 'aprobado'
+    ]);
 });
 
 it('allows encargado to reject criterion', function () {
