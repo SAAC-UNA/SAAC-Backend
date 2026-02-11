@@ -57,11 +57,24 @@ class CriterionApprovalService
         return CriterionApproval::with(['criterion', 'process', 'user', 'evidenceApprovals.evidence'])->find($approvalId);
     }
 
-  
+    /**
+     * Obtener una aprobación específica por criterio y proceso.
+     *
+     * @param int $criterioId Identificador del criterio.
+     * @param int $procesoId Identificador del proceso.
+     * @return CriterionApproval|null Retorna la aprobación o null si no existe.
+     */
+    public function getApprovalByCriterionAndProcess(int $criterioId, int $procesoId): ?CriterionApproval
+    {
+        return CriterionApproval::where('criterio_id', $criterioId)
+            ->where('proceso_id', $procesoId)
+            ->with(['criterion', 'process', 'user', 'evidenceApprovals.evidence'])
+            ->first();
+    }
 
     /**
      * Aprobar un criterio (bloque de evidencias).
-     * Valida que todas las evidencias estén completas antes de aprobar.
+     * Permite la aprobación independientemente del estado de completitud de las evidencias.
      * Se usa transacción para garantizar atomicidad.
      * 
      * @param int $criterioId Identificador del criterio a aprobar.
@@ -69,7 +82,7 @@ class CriterionApprovalService
      * @param int $usuarioId Identificador del usuario que aprueba.
      * @param string|null $comentario Comentario opcional sobre la aprobación.
      * @return CriterionApproval Aprobación recién creada.
-     * @throws Exception Si ya fue aprobado o faltan evidencias.
+     * @throws Exception Si ocurre un error durante la transacción.
      */
     public function approveCriterion(int $criterioId, int $procesoId, int $usuarioId, ?string $comentario = null): CriterionApproval
     {
@@ -157,61 +170,6 @@ class CriterionApprovalService
 
             return $approval->load(['criterion', 'process', 'user', 'evidenceApprovals.evidence']);
         });
-    }
-
-    /**
-     * Verificar que TODAS las evidencias de un criterio estén completas.
-     * 
-     * Una evidencia se considera completa cuando:
-     * - Tiene al menos UNA asignación en el proceso especificado
-     * - Y esa asignación tiene estado = 'completado'
-     * 
-     * @param int $criterioId Identificador del criterio.
-     * @param int $procesoId Identificador del proceso.
-     * @return array ['is_complete' => bool, 'total' => int, 'completed' => int, 'missing_evidences' => array]
-     */
-    public function verifyAllEvidencesAreComplete(int $criterioId, int $procesoId): array
-    {
-        $criterion = Criterion::with('evidences')->find($criterioId);
-        
-        if (!$criterion) {
-            return [
-                'is_complete' => false,
-                'total' => 0,
-                'completed' => 0,
-                'missing_evidences' => []
-            ];
-        }
-
-        $evidences = $criterion->evidences()->where('activo', true)->get();
-        $total = $evidences->count();
-        $completed = 0;
-        $missingEvidences = [];
-
-        foreach ($evidences as $evidence) {
-            // Verificar si la evidencia tiene al menos una asignación completada en el proceso
-            $hasCompletedAssignment = $evidence->assignments()
-                ->where('proceso_id', $procesoId)
-                ->where('estado', 'completado')
-                ->exists();
-
-            if ($hasCompletedAssignment) {
-                $completed++;
-            } else {
-                $missingEvidences[] = [
-                    'evidencia_id' => $evidence->evidencia_id,
-                    'nomenclatura' => $evidence->nomenclatura,
-                    'descripcion' => $evidence->descripcion
-                ];
-            }
-        }
-
-        return [
-            'is_complete' => $completed === $total && $total > 0,
-            'total' => $total,
-            'completed' => $completed,
-            'missing_evidences' => $missingEvidences
-        ];
     }
 
     /**

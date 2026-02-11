@@ -91,7 +91,7 @@ class CriterionApprovalController extends Controller
 
     /**
      * Aprobar un criterio (bloque de evidencias).
-     * Valida que todas las evidencias estén completas antes de aprobar.
+     * Permite la aprobación independientemente del estado de completitud de las evidencias.
      *
      * @param CriterionApprovalRequest $request Datos validados de la aprobación.
      * @param int $criterioId Identificador del criterio a aprobar.
@@ -110,28 +110,12 @@ class CriterionApprovalController extends Controller
                 ], 404);
             }
 
-            // Verificar que todas las evidencias del criterio estén completas
-            $completenessCheck = $this->approvalService->verifyAllEvidencesAreComplete(
+            // Verificar si ya existe una aprobación para este criterio
+            $existingApproval = $this->approvalService->getApprovalByCriterionAndProcess(
                 $criterioId,
                 $request->proceso_id
             );
-            
-            if (!$completenessCheck['is_complete']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede aprobar el criterio. Faltan ' . 
-                        count($completenessCheck['missing_evidences']) . 
-                        ' evidencia(s) por completar.',
-                    'data' => [
-                        'total_evidencias' => $completenessCheck['total'],
-                        'evidencias_completadas' => $completenessCheck['completed'],
-                        'evidencias_faltantes' => $completenessCheck['missing_evidences']
-                    ]
-                ], 400);
-            }
 
-            // Verificar si ya existe una aprobación para este criterio
-            $existingApproval = $this->approvalService->getApproval($criterioId, $request->proceso_id);
             if ($existingApproval && $existingApproval->estado === 'aprobado') {
                 return response()->json([
                     'success' => false,
@@ -196,7 +180,11 @@ class CriterionApprovalController extends Controller
                 ], 404);
             }
          // Verificar si ya existe una aprobación para este criterio
-            $existingApproval = $this->approvalService->getApproval($criterioId, $request->proceso_id);
+            $existingApproval = $this->approvalService->getApprovalByCriterionAndProcess(
+                $criterioId,
+                $request->proceso_id
+            );
+
             if ($existingApproval && $existingApproval->estado === 'rechazado') {
                 return response()->json([
                     'success' => false,

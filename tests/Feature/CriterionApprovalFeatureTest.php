@@ -68,28 +68,18 @@ class CriterionApprovalFeatureTest extends TestCase
             'comentario' => 'Criterio aprobado correctamente'
         ]);
 
-        // Si hay validación de evidencias completas, debería fallar con 400
-        // Si no hay evidencias, debería aprobar exitosamente con 201
-        if ($response->status() === 400) {
-            $response->assertJson([
-                'success' => false,
-                'message' => 'No se puede aprobar el criterio. Faltan 0 evidencia(s) por completar.'
-            ]);
-            // Prueba alternativa: aprobar ignorando validación (crear aprobación directamente)
-            $this->assertTrue(true); // Skip por ahora
-        } else {
-            $response->assertStatus(201)
-                     ->assertJson([
-                         'success' => true,
-                         'message' => 'Criterio aprobado exitosamente.'
-                     ]);
+        // Ahora se permite aprobar aunque las evidencias no estén completas
+        $response->assertStatus(201)
+                 ->assertJson([
+                     'success' => true,
+                     'message' => 'Criterio aprobado exitosamente.'
+                 ]);
 
-            $this->assertDatabaseHas('APROBACION_CRITERIO', [
-                'criterio_id' => $criterion->criterio_id,
-                'proceso_id' => $process->proceso_id,
-                'estado' => 'aprobado'
-            ]);
-        }
+        $this->assertDatabaseHas('APROBACION_CRITERIO', [
+            'criterio_id' => $criterion->criterio_id,
+            'proceso_id' => $process->proceso_id,
+            'estado' => 'aprobado'
+        ]);
     }
 
     #[Test]
@@ -247,12 +237,10 @@ class CriterionApprovalFeatureTest extends TestCase
             'comentario' => 'Intento duplicado'
         ]);
 
-        // La validación de evidencias completas ocurre ANTES de la validación de duplicados
-        // Por lo tanto, el mensaje puede ser de evidencias faltantes o de duplicado
+        // Debe fallar porque ya está aprobado
         $response->assertStatus(400);
         $this->assertTrue(
-            str_contains($response->json('message'), 'ya está aprobado') ||
-            str_contains($response->json('message'), 'No se puede aprobar')
+            str_contains($response->json('message'), 'ya está aprobado')
         );
     }
 
