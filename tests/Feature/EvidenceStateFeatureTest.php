@@ -1,22 +1,16 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\EvidenceState;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-class EvidenceStateFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->baseEndpoint = '/api/estructura/estados-evidencia';
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user, ['web'], 'sanctum');
+});
 
-    // AJUSTA si tu ruta difiere (p. ej. '/api/estructura/estados-evidencia')
-    private string $baseEndpoint = '/api/estructura/estados-evidencia';
-
-    #[Test]
-    public function index_devuelve_lista_de_estados_de_evidencia()
-    {
+it('index devuelve lista de estados de evidencia', function () {
         EvidenceState::factory()->count(3)->create();
 
         $response = $this->getJson($this->baseEndpoint)->assertOk();
@@ -27,11 +21,9 @@ class EvidenceStateFeatureTest extends TestCase
 
         $this->assertIsArray($items);
         $this->assertCount(3, $items);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_un_estado_de_evidencia_existente()
-    {
+it('show devuelve un estado de evidencia existente', function () {
         $evidenceState = EvidenceState::factory()->create([
             'nombre' => 'Estado 2',
         ]);
@@ -45,17 +37,13 @@ class EvidenceStateFeatureTest extends TestCase
         $returnedId = $data['id'] ?? $data['estado_evidencia_id'] ?? null;
         $this->assertSame($evidenceState->getKey(), $returnedId);
         $this->assertSame('Estado 2', $data['nombre']);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson("{$this->baseEndpoint}/999999")->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_un_estado_de_evidencia()
-    {
+it('store crea un estado de evidencia', function () {
         $requestPayload = ['nombre' => 'Nuevo Estado'];
 
         $response = $this->postJson($this->baseEndpoint, $requestPayload)->assertCreated();
@@ -66,11 +54,9 @@ class EvidenceStateFeatureTest extends TestCase
 
         // Confirma en BD (ajusta el nombre real de la tabla si difiere)
         $this->assertDatabaseHas('ESTADO_EVIDENCIA', ['nombre' => 'Nuevo Estado']);
-    }
+});
 
-    #[Test]
-    public function update_actualiza_un_estado_de_evidencia()
-    {
+it('update actualiza un estado de evidencia', function () {
         $evidenceState = EvidenceState::factory()->create(['nombre' => 'Original']);
 
         $requestPayload = ['nombre' => 'Actualizado'];
@@ -84,11 +70,9 @@ class EvidenceStateFeatureTest extends TestCase
             'estado_evidencia_id' => $evidenceState->getKey(),
             'nombre'              => 'Actualizado',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_un_estado_de_evidencia()
-    {
+it('destroy elimina un estado de evidencia', function () {
         $evidenceState = EvidenceState::factory()->create();
 
         $this->deleteJson("{$this->baseEndpoint}/{$evidenceState->getKey()}")->assertNoContent();
@@ -96,15 +80,10 @@ class EvidenceStateFeatureTest extends TestCase
         $this->assertDatabaseMissing('ESTADO_EVIDENCIA', [
             'estado_evidencia_id' => $evidenceState->getKey(),
         ]);
-    }
+});
 
-    // -------- Negativos (422) recomendados --------
-
-    #[Test]
-    public function store_falla_sin_nombre()
-    {
+it('store falla sin nombre', function () {
          $this->postJson($this->baseEndpoint, [])
-        ->assertUnprocessable()                // equivale a status 422
+        ->assertUnprocessable()
         ->assertJsonValidationErrors(['nombre']);
-    }
-}
+});

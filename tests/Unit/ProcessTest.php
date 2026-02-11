@@ -1,141 +1,130 @@
 <?php
 
-namespace Tests\Unit;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Process;
+use App\Models\Career;
+use App\Models\Campus;
+use App\Models\CareerCampus;
+use App\Models\AccreditationCycle;
+use App\Models\Autoevaluation;
+use App\Models\ImprovementCommitment;
 
-class ProcessTest extends TestCase
-{
-    use RefreshDatabase;
+it('belongs to accreditation cycle', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $cycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create(['ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id]);
+    
+    expect($process->accreditationCycle->ciclo_acreditacion_id)->toBe($cycle->ciclo_acreditacion_id);
+});
 
-    /** @test */
-    public function a_process_belongs_to_accreditation_cycle()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $cycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create(['ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id]);
-        $this->assertEquals($cycle->ciclo_acreditacion_id, $process->accreditationCycle->ciclo_acreditacion_id);
-    }
+it('has one autoevaluation', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $cycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create([
+        'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+    ]);
+    $autoevaluation = Autoevaluation::factory()->create(['proceso_id' => $process->proceso_id]);
+    
+    expect($process->autoevaluation->autoevaluacion_id)->toBe($autoevaluation->autoevaluacion_id);
+});
 
-    /** @test */
-    public function a_process_has_one_autoevaluation()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $cycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create([
-            'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
-        ]);
-        $autoevaluation = \App\Models\Autoevaluation::factory()->create(['proceso_id' => $process->proceso_id]);
-        $this->assertEquals($autoevaluation->autoevaluacion_id, $process->autoevaluation->autoevaluacion_id);
-    }
+it('has one improvement commitment', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $cycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create([
+        'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+    ]);
+    $commitment = ImprovementCommitment::factory()->create(['proceso_id' => $process->proceso_id]);
+    
+    expect($process->improvementCommitment->compromiso_mejora_id)->toBe($commitment->compromiso_mejora_id);
+});
 
-    /** @test */
-    public function a_process_has_one_improvement_commitment()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $cycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create([
-            'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
-        ]);
-        $commitment = \App\Models\ImprovementCommitment::factory()->create(['proceso_id' => $process->proceso_id]);
-        $this->assertEquals($commitment->compromiso_mejora_id, $process->improvementCommitment->compromiso_mejora_id);
-    }
+it('creates a process', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $accreditationCycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create([
+        'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
+    ]);
+    
+    $this->assertDatabaseHas('PROCESO', [
+        'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
+        'proceso_id' => $process->proceso_id,
+    ]);
+});
 
-    /** @test */
-    public function it_creates_a_process()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $accreditationCycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create([
-            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
-        ]);
-        $this->assertDatabaseHas('PROCESO', [
-            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
-            'proceso_id' => $process->proceso_id,
-        ]);
-    }
+it('requires ciclo_acreditacion_id field', function () {
+    Process::factory()->create(['ciclo_acreditacion_id' => null]);
+})->throws(\Illuminate\Database\QueryException::class);
 
-    /** @test */
-    public function it_requires_ciclo_acreditacion_id_field()
-    {
-    $this->expectException(\Illuminate\Database\QueryException::class);
-    \App\Models\Process::factory()->create(['ciclo_acreditacion_id' => null]);
-    }
+it('updates a process', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $accreditationCycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create([
+        'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
+    ]);
+    $newCareer = Career::factory()->create();
+    $newCampus = Campus::factory()->create();
+    $newCareerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $newCareer->carrera_id,
+        'sede_id' => $newCampus->sede_id,
+    ]);
+    $newCycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $newCareerCampus->carrera_sede_id,
+    ]);
+    $process->update(['ciclo_acreditacion_id' => $newCycle->ciclo_acreditacion_id]);
+    
+    $this->assertDatabaseHas('PROCESO', ['ciclo_acreditacion_id' => $newCycle->ciclo_acreditacion_id]);
+});
 
-    /** @test */
-    public function it_updates_a_process()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $accreditationCycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create([
-            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
-        ]);
-        $newCareer = \App\Models\Career::factory()->create();
-        $newCampus = \App\Models\Campus::factory()->create();
-        $newCareerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $newCareer->carrera_id,
-            'sede_id' => $newCampus->sede_id,
-        ]);
-        $newCycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $newCareerCampus->carrera_sede_id,
-        ]);
-        $process->update(['ciclo_acreditacion_id' => $newCycle->ciclo_acreditacion_id]);
-        $this->assertDatabaseHas('PROCESO', ['ciclo_acreditacion_id' => $newCycle->ciclo_acreditacion_id]);
-    }
-
-    /** @test */
-    public function it_deletes_a_process()
-    {
-        $career = \App\Models\Career::factory()->create();
-        $campus = \App\Models\Campus::factory()->create();
-        $careerCampus = \App\Models\CareerCampus::factory()->create([
-            'carrera_id' => $career->carrera_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $accreditationCycle = \App\Models\AccreditationCycle::factory()->create([
-            'carrera_sede_id' => $careerCampus->carrera_sede_id,
-        ]);
-        $process = \App\Models\Process::factory()->create([
-            'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
-        ]);
-        $process->delete();
-        $this->assertDatabaseMissing('PROCESO', ['proceso_id' => $process->proceso_id]);
-    }
-}
+it('deletes a process', function () {
+    $career = Career::factory()->create();
+    $campus = Campus::factory()->create();
+    $careerCampus = CareerCampus::factory()->create([
+        'carrera_id' => $career->carrera_id,
+        'sede_id' => $campus->sede_id,
+    ]);
+    $accreditationCycle = AccreditationCycle::factory()->create([
+        'carrera_sede_id' => $careerCampus->carrera_sede_id,
+    ]);
+    $process = Process::factory()->create([
+        'ciclo_acreditacion_id' => $accreditationCycle->ciclo_acreditacion_id,
+    ]);
+    $processId = $process->proceso_id;
+    $process->delete();
+    
+    $this->assertDatabaseMissing('PROCESO', ['proceso_id' => $processId]);
+});

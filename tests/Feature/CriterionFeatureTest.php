@@ -1,25 +1,18 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Criterion;
 use App\Models\Component;
 use App\Models\Dimension;
-use App\Models\Comment; // o: use App\Models\Comentario as Comment;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-class CriterionFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->baseEndpoint = '/api/estructura/criterios';
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user);
+});
 
-    // AJUSTA si tu ruta difiere
-    private string $baseEndpoint = '/api/estructura/criterios';
-
-    #[Test]
-    public function index_devuelve_lista_de_criterios()
-    {
+it('index devuelve lista de criterios', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -34,11 +27,9 @@ class CriterionFeatureTest extends TestCase
              ->assertOk()
              // tu API devuelve { data: [...] }
              ->assertJsonCount(3, 'data');
-    }
+});
 
-    #[Test]
-    public function show_devuelve_un_criterio_existente()
-    {
+it('show devuelve un criterio existente', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -53,46 +44,36 @@ class CriterionFeatureTest extends TestCase
              // tu API envuelve en data y usa 'id' como PK en el JSON
              ->assertJsonPath('data.id', $criterion->getKey())
              ->assertJsonPath('data.descripcion', 'Criterio 2');
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson("{$this->baseEndpoint}/999999")->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_un_criterio()
-    {
+it('store crea un criterio', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
         ]);
-        $comment = Comment::factory()->create(); // si 'comentario_id' es requerido
 
         $requestPayload = [
-            'componente_id' => $component->getKey(), // FK requerida
+            'componente_id' => $component->getKey(),
             'descripcion'   => 'Nuevo Criterio',
-            'nomenclatura'  => 'CRIT-01',            // requerido por tu Request
-            'comentario_id' => $comment->getKey(),   // si tu schema lo exige
+            'nomenclatura'  => 'CRIT-01',
         ];
 
         $this->postJson($this->baseEndpoint, $requestPayload)
              ->assertCreated()
              ->assertJsonPath('data.descripcion', 'Nuevo Criterio');
 
-        // Ajusta el nombre de tabla si difiere
         $this->assertDatabaseHas('CRITERIO', [
             'componente_id' => $component->getKey(),
             'descripcion'   => 'Nuevo Criterio',
             'nomenclatura'  => 'CRIT-01',
-            'comentario_id' => $comment->getKey(),
         ]);
-    }
+});
 
-    #[Test]
-    public function update_actualiza_un_criterio()
-    {
+it('update actualiza un criterio', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -105,10 +86,7 @@ class CriterionFeatureTest extends TestCase
         $requestPayload = [
             'componente_id' => $criterion->componente_id,
             'descripcion'   => 'Actualizado',
-            // si tu Request exige 'nomenclatura' y/o 'comentario_id' en update,
-            // incluye aquí los actuales:
-            'nomenclatura'  => $criterion->nomenclatura ?? 'CRIT-XX',
-            'comentario_id' => $criterion->comentario_id ?? Comment::factory()->create()->getKey(),
+            'nomenclatura'  => $criterion->nomenclatura,
         ];
 
         $this->putJson("{$this->baseEndpoint}/{$criterion->getKey()}", $requestPayload)
@@ -119,11 +97,9 @@ class CriterionFeatureTest extends TestCase
             'criterio_id' => $criterion->getKey(),
             'descripcion' => 'Actualizado',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_un_criterio()
-    {
+it('destroy elimina un criterio', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -138,24 +114,18 @@ class CriterionFeatureTest extends TestCase
         $this->assertDatabaseMissing('CRITERIO', [
             'criterio_id' => $criterion->getKey(),
         ]);
-    }
+});
 
-    // -------- Negativos (422) ya los tenés, los dejo tal cual --------
-
-    #[Test]
-    public function store_falla_sin_campos_obligatorios()
-    {
+it('store falla sin campos obligatorios', function () {
         $this->postJson($this->baseEndpoint, [])
              ->assertStatus(422)
              ->assertJsonStructure([
                  'message',
                  'errors' => ['descripcion', 'componente_id'],
              ]);
-    }
+});
 
-    #[Test]
-    public function store_falla_con_componente_inexistente()
-    {
+it('store falla con componente inexistente', function () {
         $requestPayload = [
             'componente_id' => 999999,
             'descripcion'   => 'Desc inválida',
@@ -167,5 +137,4 @@ class CriterionFeatureTest extends TestCase
                  'message',
                  'errors' => ['componente_id'],
              ]);
-    }
-}
+});

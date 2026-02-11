@@ -1,26 +1,20 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Evidence;
 use App\Models\Criterion;
 use App\Models\Component;
 use App\Models\Dimension;
 use App\Models\EvidenceState;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-class EvidenceFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->baseEndpoint = '/api/estructura/evidencias';
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user, ['web'], 'sanctum');
+});
 
-    // AJUSTA si tu ruta difiere
-    private string $baseEndpoint = '/api/estructura/evidencias';
-
-    #[Test]
-    public function index_devuelve_lista_de_evidencias()
-    {
+it('index devuelve lista de evidencias', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -37,11 +31,9 @@ class EvidenceFeatureTest extends TestCase
              ->assertOk()
              // si tu API envuelve en { data: [...] }
              ->assertJsonCount(3, 'data');
-    }
+});
 
-    #[Test]
-    public function show_devuelve_una_evidencia_existente()
-    {
+it('show devuelve una evidencia existente', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -68,10 +60,9 @@ class EvidenceFeatureTest extends TestCase
         $this->assertSame($evidence->getKey(), $returnedId, 'El ID en la respuesta no coincide.');
 
         $this->assertSame('Evidencia 2', $data['descripcion']);
-    }
-    #[Test]
-    public function store_crea_una_evidencia()
-    {
+});
+
+it('store crea una evidencia', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -98,11 +89,9 @@ class EvidenceFeatureTest extends TestCase
             'descripcion'         => 'Nueva Evidencia',
             'nomenclatura'        => 'EVID-01',
         ]);
-    }
+});
 
-    #[Test]
-    public function update_actualiza_una_evidencia()
-    {
+it('update actualiza una evidencia', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -134,11 +123,9 @@ class EvidenceFeatureTest extends TestCase
             'evidencia_id' => $evidence->getKey(),
             'descripcion'  => 'Actualizada',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_una_evidencia()
-    {
+it('destroy elimina una evidencia', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -157,24 +144,18 @@ class EvidenceFeatureTest extends TestCase
         $this->assertDatabaseMissing('EVIDENCIA', [
             'evidencia_id' => $evidence->getKey(),
         ]);
-    }
+});
 
-    // -------- Negativos (422) recomendados --------
-
-    #[Test]
-    public function store_falla_sin_campos_obligatorios()
-    {
+it('store falla sin campos obligatorios', function () {
         $this->postJson($this->baseEndpoint, [])
              ->assertStatus(422)
              ->assertJsonStructure([
                  'message',
                  'errors' => ['criterio_id', 'estado_evidencia_id', 'descripcion', 'nomenclatura'],
              ]);
-    }
+});
 
-    #[Test]
-    public function store_falla_con_fks_inexistentes()
-    {
+it('store falla con fks inexistentes', function () {
         $requestPayload = [
             'criterio_id'         => 999999,
             'estado_evidencia_id' => 888888,
@@ -188,5 +169,4 @@ class EvidenceFeatureTest extends TestCase
                  'message',
                  'errors' => ['criterio_id', 'estado_evidencia_id'],
              ]);
-    }
-}
+});

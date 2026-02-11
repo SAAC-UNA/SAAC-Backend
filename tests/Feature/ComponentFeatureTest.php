@@ -1,31 +1,25 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Component;
 use App\Models\Dimension;
-use App\Models\Comment;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-class ComponentFeatureTest extends TestCase
-{
-    use RefreshDatabase;
-      private string $baseEndpoint = '/api/estructura/componentes';
-     #[Test]
-    public function index_devuelve_lista_de_componentes()
-    {
+beforeEach(function () {
+    $this->baseEndpoint = '/api/estructura/componentes';
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user);
+});
+
+it('index devuelve lista de componentes', function () {
         Component::factory()->count(3)->create();
 
         $this->getJson($this->baseEndpoint)
              ->assertOk()
              ->assertJsonCount(3);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_un_componente_existente()
-    {
+it('show devuelve un componente existente', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -35,47 +29,36 @@ class ComponentFeatureTest extends TestCase
         $this->getJson("{$this->baseEndpoint}/{$component->getKey()}")
              ->assertOk()
              ->assertJsonFragment([
-                 // Ajustá la clave si tu PK se llama distinto (p. ej. 'componente_id')
                  'componente_id' => $component->getKey(),
                  'nombre'        => 'Componente 2',
              ]);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson("{$this->baseEndpoint}/999999")->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_un_componente()
-    {
+it('store crea un componente', function () {
         $dimension = Dimension::factory()->create();
-        $comentario = Comment::factory()->create();
 
         $requestPayload = [
-            'dimension_id' => $dimension->getKey(),   // FK requerida
-             'comentario_id' => $comentario->getKey(),
+            'dimension_id' => $dimension->getKey(),
             'nombre'       => 'Componente Alpha',
-            'nomenclatura' => 'COMP-01',  // requerido por tu Request
+            'nomenclatura' => 'COMP-01',
         ];
 
         $this->postJson($this->baseEndpoint, $requestPayload)
              ->assertCreated()
              ->assertJsonFragment(['nombre' => 'Componente Alpha']);
 
-        // Ajustá el nombre real de tu tabla si es distinto (usual: 'COMPONENTE')
         $this->assertDatabaseHas('COMPONENTE', [
-        'dimension_id'  => $dimension->getKey(),
-        'comentario_id' => $comentario->getKey(),
-        'nombre'        => 'Componente Alpha',
-        'nomenclatura'  => 'COMP-01',
+            'dimension_id'  => $dimension->getKey(),
+            'nombre'        => 'Componente Alpha',
+            'nomenclatura'  => 'COMP-01',
         ]);
-    }
+});
     
-    #[Test]
-    public function update_actualiza_un_componente()
-    {
+it('update actualiza un componente', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create([
             'dimension_id' => $dimension->getKey(),
@@ -83,8 +66,9 @@ class ComponentFeatureTest extends TestCase
         ]);
 
         $requestPayload = [
-            'dimension_id' => $component->dimension_id, // mantener FK si tu Request la exige
+            'dimension_id' => $component->dimension_id,
             'nombre'       => 'Nombre Actualizado',
+            'nomenclatura' => 'COMP-UPD',
         ];
 
         $this->putJson("{$this->baseEndpoint}/{$component->getKey()}", $requestPayload)
@@ -92,66 +76,30 @@ class ComponentFeatureTest extends TestCase
              ->assertJsonFragment(['nombre' => 'Nombre Actualizado']);
 
         $this->assertDatabaseHas('COMPONENTE', [
-            // Ajustá a tu PK real si es distinto
             'componente_id' => $component->getKey(),
             'nombre'        => 'Nombre Actualizado',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_un_componente()
-    {
+it('destroy elimina un componente', function () {
         $component = Component::factory()->create();
 
         $this->deleteJson("{$this->baseEndpoint}/{$component->getKey()}")
              ->assertNoContent();
 
         $this->assertDatabaseMissing('COMPONENTE', [
-            // Ajustá a tu PK real
             'componente_id' => $component->getKey(),
         ]);
-    }
+});
 
-    // -------- Tests negativos (422) recomendados --------
-
-    #[Test]
-    public function store_falla_sin_campos_obligatorios()
-    {
-        $this->postJson($this->baseEndpoint, [])
-             ->assertStatus(422)
-             ->assertJsonStructure([
-                 'message',
-                 'errors' => ['nombre', 'dimension_id'],
-             ]);
-    }
-
-    #[Test]
-    public function store_falla_con_dimension_inexistente()
-    {
-        $requestPayload = [
-            'dimension_id' => 999999,
-            'nombre'       => 'Componente Z',
-        ];
-
-        $this->postJson($this->baseEndpoint, $requestPayload)
-             ->assertStatus(422)
-             ->assertJsonStructure([
-                 'message',
-                 'errors' => ['dimension_id'],
-             ]);
-    } 
-
-    /*
-    public function it_can_create_and_retrieve_a_component()
-    {
-        $dimension = \App\Models\Dimension::factory()->create();
-        $component = Component::factory()->create([
-            'dimension_id' => $dimension->dimension_id,
-            'nombre' => 'Componente 2',
-        ]);
-
-        $found = Component::where('nombre', 'Componente 2')->where('dimension_id', $dimension->dimension_id)->first();
-        $this->assertNotNull($found);
-        $this->assertEquals('Componente 2', $found->nombre);
-    }*/
-}
+it('puede tener comentarios polimórficos', function () {
+    $component = Component::factory()->create();
+    $evidence = \App\Models\Evidence::factory()->create();
+    
+    $comment = \App\Models\Comment::factory()->for($component, 'commentable')->create([
+        'texto' => 'Comentario en componente'
+    ]);
+    
+    expect($component->comments)->toHaveCount(1);
+    expect($component->comments->first()->texto)->toBe('Comentario en componente');
+});

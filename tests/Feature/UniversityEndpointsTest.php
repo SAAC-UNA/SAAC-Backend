@@ -1,46 +1,41 @@
 <?php
 
-namespace Tests\Feature;
-
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\University;
-use PHPUnit\Framework\Attributes\Test;
+use App\Models\User;
+use App\Models\Role;
+use Laravel\Sanctum\Sanctum;
 
-class UniversityEndpointsTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    // Crear rol y usuario autenticado
+    $adminRole = Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
+    $this->user = User::factory()->create();
+    $this->user->assignRole($adminRole);
+    
+    Sanctum::actingAs($this->user);
+});
 
-    #[Test]
-    public function index_devuelve_lista_de_universidades()
-    {
+it('index devuelve lista de universidades', function () {
         University::factory()->count(3)->create();
 
         $this->getJson('/api/estructura/universidades')
              ->assertOk()
              ->assertJsonCount(3);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_una_universidad_existente()
-    {
+it('show devuelve una universidad existente', function () {
         $u = University::factory()->create();
 
         $this->getJson('/api/estructura/universidades/'.$u->getKey())
              ->assertOk()
              ->assertJsonFragment(['nombre' => $u->nombre]);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson('/api/estructura/universidades/999999')
              ->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_una_universidad()
-    {
+it('store crea una universidad', function () {
         $data = ['nombre' => 'Universidad Test'];
 
         $this->postJson('/api/estructura/universidades', $data)
@@ -48,11 +43,9 @@ class UniversityEndpointsTest extends TestCase
              ->assertJsonFragment(['nombre' => 'Universidad Test']);
 
         $this->assertDatabaseHas('UNIVERSIDAD', $data);
-    }
+});
 
-    #[Test]
-    public function update_actualiza_una_universidad()
-    {
+it('update actualiza una universidad', function () {
         $u = University::factory()->create(['nombre' => 'Original']);
 
         $this->putJson('/api/estructura/universidades/'.$u->getKey(), [
@@ -61,16 +54,13 @@ class UniversityEndpointsTest extends TestCase
           ->assertJsonFragment(['nombre' => 'Actualizado']);
 
         $this->assertDatabaseHas('UNIVERSIDAD', ['nombre' => 'Actualizado']);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_una_universidad()
-    {
+it('destroy elimina una universidad', function () {
         $u = University::factory()->create();
 
         $this->deleteJson('/api/estructura/universidades/'.$u->getKey())
              ->assertNoContent();
 
         $this->assertDatabaseMissing('UNIVERSIDAD', ['universidad_id' => $u->getKey()]);
-    }
-}
+});

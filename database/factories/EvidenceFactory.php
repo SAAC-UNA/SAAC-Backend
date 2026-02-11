@@ -16,7 +16,7 @@ class EvidenceFactory extends Factory
         return [
             'criterio_id'         => Criterion::factory(),
             'estado_evidencia_id' => EvidenceState::factory(),
-            'descripcion'         => $this->faker->sentence(6),
+            'descripcion'         => $this->faker->text(70),
             'nomenclatura'        => strtoupper($this->faker->bothify('EVID-##')),
         ];
     }

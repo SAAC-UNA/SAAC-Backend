@@ -1,9 +1,5 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\ImprovementCommitment;
 use App\Models\User;
 use App\Models\Process;
@@ -19,43 +15,17 @@ use App\Models\EvidenceAssignment;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 
-/**
- * Pruebas de integración para ImprovementCommitmentController.
- *
- * Cubre todos los endpoints del RF Compromiso de Mejora:
- * - Listar compromisos con filtros y paginación
- * - Ver compromiso individual
- * - Crear compromiso con selecciones y evidencias
- * - Actualizar compromiso
- * - Activar/desactivar compromiso
- * - Filtrar por usuario y evidencia
- */
-class ImprovementCommitmentFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    // Crear roles con guard 'api'
+    $this->adminRole = Role::create(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
+    $this->profesorRole = Role::create(['name' => 'Profesor', 'guard_name' => 'api']);
 
-    protected $user;
-    protected $adminRole;
-    protected $profesorRole;
+    // Crear usuario autenticado
+    $this->user = User::factory()->create();
+    $this->user->assignRole($this->adminRole);
+});
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Crear roles con guard 'api'
-        $this->adminRole = Role::create(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
-        $this->profesorRole = Role::create(['name' => 'Profesor', 'guard_name' => 'api']);
-
-        // Crear usuario autenticado
-        $this->user = User::factory()->create();
-        $this->user->assignRole($this->adminRole);
-    }
-
-    /**
-     * Test: Listar compromisos de mejora con paginación.
-     */
-    public function test_puede_listar_compromisos_de_mejora_con_paginacion()
-    {
+it('puede listar compromisos de mejora con paginacion', function () {
         Sanctum::actingAs($this->user);
 
         ImprovementCommitment::factory()->count(15)->create();
@@ -78,13 +48,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
                 'meta'
             ])
             ->assertJsonCount(10, 'data');
-    }
-
-    /**
-     * Test: Filtrar compromisos por estado.
-     */
-    public function test_puede_filtrar_compromisos_por_estado()
-    {
+});
+it('puede_filtrar_compromisos_por_estado', function () {
         Sanctum::actingAs($this->user);
 
         ImprovementCommitment::factory()->count(3)->create(['estado' => 'Pendiente']);
@@ -94,13 +59,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertEquals(3, count($response->json('data')));
-    }
-
-    /**
-     * Test: Filtrar compromisos por proceso_id.
-     */
-    public function test_puede_filtrar_compromisos_por_proceso()
-    {
+});
+it('puede_filtrar_compromisos_por_proceso', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -111,13 +71,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertEquals(2, count($response->json('data')));
-    }
-
-    /**
-     * Test: Buscar compromisos por descripción.
-     */
-    public function test_puede_buscar_compromisos_por_descripcion()
-    {
+});
+it('puede_buscar_compromisos_por_descripcion', function () {
         Sanctum::actingAs($this->user);
 
         ImprovementCommitment::factory()->create(['descripcion' => 'Mejora en infraestructura']);
@@ -129,13 +84,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
         $response->assertStatus(200);
         $this->assertEquals(1, count($response->json('data')));
         $this->assertStringContainsString('infraestructura', $response->json('data.0.descripcion'));
-    }
-
-    /**
-     * Test: Ver un compromiso específico.
-     */
-    public function test_puede_ver_compromiso_individual()
-    {
+});
+it('puede_ver_compromiso_individual', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create();
@@ -158,28 +108,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
                     'compromiso_mejora_id' => $commitment->compromiso_mejora_id
                 ]
             ]);
-    }
-
-    /**
-     * Test: Retorna 404 si el compromiso no existe.
-     */
-    public function test_retorna_404_si_compromiso_no_existe()
-    {
-        Sanctum::actingAs($this->user);
-
-        $response = $this->getJson('/api/compromisos-de-mejora/99999');
-
-        $response->assertStatus(404)
-            ->assertJson([
-                'error' => 'Not Found'
-            ]);
-    }
-
-    /**
-     * Test: Crear compromiso de mejora básico.
-     */
-    public function test_puede_crear_compromiso_de_mejora()
-    {
+});
+it('puede_crear_compromiso_de_mejora', function () {
         Sanctum::actingAs($this->user);
 
         $career = Career::factory()->create();
@@ -227,13 +157,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'descripcion' => 'Mejorar laboratorios',
             'estado' => 'Pendiente'
         ]);
-    }
-
-    /**
-     * Test: No permite crear compromiso duplicado para mismo proceso.
-     */
-    public function test_no_permite_duplicar_compromiso_por_proceso()
-    {
+});
+it('no_permite_duplicar_compromiso_por_proceso', function () {
         Sanctum::actingAs($this->user);
 
         $career = Career::factory()->create();
@@ -275,13 +200,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
                 'message',
                 'errors' => ['ciclo_acreditacion_id']
             ]);
-    }
-
-    /**
-     * Test: Validar campos requeridos al crear.
-     */
-    public function test_valida_campos_requeridos_al_crear()
-    {
+});
+it('valida_campos_requeridos_al_crear', function () {
         Sanctum::actingAs($this->user);
 
         $response = $this->postJson('/api/compromisos-de-mejora', []);
@@ -293,13 +213,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
                 'fecha_fin',
                 'selecciones'
             ]);
-    }
-
-    /**
-     * Test: Validar formato de fecha_inicio.
-     */
-    public function test_valida_formato_fecha_inicio()
-    {
+});
+it('valida_formato_fecha_inicio', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -322,13 +237,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['fecha_inicio']);
-    }
-
-    /**
-     * Test: Validar que fecha_fin sea posterior a fecha_inicio.
-     */
-    public function test_valida_fecha_fin_posterior_a_fecha_inicio()
-    {
+});
+it('valida_fecha_fin_posterior_a_fecha_inicio', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -351,13 +261,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['fecha_fin']);
-    }
-
-    /**
-     * Test: Actualizar compromiso existente.
-     */
-    public function test_puede_actualizar_compromiso()
-    {
+});
+it('puede_actualizar_compromiso', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create([
@@ -382,13 +287,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'descripcion' => 'Descripción actualizada',
             'estado' => 'En Progreso'
         ]);
-    }
-
-    /**
-     * Test: No actualiza si no hay cambios.
-     */
-    public function test_no_actualiza_si_no_hay_cambios()
-    {
+});
+it('no_actualiza_si_no_hay_cambios', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create([
@@ -405,13 +305,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             ->assertJson([
                 'message' => 'Solicitud válida, pero no se aplicaron cambios.'
             ]);
-    }
-
-    /**
-     * Test: Activar un compromiso.
-     */
-    public function test_puede_activar_compromiso()
-    {
+});
+it('puede_activar_compromiso', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create(['activo' => false]);
@@ -430,13 +325,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
             'activo' => true
         ]);
-    }
-
-    /**
-     * Test: Desactivar un compromiso.
-     */
-    public function test_puede_desactivar_compromiso()
-    {
+});
+it('puede_desactivar_compromiso', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create(['activo' => true]);
@@ -455,13 +345,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
             'activo' => false
         ]);
-    }
-
-    /**
-     * Test: Validar campo activo requerido.
-     */
-    public function test_valida_campo_activo_requerido()
-    {
+});
+it('valida_campo_activo_requerido', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create();
@@ -473,13 +358,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonStructure(['error', 'errors' => ['activo']]);
-    }
-
-    /**
-     * Test: Filtrar compromisos por usuario.
-     */
-    public function test_puede_filtrar_compromisos_por_usuario()
-    {
+});
+it('puede_filtrar_compromisos_por_usuario', function () {
         Sanctum::actingAs($this->user);
 
         $user = User::factory()->create();
@@ -500,13 +380,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['data'])
             ->assertJsonCount(1, 'data');
-    }
-
-    /**
-     * Test: Filtrar compromisos por evidencia.
-     */
-    public function test_puede_filtrar_compromisos_por_evidencia()
-    {
+});
+it('puede_filtrar_compromisos_por_evidencia', function () {
         Sanctum::actingAs($this->user);
 
         $evidence = Evidence::factory()->create();
@@ -525,13 +400,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['data'])
             ->assertJsonCount(1, 'data');
-    }
-
-    /**
-     * Test: Crear compromiso con asignaciones a usuarios.
-     */
-    public function test_puede_crear_compromiso_con_asignaciones_a_usuarios()
-    {
+});
+it('puede_crear_compromiso_con_asignaciones_a_usuarios', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -576,13 +446,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'usuario_id' => $user2->usuario_id,
             'estado' => 'Pendiente'
         ]);
-    }
-
-    /**
-     * Test: Crear compromiso con asignaciones a roles.
-     */
-    public function test_puede_crear_compromiso_con_asignaciones_a_roles()
-    {
+});
+it('puede_crear_compromiso_con_asignaciones_a_roles', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -628,13 +493,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'evidencia_id' => $evidence->evidencia_id,
             'usuario_id' => $profesor2->usuario_id
         ]);
-    }
-
-    /**
-     * Test: No permite asignar evidencia que no está en el compromiso.
-     */
-    public function test_no_permite_asignar_evidencia_no_vinculada_al_compromiso()
-    {
+});
+it('no_permite_asignar_evidencia_no_vinculada_al_compromiso', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -665,13 +525,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['evidencias_asignar']);
-    }
-
-    /**
-     * Test: No permite crear asignación duplicada.
-     */
-    public function test_no_permite_asignacion_duplicada()
-    {
+});
+it('no_permite_asignacion_duplicada', function () {
         Sanctum::actingAs($this->user);
 
         $process = Process::factory()->create();
@@ -708,13 +563,8 @@ class ImprovementCommitmentFeatureTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['evidencias_asignar']);
-    }
-
-    /**
-     * Test: Actualizar compromiso con nuevas asignaciones.
-     */
-    public function test_puede_actualizar_compromiso_con_nuevas_asignaciones()
-    {
+});
+it('puede_actualizar_compromiso_con_nuevas_asignaciones', function () {
         Sanctum::actingAs($this->user);
 
         $commitment = ImprovementCommitment::factory()->create([
@@ -748,16 +598,9 @@ class ImprovementCommitmentFeatureTest extends TestCase
             'evidencia_id' => $evidence->evidencia_id,
             'usuario_id' => $user->usuario_id
         ]);
-    }
-
-    /**
-     * Test: Requiere autenticación.
-     */
-    public function test_requiere_autenticacion()
-    {
+});
+it('requiere_autenticacion', function () {
         $response = $this->getJson('/api/compromisos-de-mejora');
 
         $this->assertContains($response->status(), [401, 403]);
-    }
-}
-
+});

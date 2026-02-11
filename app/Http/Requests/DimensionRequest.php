@@ -18,7 +18,6 @@ class DimensionRequest extends FormRequest
         $id = $this->route('dimension') ?? $this->route('id');
 
         $rules = [
-            'comentario_id' => ['required','integer','exists:COMENTARIO,comentario_id'],
             'nombre'        => [
                 'required',
                 'string',
@@ -42,8 +41,6 @@ class DimensionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'comentario_id.required' => 'El comentario es obligatorio.',
-            'comentario_id.exists'   => 'El comentario no existe.',
             'nombre.required'        => 'El nombre es obligatorio.',
             'nombre.regex'           => 'El nombre solo puede contener letras y espacios.',
             'nomenclatura.required'  => 'La nomenclatura es obligatoria.',

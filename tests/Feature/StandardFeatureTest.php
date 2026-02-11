@@ -1,24 +1,25 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Standard;
 use App\Models\Criterion;
 use App\Models\Component;
 use App\Models\Dimension;
+use App\Models\User;
+use App\Models\Role;
+use Laravel\Sanctum\Sanctum;
 
-class StandardFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->baseEndpoint = '/api/estructura/estandares';
+    
+    // Crear rol y usuario autenticado
+    $adminRole = Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
+    $this->user = User::factory()->create();
+    $this->user->assignRole($adminRole);
+    
+    Sanctum::actingAs($this->user);
+});
 
-    private string $baseEndpoint = '/api/estructura/estandares';
-
-    #[Test]
-    public function index_devuelve_lista_de_estandares()
-    {
+it('index devuelve lista de estandares', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
@@ -31,11 +32,9 @@ class StandardFeatureTest extends TestCase
 
         $this->assertIsArray($items);
         $this->assertCount(3, $items);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_un_estandar_existente()
-    {
+it('show devuelve un estandar existente', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
@@ -52,17 +51,13 @@ class StandardFeatureTest extends TestCase
         $returnedId = $data['id'] ?? $data['estandar_id'] ?? null; // tolerante a id/estandar_id
         $this->assertSame($standard->getKey(), $returnedId);
         $this->assertSame('Estándar 2', $data['descripcion']);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson("{$this->baseEndpoint}/999999")->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_un_estandar()
-    {
+it('store crea un estandar', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
@@ -80,11 +75,9 @@ class StandardFeatureTest extends TestCase
             'criterio_id' => $criterion->getKey(),
             'descripcion' => 'Nuevo Estándar',
         ]);
-    }
+});
 
-    #[Test]
-    public function update_actualiza_un_estandar()
-    {
+it('update actualiza un estandar', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
@@ -107,11 +100,9 @@ class StandardFeatureTest extends TestCase
             'estandar_id' => $standard->getKey(),
             'descripcion' => 'Actualizado',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_un_estandar()
-    {
+it('destroy elimina un estandar', function () {
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
@@ -122,26 +113,21 @@ class StandardFeatureTest extends TestCase
         $this->assertDatabaseMissing('ESTANDAR', [
             'estandar_id' => $standard->getKey(),
         ]);
-    }
+});
 
-    #[Test]
-    public function store_falla_sin_campos_obligatorios()
-    {
-        $this->postJson($this->baseEndpoint, [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['criterio_id', 'descripcion']);
-    }
+it('store falla sin campos obligatorios', function () {
+        $response = $this->postJson($this->baseEndpoint, []);
+        $response->assertUnprocessable()
+                 ->assertJsonValidationErrors(['criterio_id', 'descripcion']);
+});
 
-    #[Test]
-    public function store_falla_con_criterio_inexistente()
-    {
+it('store falla con criterio inexistente', function () {
         $payload = [
             'criterio_id' => 999999,
             'descripcion' => 'Desc inválida',
         ];
 
-        $this->postJson($this->baseEndpoint, $payload)
-             ->assertStatus(422)
-             ->assertJsonValidationErrors(['criterio_id']);
-    }
-}
+        $response = $this->postJson($this->baseEndpoint, $payload);
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['criterio_id']);
+});

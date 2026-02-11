@@ -1,9 +1,6 @@
 <?php
 
-namespace Tests\Feature;
-
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\User;
 use App\Models\Career;
 use App\Models\Campus;
@@ -11,15 +8,11 @@ use App\Models\CareerCampus;
 use App\Models\AccreditationCycle;
 use App\Models\Process;
 use Spatie\Permission\Models\Role;
-use PHPUnit\Framework\Attributes\Test;
+use Laravel\Sanctum\Sanctum;
 
-class FilterByRoleCareerTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    #[Test]
-    public function admin_carrera_only_sees_processes_of_his_own_career_campus()
-    {
+it('admin_carrera_only_sees_processes_of_his_own_career_campus', function () {
         // Crear roles base
         Role::create(['name' => 'SuperUsuario', 'guard_name' => 'api']);
         Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
@@ -64,7 +57,7 @@ class FilterByRoleCareerTest extends TestCase
         $adminInge->careers()->attach($careerIng->carrera_id);
 
         // Autenticación
-        $this->actingAs($adminInge);
+        Sanctum::actingAs($adminInge, ['web'], 'sanctum');
 
         // Llamar al endpoint
         $response = $this->getJson('/api/estructura/procesos');
@@ -73,11 +66,9 @@ class FilterByRoleCareerTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonFragment(['proceso_id' => $processIng->proceso_id]);
         $response->assertJsonMissing(['proceso_id' => $processQuimi->proceso_id]);
-    }
+});
 
-    #[Test]
-    public function superusuario_can_see_all_processes()
-    {
+it('superusuario_can_see_all_processes', function () {
         Role::create(['name' => 'SuperUsuario', 'guard_name' => 'api']);
         Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
 
@@ -112,12 +103,11 @@ class FilterByRoleCareerTest extends TestCase
         $super = User::factory()->create(['email' => 'pablo.castillo.quesada@una.cr']);
         $super->assignRole('SuperUsuario');
 
-        $this->actingAs($super);
+        Sanctum::actingAs($super, ['web'], 'sanctum');
 
         $response = $this->getJson('/api/estructura/procesos');
 
         $response->assertStatus(200);
         $response->assertJsonFragment(['proceso_id' => $processIng->proceso_id]);
         $response->assertJsonFragment(['proceso_id' => $processQuimi->proceso_id]);
-    }
-}
+});

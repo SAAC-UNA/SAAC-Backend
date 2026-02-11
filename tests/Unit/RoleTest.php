@@ -1,104 +1,79 @@
 <?php
 
-namespace Tests\Unit;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Role;
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
-use PHPUnit\Framework\Attributes\Test;
 
-class RoleTest extends TestCase
-{
-    use RefreshDatabase;
+it('creates a role', function () {
+    $role = Role::factory()->create([
+        'name' => 'Administrador',
+        'guard_name' => 'api'
+    ]);
 
-    #[Test]
-    public function it_creates_a_role()
-    {
-        $role = Role::factory()->create([
-            'name' => 'Administrador',
-            'guard_name' => 'api'
-        ]);
+    $this->assertDatabaseHas('roles', [
+        'name' => 'Administrador',
+        'guard_name' => 'api'
+    ]);
+});
 
-        $this->assertDatabaseHas('roles', [
-            'name' => 'Administrador',
-            'guard_name' => 'api'
-        ]);
-    }
+it('requires name field', function () {
+    Role::factory()->create(['name' => null]);
+})->throws(\Illuminate\Database\QueryException::class);
 
-    #[Test]
-    public function it_requires_name_field()
-    {
-        $this->expectException(\Illuminate\Database\QueryException::class);
-        Role::factory()->create(['name' => null]);
-    }
+it('updates a role', function () {
+    $role = Role::factory()->create([
+        'name' => 'Original',
+        'guard_name' => 'api'
+    ]);
 
-    #[Test]
-    public function it_updates_a_role()
-    {
-        $role = Role::factory()->create([
-            'name' => 'Original',
-            'guard_name' => 'api'
-        ]);
+    $role->update(['name' => 'Actualizado']);
 
-        $role->update(['name' => 'Actualizado']);
+    $this->assertDatabaseHas('roles', ['name' => 'Actualizado']);
+});
 
-        $this->assertDatabaseHas('roles', ['name' => 'Actualizado']);
-    }
+it('deletes a role', function () {
+    $role = Role::factory()->create(['guard_name' => 'api']);
+    $roleId = $role->id;
 
-    #[Test]
-    public function it_deletes_a_role()
-    {
-        $role = Role::factory()->create(['guard_name' => 'api']);
-        $roleId = $role->id;
+    $role->delete();
 
-        $role->delete();
+    $this->assertDatabaseMissing('roles', ['id' => $roleId]);
+});
 
-        $this->assertDatabaseMissing('roles', ['id' => $roleId]);
-    }
+it('role can have permissions', function () {
+    $role = Role::factory()->create(['guard_name' => 'api']);
 
-    #[Test]
-    public function a_role_can_have_permissions()
-    {
-        $role = Role::factory()->create(['guard_name' => 'api']);
+    $permission = Permission::create([
+        'name' => 'test.permission',
+        'guard_name' => 'api'
+    ]);
 
-        $permission = Permission::create([
-            'name' => 'test.permission',
-            'guard_name' => 'api'
-        ]);
+    $role->givePermissionTo($permission);
 
-        $role->givePermissionTo($permission);
+    expect($role->hasPermissionTo('test.permission'))->toBeTrue();
+});
 
-        $this->assertTrue($role->hasPermissionTo('test.permission'));
-    }
+it('role can be assigned to users', function () {
+    $role = Role::factory()->create([
+        'name' => 'Test Role',
+        'guard_name' => 'api'
+    ]);
 
-    #[Test]
-    public function a_role_can_be_assigned_to_users()
-    {
-        $role = Role::factory()->create([
-            'name' => 'Test Role',
-            'guard_name' => 'api'
-        ]);
+    $user = User::factory()->create();
+    $user->assignRole($role);
 
-        $user = User::factory()->create();
-        $user->assignRole($role);
+    expect($user->hasRole('Test Role'))->toBeTrue();
+});
 
-        $this->assertTrue($user->hasRole('Test Role'));
-    }
+it('can retrieve role permissions', function () {
+    $role = Role::factory()->create(['guard_name' => 'api']);
 
-    #[Test]
-    public function it_can_retrieve_role_permissions()
-    {
-        $role = Role::factory()->create(['guard_name' => 'api']);
+    $permission1 = Permission::create(['name' => 'read.data', 'guard_name' => 'api']);
+    $permission2 = Permission::create(['name' => 'write.data', 'guard_name' => 'api']);
 
-        $permission1 = Permission::create(['name' => 'read.data', 'guard_name' => 'api']);
-        $permission2 = Permission::create(['name' => 'write.data', 'guard_name' => 'api']);
+    $role->givePermissionTo([$permission1, $permission2]);
 
-        $role->givePermissionTo([$permission1, $permission2]);
-
-        $this->assertCount(2, $role->permissions);
-        $this->assertTrue($role->permissions->contains('name', 'read.data'));
-        $this->assertTrue($role->permissions->contains('name', 'write.data'));
-    }
-}
+    $this->assertCount(2, $role->permissions);
+    expect($role->permissions->contains('name', 'read.data'))->toBeTrue();
+    expect($role->permissions->contains('name', 'write.data'))->toBeTrue();
+});

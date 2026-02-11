@@ -19,7 +19,7 @@ class CareerRequest extends FormRequest
                 'string',
                 'max:250',
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
-                Rule::unique('CARRERA','nombre')->ignore($this->route('carrera'))
+                Rule::unique('CARRERA','nombre')->ignore($this->route('carrera'), 'carrera_id')
             ],
         ];
     }

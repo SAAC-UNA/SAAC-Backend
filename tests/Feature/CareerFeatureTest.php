@@ -1,43 +1,25 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Career;
-use App\Models\Faculty;
+use App\Models\User;
+use App\Models\Campus;
+use Laravel\Sanctum\Sanctum;
 
-class CareerFeatureTest extends TestCase
-{
-    use RefreshDatabase;
-     // AJUSTA si la ruta difiere
-    private string $base = '/api/estructura/carreras';
+beforeEach(function () {
+    $this->base = '/api/estructura/carreras';
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user);
+});
 
-   /* 
-    public function it_can_create_and_retrieve_a_career()
-    {
-        $career = Career::factory()->create([
-            'nombre' => 'Medicina',
-        ]);
-
-        $found = Career::where('nombre', 'Medicina')->first();
-        $this->assertNotNull($found);
-        $this->assertEquals('Medicina', $found->nombre);
-    } */
-   #[Test]
-    public function index_devuelve_lista_de_carreras()
-    {
+it('index devuelve lista de carreras', function () {
         Career::factory()->count(3)->create();
 
         $this->getJson($this->base)
              ->assertOk()
              ->assertJsonCount(3);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_una_carrera_existente()
-    {
+it('show devuelve una carrera existente', function () {
         $c = Career::factory()->create();
 
         $this->getJson("{$this->base}/{$c->getKey()}")
@@ -46,39 +28,30 @@ class CareerFeatureTest extends TestCase
                  'carrera_id' => $c->getKey(),
                  'nombre'     => $c->nombre,
              ]);
-    }
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
+it('show devuelve 404 si no existe', function () {
         $this->getJson("{$this->base}/999999")->assertNotFound();
-    }
+});
 
-    #[Test]
-    public function store_crea_una_carrera()
-    {
-        $fac = Faculty::factory()->create(); // FK requerida
-
+it('store crea una carrera', function () {
         $data = [
-            'facultad_id' => $fac->getKey(),
-            'nombre'      => 'Ingeniería Industrial',
+            'nombre' => 'Ingeniería Industrial',
+            'activo' => true,
         ];
 
         $this->postJson($this->base, $data)
              ->assertCreated()
              ->assertJsonFragment(['nombre' => 'Ingeniería Industrial']);
 
-        $this->assertDatabaseHas('CARRERA', $data);
-    }
+        $this->assertDatabaseHas('CARRERA', ['nombre' => 'Ingeniería Industrial']);
+});
 
-    #[Test]
-    public function update_actualiza_una_carrera()
-    {
+it('update actualiza una carrera', function () {
         $c = Career::factory()->create(['nombre' => 'Original']);
 
         $payload = [
-            'nombre'      => 'Actualizado',
-            'facultad_id' => $c->facultad_id, // mantener FK obligatoria según tu Request
+            'nombre' => 'Actualizado',
         ];
 
         $this->putJson("{$this->base}/{$c->getKey()}", $payload)
@@ -89,16 +62,13 @@ class CareerFeatureTest extends TestCase
             'carrera_id' => $c->getKey(),
             'nombre'     => 'Actualizado',
         ]);
-    }
+});
 
-    #[Test]
-    public function destroy_elimina_una_carrera()
-    {
+it('destroy elimina una carrera', function () {
         $c = Career::factory()->create();
 
         $this->deleteJson("{$this->base}/{$c->getKey()}")
              ->assertNoContent();
 
         $this->assertDatabaseMissing('CARRERA', ['carrera_id' => $c->getKey()]);
-    }
-}
+});

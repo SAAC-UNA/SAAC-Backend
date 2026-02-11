@@ -1,36 +1,18 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\AuditLog;
 use Laravel\Sanctum\Sanctum;
-use PHPUnit\Framework\Attributes\Test;
 
-class RoleFeatureTest extends TestCase
-{
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        // Usar el seeder correcto
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-    }
-
-    #[Test]
-    public function unauthenticated_users_cannot_access_roles()
-    {
+beforeEach(function () {
+    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+});
+it('unauthenticated_users_cannot_access_roles', function () {
         $response = $this->getJson('/api/roles');
         $response->assertStatus(401);
-    }
-
-    #[Test]
-    public function non_admin_users_cannot_access_roles()
-    {
+});
+it('non_admin_users_cannot_access_roles', function () {
         $user = User::factory()->create();
         $profesorRole = Role::where('name', 'Profesor')->first();
         $user->assignRole($profesorRole);
@@ -39,11 +21,8 @@ class RoleFeatureTest extends TestCase
 
         $response = $this->getJson('/api/roles');
         $response->assertStatus(403);
-    }
-
-    #[Test]
-    public function superusuario_can_list_roles()
-    {
+});
+it('superusuario_can_list_roles', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -53,11 +32,8 @@ class RoleFeatureTest extends TestCase
         $response = $this->getJson('/api/roles');
         $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
-    }
-
-    #[Test]
-    public function administrador_can_list_roles()
-    {
+});
+it('administrador_can_list_roles', function () {
         $user = User::factory()->create();
         $adminRole = Role::where('name', 'Administrador')->first();
         $user->assignRole($adminRole);
@@ -67,11 +43,8 @@ class RoleFeatureTest extends TestCase
         $response = $this->getJson('/api/roles');
         $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
-    }
-
-    #[Test]
-    public function superusuario_can_create_role_and_logs_to_audit()
-    {
+});
+it('superusuario_can_create_role_and_logs_to_audit', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -98,11 +71,8 @@ class RoleFeatureTest extends TestCase
         ]);
 
         // Nota: Bitácora se prueba por separado en pruebas de integración
-    }
-
-    #[Test]
-    public function superusuario_can_update_role_and_logs_changes()
-    {
+});
+it('superusuario_can_update_role_and_logs_changes', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -132,11 +102,8 @@ class RoleFeatureTest extends TestCase
         ]);
 
         // Nota: Bitácora se prueba por separado
-    }
-
-    #[Test]
-    public function superusuario_can_delete_role_and_logs_deletion()
-    {
+});
+it('superusuario_can_delete_role_and_logs_deletion', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -155,11 +122,8 @@ class RoleFeatureTest extends TestCase
         ]);
 
         // Nota: Bitácora se prueba por separado
-    }
-
-    #[Test]
-    public function it_validates_required_name_field()
-    {
+});
+it('it_validates_required_name_field', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -172,11 +136,8 @@ class RoleFeatureTest extends TestCase
 
         $response->assertStatus(422)
                  ->assertJsonValidationErrors(['name']);
-    }
-
-    #[Test]
-    public function it_prevents_duplicate_role_names()
-    {
+});
+it('it_prevents_duplicate_role_names', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -191,11 +152,8 @@ class RoleFeatureTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-    }
-
-    #[Test]
-    public function it_can_show_specific_role()
-    {
+});
+it('it_can_show_specific_role', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -213,11 +171,8 @@ class RoleFeatureTest extends TestCase
                          'name' => 'Rol Específico'
                      ]
                  ]);
-    }
-
-    #[Test]
-    public function it_returns_404_for_nonexistent_role()
-    {
+});
+it('it_returns_404_for_nonexistent_role', function () {
         $user = User::factory()->create();
         $superRole = Role::where('name', 'Superusuario')->first();
         $user->assignRole($superRole);
@@ -226,5 +181,4 @@ class RoleFeatureTest extends TestCase
 
         $response = $this->getJson('/api/roles/99999');
         $response->assertStatus(404);
-    }
-}
+});

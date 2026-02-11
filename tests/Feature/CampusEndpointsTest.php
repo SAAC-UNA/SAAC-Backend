@@ -1,71 +1,59 @@
 <?php
 
-namespace Tests\Feature;
-
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Campus;
 use App\Models\University;
-use PHPUnit\Framework\Attributes\Test;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-class CampusEndpointsTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->user = User::factory()->create();
+    Sanctum::actingAs($this->user, ['web'], 'sanctum');
+});
 
-    // AJUSTA según tus rutas: '/api/estructura/campus' o '/api/estructura/campuses'
-    private string $base = '/api/estructura/campuses';
+// AJUSTA según tus rutas: '/api/estructura/campus' o '/api/estructura/campuses'
+$base = '/api/estructura/campuses';
 
-    #[Test]
-    public function index_devuelve_lista_de_campus()
-    {
-        // Crea 3 campus (la factory debe crear University vía relación)
-        Campus::factory()->count(3)->create();
+it('index devuelve lista de campus', function () use ($base) {
+    // Crea 3 campus (la factory debe crear University vía relación)
+    Campus::factory()->count(3)->create();
 
-        $this->getJson($this->base)
-             ->assertOk()
-             ->assertJsonCount(3);
-    }
+    $this->getJson($base)
+         ->assertOk()
+         ->assertJsonCount(3);
+});
 
-    #[Test]
-    public function show_devuelve_un_campus_existente()
-    {
-        $c = Campus::factory()->create();
+it('show devuelve un campus existente', function () use ($base) {
+    $c = Campus::factory()->create();
 
-        $this->getJson($this->base.'/'.$c->getKey())
-             ->assertOk()
-             ->assertJsonFragment([
-                 'sede_id' => $c->getKey(),
-                 'nombre'  => $c->nombre,
-             ]);
-    }
+    $this->getJson($base.'/'.$c->getKey())
+         ->assertOk()
+         ->assertJsonFragment([
+             'sede_id' => $c->getKey(),
+             'nombre'  => $c->nombre,
+         ]);
+});
 
-    #[Test]
-    public function show_devuelve_404_si_no_existe()
-    {
-        $this->getJson($this->base.'/999999')->assertNotFound();
-    }
+it('show devuelve 404 si no existe', function () use ($base) {
+    $this->getJson($base.'/999999')->assertNotFound();
+});
 
-    #[Test]
-    public function store_crea_un_campus()
-    {
-        $u = University::factory()->create();
+it('store crea un campus', function () use ($base) {
+    $u = University::factory()->create();
 
-        $data = [
-            'universidad_id' => $u->getKey(),   // FK requerida
-            'nombre'         => 'Campus Central',
-        ];
+    $data = [
+        'universidad_id' => $u->getKey(),   // FK requerida
+        'nombre'         => 'Campus Central',
+    ];
 
-        $this->postJson($this->base, $data)
-             ->assertCreated()
-             ->assertJsonFragment(['nombre' => 'Campus Central']);
+    $this->postJson($base, $data)
+         ->assertCreated()
+         ->assertJsonFragment(['nombre' => 'Campus Central']);
 
-        // OJO: tabla real es SEDE
-        $this->assertDatabaseHas('SEDE', $data);
-    }
+    // OJO: tabla real es SEDE
+    $this->assertDatabaseHas('SEDE', $data);
+});
 
-    #[Test]
-public function update_actualiza_un_campus()
-{
+it('update actualiza un campus', function () use ($base) {
     $c = Campus::factory()->create(['nombre' => 'Original']);
 
     $payload = [
@@ -73,7 +61,7 @@ public function update_actualiza_un_campus()
         'universidad_id' => $c->universidad_id, // 👈 este campo es obligatorio en tu request
     ];
 
-    $this->putJson($this->base.'/'.$c->getKey(), $payload)
+    $this->putJson($base.'/'.$c->getKey(), $payload)
          ->assertOk()
          ->assertJsonFragment(['nombre' => 'Actualizado']);
 
@@ -81,16 +69,13 @@ public function update_actualiza_un_campus()
         'sede_id' => $c->getKey(),
         'nombre'  => 'Actualizado',
     ]);
-}
+});
 
-    #[Test]
-    public function destroy_elimina_un_campus()
-    {
-        $c = Campus::factory()->create();
+it('destroy elimina un campus', function () use ($base) {
+    $c = Campus::factory()->create();
 
-        $this->deleteJson($this->base.'/'.$c->getKey())
-             ->assertNoContent();
+    $this->deleteJson($base.'/'.$c->getKey())
+         ->assertNoContent();
 
-        $this->assertDatabaseMissing('SEDE', ['sede_id' => $c->getKey()]);
-    }
-}
+    $this->assertDatabaseMissing('SEDE', ['sede_id' => $c->getKey()]);
+});

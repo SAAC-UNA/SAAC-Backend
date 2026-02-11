@@ -1,14 +1,11 @@
 <?php
 
-namespace Tests\Unit;
-
 use Tests\TestCase;
 use App\Models\ExtensionRequest;
 use App\Models\EvidenceAssignment;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Carbon\Carbon;
-use PHPUnit\Framework\Attributes\Test;
+
 
 /**
  * Pruebas Unitarias para el modelo ExtensionRequest
@@ -19,257 +16,212 @@ use PHPUnit\Framework\Attributes\Test;
  * - Constantes de estados
  * - Casts de fechas
  */
-class ExtensionRequestTest extends TestCase
-{
-    use RefreshDatabase;
 
-    #[Test]
-    public function testHasCorrectTableName()
-    {
-        $solicitud = new ExtensionRequest();
-        $this->assertEquals('SOLICITUD_AMPLIACION', $solicitud->getTable());
-    }
+it('has correct table name', function () {
+    $solicitud = new ExtensionRequest();
+    expect($solicitud->getTable())->toBe('SOLICITUD_AMPLIACION');
+});
 
-    #[Test]
-    public function testHasCorrectPrimaryKey()
-    {
-        $solicitud = new ExtensionRequest();
-        $this->assertEquals('solicitud_ampliacion_id', $solicitud->getKeyName());
-    }
+it('has correct primary key', function () {
+    $solicitud = new ExtensionRequest();
+    expect($solicitud->getKeyName())->toBe('solicitud_ampliacion_id');
+});
 
-    #[Test]
-    public function testHasFillableAttributes()
-    {
-        $solicitud = new ExtensionRequest();
-        $fillable = [
-            'evidencia_asignacion_id',
-            'usuario_id',
-            'fecha_solicitud',
-            'motivo',
-            'fecha_sugerida',
-            'estado',
-            'fecha_resolucion',
-            'usuario_resolutor_id',
-            'justificacion'
-        ];
+it('has fillable attributes', function () {
+    $solicitud = new ExtensionRequest();
+    $fillable = [
+        'evidencia_asignacion_id',
+        'usuario_id',
+        'motivo',
+        'fecha_sugerida',
+        'estado',
+        'fecha_resolucion',
+        'usuario_resolutor_id',
+        'justificacion'
+    ];
 
-        $this->assertEquals($fillable, $solicitud->getFillable());
-    }
+    expect($solicitud->getFillable())->toBe($fillable);
+});
 
-    #[Test]
-    public function testCastsDatesCorrectly()
-    {
-        $solicitud = ExtensionRequest::factory()->create([
-            'fecha_solicitud' => '2026-01-15 10:30:00',
-            'fecha_sugerida' => '2026-02-01 23:59:59',
-        ]);
+it('casts dates correctly', function () {
+    $solicitud = ExtensionRequest::factory()->create([
+        'fecha_sugerida' => '2026-02-01 23:59:59',
+    ]);
 
-        $this->assertInstanceOf(\Carbon\Carbon::class, $solicitud->fecha_solicitud);
-        $this->assertInstanceOf(\Carbon\Carbon::class, $solicitud->fecha_sugerida);
-        $this->assertEquals('2026-01-15', $solicitud->fecha_solicitud->format('Y-m-d'));
-        $this->assertEquals('2026-02-01', $solicitud->fecha_sugerida->format('Y-m-d'));
-    }
+    $this->assertInstanceOf(\Carbon\Carbon::class, $solicitud->created_at);
+    $this->assertInstanceOf(\Carbon\Carbon::class, $solicitud->fecha_sugerida);
+    expect($solicitud->fecha_sugerida->format('Y-m-d'))->toBe('2026-02-01');
+});
 
-    #[Test]
-    public function testHasEstadoConstants()
-    {
-        $this->assertEquals('pendiente', ExtensionRequest::ESTADO_PENDIENTE);
-        $this->assertEquals('aprobada', ExtensionRequest::ESTADO_APROBADA);
-        $this->assertEquals('rechazada', ExtensionRequest::ESTADO_RECHAZADA);
-    }
+it('has estado constants', function () {
+    expect(ExtensionRequest::ESTADO_PENDIENTE)->toBe('pendiente');
+    expect(ExtensionRequest::ESTADO_APROBADA)->toBe('aprobada');
+    expect(ExtensionRequest::ESTADO_RECHAZADA)->toBe('rechazada');
+});
 
-    #[Test]
-    public function testBelongsToEvidenceAssignment()
-    {
-        $asignacion = EvidenceAssignment::factory()->create();
-        $solicitud = ExtensionRequest::factory()->create([
-            'evidencia_asignacion_id' => $asignacion->evidencia_asignacion_id
-        ]);
+it('belongs to evidence assignment', function () {
+    $asignacion = EvidenceAssignment::factory()->create();
+    $solicitud = ExtensionRequest::factory()->create([
+        'evidencia_asignacion_id' => $asignacion->evidencia_asignacion_id
+    ]);
 
-        $this->assertInstanceOf(EvidenceAssignment::class, $solicitud->evidenceAssignment);
-        $this->assertEquals($asignacion->evidencia_asignacion_id, $solicitud->evidenceAssignment->evidencia_asignacion_id);
-    }
+    $this->assertInstanceOf(EvidenceAssignment::class, $solicitud->evidenceAssignment);
+    expect($solicitud->evidenceAssignment->evidencia_asignacion_id)->toBe($asignacion->evidencia_asignacion_id);
+});
 
-    #[Test]
-    public function testBelongsToUser()
-    {
-        $usuario = User::factory()->create();
-        $solicitud = ExtensionRequest::factory()->create([
-            'usuario_id' => $usuario->usuario_id
-        ]);
+it('belongs to user', function () {
+    $usuario = User::factory()->create();
+    $solicitud = ExtensionRequest::factory()->create([
+        'usuario_id' => $usuario->usuario_id
+    ]);
 
-        $this->assertInstanceOf(User::class, $solicitud->user);
-        $this->assertEquals($usuario->usuario_id, $solicitud->user->usuario_id);
-    }
+    $this->assertInstanceOf(User::class, $solicitud->user);
+    expect($solicitud->user->usuario_id)->toBe($usuario->usuario_id);
+});
 
-    #[Test]
-    public function testBelongsToResolutor()
-    {
-        $resolutor = User::factory()->create();
-        $solicitud = ExtensionRequest::factory()->aprobada()->create([
-            'usuario_resolutor_id' => $resolutor->usuario_id
-        ]);
+it('belongs to resolutor', function () {
+    $resolutor = User::factory()->create();
+    $solicitud = ExtensionRequest::factory()->aprobada()->create([
+        'usuario_resolutor_id' => $resolutor->usuario_id
+    ]);
 
-        $this->assertInstanceOf(User::class, $solicitud->resolutor);
-        $this->assertEquals($resolutor->usuario_id, $solicitud->resolutor->usuario_id);
-    }
+    $this->assertInstanceOf(User::class, $solicitud->resolutor);
+    expect($solicitud->resolutor->usuario_id)->toBe($resolutor->usuario_id);
+});
 
-    #[Test]
-    public function testResolutorCanBeNullForPendingRequests()
-    {
-        $solicitud = ExtensionRequest::factory()->pendiente()->create();
+it('resolutor can be null for pending requests', function () {
+    $solicitud = ExtensionRequest::factory()->pendiente()->create();
 
-        $this->assertNull($solicitud->usuario_resolutor_id);
-        $this->assertNull($solicitud->resolutor);
-    }
+    $this->assertNull($solicitud->usuario_resolutor_id);
+    $this->assertNull($solicitud->resolutor);
+});
 
-    #[Test]
-    public function testScopePendientesFiltersPendingRequests()
-    {
-        ExtensionRequest::factory()->pendiente()->count(3)->create();
-        ExtensionRequest::factory()->aprobada()->count(2)->create();
-        ExtensionRequest::factory()->rechazada()->count(1)->create();
+it('scope pendientes filters pending requests', function () {
+    ExtensionRequest::factory()->pendiente()->count(3)->create();
+    ExtensionRequest::factory()->aprobada()->count(2)->create();
+    ExtensionRequest::factory()->rechazada()->count(1)->create();
 
-        $pendientes = ExtensionRequest::pendientes()->get();
+    $pendientes = ExtensionRequest::pendientes()->get();
 
-        $this->assertCount(3, $pendientes);
-        $this->assertTrue($pendientes->every(function ($solicitud) {
-            return $solicitud->estado === ExtensionRequest::ESTADO_PENDIENTE;
-        }));
-    }
+    $this->assertCount(3, $pendientes);
+    expect($pendientes->every(function ($solicitud) {
+        return $solicitud->estado === ExtensionRequest::ESTADO_PENDIENTE;
+    }))->toBeTrue();
+});
 
-    #[Test]
-    public function testScopeAprobadasFiltersApprovedRequests()
-    {
-        ExtensionRequest::factory()->pendiente()->count(2)->create();
-        ExtensionRequest::factory()->aprobada()->count(4)->create();
-        ExtensionRequest::factory()->rechazada()->count(1)->create();
+it('scope aprobadas filters approved requests', function () {
+    ExtensionRequest::factory()->pendiente()->count(2)->create();
+    ExtensionRequest::factory()->aprobada()->count(4)->create();
+    ExtensionRequest::factory()->rechazada()->count(1)->create();
 
-        $aprobadas = ExtensionRequest::aprobadas()->get();
+    $aprobadas = ExtensionRequest::aprobadas()->get();
 
-        $this->assertCount(4, $aprobadas);
-        $this->assertTrue($aprobadas->every(function ($solicitud) {
-            return $solicitud->estado === ExtensionRequest::ESTADO_APROBADA;
-        }));
-    }
+    $this->assertCount(4, $aprobadas);
+    expect($aprobadas->every(function ($solicitud) {
+        return $solicitud->estado === ExtensionRequest::ESTADO_APROBADA;
+    }))->toBeTrue();
+});
 
-    #[Test]
-    public function testScopeRechazadasFiltersRejectedRequests()
-    {
-        ExtensionRequest::factory()->pendiente()->count(2)->create();
-        ExtensionRequest::factory()->aprobada()->count(2)->create();
-        ExtensionRequest::factory()->rechazada()->count(3)->create();
+it('scope rechazadas filters rejected requests', function () {
+    ExtensionRequest::factory()->pendiente()->count(2)->create();
+    ExtensionRequest::factory()->aprobada()->count(2)->create();
+    ExtensionRequest::factory()->rechazada()->count(3)->create();
 
-        $rechazadas = ExtensionRequest::rechazadas()->get();
+    $rechazadas = ExtensionRequest::rechazadas()->get();
 
-        $this->assertCount(3, $rechazadas);
-        $this->assertTrue($rechazadas->every(function ($solicitud) {
-            return $solicitud->estado === ExtensionRequest::ESTADO_RECHAZADA;
-        }));
-    }
+    $this->assertCount(3, $rechazadas);
+    expect($rechazadas->every(function ($solicitud) {
+        return $solicitud->estado === ExtensionRequest::ESTADO_RECHAZADA;
+    }))->toBeTrue();
+});
 
-    #[Test]
-    public function testCanCreateExtensionRequestWithAllRequiredFields()
-    {
-        $asignacion = EvidenceAssignment::factory()->create();
-        $usuario = User::factory()->create();
+it('can create extension request with all required fields', function () {
+    $asignacion = EvidenceAssignment::factory()->create();
+    $usuario = User::factory()->create();
 
-        $solicitud = ExtensionRequest::create([
-            'evidencia_asignacion_id' => $asignacion->evidencia_asignacion_id,
-            'usuario_id' => $usuario->usuario_id,
-            'fecha_solicitud' => Carbon::now(),
-            'motivo' => 'Necesito más tiempo para completar la evidencia',
-            'fecha_sugerida' => Carbon::now()->addDays(7),
-            'estado' => ExtensionRequest::ESTADO_PENDIENTE,
-        ]);
+    $solicitud = ExtensionRequest::create([
+        'evidencia_asignacion_id' => $asignacion->evidencia_asignacion_id,
+        'usuario_id' => $usuario->usuario_id,
+        'fecha_solicitud' => Carbon::now(),
+        'motivo' => 'Necesito más tiempo para completar la evidencia',
+        'fecha_sugerida' => Carbon::now()->addDays(7),
+        'estado' => ExtensionRequest::ESTADO_PENDIENTE,
+    ]);
 
-        $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
-            'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
-            'estado' => ExtensionRequest::ESTADO_PENDIENTE,
-        ]);
-    }
+    $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
+        'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
+        'estado' => ExtensionRequest::ESTADO_PENDIENTE,
+    ]);
+});
 
-    #[Test]
-    public function testPendingRequestHasNullResolutionFields()
-    {
-        $solicitud = ExtensionRequest::factory()->pendiente()->create();
+it('pending request has null resolution fields', function () {
+    $solicitud = ExtensionRequest::factory()->pendiente()->create();
 
-        $this->assertNull($solicitud->fecha_resolucion);
-        $this->assertNull($solicitud->usuario_resolutor_id);
-        $this->assertNull($solicitud->justificacion);
-    }
+    $this->assertNull($solicitud->fecha_resolucion);
+    $this->assertNull($solicitud->usuario_resolutor_id);
+    $this->assertNull($solicitud->justificacion);
+});
 
-    #[Test]
-    public function testApprovedRequestHasResolutionFields()
-    {
-        $solicitud = ExtensionRequest::factory()->aprobada()->create();
+it('approved request has resolution fields', function () {
+    $solicitud = ExtensionRequest::factory()->aprobada()->create();
 
-        $this->assertNotNull($solicitud->fecha_resolucion);
-        $this->assertNotNull($solicitud->usuario_resolutor_id);
-        $this->assertNotNull($solicitud->justificacion);
-        $this->assertEquals(ExtensionRequest::ESTADO_APROBADA, $solicitud->estado);
-    }
+    $this->assertNotNull($solicitud->fecha_resolucion);
+    $this->assertNotNull($solicitud->usuario_resolutor_id);
+    $this->assertNotNull($solicitud->justificacion);
+    expect($solicitud->estado)->toBe(ExtensionRequest::ESTADO_APROBADA);
+});
 
-    #[Test]
-    public function testRejectedRequestHasResolutionFields()
-    {
-        $solicitud = ExtensionRequest::factory()->rechazada()->create();
+it('rejected request has resolution fields', function () {
+    $solicitud = ExtensionRequest::factory()->rechazada()->create();
 
-        $this->assertNotNull($solicitud->fecha_resolucion);
-        $this->assertNotNull($solicitud->usuario_resolutor_id);
-        $this->assertNotNull($solicitud->justificacion);
-        $this->assertEquals(ExtensionRequest::ESTADO_RECHAZADA, $solicitud->estado);
-    }
+    $this->assertNotNull($solicitud->fecha_resolucion);
+    $this->assertNotNull($solicitud->usuario_resolutor_id);
+    $this->assertNotNull($solicitud->justificacion);
+    expect($solicitud->estado)->toBe(ExtensionRequest::ESTADO_RECHAZADA);
+});
 
-    #[Test]
-    public function testCanUpdateEstadoFromPendienteToAprobada()
-    {
-        $solicitud = ExtensionRequest::factory()->pendiente()->create();
-        $resolutor = User::factory()->create();
+it('can update estado from pendiente to aprobada', function () {
+    $solicitud = ExtensionRequest::factory()->pendiente()->create();
+    $resolutor = User::factory()->create();
 
-        $solicitud->update([
-            'estado' => ExtensionRequest::ESTADO_APROBADA,
-            'fecha_resolucion' => Carbon::now(),
-            'usuario_resolutor_id' => $resolutor->usuario_id,
-            'justificacion' => 'Aprobada porque...',
-        ]);
+    $solicitud->update([
+        'estado' => ExtensionRequest::ESTADO_APROBADA,
+        'fecha_resolucion' => Carbon::now(),
+        'usuario_resolutor_id' => $resolutor->usuario_id,
+        'justificacion' => 'Aprobada porque...',
+    ]);
 
-        $this->assertEquals(ExtensionRequest::ESTADO_APROBADA, $solicitud->estado);
-        $this->assertNotNull($solicitud->fecha_resolucion);
-    }
+    expect($solicitud->estado)->toBe(ExtensionRequest::ESTADO_APROBADA);
+    $this->assertNotNull($solicitud->fecha_resolucion);
+});
 
-    #[Test]
-    public function testCanUpdateEstadoFromPendienteToRechazada()
-    {
-        $solicitud = ExtensionRequest::factory()->pendiente()->create();
-        $resolutor = User::factory()->create();
+it('can update estado from pendiente to rechazada', function () {
+    $solicitud = ExtensionRequest::factory()->pendiente()->create();
+    $resolutor = User::factory()->create();
 
-        $solicitud->update([
-            'estado' => ExtensionRequest::ESTADO_RECHAZADA,
-            'fecha_resolucion' => Carbon::now(),
-            'usuario_resolutor_id' => $resolutor->usuario_id,
-            'justificacion' => 'Rechazada porque...',
-        ]);
+    $solicitud->update([
+        'estado' => ExtensionRequest::ESTADO_RECHAZADA,
+        'fecha_resolucion' => Carbon::now(),
+        'usuario_resolutor_id' => $resolutor->usuario_id,
+        'justificacion' => 'Rechazada porque...',
+    ]);
 
-        $this->assertEquals(ExtensionRequest::ESTADO_RECHAZADA, $solicitud->estado);
-        $this->assertNotNull($solicitud->fecha_resolucion);
-    }
+    expect($solicitud->estado)->toBe(ExtensionRequest::ESTADO_RECHAZADA);
+    $this->assertNotNull($solicitud->fecha_resolucion);
+});
 
-    #[Test]
-    public function testFactoryCreatesValidExtensionRequest()
-    {
-        $solicitud = ExtensionRequest::factory()->create();
+it('factory creates valid extension request', function () {
+    $solicitud = ExtensionRequest::factory()->create();
 
-        $this->assertNotNull($solicitud->evidencia_asignacion_id);
-        $this->assertNotNull($solicitud->usuario_id);
-        $this->assertNotNull($solicitud->fecha_solicitud);
-        $this->assertNotNull($solicitud->motivo);
-        $this->assertNotNull($solicitud->fecha_sugerida);
-        $this->assertNotNull($solicitud->estado);
-        $this->assertContains($solicitud->estado, [
-            ExtensionRequest::ESTADO_PENDIENTE,
-            ExtensionRequest::ESTADO_APROBADA,
-            ExtensionRequest::ESTADO_RECHAZADA
-        ]);
-    }
-}
+    $this->assertNotNull($solicitud->evidencia_asignacion_id);
+    $this->assertNotNull($solicitud->usuario_id);
+    $this->assertNotNull($solicitud->created_at);
+    $this->assertNotNull($solicitud->motivo);
+    $this->assertNotNull($solicitud->fecha_sugerida);
+    $this->assertNotNull($solicitud->estado);
+    $this->assertContains($solicitud->estado, [
+        ExtensionRequest::ESTADO_PENDIENTE,
+        ExtensionRequest::ESTADO_APROBADA,
+        ExtensionRequest::ESTADO_RECHAZADA
+    ]);
+});

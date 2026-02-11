@@ -18,6 +18,7 @@ class CareerFactory extends Factory
     {
         return [
             'nombre' => $this->faker->jobTitle . ' Carrera',
+            'activo' => true,
         ];
     }
 }

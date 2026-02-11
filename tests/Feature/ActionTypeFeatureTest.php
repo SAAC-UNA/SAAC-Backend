@@ -1,25 +1,36 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\ActionType;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 
-class ActionTypeFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    $this->user = User::factory()->create();
+    
+    // Crear rol Superusuario si no existe
+    $role = Role::firstOrCreate(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $this->user->assignRole($role);
+    
+    Sanctum::actingAs($this->user);
+});
 
-    /** @test */
-    public function it_can_create_and_retrieve_an_action_type()
-    {
-        $actionType = ActionType::factory()->create([
-            'descripcion' => 'Tipo de Acción 2',
-        ]);
+it('puede listar tipos de acción', function () {
+    ActionType::factory()->count(3)->create();
+    
+    $response = $this->getJson('/api/bitacora/tipos-accion');
+    
+    $response->assertStatus(200)
+        ->assertJsonCount(3);
+});
 
-        $found = ActionType::where('descripcion', 'Tipo de Acción 2')->first();
-        $this->assertNotNull($found);
-        $this->assertEquals('Tipo de Acción 2', $found->descripcion);
-    }
-}
+it('puede crear y recuperar un tipo de acción', function () {
+    $actionType = ActionType::factory()->create([
+        'descripcion' => 'Tipo de Acción Test',
+    ]);
+
+    $found = ActionType::where('descripcion', 'Tipo de Acción Test')->first();
+    expect($found)->not->toBeNull();
+    expect($found->descripcion)->toBe('Tipo de Acción Test');
+});
 

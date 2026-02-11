@@ -1,46 +1,27 @@
 <?php
 
-namespace Tests\Feature;
-
-use Tests\TestCase;
 use App\Models\User;
 use App\Models\Process;
 use App\Models\Evidence;
 use App\Models\EvidenceAssignment;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\Test;
 
-class ValidateDuplicateAssignmentsTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function () {
+    // Crear usuario autenticado (el permiso se verifica en FormRequest)
+    $this->user = User::factory()->create();
 
-    protected $user;
-    protected $process;
-    protected $evidence;
-    protected $usuarios;
+    // Crear permiso y asignarlo
+    $permission = \Spatie\Permission\Models\Permission::create(['name' => 'asignar_evidencias', 'guard_name' => 'api']);
+    $this->user->givePermissionTo($permission);
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    // Crear proceso y evidencia
+    $this->process = Process::factory()->create();
+    $this->evidence = Evidence::factory()->create();
 
-        // Crear usuario autenticado (el permiso se verifica en FormRequest)
-        $this->user = User::factory()->create();
+    // Crear 5 usuarios de prueba
+    $this->usuarios = User::factory()->count(5)->create();
+});
 
-        // Crear permiso y asignarlo
-        $permission = \Spatie\Permission\Models\Permission::create(['name' => 'asignar_evidencias', 'guard_name' => 'api']);
-        $this->user->givePermissionTo($permission);
-
-        // Crear proceso y evidencia
-        $this->process = Process::factory()->create();
-        $this->evidence = Evidence::factory()->create();
-
-        // Crear 5 usuarios de prueba
-        $this->usuarios = User::factory()->count(5)->create();
-    }
-
-    #[Test]
-    public function puede_validar_sin_duplicados()
-    {
+it('puede validar sin duplicados', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', [
                 'proceso_id' => $this->process->proceso_id,
@@ -54,11 +35,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
                 'duplicados' => [],
                 'total_duplicados' => 0,
             ]);
-    }
+});
 
-    #[Test]
-    public function detecta_asignaciones_duplicadas()
-    {
+it('detecta asignaciones duplicadas', function () {
         // Crear 2 asignaciones existentes
         $usuario1 = $this->usuarios[0];
         $usuario2 = $this->usuarios[1];
@@ -101,11 +80,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
         $this->assertArrayHasKey('estado', $duplicados[0]);
         $this->assertArrayHasKey('fecha_asignacion', $duplicados[0]);
         $this->assertArrayHasKey('asignacion_id', $duplicados[0]);
-    }
+});
 
-    #[Test]
-    public function requiere_autenticacion()
-    {
+it('requiere autenticacion', function () {
         $response = $this->postJson('/api/evidencias-asignaciones/validar-duplicados', [
             'proceso_id' => $this->process->proceso_id,
             'evidencia_id' => $this->evidence->evidencia_id,
@@ -113,11 +90,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
         ]);
 
         $response->assertStatus(401);
-    }
+});
 
-    #[Test]
-    public function requiere_permiso_asignar_evidencias()
-    {
+it('requiere permiso asignar evidencias', function () {
         $userSinPermiso = User::factory()->create();
 
         $response = $this->actingAs($userSinPermiso, 'sanctum')
@@ -128,21 +103,17 @@ class ValidateDuplicateAssignmentsTest extends TestCase
             ]);
 
         $response->assertStatus(403);
-    }
+});
 
-    #[Test]
-    public function valida_campos_requeridos()
-    {
+it('valida campos requeridos', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['proceso_id', 'evidencia_id', 'usuarios']);
-    }
+});
 
-    #[Test]
-    public function valida_que_proceso_exista()
-    {
+it('valida que proceso exista', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', [
                 'proceso_id' => 99999,
@@ -152,11 +123,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['proceso_id']);
-    }
+});
 
-    #[Test]
-    public function valida_que_evidencia_exista()
-    {
+it('valida que evidencia exista', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', [
                 'proceso_id' => $this->process->proceso_id,
@@ -166,11 +135,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['evidencia_id']);
-    }
+});
 
-    #[Test]
-    public function valida_array_usuarios_minimo_uno()
-    {
+it('valida array usuarios minimo uno', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', [
                 'proceso_id' => $this->process->proceso_id,
@@ -180,11 +147,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['usuarios']);
-    }
+});
 
-    #[Test]
-    public function valida_que_usuarios_existan()
-    {
+it('valida que usuarios existan', function () {
         $response = $this->actingAs($this->user, 'sanctum')
             ->postJson('/api/evidencias-asignaciones/validar-duplicados', [
                 'proceso_id' => $this->process->proceso_id,
@@ -194,11 +159,9 @@ class ValidateDuplicateAssignmentsTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['usuarios.0', 'usuarios.1']);
-    }
+});
 
-    #[Test]
-    public function solo_detecta_duplicados_para_mismo_proceso_y_evidencia()
-    {
+it('solo detecta duplicados para mismo proceso y evidencia', function () {
         $otroProceso = Process::factory()->create();
         $otraEvidencia = Evidence::factory()->create();
 
@@ -234,5 +197,4 @@ class ValidateDuplicateAssignmentsTest extends TestCase
                 'tiene_duplicados' => false,
                 'total_duplicados' => 0,
             ]);
-    }
-}
+});

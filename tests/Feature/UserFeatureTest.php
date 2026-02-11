@@ -1,28 +1,17 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\User;
 
-class UserFeatureTest extends TestCase
-{
-    use RefreshDatabase;
+it('can create and retrieve a user', function () {
+    $user = User::factory()->create([
+        'nombre' => 'Maria Lopez',
+        'cedula' => '987654321',
+        'email' => 'maria@example.com',
+    ]);
 
-    /** @test */
-    public function it_can_create_and_retrieve_a_user()
-    {
-        $user = User::factory()->create([
-            'nombre' => 'Maria Lopez',
-            'cedula' => '987654321',
-            'email' => 'maria@example.com',
-        ]);
-
-        $found = User::where('cedula', '987654321')->first();
-        $this->assertNotNull($found);
-        $this->assertEquals('Maria Lopez', $found->nombre);
-        $this->assertEquals('maria@example.com', $found->email);
-    }
-}
+    $found = User::where('cedula', '987654321')->first();
+    expect($found)->not->toBeNull();
+    expect($found->nombre)->toBe('Maria Lopez');
+    expect($found->email)->toBe('maria@example.com');
+});
 

@@ -1,48 +1,58 @@
 <?php
 
-namespace Tests\Unit;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\Career;
 
-class CareerTest extends TestCase
-{
-    use RefreshDatabase;
+it('creates a career', function () {
+    $career = Career::factory()->create([
+        'nombre' => 'Ingeniería',
+    ]);
+    
+    $this->assertDatabaseHas('CARRERA', [
+        'nombre' => 'Ingeniería',
+    ]);
+});
 
-    /** @test */
-    public function it_creates_a_career()
-    {
-        $career = Career::factory()->create([
-            'nombre' => 'Ingeniería',
-        ]);
-        $this->assertDatabaseHas('CARRERA', [
-            'nombre' => 'Ingeniería',
-        ]);
-    }
+it('requires nombre field', function () {
+    Career::factory()->create(['nombre' => null]);
+})->throws(\Illuminate\Database\QueryException::class);
+
+it('updates a career', function () {
+    $career = Career::factory()->create(['nombre' => 'Original']);
+    $career->update(['nombre' => 'Actualizado']);
+
+    $this->assertDatabaseHas('CARRERA', ['nombre' => 'Actualizado']);
+});
+
+it('deletes a career', function () {
+    $career = Career::factory()->create();
+    $careerId = $career->carrera_id;
+    $career->delete();
+
+    $this->assertDatabaseMissing('CARRERA', ['carrera_id' => $careerId]);
+});
+
+it('puede asociarse con usuarios', function () {
+    $career = Career::factory()->create();
+    $user = \App\Models\User::factory()->create();
     
-    /** @test */
-    public function it_requires_nombre_field()
-    {
-        $this->expectException(\Illuminate\Database\QueryException::class);
-        Career::factory()->create(['nombre' => null]);
-    }
+    $career->users()->attach($user->usuario_id);
     
-    /** @test */
-    public function it_updates_a_career()
-    {
-        $career = Career::factory()->create(['nombre' => 'Original']);
-        $career->update(['nombre' => 'Actualizado']);
+    expect($career->users)->toHaveCount(1);
+    expect($career->users->first()->usuario_id)->toBe($user->usuario_id);
+});
+
+it('puede asociarse con sedes', function () {
+    $career = Career::factory()->create();
+    $campus = \App\Models\Campus::factory()->create();
     
-        $this->assertDatabaseHas('CARRERA', ['nombre' => 'Actualizado']);
-    }
+    $career->campuses()->attach($campus->sede_id);
     
-    /** @test */
-    public function it_deletes_a_career()
-    {
-        $career = Career::factory()->create();
-        $career->delete();
+    expect($career->campuses)->toHaveCount(1);
+    expect($career->campuses->first()->sede_id)->toBe($campus->sede_id);
+});
+
+it('tiene campo activo por defecto', function () {
+    $career = Career::factory()->create();
     
-        $this->assertDatabaseMissing('CARRERA', ['carrera_id' => $career->carrera_id]);
-    }
-}
+    expect($career->activo)->toBeTrue();
+});

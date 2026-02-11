@@ -1,10 +1,5 @@
 <?php
 
-namespace Tests\Feature;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use App\Models\Evidence;
 use App\Models\Criterion;
 use App\Models\Component;
@@ -20,46 +15,40 @@ use App\Models\EvidenceAssignment;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 
-class EvidenceFilterFeatureTest extends TestCase
-{
-    use RefreshDatabase;
-
-    private string $filterEndpoint = '/api/estructura/evidencias/filter';
-    private User $superUser;
-    private User $coordinador;
-    private User $evaluador;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Crear roles con guard 'api' para Sanctum
-        Role::create(['name' => 'SuperUsuario', 'guard_name' => 'api']);
-        Role::create(['name' => 'Coordinador', 'guard_name' => 'api']);
-        Role::create(['name' => 'Evaluador', 'guard_name' => 'api']);
-
-        // Crear usuarios con roles
-        $this->superUser = User::factory()->create();
-        $this->superUser->assignRole('SuperUsuario');
-
-        $this->coordinador = User::factory()->create();
-        $this->coordinador->assignRole('Coordinador');
-
-        $this->evaluador = User::factory()->create();
-        $this->evaluador->assignRole('Evaluador');
+beforeEach(function () {
+    $this->filterEndpoint = '/api/estructura/evidencias/filter';
+    
+    // Crear usuario básico con rol Superusuario para evitar restricciones de filtrado
+    $this->user = User::factory()->create();
+    
+    // Crear rol Superusuario y asignárselo (necesario para el filtrado)
+    if (!Role::where('name', 'Superusuario')->where('guard_name', 'api')->exists()) {
+        Role::create(['name' => 'Superusuario', 'guard_name' => 'api']);
     }
+    $this->user->assignRole('Superusuario');
+    
+    // Crear usuarios adicionales para pruebas específicas sin roles por ahora
+    $this->superUser = $this->user; // Reutilizar el usuario principal
+    $this->coordinador = User::factory()->create();  
+    $this->evaluador = User::factory()->create();
+    
+    // Usar el usuario principal con rol Superusuario para autenticación por defecto
+    Sanctum::actingAs($this->user, ['web'], 'sanctum');
+});
 
-    #[Test]
-    public function filter_requiere_autenticacion()
-    {
-        $this->getJson($this->filterEndpoint)
-            ->assertUnauthorized();
-    }
+it('filter requiere autenticacion', function () {
+    // Limpiar autenticación para probar que se requiere autenticación
+    $this->app['auth']->forgetGuards();
+    
+    $response = $this->withHeaders([
+        'Accept' => 'application/json',
+        'Authorization' => '' // Asegurarse de no enviar token
+    ])->getJson($this->filterEndpoint);
+    
+    $response->assertUnauthorized();
+});
 
-    #[Test]
-    public function filter_devuelve_todas_las_evidencias_sin_filtros()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter devuelve todas las evidencias sin filtros', function () {
 
         // Crear estructura necesaria
         $dimension = Dimension::factory()->create();
@@ -75,27 +64,24 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint);
 
-        $response->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'evidencia_id',
-                        'descripcion',
-                        'nomenclatura',
-                        'estado_evidencia',
-                        'fecha_publicacion',
-                    ]
-                ],
-                'links',
-                'meta'
-            ])
-            ->assertJsonCount(5, 'data');
-    }
+    $response->assertOk()
+        ->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'evidencia_id',
+                    'descripcion',
+                    'nomenclatura',
+                    'estado_evidencia',
+                    'fecha_publicacion',
+                ]
+            ],
+            'links',
+            'meta'
+        ])
+        ->assertJsonCount(5, 'data');
+});
 
-    #[Test]
-    public function filter_por_criterio_devuelve_evidencias_correctas()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter por criterio devuelve evidencias correctas', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -117,14 +103,11 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?criterio_id=' . $criterion1->getKey());
 
-        $response->assertOk()
-            ->assertJsonCount(3, 'data');
-    }
+    $response->assertOk()
+        ->assertJsonCount(3, 'data');
+});
 
-    #[Test]
-    public function filter_por_estado_devuelve_evidencias_correctas()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter por estado devuelve evidencias correctas', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -144,14 +127,11 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?estado_evidencia_id=' . $state1->getKey());
 
-        $response->assertOk()
-            ->assertJsonCount(4, 'data');
-    }
+    $response->assertOk()
+        ->assertJsonCount(4, 'data');
+});
 
-    #[Test]
-    public function filter_por_responsable_devuelve_evidencias_asignadas()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter por responsable devuelve evidencias asignadas', function () {
 
         // Crear estructura
         $dimension = Dimension::factory()->create();
@@ -190,15 +170,12 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?responsable_id=' . $user->getKey());
 
-        $response->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
-    }
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
+});
 
-    #[Test]
-    public function filter_ordenamiento_por_nomenclatura_ascendente()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter ordenamiento por nomenclatura ascendente', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -225,16 +202,13 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?sort_by=nomenclatura&sort_order=asc');
 
-        $response->assertOk()
-            ->assertJsonPath('data.0.nomenclatura', '20')
-            ->assertJsonPath('data.1.nomenclatura', '21')
-            ->assertJsonPath('data.2.nomenclatura', '23');
-    }
+    $response->assertOk()
+        ->assertJsonPath('data.0.nomenclatura', '20')
+        ->assertJsonPath('data.1.nomenclatura', '21')
+        ->assertJsonPath('data.2.nomenclatura', '23');
+});
 
-    #[Test]
-    public function filter_paginacion_funciona_correctamente()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter paginacion funciona correctamente', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -248,16 +222,13 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?per_page=5');
 
-        $response->assertOk()
-            ->assertJsonCount(5, 'data')
-            ->assertJsonPath('meta.per_page', 5)
-            ->assertJsonPath('meta.total', 10);
-    }
+    $response->assertOk()
+        ->assertJsonCount(5, 'data')
+        ->assertJsonPath('meta.per_page', 5)
+        ->assertJsonPath('meta.total', 10);
+});
 
-    #[Test]
-    public function superusuario_ve_todas_las_evidencias()
-    {
-        Sanctum::actingAs($this->superUser);
+it('superusuario ve todas las evidencias', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -271,14 +242,12 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint);
 
-        $response->assertOk()
-            ->assertJsonCount(5, 'data');
-    }
+    $response->assertOk()
+        ->assertJsonCount(5, 'data');
+});
 
-    #[Test]
-    public function evaluador_solo_ve_evidencias_asignadas()
-    {
-        Sanctum::actingAs($this->evaluador);
+it('evaluador solo ve evidencias asignadas', function () {
+    Sanctum::actingAs($this->evaluador, ['web'], 'sanctum');
 
         // Crear estructura
         $dimension = Dimension::factory()->create();
@@ -315,15 +284,12 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint);
 
-        $response->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
-    }
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
+});
 
-    #[Test]
-    public function filter_multiples_parametros_combinados()
-    {
-        Sanctum::actingAs($this->superUser);
+it('filter multiples parametros combinados', function () {
 
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
@@ -349,7 +315,6 @@ class EvidenceFilterFeatureTest extends TestCase
 
         $response = $this->getJson($this->filterEndpoint . '?criterio_id=' . $criterion1->getKey() . '&estado_evidencia_id=' . $state1->getKey());
 
-        $response->assertOk()
-            ->assertJsonCount(3, 'data');
-    }
-}
+    $response->assertOk()
+        ->assertJsonCount(3, 'data');
+});

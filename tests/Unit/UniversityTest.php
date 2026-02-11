@@ -1,66 +1,43 @@
 <?php
 
-namespace Tests\Unit;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use App\Models\University;
+use App\Models\Campus;
 
-class UniversityTest extends TestCase
-{
-    use RefreshDatabase;
+it('creates a university', function () {
+    $university = University::factory()->create([
+        'nombre' => 'Universidad Nacional',
+    ]);
+    
+    $this->assertDatabaseHas('UNIVERSIDAD', [
+        'nombre' => 'Universidad Nacional',
+    ]);
+});
 
-    /** @test */
-    public function it_creates_a_university()
-    {
-        // Prueba de creación de universidad
-        $university = University::factory()->create([
-            'nombre' => 'Universidad Nacional',
-        ]);
-        $this->assertDatabaseHas('UNIVERSIDAD', [
-            'nombre' => 'Universidad Nacional',
-        ]);
-    }
+it('requires nombre field', function () {
+    University::factory()->create(['nombre' => null]);
+})->throws(\Illuminate\Database\QueryException::class);
 
-    /** @test */
-    public function it_requires_nombre_field()
-    {
-        // Prueba de validación: campo nombre es obligatorio
-        $this->expectException(\Illuminate\Database\QueryException::class);
-        University::factory()->create(['nombre' => null]);
-    }
+it('updates a university', function () {
+    $university = University::factory()->create(['nombre' => 'Original']);
+    $university->update(['nombre' => 'Actualizado']);
+    
+    $this->assertDatabaseHas('UNIVERSIDAD', ['nombre' => 'Actualizado']);
+});
 
-    /** @test */
-    public function it_updates_a_university()
-    {
-        // Prueba de actualización de universidad
-        $university = University::factory()->create(['nombre' => 'Original']);
-        $university->update(['nombre' => 'Actualizado']);
-        $this->assertDatabaseHas('UNIVERSIDAD', ['nombre' => 'Actualizado']);
-    }
-
-    /** @test */
-    public function it_deletes_a_university()
-    {
-    // Prueba de eliminación de universidad
+it('deletes a university', function () {
     $university = University::factory()->create();
+    $universityId = $university->universidad_id;
     $university->delete();
-    $this->assertDatabaseMissing('UNIVERSIDAD', ['universidad_id' => $university->universidad_id]);
-    }
+    
+    $this->assertDatabaseMissing('UNIVERSIDAD', ['universidad_id' => $universityId]);
+});
 
-    /** @test */
-    public function a_university_has_many_faculties()
-    {
-        // Prueba de relación hasMany con Faculty
-        $university = University::factory()->create();
-        $campus = \App\Models\Campus::factory()->create([
-            'universidad_id' => $university->universidad_id,
-        ]);
-        $faculty = \App\Models\Faculty::factory()->create([
-            'universidad_id' => $university->universidad_id,
-            'sede_id' => $campus->sede_id,
-        ]);
-        $university->refresh();
-        $this->assertTrue($university->faculties->contains($faculty));
-    }
-}
+it('has many campuses', function () {
+    $university = University::factory()->create();
+    $campus = Campus::factory()->create([
+        'universidad_id' => $university->universidad_id,
+    ]);
+    $university->refresh();
+    
+    expect($university->campuses->contains($campus))->toBeTrue();
+});

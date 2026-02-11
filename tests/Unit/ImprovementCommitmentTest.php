@@ -1,7 +1,5 @@
 <?php
 
-namespace Tests\Unit;
-
 use App\Models\ImprovementCommitment;
 use App\Models\Process;
 use App\Models\AccreditationCycle;
@@ -15,9 +13,7 @@ use App\Models\Criterion;
 use App\Models\Component;
 use App\Models\Dimension;
 use App\Services\ImprovementCommitmentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Tests\TestCase;
 
 /**
  * Pruebas unitarias para ImprovementCommitmentService.
@@ -30,28 +26,16 @@ use Tests\TestCase;
  * - Activar/desactivar compromiso
  * - Filtrar por usuario y evidencia
  */
-class ImprovementCommitmentTest extends TestCase
-{
-    use RefreshDatabase;
 
-    protected $service;
-    protected $user;
-    protected $process;
+uses()->group('unit');
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+beforeEach(function() {
+    $this->service = new ImprovementCommitmentService();
+    $this->user = User::factory()->create();
+    $this->process = Process::factory()->create();
+});
 
-        $this->service = new ImprovementCommitmentService();
-        $this->user = User::factory()->create();
-        $this->process = Process::factory()->create();
-    }
-
-    /**
-     * Test: Relación - Un compromiso pertenece a un proceso.
-     */
-    public function test_un_compromiso_pertenece_a_proceso()
-    {
+it('un compromiso pertenece a un proceso', function () {
         $process = Process::factory()->create();
         $commitment = ImprovementCommitment::factory()->create([
             'proceso_id' => $process->proceso_id
@@ -59,39 +43,27 @@ class ImprovementCommitmentTest extends TestCase
 
         $this->assertInstanceOf(Process::class, $commitment->process);
         $this->assertEquals($process->proceso_id, $commitment->process->proceso_id);
-    }
+    });
 
-    /**
-     * Test: Relación - Un compromiso tiene muchas evidencias.
-     */
-    public function test_un_compromiso_tiene_muchas_evidencias()
-    {
+it('un compromiso tiene muchas evidencias', function () {
         $commitment = ImprovementCommitment::factory()->create();
         $evidences = Evidence::factory()->count(3)->create();
 
         $commitment->evidences()->attach($evidences->pluck('evidencia_id')->toArray());
 
         $this->assertCount(3, $commitment->evidences);
-    }
+    });
 
-    /**
-     * Test: Relación - Un compromiso tiene asignaciones de evidencias.
-     */
-    public function test_un_compromiso_tiene_asignaciones_de_evidencias()
-    {
+it('un compromiso tiene asignaciones de evidencias', function () {
         $commitment = ImprovementCommitment::factory()->create();
         $assignments = EvidenceAssignment::factory()->count(2)->create();
 
         $commitment->assignedEvidences()->attach($assignments->pluck('evidencia_asignacion_id')->toArray());
 
         $this->assertCount(2, $commitment->assignedEvidences);
-    }
+    });
 
-    /**
-     * Test: listCommitments retorna datos paginados.
-     */
-    public function test_list_commitments_retorna_paginacion()
-    {
+it('retorna datos paginados', function () {
         ImprovementCommitment::factory()->count(15)->create();
 
         $result = $this->service->listCommitments(10, []);
@@ -99,26 +71,18 @@ class ImprovementCommitmentTest extends TestCase
         $this->assertEquals(15, $result->total());
         $this->assertEquals(10, $result->perPage());
         $this->assertCount(10, $result->items());
-    }
+    });
 
-    /**
-     * Test: listCommitments filtra por estado.
-     */
-    public function test_list_commitments_filtra_por_estado()
-    {
+it('filtra por estado', function () {
         ImprovementCommitment::factory()->count(3)->create(['estado' => 'Pendiente']);
         ImprovementCommitment::factory()->count(2)->create(['estado' => 'Completado']);
 
         $result = $this->service->listCommitments(10, ['estado' => 'Pendiente']);
 
         $this->assertEquals(3, $result->total());
-    }
+    });
 
-    /**
-     * Test: listCommitments filtra por proceso_id.
-     */
-    public function test_list_commitments_filtra_por_proceso_id()
-    {
+it('filtra por proceso_id', function () {
         $process = Process::factory()->create();
         ImprovementCommitment::factory()->count(2)->create(['proceso_id' => $process->proceso_id]);
         ImprovementCommitment::factory()->count(3)->create();
@@ -126,13 +90,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->listCommitments(10, ['proceso_id' => $process->proceso_id]);
 
         $this->assertEquals(2, $result->total());
-    }
+    });
 
-    /**
-     * Test: listCommitments filtra por usuario_id.
-     */
-    public function test_list_commitments_filtra_por_usuario_id()
-    {
+it('filtra por usuario_id', function () {
         $user = User::factory()->create();
         $commitment = ImprovementCommitment::factory()->create();
         $assignment = EvidenceAssignment::factory()->create(['usuario_id' => $user->usuario_id]);
@@ -144,13 +104,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->listCommitments(10, ['usuario_id' => $user->usuario_id]);
 
         $this->assertEquals(1, $result->total());
-    }
+    });
 
-    /**
-     * Test: listCommitments filtra por búsqueda.
-     */
-    public function test_list_commitments_filtra_por_busqueda()
-    {
+it('filtra por búsqueda', function () {
         ImprovementCommitment::factory()->create(['descripcion' => 'Mejorar infraestructura']);
         ImprovementCommitment::factory()->create(['descripcion' => 'Actualizar equipos']);
         ImprovementCommitment::factory()->create(['descripcion' => 'Capacitación docente']);
@@ -158,36 +114,24 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->listCommitments(10, ['search' => 'infraestructura']);
 
         $this->assertEquals(1, $result->total());
-    }
+    });
 
-    /**
-     * Test: getCommitment retorna compromiso existente.
-     */
-    public function test_get_commitment_retorna_compromiso_existente()
-    {
+it('retorna compromiso existente', function () {
         $commitment = ImprovementCommitment::factory()->create();
 
         $result = $this->service->getCommitment($commitment->compromiso_mejora_id);
 
         $this->assertNotNull($result);
         $this->assertEquals($commitment->compromiso_mejora_id, $result->compromiso_mejora_id);
-    }
+    });
 
-    /**
-     * Test: getCommitment retorna null si no existe.
-     */
-    public function test_get_commitment_retorna_null_si_no_existe()
-    {
+it('retorna null si no existe', function () {
         $result = $this->service->getCommitment(99999);
 
         $this->assertNull($result);
-    }
+    });
 
-    /**
-     * Test: createCommitment crea compromiso correctamente.
-     */
-    public function test_create_commitment_crea_compromiso_correctamente()
-    {
+it('crea compromiso correctamente', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -216,13 +160,9 @@ class ImprovementCommitmentTest extends TestCase
             'descripcion' => 'Mejorar laboratorios',
             'estado' => 'Pendiente'
         ]);
-    }
+    });
 
-    /**
-     * Test: createCommitment no permite duplicados por proceso.
-     */
-    public function test_create_commitment_no_permite_duplicados_por_proceso()
-    {
+it('no permite duplicados por proceso', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -247,13 +187,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->createCommitment($data);
 
         $this->assertNull($result);
-    }
+    });
 
-    /**
-     * Test: createCommitment vincula evidencias correctamente.
-     */
-    public function test_create_commitment_vincula_evidencias()
-    {
+it('vincula evidencias correctamente', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -275,13 +211,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->createCommitment($data);
 
         $this->assertCount(2, $result->evidences);
-    }
+    });
 
-    /**
-     * Test: updateCommitment actualiza campos correctamente.
-     */
-    public function test_update_commitment_actualiza_campos()
-    {
+it('actualiza campos correctamente', function () {
         $commitment = ImprovementCommitment::factory()->create([
             'descripcion' => 'Descripción original',
             'estado' => 'Pendiente'
@@ -297,13 +229,9 @@ class ImprovementCommitmentTest extends TestCase
         $this->assertNotNull($result);
         $this->assertEquals('Descripción actualizada', $result->descripcion);
         $this->assertEquals('En Progreso', $result->estado);
-    }
+    });
 
-    /**
-     * Test: updateCommitment retorna null si no hay cambios.
-     */
-    public function test_update_commitment_retorna_null_sin_cambios()
-    {
+it('retorna null sin cambios', function () {
         $commitment = ImprovementCommitment::factory()->create([
             'descripcion' => 'Sin cambios'
         ]);
@@ -315,13 +243,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->updateCommitment($commitment, $data);
 
         $this->assertNull($result);
-    }
+    });
 
-    /**
-     * Test: updateCommitment actualiza evidencias.
-     */
-    public function test_update_commitment_actualiza_evidencias()
-    {
+it('actualiza evidencias', function () {
         $process = Process::factory()->create();
         $commitment = ImprovementCommitment::factory()->create(['proceso_id' => $process->proceso_id]);
         $dimension = Dimension::factory()->create();
@@ -342,13 +266,9 @@ class ImprovementCommitmentTest extends TestCase
 
         $this->assertCount(1, $result->evidences);
         $this->assertEquals($newEvidence->evidencia_id, $result->evidences->first()->evidencia_id);
-    }
+    });
 
-    /**
-     * Test: setActive activa un compromiso.
-     */
-    public function test_set_active_activa_compromiso()
-    {
+it('activa un compromiso', function () {
         $commitment = ImprovementCommitment::factory()->create(['activo' => false]);
 
         $result = $this->service->setActive($commitment, true);
@@ -358,13 +278,9 @@ class ImprovementCommitmentTest extends TestCase
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
             'activo' => true
         ]);
-    }
+    });
 
-    /**
-     * Test: setActive desactiva un compromiso.
-     */
-    public function test_set_active_desactiva_compromiso()
-    {
+it('desactiva un compromiso', function () {
         $commitment = ImprovementCommitment::factory()->create(['activo' => true]);
 
         $result = $this->service->setActive($commitment, false);
@@ -374,13 +290,9 @@ class ImprovementCommitmentTest extends TestCase
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
             'activo' => false
         ]);
-    }
+    });
 
-    /**
-     * Test: getCommitmentsByUser retorna compromisos del usuario.
-     */
-    public function test_get_commitments_by_user_retorna_compromisos_del_usuario()
-    {
+it('retorna compromisos del usuario', function () {
         $user = User::factory()->create();
         $commitment1 = ImprovementCommitment::factory()->create();
         $commitment2 = ImprovementCommitment::factory()->create();
@@ -395,13 +307,9 @@ class ImprovementCommitmentTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertEquals($commitment1->compromiso_mejora_id, $result->first()->compromiso_mejora_id);
-    }
+    });
 
-    /**
-     * Test: getCommitmentsByEvidence retorna compromisos con esa evidencia.
-     */
-    public function test_get_commitments_by_evidence_retorna_compromisos_con_evidencia()
-    {
+it('retorna compromisos con evidencia', function () {
         $evidence = Evidence::factory()->create();
         $commitment = ImprovementCommitment::factory()->create();
         $assignment = EvidenceAssignment::factory()->create(['evidencia_id' => $evidence->evidencia_id]);
@@ -415,13 +323,9 @@ class ImprovementCommitmentTest extends TestCase
 
         $this->assertCount(1, $result);
         $this->assertEquals($commitment->compromiso_mejora_id, $result->first()->compromiso_mejora_id);
-    }
+    });
 
-    /**
-     * Test: Se puede crear un compromiso.
-     */
-    public function test_se_puede_crear_compromiso()
-    {
+it('se puede crear un compromiso', function () {
         $process = Process::factory()->create();
         $commitment = ImprovementCommitment::factory()->create([
             'proceso_id' => $process->proceso_id,
@@ -430,22 +334,13 @@ class ImprovementCommitmentTest extends TestCase
         $this->assertDatabaseHas('COMPROMISO_MEJORA', [
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
         ]);
-    }
+    });
 
-    /**
-     * Test: Requiere proceso_id.
-     */
-    public function test_requiere_proceso_id()
-    {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+it('requiere proceso_id', function () {
         ImprovementCommitment::factory()->create(['proceso_id' => null]);
-    }
+    })->throws(\Illuminate\Database\QueryException::class);
 
-    /**
-     * Test: Se puede actualizar un compromiso.
-     */
-    public function test_se_puede_actualizar_compromiso()
-    {
+it('se puede actualizar un compromiso', function () {
         $commitment = ImprovementCommitment::factory()->create();
         $newProcess = Process::factory()->create();
 
@@ -455,13 +350,9 @@ class ImprovementCommitmentTest extends TestCase
             'compromiso_mejora_id' => $commitment->compromiso_mejora_id,
             'proceso_id' => $newProcess->proceso_id
         ]);
-    }
+    });
 
-    /**
-     * Test: Se puede eliminar un compromiso.
-     */
-    public function test_se_puede_eliminar_compromiso()
-    {
+it('se puede eliminar un compromiso', function () {
         $commitment = ImprovementCommitment::factory()->create();
         $id = $commitment->compromiso_mejora_id;
 
@@ -470,13 +361,9 @@ class ImprovementCommitmentTest extends TestCase
         $this->assertDatabaseMissing('COMPROMISO_MEJORA', [
             'compromiso_mejora_id' => $id
         ]);
-    }
+    });
 
-    /**
-     * Test: Estado por defecto es Pendiente al crear.
-     */
-    public function test_estado_por_defecto_es_pendiente()
-    {
+it('estado por defecto es Pendiente', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -496,13 +383,9 @@ class ImprovementCommitmentTest extends TestCase
         $result = $this->service->createCommitment($data);
 
         $this->assertEquals('Pendiente', $result->estado);
-    }
+    });
 
-    /**
-     * Test: createCommitment crea asignaciones a usuarios.
-     */
-    public function test_create_commitment_crea_asignaciones_a_usuarios()
-    {
+it('crea asignaciones a usuarios', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -548,13 +431,9 @@ class ImprovementCommitmentTest extends TestCase
         
         // Verificar que las asignaciones están vinculadas al compromiso
         $this->assertGreaterThan(0, $result->assignedEvidences->count());
-    }
+    });
 
-    /**
-     * Test: createCommitment crea asignaciones a roles.
-     */
-    public function test_create_commitment_crea_asignaciones_a_roles()
-    {
+it('crea asignaciones a roles', function () {
         $profesorRole = \Spatie\Permission\Models\Role::create([
             'name' => 'Profesor Test',
             'guard_name' => 'api'
@@ -603,15 +482,9 @@ class ImprovementCommitmentTest extends TestCase
             'evidencia_id' => $evidence->evidencia_id,
             'usuario_id' => $profesor2->usuario_id
         ]);
-    }
+    });
 
-    /**
-     * Test: No permite asignar evidencia no vinculada al compromiso.
-     */
-    public function test_no_permite_asignar_evidencia_no_vinculada()
-    {
-        $this->expectException(ValidationException::class);
-
+it('no permite asignar evidencia no vinculada', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -637,15 +510,9 @@ class ImprovementCommitmentTest extends TestCase
         ];
 
         $this->service->createCommitment($data);
-    }
+    })->throws(ValidationException::class);
 
-    /**
-     * Test: No permite crear asignación duplicada.
-     */
-    public function test_no_permite_crear_asignacion_duplicada()
-    {
-        $this->expectException(ValidationException::class);
-
+it('no permite crear asignación duplicada', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -677,13 +544,9 @@ class ImprovementCommitmentTest extends TestCase
         ];
 
         $this->service->createCommitment($data);
-    }
+    })->throws(ValidationException::class);
 
-    /**
-     * Test: updateCommitment sincroniza asignaciones.
-     */
-    public function test_update_commitment_sincroniza_asignaciones()
-    {
+it('sincroniza asignaciones', function () {
         $commitment = ImprovementCommitment::factory()->create([
             'estado' => 'Pendiente'
         ]);
@@ -726,13 +589,9 @@ class ImprovementCommitmentTest extends TestCase
             'evidencia_id' => $evidence->evidencia_id,
             'usuario_id' => $user2->usuario_id
         ]);
-    }
+    });
 
-    /**
-     * Test: Asignación guarda comentario en tabla pivot.
-     */
-    public function test_asignacion_guarda_comentario_en_pivot()
-    {
+it('guarda comentario en tabla pivot', function () {
         $process = Process::factory()->create();
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -766,5 +625,4 @@ class ImprovementCommitmentTest extends TestCase
             'compromiso_mejora_id' => $result->compromiso_mejora_id,
             'comentario' => 'Este es un comentario de prueba'
         ]);
-    }
-}
+    });

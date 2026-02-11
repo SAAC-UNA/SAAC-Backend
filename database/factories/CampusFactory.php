@@ -15,6 +15,7 @@ class CampusFactory extends Factory
         return [
             'universidad_id' => University::factory(), // se asegura de tener FK válida
             'nombre' => $this->faker->city . ' Campus',
+            'activo' => true, // valor por defecto
         ];
     }
 }

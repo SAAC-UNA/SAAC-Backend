@@ -55,7 +55,7 @@ class ComponentController extends Controller
 
         return response()->json([
             'message' => 'Componente creado correctamente.',
-            'data'    => $component->load(['dimension', 'comment']),
+            'data'    => $component->load(['dimension']),
         ], 201);
     }
 
