@@ -7,6 +7,7 @@ use App\Http\Requests\EvidenceAssignmentRequest;
 use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
 use App\Http\Resources\EvidenceAssignmentResource;
 use App\Services\EvidenceAssignmentService;
+use App\Services\AuditLogService;
 use App\Events\EvidenceAssignmentDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,16 @@ class EvidenceAssignmentController extends Controller
     {
         try {
             $resultado = $this->service->assignEvidence($request->validated());
+            
+            // Registrar en bitácora
+            if ($resultado['total_asignaciones'] > 0) {
+                $evidenciaId = $request->input('evidencia_id');
+                AuditLogService::log(
+                    'asignar',
+                    "Se crearon {$resultado['total_asignaciones']} asignación(es) de evidencia ID {$evidenciaId}",
+                    'Asignación de Evidencias'
+                );
+            }
             
             return response()->json([
                 'message' => 'Asignaciones procesadas correctamente.',
@@ -95,6 +106,15 @@ class EvidenceAssignmentController extends Controller
                 $assignment, 
                 $request->only(['estado', 'fecha_limite'])
             );
+            
+            // Registrar en bitácora
+            $usuarioNombre = $assignment->user->nombre ?? 'Usuario';
+            $evidenciaNombre = $assignment->evidence->nombre ?? 'Evidencia';
+            AuditLogService::log(
+                'editar',
+                "Asignación actualizada: {$evidenciaNombre} para {$usuarioNombre} (ID: {$assignment->evidencia_asignacion_id})",
+                'Asignación de Evidencias'
+            );
 
             return EvidenceAssignmentResource::make($updatedAssignment)->response();
             
@@ -130,6 +150,14 @@ class EvidenceAssignmentController extends Controller
             ];
             
             $this->service->deleteAssignment($assignment);
+            
+            // Registrar en bitácora
+            $usuarioNombre = $assignmentData['usuario_id'] ? (\App\Models\User::find($assignmentData['usuario_id'])->nombre ?? 'Usuario') : 'Usuario';
+            AuditLogService::log(
+                'eliminar',
+                "Asignación eliminada: {$assignmentData['evidencia_nombre']} para {$usuarioNombre} (ID: {$assignmentData['asignacion_evidencia_id']})",
+                'Asignación de Evidencias'
+            );
             
             // Disparar evento para notificación
             event(new EvidenceAssignmentDeleted($assignmentData));

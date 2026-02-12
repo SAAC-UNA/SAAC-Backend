@@ -7,6 +7,7 @@ use App\Http\Requests\StoreFileRequest;
 use App\Http\Requests\UpdateFileRequest;
 use App\Http\Resources\FileResource;
 use App\Services\FileService;
+use App\Services\AuditLogService;
 use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -172,6 +173,14 @@ class FileController extends Controller
             
             event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
         }
+        
+        // Registrar en bitácora
+        $tipo = $validated['tipo'] === 'archivo' ? 'archivo(s)' : 'enlace(s)';
+        AuditLogService::log(
+            'crear',
+            "Se subieron " . count($archivos) . " {$tipo} para evidencia ID {$validated['evidencia_id']}",
+            'Archivos'
+        );
 
         return response()->json([
             'success' => true,
@@ -204,8 +213,19 @@ class FileController extends Controller
     public function destroy(File $archivo): JsonResponse
     {
         Gate::authorize('delete', $archivo);
+        
+        // Guardar datos antes de eliminar
+        $nombreArchivo = $archivo->nombre_original;
+        $evidenciaId = $archivo->evidencia_id;
 
         $this->fileService->deleteFile($archivo);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'eliminar',
+            "Archivo '{$nombreArchivo}' eliminado de evidencia ID {$evidenciaId}",
+            'Archivos'
+        );
 
         return response()->json([
             'success' => true,
@@ -235,6 +255,13 @@ class FileController extends Controller
         $this->fileService->makePublic($archivo, $expiresAt);
 
         $archivo->load(['evidence', 'user', 'process']);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'editar',
+            "Archivo '{$archivo->nombre_original}' marcado como público (ID: {$archivo->archivo_id})",
+            'Archivos'
+        );
 
         return response()->json([
             'success' => true,
@@ -254,6 +281,13 @@ class FileController extends Controller
         $this->fileService->revokePublicAccess($archivo);
 
         $archivo->load(['evidence', 'user', 'process']);
+        
+        // Registrar en bitácora
+        AuditLogService::log(
+            'editar',
+            "Acceso público revocado para archivo '{$archivo->nombre_original}' (ID: {$archivo->archivo_id})",
+            'Archivos'
+        );
 
         return response()->json([
             'success' => true,
