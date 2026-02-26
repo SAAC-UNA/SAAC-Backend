@@ -1,0 +1,62 @@
+### Archivo: `docker-compose.yml`
+
+version: '3.8'
+
+services:
+  # OpenLDAP - Autenticación
+  ldap:
+    image: osixia/openldap:latest
+    container_name: saac_ldap
+    environment:
+      LDAP_ORGANISATION: "UNA"
+      LDAP_DOMAIN: "una.local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_TLS: "false"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - saac
+
+  # Redis - Sesiones
+  redis:
+    image: redis:latest
+    container_name: saac_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - saac
+
+  # MySQL - Base de Datos
+  mysql:
+    image: mysql:8.0
+    container_name: saac_mysql
+    environment:
+      MYSQL_DATABASE: saac
+      MYSQL_USER: saac_user
+      MYSQL_PASSWORD: saac_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - saac
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  ldap_data:
+  ldap_config:
+  redis_data:
+  mysql_data:
+
+networks:
+  saac:
+    driver: bridge
