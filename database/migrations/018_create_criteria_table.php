@@ -25,6 +25,12 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance para queries frecuentes
+            $table->index('componente_id', 'idx_cr_componente_id');
+            $table->index('activo', 'idx_cr_activo');
+            $table->index('nomenclatura', 'idx_cr_nomenclatura');
+            $table->index(['componente_id', 'activo'], 'idx_cr_componente_activo');
         });
     }
 

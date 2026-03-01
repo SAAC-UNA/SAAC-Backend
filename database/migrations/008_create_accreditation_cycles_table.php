@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('nombre', 50);
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('carrera_sede_id', 'idx_ca_carrera_sede_id');
         });
     }
     

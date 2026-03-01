@@ -41,6 +41,13 @@ return new class extends Migration
             
             // Índice único para evitar asignaciones duplicadas del mismo usuario a la misma evidencia en el mismo proceso
             $table->unique(['proceso_id', 'evidencia_id', 'usuario_id'], 'unique_proceso_evidencia_usuario');
+            
+            // Índices de performance para queries frecuentes
+            $table->index('usuario_id', 'idx_ea_usuario_id');
+            $table->index('estado', 'idx_ea_estado');
+            $table->index('fecha_limite', 'idx_ea_fecha_limite');
+            $table->index(['evidencia_id', 'usuario_id'], 'idx_ea_evidencia_usuario');
+            $table->index(['usuario_id', 'estado'], 'idx_ea_usuario_estado');
         });
     }
 

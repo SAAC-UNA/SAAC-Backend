@@ -21,6 +21,10 @@ return new class extends Migration
             $table->foreignId('sede_id')->constrained('SEDE', 'sede_id')->onDelete('restrict');
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('carrera_id', 'idx_cs_carrera_id');
+            $table->index('sede_id', 'idx_cs_sede_id');
         });
     }
 

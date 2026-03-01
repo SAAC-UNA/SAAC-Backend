@@ -23,6 +23,10 @@ return new class extends Migration
             $table->boolean('activo')->default(true)->name('activo');
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('criterio_id', 'idx_es_criterio_id');
+            $table->index('activo', 'idx_es_activo');
         });
     }
 

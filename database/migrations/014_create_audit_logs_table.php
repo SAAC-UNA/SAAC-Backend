@@ -17,6 +17,8 @@ return new class extends Migration
             $table->id()->name('bitacora_id');
             // Relación con tipo de acción (restrict: mantener integridad de catálogo)
             $table->foreignId('tipo_accion_id')->constrained('TIPO_ACCION', 'tipo_accion_id')->onDelete('restrict');
+            // Módulo del sistema donde ocurrió la acción
+            $table->string('modulo', 100)->nullable()->comment('Módulo del sistema donde ocurrió la acción (ej: Usuarios, Evidencias)');
             // Relación con usuario (restrict: mantener historial de auditoría)
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             // Fecha y hora de la acción
@@ -25,6 +27,14 @@ return new class extends Migration
             $table->text('detalle')->nullable();
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance para reportes y auditoría
+            $table->index('usuario_id', 'idx_bi_usuario_id');
+            $table->index('tipo_accion_id', 'idx_bi_tipo_accion_id');
+            $table->index('modulo', 'idx_bi_modulo');
+            $table->index('fecha_hora', 'idx_bi_fecha_hora');
+            $table->index(['usuario_id', 'fecha_hora'], 'idx_bi_usuario_fecha');
+            $table->index(['modulo', 'fecha_hora'], 'idx_bi_modulo_fecha');
         });
     }
 

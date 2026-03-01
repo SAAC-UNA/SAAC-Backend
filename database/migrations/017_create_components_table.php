@@ -25,6 +25,11 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('dimension_id', 'idx_co_dimension_id');
+            $table->index('activo', 'idx_co_activo');
+            $table->index(['dimension_id', 'activo'], 'idx_co_dimension_activo');
         });
     }
 

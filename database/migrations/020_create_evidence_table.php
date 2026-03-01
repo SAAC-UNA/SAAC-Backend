@@ -29,6 +29,15 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance para queries frecuentes
+            $table->index('criterio_id', 'idx_ev_criterio_id');
+            $table->index('estado_evidencia_id', 'idx_ev_estado_id');
+            $table->index('activo', 'idx_ev_activo');
+            $table->index('created_at', 'idx_ev_created_at');
+            $table->index('nomenclatura', 'idx_ev_nomenclatura');
+            $table->index(['criterio_id', 'activo'], 'idx_ev_criterio_activo');
+            $table->index(['estado_evidencia_id', 'activo'], 'idx_ev_estado_activo');
         });
     }
 

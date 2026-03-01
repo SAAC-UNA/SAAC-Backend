@@ -36,6 +36,9 @@ return new class extends Migration
             
             // Timestamps de creación y actualización
             $table->timestamps();
+            
+            // Índices de performance (cédula y email ya tienen unique)
+            $table->index('status', 'idx_us_status');
         });
     }
 

@@ -19,6 +19,10 @@ return new class extends Migration
             //$table->boolean('activo')->default(true); //nnuevo
             $table->string('tipo_proceso', 50); //nuevo
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('ciclo_acreditacion_id', 'idx_pr_ciclo_id');
+            $table->index('tipo_proceso', 'idx_pr_tipo_proceso');
         });
     }
 

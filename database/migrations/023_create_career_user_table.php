@@ -19,6 +19,10 @@ return new class extends Migration
             $table->unique(['carrera_id', 'usuario_id'], 'uq_carrera_usuario');
             // Campos de auditoría (created_at, updated_at)
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('carrera_id', 'idx_cu_carrera_id');
+            $table->index('usuario_id', 'idx_cu_usuario_id');
         });
     } 
 

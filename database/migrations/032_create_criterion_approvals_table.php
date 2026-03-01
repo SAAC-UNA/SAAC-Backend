@@ -32,6 +32,13 @@ return new class extends Migration
             
             // Timestamps de creación y actualización (created_at = fecha de aprobación)
             $table->timestamps();
+            
+            // Índices de performance
+            $table->index('criterio_id', 'idx_ac_criterio_id');
+            $table->index('proceso_id', 'idx_ac_proceso_id');
+            $table->index('usuario_id', 'idx_ac_usuario_id');
+            $table->index('estado', 'idx_ac_estado');
+            $table->index(['criterio_id', 'proceso_id'], 'idx_ac_criterio_proceso');
         });
     }
 

@@ -29,6 +29,8 @@ return new class extends Migration
             // Indexes
             $table->index(['evidencia_id', 'proceso_id']);
             $table->index('criterio_aprobacion_id');
+            $table->index('evidencia_id', 'idx_ae_evidencia_id');
+            $table->index('estado', 'idx_ae_estado');
         });
     }
 
