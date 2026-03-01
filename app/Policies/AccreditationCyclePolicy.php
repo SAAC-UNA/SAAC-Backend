@@ -6,6 +6,12 @@ use App\Models\AccreditationCycle;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorización de Ciclos de Acreditación
+ * 
+ * IMPORTANTE: Los ciclos NO se pueden eliminar, solo desactivar.
+ * Esto evita pérdida de información histórica de procesos de acreditación.
+ */
 class AccreditationCyclePolicy
 {
     /**
@@ -13,7 +19,7 @@ class AccreditationCyclePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('ciclos.view');
     }
 
     /**
@@ -21,7 +27,7 @@ class AccreditationCyclePolicy
      */
     public function view(User $user, AccreditationCycle $accreditationCycle): bool
     {
-        return false;
+        return $user->can('ciclos.view');
     }
 
     /**
@@ -29,7 +35,7 @@ class AccreditationCyclePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('ciclos.create');
     }
 
     /**
@@ -37,11 +43,12 @@ class AccreditationCyclePolicy
      */
     public function update(User $user, AccreditationCycle $accreditationCycle): bool
     {
-        return false;
+        return $user->can('ciclos.edit');
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Los ciclos NO se pueden eliminar físicamente.
+     * Solo se pueden desactivar mediante update.
      */
     public function delete(User $user, AccreditationCycle $accreditationCycle): bool
     {

@@ -6,6 +6,9 @@ use App\Models\Standard;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorización de Estándares del Marco SINAES
+ */
 class StandardPolicy
 {
     /**
@@ -13,7 +16,7 @@ class StandardPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('estandares.view');
     }
 
     /**
@@ -21,7 +24,7 @@ class StandardPolicy
      */
     public function view(User $user, Standard $standard): bool
     {
-        return false;
+        return $user->can('estandares.view');
     }
 
     /**
@@ -29,7 +32,7 @@ class StandardPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('estandares.create');
     }
 
     /**
@@ -37,7 +40,7 @@ class StandardPolicy
      */
     public function update(User $user, Standard $standard): bool
     {
-        return false;
+        return $user->can('estandares.edit');
     }
 
     /**
@@ -45,7 +48,7 @@ class StandardPolicy
      */
     public function delete(User $user, Standard $standard): bool
     {
-        return false;
+        return $user->can('estandares.delete');
     }
 
     /**

@@ -126,6 +126,112 @@ class RoleService
     }
 
     /**
+     * Obtener la estructura de módulos y permisos desde la configuración.
+     * Útil para construir interfaces de gestión de roles.
+     *
+     * @return array Estructura de módulos con sus permisos y descripciones.
+     */
+    public function getModulesStructure(): array
+    {
+        $modules = config('permissions.modules', []);
+        $descriptions = config('permissions.descriptions', []);
+        
+        $structure = [];
+        
+        foreach ($modules as $module => $actions) {
+            $modulePermissions = [];
+            
+            foreach ($actions as $action) {
+                $permissionName = "{$module}.{$action}";
+                $modulePermissions[] = [
+                    'name' => $permissionName,
+                    'action' => $action,
+                    'label' => $descriptions[$permissionName] ?? $permissionName,
+                ];
+            }
+            
+            // Generar nombre legible del módulo
+            $moduleName = ucfirst(str_replace('_', ' ', $module));
+            
+            $structure[] = [
+                'module' => $module,
+                'name' => $moduleName,
+                'permissions' => $modulePermissions,
+            ];
+        }
+        
+        return $structure;
+    }
+
+    /**
+     * Verificar si un rol es protegido (roles por defecto del sistema).
+     * Los roles protegidos no pueden ser eliminados y su nombre no puede cambiar.
+     *
+     * @param Role|string $role Instancia del rol o nombre del rol.
+     * @return bool True si el rol está protegido.
+     */
+    public function isProtectedRole($role): bool
+    {
+        $protectedRoles = [
+            'Superusuario',
+            'Administrador',
+            'Encargado de Acreditación',
+            'Profesor',
+        ];
+        
+        $roleName = $role instanceof Role ? $role->name : $role;
+        
+        return in_array($roleName, $protectedRoles, true);
+    }
+
+    /**
+     * Obtener roles agrupados por tipo (protegidos vs personalizados).
+     *
+     * @return array Array con collections de roles protegidos y personalizados.
+     */
+    public function getRolesGrouped(): array
+    {
+        $roles = $this->listRoles();
+        
+        return [
+            'protected' => $roles->filter(fn($role) => $this->isProtectedRole($role)),
+            'custom' => $roles->reject(fn($role) => $this->isProtectedRole($role)),
+        ];
+    }
+
+    /**
+     * Validar si se puede eliminar un rol.
+     * No se pueden eliminar roles protegidos ni roles con usuarios asignados.
+     *
+     * @param Role $role Rol a validar.
+     * @return array ['can_delete' => bool, 'reason' => string|null]
+     */
+    public function canDeleteRole(Role $role): array
+    {
+        // Verificar si es un rol protegido
+        if ($this->isProtectedRole($role)) {
+            return [
+                'can_delete' => false,
+                'reason' => 'Los roles del sistema no pueden ser eliminados.',
+            ];
+        }
+        
+        // Verificar si tiene usuarios asignados
+        $usersCount = $role->users()->count();
+        if ($usersCount > 0) {
+            return [
+                'can_delete' => false,
+                'reason' => "Este rol tiene {$usersCount} usuario(s) asignado(s). Debes reasignarlos antes de eliminar el rol.",
+            ];
+        }
+        
+        return [
+            'can_delete' => true,
+            'reason' => null,
+        ];
+    }
+
+    /**
      * Eliminar un rol existente por su ID.
      * Se desasocian permisos antes de la eliminación y se manejan eventos.
      *

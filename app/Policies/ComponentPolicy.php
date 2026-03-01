@@ -6,6 +6,9 @@ use App\Models\Component;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorización de Componentes del Marco SINAES
+ */
 class ComponentPolicy
 {
     /**
@@ -13,7 +16,7 @@ class ComponentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('componentes.view');
     }
 
     /**
@@ -21,7 +24,7 @@ class ComponentPolicy
      */
     public function view(User $user, Component $component): bool
     {
-        return false;
+        return $user->can('componentes.view');
     }
 
     /**
@@ -29,7 +32,7 @@ class ComponentPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('componentes.create');
     }
 
     /**
@@ -37,7 +40,7 @@ class ComponentPolicy
      */
     public function update(User $user, Component $component): bool
     {
-        return false;
+        return $user->can('componentes.edit');
     }
 
     /**
@@ -45,7 +48,7 @@ class ComponentPolicy
      */
     public function delete(User $user, Component $component): bool
     {
-        return false;
+        return $user->can('componentes.delete');
     }
 
     /**

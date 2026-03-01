@@ -6,6 +6,9 @@ use App\Models\Criterion;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorización de Criterios del Marco SINAES
+ */
 class CriterionPolicy
 {
     /**
@@ -13,7 +16,7 @@ class CriterionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('criterios.view');
     }
 
     /**
@@ -21,7 +24,7 @@ class CriterionPolicy
      */
     public function view(User $user, Criterion $criterion): bool
     {
-        return false;
+        return $user->can('criterios.view');
     }
 
     /**
@@ -29,7 +32,7 @@ class CriterionPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('criterios.create');
     }
 
     /**
@@ -37,7 +40,7 @@ class CriterionPolicy
      */
     public function update(User $user, Criterion $criterion): bool
     {
-        return false;
+        return $user->can('criterios.edit');
     }
 
     /**
@@ -45,7 +48,7 @@ class CriterionPolicy
      */
     public function delete(User $user, Criterion $criterion): bool
     {
-        return false;
+        return $user->can('criterios.delete');
     }
 
     /**

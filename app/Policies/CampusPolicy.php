@@ -6,61 +6,50 @@ use App\Models\Campus;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorizar operaciones sobre sedes (campuses).
+ * 
+ * REGLAS:
+ * - Todos pueden ver sedes
+ * - Solo Superusuario y Administrador pueden crear y editar
+ * - Solo Superusuario puede eliminar
+ */
 class CampusPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('campuses.view');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Campus $campus): bool
     {
-        return false;
+        return $user->can('campuses.view');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('campuses.create') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Campus $campus): bool
     {
-        return false;
+        return $user->can('campuses.edit') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador']);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Campus $campus): bool
     {
-        return false;
+        return $user->can('campuses.delete') && $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Campus $campus): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Campus $campus): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 }

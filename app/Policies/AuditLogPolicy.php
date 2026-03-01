@@ -10,20 +10,18 @@ class AuditLogPolicy
 {
     /**
      * Determina si el usuario puede ver listados de bitácora.
-     * Solo usuarios con rol Superusuario pueden consultar bitácora.
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('Superusuario');
+        return $user->can('bitacora.view');
     }
 
     /**
      * Determina si el usuario puede ver un registro específico de bitácora.
-     * Solo usuarios con rol Superusuario pueden consultar bitácora.
      */
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return $user->hasRole('Superusuario');
+        return $user->can('bitacora.view');
     }
 
     /**

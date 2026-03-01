@@ -6,69 +6,50 @@ use App\Models\EvidenceAssignment;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorizar operaciones sobre asignaciones de evidencias.
+ * 
+ * REGLAS:
+ * - Todos pueden ver asignaciones (filtradas por rol en controller)
+ * - Solo Superusuario, Administrador y Encargado pueden crear/editar/eliminar
+ */
 class EvidenceAssignmentPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        // Cualquier usuario autenticado puede ver asignaciones (información de consulta)
-        return true;
+        return $user->can('asignaciones.view');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        // Cualquier usuario autenticado puede ver una asignación (solo lectura)
-        return true;
+        return $user->can('asignaciones.view');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        // Solo los encargados de acreditación pueden crear asignaciones
-        return $user->hasRole('encargado_acreditacion') || $user->hasRole('admin');
+        return $user->can('asignaciones.create') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        // Los usuarios pueden actualizar sus propias asignaciones (cambiar estado) 
-        // o los encargados pueden actualizar cualquiera
-        return $evidenceAssignment->usuario_id === $user->usuario_id || 
-               $user->hasRole('encargado_acreditacion') || 
-               $user->hasRole('admin');
+        return $user->can('asignaciones.edit') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        // Solo los encargados de acreditación pueden eliminar asignaciones
-        return $user->hasRole('encargado_acreditacion') || $user->hasRole('admin');
+        return $user->can('asignaciones.delete') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        return $user->hasRole('encargado_acreditacion') || $user->hasRole('admin');
+        return $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, EvidenceAssignment $evidenceAssignment): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('Superusuario');
     }
 }

@@ -6,61 +6,67 @@ use App\Models\ImprovementCommitment;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorizar operaciones sobre compromisos de mejora.
+ * 
+ * REGLAS:
+ * - Superusuario, Administrador y Encargado pueden gestionar compromisos
+ * - Profesor solo puede ver los relacionados con sus evidencias
+ */
 class ImprovementCommitmentPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('compromisos_mejora.view');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, ImprovementCommitment $improvementCommitment): bool
     {
+        if (!$user->can('compromisos_mejora.view')) {
+            return false;
+        }
+
+        // Superusuario, Administrador y Encargado ven todos
+        if ($user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación'])) {
+            return true;
+        }
+
+        // Profesor solo ve compromisos de evidencias asignadas a él
+        if ($user->hasRole('Profesor')) {
+            return $improvementCommitment->evidence
+                ->assignments()
+                ->where('usuario_id', $user->usuario_id)
+                ->exists();
+        }
+
         return false;
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('compromisos_mejora.create') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, ImprovementCommitment $improvementCommitment): bool
     {
-        return false;
+        return $user->can('compromisos_mejora.edit') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, ImprovementCommitment $improvementCommitment): bool
     {
-        return false;
+        return $user->can('compromisos_mejora.delete') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador']);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, ImprovementCommitment $improvementCommitment): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, ImprovementCommitment $improvementCommitment): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 }

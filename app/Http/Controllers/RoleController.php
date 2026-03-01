@@ -29,7 +29,23 @@ class RoleController extends Controller
     public function listRoles(): JsonResponse
     {
         $roles = $this->roleService->listRoles();
-        return response()->json(['data' => RoleResource::collection($roles)], 200);
+        
+        // Agregar metadata sobre si el rol es protegido
+        $rolesWithMetadata = $roles->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'description' => $role->description,
+                'permissions' => $role->permissions,
+                'users_count' => $role->users()->count(),
+                'is_protected' => $this->roleService->isProtectedRole($role),
+                'can_delete' => $this->roleService->canDeleteRole($role)['can_delete'],
+                'created_at' => $role->created_at,
+                'updated_at' => $role->updated_at,
+            ];
+        });
+        
+        return response()->json(['data' => $rolesWithMetadata], 200);
     }
 
     /**
@@ -156,23 +172,70 @@ class RoleController extends Controller
         $role = $this->roleService->getRole($id);
 
         if (!$role) {
-        return response()->json([
-            'error'   => 'Not Found',
-            'message' => 'Rol no encontrado',
-        ], 404);
-    }
+            return response()->json([
+                'error'   => 'Not Found',
+                'message' => 'Rol no encontrado',
+            ], 404);
+        }
 
-    $result = $this->roleService->deleteRole($id);
+        // Verificar si el rol se puede eliminar
+        $validation = $this->roleService->canDeleteRole($role);
+        
+        if (!$validation['can_delete']) {
+            return response()->json([
+                'error'   => 'Forbidden',
+                'message' => $validation['reason'],
+            ], 403);
+        }
 
-    if ($result) {
-        AuditLogService::log(
-            'eliminar',
-            "Rol eliminado: {$role->name} (ID: {$role->id})",
-            'Roles'
-        );
-    }
+        $result = $this->roleService->deleteRole($id);
 
+        if ($result) {
+            AuditLogService::log(
+                'eliminar',
+                "Rol eliminado: {$role->name} (ID: {$role->id})",
+                'Roles'
+            );
+        }
 
         return response()->json(['message' => 'Rol eliminado con éxito'], 200);
+    }
+
+    /**
+     * Obtener la estructura de módulos y permisos del sistema.
+     * Útil para construir interfaces de gestión de roles.
+     *
+     * @return JsonResponse
+     */
+    public function getModulesStructure(): JsonResponse
+    {
+        $structure = $this->roleService->getModulesStructure();
+        
+        return response()->json([
+            'data' => $structure,
+            'total_modules' => count($structure),
+        ], 200);
+    }
+
+    /**
+     * Obtener roles agrupados (protegidos vs personalizados).
+     *
+     * @return JsonResponse
+     */
+    public function getRolesGrouped(): JsonResponse
+    {
+        $grouped = $this->roleService->getRolesGrouped();
+        
+        return response()->json([
+            'data' => [
+                'protected' => RoleResource::collection($grouped['protected']),
+                'custom' => RoleResource::collection($grouped['custom']),
+            ],
+            'counts' => [
+                'protected' => $grouped['protected']->count(),
+                'custom' => $grouped['custom']->count(),
+                'total' => $grouped['protected']->count() + $grouped['custom']->count(),
+            ],
+        ], 200);
     }
 }

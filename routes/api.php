@@ -45,58 +45,147 @@ Route::post('auth/login', [AuthController::class, 'login']);
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('auth/me', [AuthController::class, 'me']);
+    Route::get('auth/permissions', [AuthController::class, 'permissions']); // Permisos para frontend
 });
 
 // ============================================
-// Rutas de Estructura (protegidas)
+// Rutas de Estructura (protegidas con permisos)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
-    // Universidades
-    Route::apiResource('estructura/universidades', UniversityController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive']);
     
-    // Campuses
-    Route::apiResource('estructura/campuses', CampusController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    // COMENTADO: Método setActive no implementado correctamente (ver CampusController)
-    // Las carreras tienen relación N:M con sedes, no deben desactivarse en cascada
-    // Route::patch('estructura/campuses/{id}/active', [CampusController::class, 'setActive']);
-    
-    // Carreras
-    Route::apiResource('estructura/carreras', CareerController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive']);
-    
-    // Dimensiones
-    Route::apiResource('estructura/dimensiones', DimensionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive']);
-    
-    // Componentes
-    Route::apiResource('estructura/componentes', ComponentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive']);
-    
-    // Criterios
-    Route::apiResource('estructura/criterios', CriterionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive']);
-    
-    // Evidencias (HU-012: Filtrado avanzado DEBE ir ANTES de apiResource)
-    Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter']);
-    Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel']);
-    Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF']);
-    Route::apiResource('estructura/evidencias', EvidenceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive']);
-    
-    // Estados de evidencia
-    Route::apiResource('estructura/estados-evidencia', EvidenceStateController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
-    
-    // Estándares
-    Route::apiResource('estructura/estandares', StandardController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
-    Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive']);
-    
-    // Procesos y Ciclos
-    Route::get('estructura/procesos', function () {
-        return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
+    // ===== UNIVERSIDADES =====
+    Route::middleware(['permission:universidades.view'])->group(function () {
+        Route::get('estructura/universidades', [UniversityController::class, 'index']);
+        Route::get('estructura/universidades/{university}', [UniversityController::class, 'show']);
     });
-    Route::get('estructura/ciclos-acreditacion', function () {
-        return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+    Route::post('estructura/universidades', [UniversityController::class, 'store'])
+        ->middleware('permission:universidades.create');
+    Route::match(['put', 'patch'], 'estructura/universidades/{university}', [UniversityController::class, 'update'])
+        ->middleware('permission:universidades.edit');
+    Route::delete('estructura/universidades/{university}', [UniversityController::class, 'destroy'])
+        ->middleware('permission:universidades.delete');
+    Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive'])
+        ->middleware('permission:universidades.edit');
+    
+    // ===== CAMPUSES =====
+    Route::middleware(['permission:campuses.view'])->group(function () {
+        Route::get('estructura/campuses', [CampusController::class, 'index']);
+        Route::get('estructura/campuses/{campus}', [CampusController::class, 'show']);
+    });
+    Route::post('estructura/campuses', [CampusController::class, 'store'])
+        ->middleware('permission:campuses.create');
+    Route::match(['put', 'patch'], 'estructura/campuses/{campus}', [CampusController::class, 'update'])
+        ->middleware('permission:campuses.edit');
+    Route::delete('estructura/campuses/{campus}', [CampusController::class, 'destroy'])
+        ->middleware('permission:campuses.delete');
+    
+    // ===== CARRERAS =====
+    Route::middleware(['permission:carreras.view'])->group(function () {
+        Route::get('estructura/carreras', [CareerController::class, 'index']);
+        Route::get('estructura/carreras/{career}', [CareerController::class, 'show']);
+    });
+    Route::post('estructura/carreras', [CareerController::class, 'store'])
+        ->middleware('permission:carreras.create');
+    Route::match(['put', 'patch'], 'estructura/carreras/{career}', [CareerController::class, 'update'])
+        ->middleware('permission:carreras.edit');
+    Route::delete('estructura/carreras/{career}', [CareerController::class, 'destroy'])
+        ->middleware('permission:carreras.delete');
+    Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive'])
+        ->middleware('permission:carreras.edit');
+    
+    // ===== DIMENSIONES =====
+    Route::middleware(['permission:dimensiones.view'])->group(function () {
+        Route::get('estructura/dimensiones', [DimensionController::class, 'index']);
+        Route::get('estructura/dimensiones/{dimension}', [DimensionController::class, 'show']);
+    });
+    Route::post('estructura/dimensiones', [DimensionController::class, 'store'])
+        ->middleware('permission:dimensiones.create');
+    Route::match(['put', 'patch'], 'estructura/dimensiones/{dimension}', [DimensionController::class, 'update'])
+        ->middleware('permission:dimensiones.edit');
+    Route::delete('estructura/dimensiones/{dimension}', [DimensionController::class, 'destroy'])
+        ->middleware('permission:dimensiones.delete');
+    Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive'])
+        ->middleware('permission:dimensiones.edit');
+    
+    // ===== COMPONENTES =====    
+    Route::middleware(['permission:componentes.view'])->group(function () {
+        Route::get('estructura/componentes', [ComponentController::class, 'index']);
+        Route::get('estructura/componentes/{component}', [ComponentController::class, 'show']);
+    });
+    Route::post('estructura/componentes', [ComponentController::class, 'store'])
+        ->middleware('permission:componentes.create');
+    Route::match(['put', 'patch'], 'estructura/componentes/{component}', [ComponentController::class, 'update'])
+        ->middleware('permission:componentes.edit');
+    Route::delete('estructura/componentes/{component}', [ComponentController::class, 'destroy'])
+        ->middleware('permission:componentes.delete');
+    Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive'])
+        ->middleware('permission:componentes.edit');
+    
+    // ===== CRITERIOS =====
+    Route::middleware(['permission:criterios.view'])->group(function () {
+        Route::get('estructura/criterios', [CriterionController::class, 'index']);
+        Route::get('estructura/criterios/{criterion}', [CriterionController::class, 'show']);
+    });
+    Route::post('estructura/criterios', [CriterionController::class, 'store'])
+        ->middleware('permission:criterios.create');
+    Route::match(['put', 'patch'], 'estructura/criterios/{criterion}', [CriterionController::class, 'update'])
+        ->middleware('permission:criterios.edit');
+    Route::delete('estructura/criterios/{criterion}', [CriterionController::class, 'destroy'])
+        ->middleware('permission:criterios.delete');
+    Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive'])
+        ->middleware('permission:criterios.edit');
+    
+    // ===== EVIDENCIAS ===== (HU-012: Filtrado avanzado DEBE ir ANTES de apiResource)
+    Route::middleware(['permission:evidencias.view'])->group(function () {
+        Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter']);
+        Route::get('estructura/evidencias', [EvidenceController::class, 'index']);
+        Route::get('estructura/evidencias/{evidence}', [EvidenceController::class, 'show']);
+    });
+    Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel'])
+        ->middleware('permission:reportes.export');
+    Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF'])
+        ->middleware('permission:reportes.export');
+    Route::post('estructura/evidencias', [EvidenceController::class, 'store'])
+        ->middleware('permission:evidencias.create');
+    Route::match(['put', 'patch'], 'estructura/evidencias/{evidence}', [EvidenceController::class, 'update'])
+        ->middleware('permission:evidencias.edit');
+    Route::delete('estructura/evidencias/{evidence}', [EvidenceController::class, 'destroy'])
+        ->middleware('permission:evidencias.delete');
+    Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive'])
+        ->middleware('permission:evidencias.edit');
+    
+    // ===== ESTADOS DE EVIDENCIA =====
+    Route::get('estructura/estados-evidencia', [EvidenceStateController::class, 'index']);
+    Route::get('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'show']);
+    Route::post('estructura/estados-evidencia', [EvidenceStateController::class, 'store'])
+        ->middleware('role:Superusuario');
+    Route::match(['put', 'patch'], 'estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'update'])
+        ->middleware('role:Superusuario');
+    Route::delete('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'destroy'])
+        ->middleware('role:Superusuario');
+    
+    // ===== ESTÁNDARES =====
+    Route::middleware(['permission:estandares.view'])->group(function () {
+        Route::get('estructura/estandares', [StandardController::class, 'index']);
+        Route::get('estructura/estandares/{standard}', [StandardController::class, 'show']);
+    });
+    Route::post('estructura/estandares', [StandardController::class, 'store'])
+        ->middleware('permission:estandares.create');
+    Route::match(['put', 'patch'], 'estructura/estandares/{standard}', [StandardController::class, 'update'])
+        ->middleware('permission:estandares.edit');
+    Route::delete('estructura/estandares/{standard}', [StandardController::class, 'destroy'])
+        ->middleware('permission:estandares.delete');
+    Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive'])
+        ->middleware('permission:estandares.edit');
+    
+    // ===== PROCESOS Y CICLOS =====
+    Route::middleware(['permission:ciclos.view'])->group(function () {
+        Route::get('estructura/procesos', function () {
+            return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
+        });
+        Route::get('estructura/ciclos-acreditacion', function () {
+            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+        });
     });
 });
 
@@ -104,11 +193,22 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // Rutas para Asignaciones de Evidencias (HU-007)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
-    Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates']);
-    Route::apiResource('evidencias-asignaciones', EvidenceAssignmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
-    Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
-    Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
+    Route::middleware(['permission:asignaciones.view'])->group(function () {
+        Route::get('evidencias-asignaciones', [EvidenceAssignmentController::class, 'index']);
+        Route::get('evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'show']);
+        Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
+        Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
+        Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
+    });
+    
+    Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates'])
+        ->middleware('permission:asignaciones.create');
+    Route::post('evidencias-asignaciones', [EvidenceAssignmentController::class, 'store'])
+        ->middleware('permission:asignaciones.create');
+    Route::match(['put', 'patch'], 'evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'update'])
+        ->middleware('permission:asignaciones.edit');
+    Route::delete('evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'destroy'])
+        ->middleware('permission:asignaciones.delete');
 });
 
 // ============================================
@@ -164,14 +264,23 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->group(function () {
     Route::get('/test-data', [FileController::class, 'getTestData']); // TEMPORAL
-    Route::get('/', [FileController::class, 'index']); // ?evidencia_id={id} o ?proceso_id={id}
-    Route::post('/', [FileController::class, 'store'])->middleware('throttle:10,1');
-    Route::get('/{archivo}', [FileController::class, 'show']);
-    Route::get('/{archivo}/download', [FileController::class, 'download']);
-    Route::delete('/{archivo}', [FileController::class, 'destroy']);
-    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic']);
-    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic']);
-    Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic']);
+    
+    Route::get('/', [FileController::class, 'index'])
+        ->middleware('permission:archivos.view');
+    Route::post('/', [FileController::class, 'store'])
+        ->middleware(['throttle:10,1', 'permission:archivos.upload']);
+    Route::get('/{archivo}', [FileController::class, 'show'])
+        ->middleware('permission:archivos.view');
+    Route::get('/{archivo}/download', [FileController::class, 'download'])
+        ->middleware('permission:archivos.download');
+    Route::delete('/{archivo}', [FileController::class, 'destroy'])
+        ->middleware('permission:archivos.delete');
+    Route::post('/{archivo}/make-public', [FileController::class, 'makePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/{archivo}/revoke-public', [FileController::class, 'revokePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/bulk-make-public', [FileController::class, 'bulkMakePublic'])
+        ->middleware('permission:archivos.make_public');
 });
 
 // Acceso público mediante token (SIN autenticación - para SINAES/informes)
@@ -200,34 +309,63 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
 });
 
 // ============================================
-// Gestión de Roles y Permisos
+// Gestión de Roles y Permisos (Sistema Dinámico)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
-    // Permisos
+    
+    // ===== PERMISOS =====
+    // Endpoint público para frontend (cualquier usuario autenticado)
     Route::get('admin/permissions', [PermissionController::class, 'index']);
-});
-
-// Roles (solo Superusuario y Administrador)
-Route::middleware(['auth:sanctum', 'refresh.session', 'role:Superusuario|Administrador'])->prefix('roles')->group(function () {
-    Route::get('/', [RoleController::class, 'listRoles']);
-    Route::post('/', [RoleController::class, 'createRole']);
-    Route::get('/permisos', [RoleController::class, 'listPermissions']);
-    Route::get('/{id}', [RoleController::class, 'showRole']);
-    Route::put('/{id}', [RoleController::class, 'updateRole']);
-    Route::delete('/{id}', [RoleController::class, 'deleteRole']);
+    
+    // ===== ROLES =====
+    Route::prefix('roles')->group(function () {
+        // Ver roles (Administrador puede ver para asignar, Superusuario para gestionar)
+        Route::get('/', [RoleController::class, 'listRoles'])
+            ->middleware('permission:roles.view');
+        
+        Route::get('/grouped', [RoleController::class, 'getRolesGrouped'])
+            ->middleware('permission:roles.view');
+        
+        Route::get('/modules', [RoleController::class, 'getModulesStructure'])
+            ->middleware('permission:roles.view');
+        
+        Route::get('/permisos', [RoleController::class, 'listPermissions'])
+            ->middleware('permission:roles.view');
+        
+        Route::get('/{id}', [RoleController::class, 'showRole'])
+            ->middleware('permission:roles.view');
+        
+        // Crear roles (solo Superusuario)
+        Route::post('/', [RoleController::class, 'createRole'])
+            ->middleware('permission:roles.create');
+        
+        // Editar roles (solo Superusuario)
+        Route::put('/{id}', [RoleController::class, 'updateRole'])
+            ->middleware('permission:roles.edit');
+        
+        // Eliminar roles (solo Superusuario)
+        Route::delete('/{id}', [RoleController::class, 'deleteRole'])
+            ->middleware('permission:roles.delete');
+    });
 });
 
 // ============================================
 // Compromisos de Mejora
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session', 'role:Superusuario|Administrador|Encargado de Acreditación'])->prefix('compromisos-de-mejora')->group(function () {
-    Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
-    Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
-    Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
-    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment']);
-    Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
-    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment']);
-    Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive']);
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-de-mejora')->group(function () {
+    Route::middleware(['permission:compromisos_mejora.view'])->group(function () {
+        Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
+        Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
+        Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
+        Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
+    });
+    
+    Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])
+        ->middleware('permission:compromisos_mejora.create');
+    Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])
+        ->middleware('permission:compromisos_mejora.edit');
+    Route::patch('/{id}/active', [ImprovementCommitmentController::class, 'setActive'])
+        ->middleware('permission:compromisos_mejora.edit');
 });
 
 // ============================================

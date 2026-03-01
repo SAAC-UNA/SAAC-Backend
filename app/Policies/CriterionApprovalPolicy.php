@@ -7,13 +7,12 @@ use App\Models\CriterionApproval;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 /**
- * Policy para autorizar operaciones sobre aprobaciones de criterios.
- *
- * Roles permitidos:
- * - Superusuario: Acceso total
- * - Encargado de Acreditación: Puede aprobar/rechazar criterios
- * - Profesor: Solo puede VER aprobaciones de criterios donde tiene evidencias asignadas
- * - Administrador: Solo puede VER todas las aprobaciones
+ * Policy para autorizar operaciones sobre aprobaciones de criterios (HU-010).
+ * 
+ * Permisos utilizados:
+ * - aprobaciones.view: Ver aprobaciones de criterios
+ * - aprobaciones.approve: Aprobar criterios
+ * - aprobaciones.reject: Rechazar criterios
  */
 class CriterionApprovalPolicy
 {
@@ -21,30 +20,25 @@ class CriterionApprovalPolicy
 
     /**
      * Determina si el usuario puede ver la lista de aprobaciones.
-     *
-     * @param User $user
-     * @return bool
      */
     public function viewAny(User $user): bool
     {
-        // Todos los roles pueden ver aprobaciones
-        return $user->hasAnyRole([
-            'Superusuario',
-            'Encargado de Acreditación',
-            'Administrador',
-            'Profesor'
-        ]);
+        return $user->can('aprobaciones.view');
     }
 
     /**
      * Determina si el usuario puede ver una aprobación específica.
-     *
-     * @param User $user
-     * @param CriterionApproval $approval
-     * @return bool
+     * 
+     * Lógica de negocio adicional:
+     * - Profesor solo puede ver aprobaciones de criterios donde tiene evidencias asignadas
      */
     public function view(User $user, CriterionApproval $approval): bool
     {
+        // Verificar permiso base
+        if (!$user->can('aprobaciones.view')) {
+            return false;
+        }
+
         // Superusuario, Encargado y Administrador pueden ver todas
         if ($user->hasAnyRole(['Superusuario', 'Encargado de Acreditación', 'Administrador'])) {
             return true;
@@ -65,25 +59,17 @@ class CriterionApprovalPolicy
 
     /**
      * Determina si el usuario puede aprobar un criterio.
-     *
-     * @param User $user
-     * @return bool
      */
     public function approve(User $user): bool
     {
-        // Solo SuperUsuario y Encargado de Acreditación pueden aprobar
-        return $user->hasAnyRole(['Superusuario', 'Encargado de Acreditación']);
+        return $user->can('aprobaciones.approve');
     }
 
     /**
      * Determina si el usuario puede rechazar un criterio.
-     *
-     * @param User $user
-     * @return bool
      */
     public function reject(User $user): bool
     {
-        // Solo SuperUsuario y Encargado de Acreditación pueden rechazar
-        return $user->hasAnyRole(['Superusuario', 'Encargado de Acreditación']);
+        return $user->can('aprobaciones.reject');
     }
 }

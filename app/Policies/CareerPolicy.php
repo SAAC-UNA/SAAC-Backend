@@ -6,61 +6,64 @@ use App\Models\Career;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorizar operaciones sobre carreras.
+ * 
+ * REGLAS:
+ * - Todos pueden ver carreras
+ * - Superusuario y Administrador pueden crear
+ * - Administrador solo puede editar SU carrera
+ * - Solo Superusuario puede eliminar
+ */
 class CareerPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('carreras.view');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Career $career): bool
     {
-        return false;
+        return $user->can('carreras.view');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('carreras.create') && 
+               $user->hasAnyRole(['Superusuario', 'Administrador']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Career $career): bool
     {
+        if (!$user->can('carreras.edit')) {
+            return false;
+        }
+
+        // Superusuario puede editar cualquier carrera
+        if ($user->hasRole('Superusuario')) {
+            return true;
+        }
+
+        // Administrador solo puede editar carreras asignadas a él
+        if ($user->hasRole('Administrador')) {
+            return $user->careers()->where('carrera_id', $career->carrera_id)->exists();
+        }
+
         return false;
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Career $career): bool
     {
-        return false;
+        return $user->can('carreras.delete') && $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Career $career): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Career $career): bool
     {
-        return false;
+        return $user->hasRole('Superusuario');
     }
 }

@@ -217,4 +217,75 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Obtener permisos y roles del usuario autenticado (para el frontend)
+     * 
+     * Retorna:
+     * - Roles del usuario
+     * - Permisos directos asignados al usuario
+     * - Permisos heredados de los roles (todos los permisos efectivos)
+     * - Descripciones legibles de los permisos
+     * 
+     * El frontend puede usar esta información para:
+     * - Mostrar/ocultar menús según permisos
+     * - Deshabilitar botones de acciones no permitidas
+     * - Mostrar mensajes informativos sobre restricciones
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function permissions(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            // Verificar sesión en Redis
+            $sessionKey = "session:user:{$user->usuario_id}";
+            $sessionData = Redis::get($sessionKey);
+            
+            if (!$sessionData) {
+                return response()->json([
+                    'message' => 'Sesión expirada',
+                ], 401);
+            }
+
+            // Renovar TTL de la sesión
+            Redis::expire($sessionKey, 1800);
+
+            // Obtener roles del usuario
+            $roles = $user->roles->pluck('name');
+
+            // Obtener todos los permisos efectivos del usuario
+            // (incluye permisos directos + permisos heredados de roles)
+            $allPermissions = $user->getAllPermissions()->pluck('name');
+
+            // Obtener solo permisos directos (sin los de roles)
+            $directPermissions = $user->permissions->pluck('name');
+
+            // Cargar descripciones de permisos desde configuración
+            $permissionDescriptions = config('permissions.descriptions', []);
+
+            // Generar array de permisos con descripciones
+            $permissionsWithDescriptions = $allPermissions->mapWithKeys(function ($permission) use ($permissionDescriptions) {
+                return [
+                    $permission => $permissionDescriptions[$permission] ?? $permission
+                ];
+            });
+
+            return response()->json([
+                'roles' => $roles,
+                'permissions' => $allPermissions->values(), // Array simple de permisos
+                'permissions_with_descriptions' => $permissionsWithDescriptions, // Objeto con descripciones
+                'direct_permissions' => $directPermissions->values(), // Permisos asignados directamente
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error en permissions: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Error al obtener permisos del usuario',
+            ], 500);
+        }
+    }
 }

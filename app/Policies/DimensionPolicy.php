@@ -6,6 +6,9 @@ use App\Models\Dimension;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+/**
+ * Policy para autorización de Dimensiones del Marco SINAES
+ */
 class DimensionPolicy
 {
     /**
@@ -13,7 +16,7 @@ class DimensionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('dimensiones.view');
     }
 
     /**
@@ -21,7 +24,7 @@ class DimensionPolicy
      */
     public function view(User $user, Dimension $dimension): bool
     {
-        return false;
+        return $user->can('dimensiones.view');
     }
 
     /**
@@ -29,7 +32,7 @@ class DimensionPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('dimensiones.create');
     }
 
     /**
@@ -37,7 +40,7 @@ class DimensionPolicy
      */
     public function update(User $user, Dimension $dimension): bool
     {
-        return false;
+        return $user->can('dimensiones.edit');
     }
 
     /**
@@ -45,7 +48,7 @@ class DimensionPolicy
      */
     public function delete(User $user, Dimension $dimension): bool
     {
-        return false;
+        return $user->can('dimensiones.delete');
     }
 
     /**
