@@ -3,41 +3,49 @@
 namespace App\Services;
 
 use App\Models\University;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class UniversityService
 {
-    /**
-     * Lista todas las universidades ordenadas por nombre.
-     */
     public function getAll()
     {
-        return University::orderBy('nombre')->get();
+        return Cache::remember('universidades.all', 300, function () {
+            $rows = DB::select('CALL SP_OBTENER_UNIVERSIDADES()');
+            return University::hydrate(array_map(fn($r) => (array) $r, $rows));
+        });
     }
 
-    // Lógica para show
-    public function findById($id)
+    public function findById($id): ?University
     {
-    return University::find($id);
+        $rows = DB::select('CALL SP_BUSCAR_UNIVERSIDAD(?)', [$id]);
+        return $rows ? University::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
     }
-    //Store
+
     public function create(array $data): University
     {
-        return University::create($data);
+        $rows = DB::select('CALL SP_CREAR_UNIVERSIDAD(?, ?)', [
+            $data['nombre'],
+            $data['activo'] ?? 1,
+        ]);
+        Cache::forget('universidades.all');
+        return University::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     public function update(University $university, array $data): University
     {
-    $university->update($data);
-    return $university;
+        $rows = DB::select('CALL SP_ACTUALIZAR_UNIVERSIDAD(?, ?, ?)', [
+            $university->universidad_id,
+            $data['nombre'] ?? $university->nombre,
+            $data['activo'] ?? $university->activo,
+        ]);
+        Cache::forget('universidades.all');
+        return University::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
-    //delete
     public function delete(University $university): void
     {
-        // Delegamos la eliminación directa al modelo
-        $university->delete();
+        DB::statement('CALL SP_ELIMINAR_UNIVERSIDAD(?)', [$university->universidad_id]);
+        Cache::forget('universidades.all');
     }
-
-
-
 }

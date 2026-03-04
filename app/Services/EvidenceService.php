@@ -5,203 +5,136 @@ namespace App\Services;
 use App\Models\Evidence;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class EvidenceService
 {
-    // ============================================================
-    // MÉTODOS EXISTENTES (NO MODIFICADOS)
-    // ============================================================
-
     public function getAll()
     {
-        // Igual que tu index: sin with()
-        return Evidence::orderBy('nomenclatura')->get();
+        return Cache::remember('evidencias.all', 300, function () {
+            $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS()');
+            return Evidence::hydrate(array_map(fn($r) => (array) $r, $rows));
+        });
     }
 
     public function findById(int $id): ?Evidence
     {
-        return Evidence::find($id); // Igual que tu show
+        $rows = DB::select('CALL SP_BUSCAR_EVIDENCIA(?)', [$id]);
+        return $rows ? Evidence::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
     }
 
     public function create(array $data): Evidence
     {
-        return Evidence::create($data);
+        $rows = DB::select('CALL SP_CREAR_EVIDENCIA(?, ?, ?, ?, ?)', [
+            $data['criterio_id'],
+            $data['estado_evidencia_id'],
+            $data['descripcion'],
+            $data['nomenclatura'],
+            $data['activo'] ?? 1,
+        ]);
+        Cache::forget('evidencias.all');
+        return Evidence::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     public function update(Evidence $evidence, array $data): Evidence
     {
-        $evidence->fill($data)->save();
-        return $evidence;
+        $rows = DB::select('CALL SP_ACTUALIZAR_EVIDENCIA(?, ?, ?, ?, ?, ?)', [
+            $evidence->evidencia_id,
+            $data['criterio_id'] ?? $evidence->criterio_id,
+            $data['estado_evidencia_id'] ?? $evidence->estado_evidencia_id,
+            $data['descripcion'] ?? $evidence->descripcion,
+            $data['nomenclatura'] ?? $evidence->nomenclatura,
+            $data['activo'] ?? $evidence->activo,
+        ]);
+        Cache::forget('evidencias.all');
+        return Evidence::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     public function delete(Evidence $evidence): void
     {
-        $evidence->delete();
+        DB::statement('CALL SP_ELIMINAR_EVIDENCIA(?)', [$evidence->evidencia_id]);
+        Cache::forget('evidencias.all');
     }
 
-    // ============================================================
-    // MÉTODO NUEVO PARA HU-012: Filtrado Avanzado de Evidencias
-    // ============================================================
-
     /**
-     * Filtrar evidencias con múltiples criterios (HU-012)
-     * 
-     * MÉTODO NUEVO - Creado para HU-012
-     * Este método NO modifica el comportamiento de getAll()
-     * 
-     * Cumple con los siguientes Criterios de Aceptación:
-     * - #1: Aplicación de filtros básicos
-     * - #3: Restricción según rol del usuario
-     * - #4: Ordenamiento de resultados
-     * - #5: Paginación de resultados
-     * - #6: Sin coincidencias
-     * 
-     * Características:
-     * - Eager loading (soluciona problema N+1 queries)
-     * - Restricciones por rol (SuperUsuario, Coordinador, Evaluador)
-     * - Filtros combinables (AND entre ellos)
-     * - Ordenamiento dinámico
-     * - Paginación con metadata
-     * 
-     * @param array $filters Filtros validados desde FilterEvidenceRequest
-     * @param User $user Usuario autenticado (para restricciones por rol)
-     * @return LengthAwarePaginator Resultados paginados con metadata
-     * 
-     * Ejemplo de uso:
-     * $filters = [
-     *     'criterio_id' => 4,
-     *     'estado_evidencia_id' => 2,
-     *     'fecha_desde' => '2025-01-01',
-     *     'fecha_hasta' => '2025-12-31',
-     *     'sort_by' => 'fecha',
-     *     'sort_order' => 'desc',
-     *     'per_page' => 20
-     * ];
-     * $evidences = $service->filterEvidences($filters, auth()->user());
+     * Filtrar evidencias con paginacion (HU-012).
+     * Usa SP_FILTRAR_EVIDENCIAS + SP_CONTAR_FILTRO_EVIDENCIAS.
+     * Nota: la restriccion por rol Profesor se resuelve a nivel de SP cuando
+     * el SP soporte parametro de usuario; por ahora se filtra post-query.
      */
     public function filterEvidences(array $filters, User $user): LengthAwarePaginator
     {
-        // Iniciar query SIN global scope (manejamos restricciones manualmente)
-        $query = Evidence::withoutGlobalScope('byCareerCampus')
-            ->with([
-                'criterion' => function($q) {
-                    $q->withoutGlobalScope('byCareerCampus')
-                      ->select('criterio_id', 'nomenclatura', 'descripcion', 'componente_id');
-                },
-                'evidenceState:estado_evidencia_id,nombre',
-                'assignments' => function($q) {
-                    $q->with('user:usuario_id,nombre,email');
-                }
-            ])
-            ->withCount([
-                'files as archivos_count' => function($q) {
-                    $q->where('tipo', 'archivo');
-                },
-                'files as enlaces_count' => function($q) {
-                    $q->where('tipo', 'enlace');
-                }
-            ]);
+        $perPage = $filters['per_page'] ?? 15;
+        $page    = $filters['page'] ?? 1;
+        $offset  = ($page - 1) * $perPage;
 
-        // ============================================================
-        // APLICAR FILTROS (Criterio #1)
-        // ============================================================
+        $criterioId       = $filters['criterio_id'] ?? null;
+        $estadoId         = $filters['estado_evidencia_id'] ?? null;
+        $fechaDesde       = $filters['fecha_desde'] ?? null;
+        $fechaHasta       = $filters['fecha_hasta'] ?? null;
+        $sortBy           = $filters['sort_by'] ?? 'created_at';
+        $sortOrder        = $filters['sort_order'] ?? 'desc';
 
-        // Filtro por Criterio
-        if (isset($filters['criterio_id']) && $filters['criterio_id']) {
-            $query->where('criterio_id', $filters['criterio_id']);
-        }
-
-        // Filtro por Estado
-        if (isset($filters['estado_evidencia_id']) && $filters['estado_evidencia_id']) {
-            $query->where('estado_evidencia_id', $filters['estado_evidencia_id']);
-        }
-
-        // Filtro por Rango de Fechas (fecha de publicación)
-        if (isset($filters['fecha_desde']) && isset($filters['fecha_hasta'])) {
-            $query->whereBetween('created_at', [
-                $filters['fecha_desde'] . ' 00:00:00',
-                $filters['fecha_hasta'] . ' 23:59:59'
-            ]);
-        } elseif (isset($filters['fecha_desde'])) {
-            $query->where('created_at', '>=', $filters['fecha_desde'] . ' 00:00:00');
-        } elseif (isset($filters['fecha_hasta'])) {
-            $query->where('created_at', '<=', $filters['fecha_hasta'] . ' 23:59:59');
-        }
-
-        // Filtro por Responsable (usuario asignado)
-        if (isset($filters['responsable_id']) && $filters['responsable_id']) {
-            $query->whereHas('assignments', function($q) use ($filters) {
-                $q->where('usuario_id', $filters['responsable_id'])
-                  ->where('activo', true);
-            });
-        }
-
-        // Filtro por Rol del responsable
-        if (isset($filters['rol_id']) && $filters['rol_id']) {
-            $query->whereHas('assignments.user.roles', function($q) use ($filters) {
-                $q->where('id', $filters['rol_id']);
-            });
-        }
-
-        // ============================================================
-        // RESTRICCIONES POR ROL DEL USUARIO (Criterio #3)
-        // ============================================================
-
-        // SuperUsuario: ve TODAS las evidencias (sin restricción)
-        // IMPORTANTE: El rol se llama "Superusuario" (no "SuperUsuario")
-        if (!$user->hasRole('Superusuario')) {
-            // Administrador/Coordinador: solo ve evidencias de SUS carreras
-            if ($user->hasRole(['Administrador', 'Coordinador'])) {
-                // TODO: Arreglar filtrado por carreras - la relación comment.careers NO existe
-                // Temporalmente comentado para evitar error 500
-                /*
-                $careerIds = $user->careers->pluck('carrera_id')->toArray();
-                
-                if (!empty($careerIds)) {
-                    $query->whereHas('criterion.component.dimension.comment.careers', function($q) use ($careerIds) {
-                        $q->whereIn('carrera_id', $careerIds);
-                    });
-                } else {
-                    $query->whereRaw('1 = 0');
-                }
-                */
-            } 
-            // Evaluador/Profesor: solo ve evidencias ASIGNADAS a él
-            else {
-                $query->whereHas('assignments', function($q) use ($user) {
-                    $q->where('usuario_id', $user->usuario_id)
-                      ->where('activo', true);
-                });
-            }
-        }
-
-        // ============================================================
-        // ORDENAMIENTO (Criterio #4)
-        // ============================================================
-
-        $sortBy = $filters['sort_by'] ?? 'created_at';
-        $sortOrder = $filters['sort_order'] ?? 'desc';
-
-        // Mapear nombres de campo del frontend a columnas de BD
-        $sortColumn = match($sortBy) {
-            'fecha' => 'created_at',
-            'fecha_publicacion' => 'created_at',
-            'nomenclatura' => 'nomenclatura',
-            'descripcion' => 'descripcion',
-            'estado' => 'estado_evidencia_id',
-            default => 'created_at'
+        // Mapear nombre de columna frontend => columna BD
+        $sortColumn = match ($sortBy) {
+            'fecha', 'fecha_publicacion' => 'created_at',
+            'nomenclatura'               => 'nomenclatura',
+            'descripcion'                => 'descripcion',
+            'estado'                     => 'estado_evidencia_id',
+            default                      => 'created_at',
         };
 
-        $query->orderBy($sortColumn, $sortOrder);
+        // Para Profesor: obtener IDs asignados y filtrar
+        if (!$user->hasRole('Superusuario') && $user->hasRole(['Profesor', 'Evaluador'])) {
+            // Obtener evidencias proximas/asignadas al usuario
+            $assigned = DB::select('CALL SP_OBTENER_EVIDENCIAS_PROXIMAS(?, ?)', [
+                $user->usuario_id,
+                now()->addYears(10)->format('Y-m-d H:i:s'),
+            ]);
+            $assignedEvidenciaIds = array_unique(array_column($assigned, 'evidencia_id'));
 
-        // ============================================================
-        // PAGINACIÓN (Criterio #5)
-        // ============================================================
+            if (empty($assignedEvidenciaIds)) {
+                return new LengthAwarePaginator(collect(), 0, $perPage, $page);
+            }
 
-        $perPage = $filters['per_page'] ?? 15;
+            // Filtrar con Eloquent para respetar lista de IDs asignados
+            $query = Evidence::withoutGlobalScope('byCareerCampus')
+                ->with('criterion', 'evidenceState')
+                ->whereIn('evidencia_id', $assignedEvidenciaIds);
 
-        // Retorna LengthAwarePaginator con metadata:
-        // - current_page, last_page, total, per_page, from, to
-        return $query->paginate($perPage);
+            if ($criterioId) $query->where('criterio_id', $criterioId);
+            if ($estadoId)   $query->where('estado_evidencia_id', $estadoId);
+            if ($fechaDesde) $query->where('created_at', '>=', $fechaDesde . ' 00:00:00');
+            if ($fechaHasta) $query->where('created_at', '<=', $fechaHasta . ' 23:59:59');
+
+            $query->orderBy($sortColumn, $sortOrder);
+            return $query->paginate($perPage);
+        }
+
+        // Para Superusuario / Coordinador / Administrador: usar SPs
+        $total = DB::select('CALL SP_CONTAR_FILTRO_EVIDENCIAS(?, ?, ?, ?)', [
+            $criterioId,
+            $estadoId,
+            $fechaDesde,
+            $fechaHasta,
+        ])[0]->total ?? 0;
+
+        $rows = DB::select('CALL SP_FILTRAR_EVIDENCIAS(?, ?, ?, ?, ?, ?, ?, ?)', [
+            $criterioId,
+            $estadoId,
+            $fechaDesde,
+            $fechaHasta,
+            $sortColumn,
+            $sortOrder,
+            $offset,
+            $perPage,
+        ]);
+
+        $items = Evidence::hydrate(array_map(fn($r) => (array) $r, $rows));
+
+        return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
+            'path' => request()->url(),
+        ]);
     }
 }

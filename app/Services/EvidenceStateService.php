@@ -3,32 +3,41 @@
 namespace App\Services;
 
 use App\Models\EvidenceState;
+use Illuminate\Support\Facades\DB;
 
 class EvidenceStateService
 {
     public function getAll()
     {
-        return EvidenceState::orderBy('nombre')->get();
+        $rows = DB::select('CALL SP_OBTENER_ESTADOS_EVIDENCIA()');
+        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     public function findById(int $id): ?EvidenceState
     {
-        return EvidenceState::find($id);
+        $rows = DB::select('CALL SP_BUSCAR_ESTADO_EVIDENCIA(?)', [$id]);
+        return $rows ? EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
     }
 
     public function create(array $data): EvidenceState
     {
-        return EvidenceState::create($data);
+        $rows = DB::select('CALL SP_CREAR_ESTADO_EVIDENCIA(?)', [
+            $data['nombre'],
+        ]);
+        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     public function update(EvidenceState $estado, array $data): EvidenceState
     {
-        $estado->update($data);
-        return $estado;
+        $rows = DB::select('CALL SP_ACTUALIZAR_ESTADO_EVIDENCIA(?, ?)', [
+            $estado->estado_evidencia_id,
+            $data['nombre'] ?? $estado->nombre,
+        ]);
+        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     public function delete(EvidenceState $estado): void
     {
-        $estado->delete();
+        DB::statement('CALL SP_ELIMINAR_ESTADO_EVIDENCIA(?)', [$estado->estado_evidencia_id]);
     }
 }

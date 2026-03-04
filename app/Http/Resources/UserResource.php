@@ -32,14 +32,16 @@ class UserResource extends JsonResource
             }),
             'direct_permissions' => $this->permissions->map(function ($permission) {
                 return [
-                    'id' => $permission->id,
-                    'name' => $permission->name,
+                    'id'    => $permission->id,
+                    'name'  => $permission->name,
+                    'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
                 ];
             }),
             'all_permissions' => $this->getAllPermissions()->map(function ($permission) {
                 return [
-                    'id' => $permission->id,
-                    'name' => $permission->name,
+                    'id'    => $permission->id,
+                    'name'  => $permission->name,
+                    'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
                 ];
             }),
         ];

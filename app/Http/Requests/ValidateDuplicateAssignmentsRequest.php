@@ -11,12 +11,7 @@ class ValidateDuplicateAssignmentsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Si no hay usuario autenticado, retornar false
-        if (!$this->user()) {
-            return false;
-        }
-        
-        return $this->user()->can('asignar_evidencias');
+        return $this->user() !== null;
     }
 
     /**

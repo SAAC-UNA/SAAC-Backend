@@ -5,159 +5,133 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\ActionType;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AuditLogService
 {
     /**
-     * Registra una acción en la bitácora del sistema.
-     *
-     * @param string $actionName  Nombre de la acción (crear, editar, eliminar, consultar, login, logout)
-     * @param string|null $detail Detalle opcional de la acción
-     * @param string|null $modulo Módulo del sistema donde ocurrió la acción
-     * @param int|null $userId ID del usuario (si no se proporciona, usa Auth::id())
-     * @return bool Retorna true si se registró exitosamente, false si falló
+     * Registra una accion en la bitacora del sistema.
      */
-    public static function log(string $actionName, ?string $detail = null, ?string $modulo = null, ?int $userId = null): bool
-    {
+    public static function log(
+        string $actionName,
+        ?string $detail = null,
+        ?string $modulo = null,
+        ?int $userId = null
+    ): bool {
         try {
-            // ID del usuario: usar el proporcionado o el autenticado (puede ser null en login_failed)
             $userId = $userId ?? Auth::id();
 
-            // Buscar el tipo de acción por descripción
-            $actionType = ActionType::where('descripcion', $actionName)->first();
-
-            if (!$actionType) {
-                // Si no existe el tipo de acción, registrar en log y retornar false
-                Log::warning("Tipo de acción '{$actionName}' no encontrado en catálogo");
+            // Buscar tipo de accion por descripcion
+            $rows = DB::select('CALL SP_BUSCAR_TIPO_ACCION_POR_NOMBRE(?)', [$actionName]);
+            if (empty($rows)) {
+                Log::warning("Tipo de accion '{$actionName}' no encontrado en catalogo");
                 return false;
             }
+            $tipoAccionId = $rows[0]->tipo_accion_id;
 
-            // Registrar en la bitácora
-            AuditLog::create([
-                'usuario_id'     => $userId,
-                'tipo_accion_id' => $actionType->tipo_accion_id,
-                'modulo'         => $modulo,
-                'detalle'        => $detail,
-                'fecha_hora'     => now(),
+            DB::statement('CALL SP_REGISTRAR_ACCION(?, ?, ?, ?, ?)', [
+                $userId,
+                $tipoAccionId,
+                $modulo,
+                $detail,
+                now()->format('Y-m-d H:i:s'),
             ]);
 
             return true;
         } catch (\Exception $e) {
-            // Registrar error en log para que superusuario/admin técnico lo vea
-            Log::error('Error al registrar en bitácora', [
+            Log::error('Error al registrar en bitacora', [
                 'action' => $actionName,
                 'module' => $modulo,
                 'error'  => $e->getMessage(),
-                'user'   => Auth::id()
+                'user'   => Auth::id(),
             ]);
             return false;
         }
     }
 
     /**
-     * Listar registros de bitácora con filtros opcionales.
-     *
-     * @param array $filters Filtros opcionales (usuario_id, tipo_accion_id, modulo, fecha_desde, fecha_hasta)
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * Listar registros de bitacora con filtros opcionales y paginacion.
      */
     public function list(array $filters = [])
     {
-        $query = AuditLog::query();
+        $perPage     = $filters['per_page'] ?? 15;
+        $page        = $filters['page'] ?? 1;
+        $offset      = ($page - 1) * $perPage;
+        $usuarioId   = $filters['usuario_id'] ?? null;
+        $modulo      = $filters['modulo'] ?? null;
+        $fechaDesde  = $filters['fecha_desde'] ?? null;
+        $fechaHasta  = $filters['fecha_hasta'] ?? null;
 
-        // Filtro por usuario
-        if (!empty($filters['usuario_id'])) {
-            $query->where('usuario_id', $filters['usuario_id']);
+        // Resolver tipo_accion_id desde nombre si viene como texto
+        $tipoAccionId = $filters['tipo_accion_id'] ?? null;
+        if (!$tipoAccionId && !empty($filters['tipo_accion'])) {
+            $rows = DB::select('CALL SP_BUSCAR_TIPO_ACCION_POR_NOMBRE(?)', [$filters['tipo_accion']]);
+            $tipoAccionId = $rows[0]->tipo_accion_id ?? null;
         }
 
-        // Filtro por tipo de acción (acepta ID o nombre)
-        if (!empty($filters['tipo_accion_id'])) {
-            $query->where('tipo_accion_id', $filters['tipo_accion_id']);
-        } elseif (!empty($filters['tipo_accion'])) {
-            // Buscar el ID por nombre de acción
-            $actionType = ActionType::where('descripcion', $filters['tipo_accion'])->first();
-            if ($actionType) {
-                $query->where('tipo_accion_id', $actionType->tipo_accion_id);
-            }
-        }
+        $total = DB::select('CALL SP_CONTAR_BITACORA(?, ?, ?, ?, ?)', [
+            $usuarioId,
+            $tipoAccionId,
+            $modulo,
+            $fechaDesde,
+            $fechaHasta,
+        ])[0]->total ?? 0;
 
-        // Filtro por módulo
-        if (!empty($filters['modulo'])) {
-            $query->where('modulo', $filters['modulo']);
-        }
+        $rows = DB::select('CALL SP_OBTENER_BITACORA(?, ?, ?, ?, ?, ?, ?)', [
+            $usuarioId,
+            $tipoAccionId,
+            $modulo,
+            $fechaDesde,
+            $fechaHasta,
+            $offset,
+            $perPage,
+        ]);
 
-        // Filtro por rango de fechas
-        if (!empty($filters['fecha_desde'])) {
-            $query->where('fecha_hora', '>=', $filters['fecha_desde']);
-        }
+        $items = AuditLog::hydrate(array_map(fn($r) => (array) $r, $rows));
 
-        if (!empty($filters['fecha_hasta'])) {
-            $query->where('fecha_hora', '<=', $filters['fecha_hasta']);
-        }
-
-        // Incluir relaciones
-        $query->with(['user', 'actionType']);
-
-        // Ordenar por fecha descendente
-        $query->orderBy('fecha_hora', 'desc');
-
-        // Paginar resultados
-        $perPage = $filters['per_page'] ?? 15;
-
-        return $query->paginate($perPage);
+        return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
+            'path' => request()->url(),
+        ]);
     }
+
     /**
-     * Obtener la lista de módulos registrados en la bitácora.
-     *
-     * @return \Illuminate\Support\Collection
+     * Obtener la lista de modulos registrados en la bitacora.
      */
     public function getModules()
     {
-        return AuditLog::query()
-            ->whereNotNull('modulo')
-            ->distinct()
-            ->orderBy('modulo')
-            ->pluck('modulo');
+        $rows = DB::select('CALL SP_OBTENER_MODULOS_BITACORA()');
+        return collect($rows)->pluck('modulo');
     }
+
     /**
-     * Obtener la lista de acciones registradas en la bitácora.
+     * Obtener la lista de tipos de accion.
      */
-        public function getActionTypes()
+    public function getActionTypes()
     {
-        return ActionType::query()
-            ->select('tipo_accion_id', 'descripcion')
-            ->orderBy('descripcion')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_TIPOS_ACCION()');
+        return ActionType::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
+
     /**
-     * Obtener registros de bitácora para exportación en un rango de fechas.
-     *
-     * @param string $desde Fecha de inicio (YYYY-MM-DD)
-     * @param string $hasta Fecha de fin (YYYY-MM-DD)
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Obtener registros de bitacora para exportacion en un rango de fechas.
      */
     public function getForExport(string $desde, string $hasta)
     {
-        // límite máximo permitido para exportación, por medio de configuración
-        $exportSafetyLimit = config('saac.export_limit', 20000);// quitar hardcodeo
+        $exportSafetyLimit = config('saac.export_limit', 20000);
 
-         // Contar registros en el rango solicitado 
-
-        $count = AuditLog::whereBetween('fecha_hora', [$desde, $hasta])->count();
+        $count = DB::select('CALL SP_CONTAR_BITACORA_EXPORTACION(?, ?)', [$desde, $hasta])[0]->total ?? 0;
 
         if ($count > $exportSafetyLimit) {
             throw new \Exception(
-                "El rango seleccionado contiene $count registros. ".
-                "El máximo permitido para exportación es $exportSafetyLimit. ".
+                "El rango seleccionado contiene $count registros. " .
+                "El maximo permitido para exportacion es $exportSafetyLimit. " .
                 "Reduzca el rango de fechas y vuelva a intentarlo."
             );
         }
 
-        return AuditLog::with(['user', 'actionType'])
-            ->whereBetween('fecha_hora', [$desde, $hasta])
-            ->orderBy('fecha_hora', 'desc')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_BITACORA_EXPORTACION(?, ?)', [$desde, $hasta]);
+        return AuditLog::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
-
-
 }

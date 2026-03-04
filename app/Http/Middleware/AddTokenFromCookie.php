@@ -19,26 +19,19 @@ class AddTokenFromCookie
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Debug: Ver qué cookies llegan
-        \Log::info('AddTokenFromCookie - Cookies:', $request->cookies->all());
-        
         // Si ya tiene token en Authorization, no hacer nada
         if ($request->bearerToken()) {
-            \Log::info('AddTokenFromCookie - Ya tiene Bearer token');
             return $next($request);
         }
 
-        // Extraer token de la cookie
+        // Extraer token de la cookie y agregarlo al header Authorization
         $token = $request->cookie('auth_token');
 
         if ($token) {
-            \Log::info('AddTokenFromCookie - Token encontrado en cookie, agregando a header');
-            // Agregar el token al header Authorization
             $request->headers->set('Authorization', 'Bearer ' . $token);
-        } else {
-            \Log::info('AddTokenFromCookie - NO se encontró token en cookie');
         }
 
         return $next($request);
     }
+
 }

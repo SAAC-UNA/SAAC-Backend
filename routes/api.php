@@ -201,8 +201,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
     });
     
-    Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates'])
-        ->middleware('permission:asignaciones.create');
+    Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates']);
     Route::post('evidencias-asignaciones', [EvidenceAssignmentController::class, 'store'])
         ->middleware('permission:asignaciones.create');
     Route::match(['put', 'patch'], 'evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'update'])

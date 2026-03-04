@@ -3,80 +3,63 @@
 namespace App\Services;
 
 use App\Models\EvidenceAssignment;
-use App\Models\Evidence;
 use App\Models\User;
 use App\Models\Role;
 use App\Events\EvidenceAssigned;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
 
 class EvidenceAssignmentService
 {
     /**
      * Obtener todas las asignaciones de evidencias.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAll()
     {
-        return EvidenceAssignment::with(['process', 'evidence', 'user'])
-            ->orderBy('fecha_asignacion', 'desc')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, null, null]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     /**
-     * Encontrar asignación por ID.
-     *
-     * @param int $id
-     * @return EvidenceAssignment|null
+     * Encontrar asignacion por ID.
      */
     public function findById(int $id): ?EvidenceAssignment
     {
-        return EvidenceAssignment::with(['process', 'evidence', 'evidence.criterion', 'user'])->find($id);
+        $rows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$id]);
+        return $rows ? EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
     }
 
     /**
      * Asignar evidencia a usuarios y/o roles.
-     *
-     * @param array $data
-     * @return array
      */
     public function assignEvidence(array $data): array
     {
-        $procesoId = $data['proceso_id'];
+        $procesoId   = $data['proceso_id'];
         $evidenciaId = $data['evidencia_id'];
-        $usuarios = $data['usuarios'] ?? [];
-        $roles = $data['roles'] ?? [];
+        $usuarios    = $data['usuarios'] ?? [];
+        $roles       = $data['roles'] ?? [];
         $fechaLimite = $data['fecha_limite'] ?? null;
-        $comentario = $data['comentario'] ?? null;
+        $comentario  = $data['comentario'] ?? null;
 
         $asignaciones = [];
-        $errores = [];
+        $errores      = [];
 
         DB::beginTransaction();
         try {
             // Verificar que el proceso existe
-            $proceso = \App\Models\Process::find($procesoId);
-            if (!$proceso) {
+            $proceso = DB::select('CALL SP_BUSCAR_PROCESO(?)', [$procesoId]);
+            if (empty($proceso)) {
                 throw new \Exception('El proceso especificado no existe.');
             }
 
             // Verificar que la evidencia existe
-            $evidencia = Evidence::find($evidenciaId);
-            if (!$evidencia) {
+            $evidencia = DB::select('CALL SP_BUSCAR_EVIDENCIA(?)', [$evidenciaId]);
+            if (empty($evidencia)) {
                 throw new \Exception('La evidencia especificada no existe.');
             }
 
             // Asignar a usuarios directamente
             foreach ($usuarios as $usuarioId) {
-                $asignacion = $this->createAssignment(
-                    $procesoId,
-                    $evidenciaId,
-                    $usuarioId,
-                    $fechaLimite,
-                    $comentario
-                );
-                
+                $asignacion = $this->createAssignment($procesoId, $evidenciaId, $usuarioId, $fechaLimite, $comentario);
                 if ($asignacion) {
                     $asignaciones[] = $asignacion;
                 } else {
@@ -92,18 +75,11 @@ class EvidenceAssignmentService
                     continue;
                 }
 
-                // Obtener usuarios activos que tienen este rol usando Spatie
+                // Spatie se mantiene para gestion de roles
                 $usuariosConRol = User::role($role->name)->active()->get();
-                
+
                 foreach ($usuariosConRol as $usuario) {
-                    $asignacion = $this->createAssignment(
-                        $procesoId,
-                        $evidenciaId,
-                        $usuario->usuario_id,
-                        $fechaLimite,
-                        $comentario
-                    );
-                    
+                    $asignacion = $this->createAssignment($procesoId, $evidenciaId, $usuario->usuario_id, $fechaLimite, $comentario);
                     if ($asignacion) {
                         $asignaciones[] = $asignacion;
                     } else {
@@ -115,10 +91,10 @@ class EvidenceAssignmentService
             DB::commit();
 
             return [
-                'asignaciones' => $asignaciones,
-                'errores' => $errores,
-                'total_asignaciones' => count($asignaciones),
-                'total_errores' => count($errores)
+                'asignaciones'      => $asignaciones,
+                'errores'           => $errores,
+                'total_asignaciones'=> count($asignaciones),
+                'total_errores'     => count($errores),
             ];
 
         } catch (\Exception $e) {
@@ -128,107 +104,99 @@ class EvidenceAssignmentService
     }
 
     /**
-     * Crear una asignación individual.
-     *
-     * @param int $procesoId
-     * @param int $evidenciaId
-     * @param int $usuarioId
-     * @param string|null $fechaLimite
-     * @param string|null $comentario
-     * @return EvidenceAssignment|null
+     * Crear una asignacion individual. Retorna null si ya existe duplicado activo.
      */
-    private function createAssignment(int $procesoId, int $evidenciaId, int $usuarioId, ?string $fechaLimite, ?string $comentario): ?EvidenceAssignment
-    {
-        // Verificar que no exista ya una asignación activa en este proceso
-        $existente = EvidenceAssignment::where('proceso_id', $procesoId)
-            ->where('evidencia_id', $evidenciaId)
-            ->where('usuario_id', $usuarioId)
-            ->where('estado', '!=', 'completado')
-            ->first();
-
-        if ($existente) {
-            return null; // Ya existe una asignación activa en este proceso
-        }
-
-        $assignment = EvidenceAssignment::create([
-            'proceso_id' => $procesoId,
-            'evidencia_id' => $evidenciaId,
-            'usuario_id' => $usuarioId,
-            'estado' => 'pendiente',
-            'fecha_asignacion' => now(),
-            'fecha_limite' => $fechaLimite,
-            'comentario' => $comentario,
+    private function createAssignment(
+        int $procesoId,
+        int $evidenciaId,
+        int $usuarioId,
+        ?string $fechaLimite,
+        ?string $comentario
+    ): ?EvidenceAssignment {
+        // Verificar duplicado via SP
+        $duplicado = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
+            $procesoId, $evidenciaId, $usuarioId,
         ]);
 
-        // Disparar evento de asignación de evidencia para notificaciones
+        if (!empty($duplicado) && $duplicado[0]->total > 0) {
+            return null;
+        }
+
+        $rows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
+            $procesoId,
+            $evidenciaId,
+            $usuarioId,
+            'pendiente',
+            now()->format('Y-m-d H:i:s'),
+            $fechaLimite,
+            $comentario,
+        ]);
+
+        $assignment = EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+
+        // Disparar evento de asignacion para notificaciones
         event(new EvidenceAssigned($assignment));
 
         return $assignment;
     }
 
     /**
-     * Actualizar el estado de una asignación.
-     *
-     * @param EvidenceAssignment $assignment
-     * @param array $data
-     * @return EvidenceAssignment
+     * Actualizar el estado de una asignacion.
      */
     public function updateAssignment(EvidenceAssignment $assignment, array $data): EvidenceAssignment
     {
-        $assignment->fill($data)->save();
-        return $assignment;
+        DB::statement('CALL SP_ACTUALIZAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?)', [
+            $assignment->evidencia_asignacion_id,
+            $data['estado'] ?? null,
+            $data['fecha_limite'] ?? null,
+            $data['comentario'] ?? null,
+        ]);
+
+        $rows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$assignment->evidencia_asignacion_id]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     /**
-     * Eliminar una asignación.
-     *
-     * @param EvidenceAssignment $assignment
-     * @return void
+     * Eliminar una asignacion.
      */
     public function deleteAssignment(EvidenceAssignment $assignment): void
     {
-        $assignment->delete();
+        DB::statement('CALL SP_ELIMINAR_ASIGNACION_EVIDENCIA(?)', [$assignment->evidencia_asignacion_id]);
     }
 
     /**
      * Obtener asignaciones por usuario.
-     *
-     * @param int $usuarioId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAssignmentsByUser(int $usuarioId)
     {
-        return EvidenceAssignment::with(['evidence', 'evidence.criterion'])
-            ->where('usuario_id', $usuarioId)
-            ->orderBy('fecha_limite', 'asc')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, $usuarioId, null]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     /**
      * Obtener asignaciones por evidencia.
-     *
-     * @param int $evidenciaId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAssignmentsByEvidence(int $evidenciaId)
     {
-        return EvidenceAssignment::with(['user'])
-            ->where('evidencia_id', $evidenciaId)
-            ->orderBy('fecha_asignacion', 'desc')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, null, $evidenciaId]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     /**
      * Obtener asignaciones por proceso.
-     *
-     * @param int $procesoId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAssignmentsByProcess(int $procesoId)
     {
-        return EvidenceAssignment::with(['evidence', 'user'])
-            ->where('proceso_id', $procesoId)
-            ->orderBy('fecha_asignacion', 'desc')
-            ->get();
+        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [$procesoId, null, null]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+    }
+
+    /**
+     * Obtener evidencias proximas a vencer para un usuario.
+     */
+    public function getUpcomingEvidences(int $usuarioId, string $limitDate)
+    {
+        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_PROXIMAS(?, ?)', [$usuarioId, $limitDate]);
+        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 }

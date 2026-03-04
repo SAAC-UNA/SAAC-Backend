@@ -26,17 +26,32 @@ class EvidenceAssignmentResource extends JsonResource
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             
-            // Relaciones anidadas cuando están cargadas
+            // Relaciones anidadas: se usan datos de la relación cargada (Eloquent)
+            // o los campos planos que provienen del SP cuando no hay eager loading.
             'proceso' => [
-                'proceso_id' => $this->whenLoaded('process', $this->process?->proceso_id),
+                'proceso_id'            => $this->whenLoaded('process', $this->process?->proceso_id),
                 'ciclo_acreditacion_id' => $this->whenLoaded('process', $this->process?->ciclo_acreditacion_id),
             ],
-            'evidencia' => new EvidenceResource($this->whenLoaded('evidence')),
-            'usuario' => [
-                'usuario_id' => $this->whenLoaded('user', $this->user?->usuario_id),
-                'nombre' => $this->whenLoaded('user', $this->user?->nombre),
-                'email' => $this->whenLoaded('user', $this->user?->email),
-            ],
+            'evidencia' => $this->relationLoaded('evidence') && $this->evidence
+                ? new EvidenceResource($this->evidence)
+                : [
+                    'evidencia_id'  => $this->evidencia_id,
+                    'nomenclatura'  => $this->evidencia_nomenclatura ?? null,
+                    'descripcion'   => $this->evidencia_descripcion  ?? null,
+                    'criterio_id'   => $this->criterio_id             ?? null,
+                    'criterion'     => null,
+                ],
+            'usuario' => $this->relationLoaded('user') && $this->user
+                ? [
+                    'usuario_id' => $this->user->usuario_id,
+                    'nombre'     => $this->user->nombre,
+                    'email'      => $this->user->email,
+                ]
+                : [
+                    'usuario_id' => $this->usuario_id,
+                    'nombre'     => $this->usuario_nombre ?? null,
+                    'email'      => $this->usuario_email  ?? null,
+                ],
             
             // HU-016: Indicar si tiene una solicitud de ampliación pendiente
             // Usa DB::table para evitar problemas de lazy loading

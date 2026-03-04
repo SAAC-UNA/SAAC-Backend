@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use LdapRecord\Container;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -134,36 +135,38 @@ class LdapService
     public function syncUserFromLdap(array $ldapData): User
     {
         try {
-            // Buscar usuario por cédula
-            $user = User::where('cedula', $ldapData['cedula'])->first();
-            
-            $syncData = [
-                'cedula' => $ldapData['cedula'],
-                'nombre' => $ldapData['nombre'],
-                'email' => $ldapData['email'],
-                'status' => User::STATUS_ACTIVE,
-            ];
-            
-            if ($user) {
-                // Usuario existe, actualizar solo campos sin password
-                $user->cedula = $ldapData['cedula'];
-                $user->nombre = $ldapData['nombre'];
-                $user->email = $ldapData['email'];
-                $user->status = User::STATUS_ACTIVE;
-                $user->save();
+            // Buscar usuario por cedula via SP
+            $rows = DB::select('CALL SP_BUSCAR_USUARIO_POR_CEDULA(?)', [$ldapData['cedula']]);
+
+            if (!empty($rows)) {
+                // Usuario existe: actualizar datos sin tocar password
+                $userId = $rows[0]->usuario_id;
+                $updated = DB::select('CALL SP_ACTUALIZAR_USUARIO(?, ?, ?, ?, ?)', [
+                    $userId,
+                    $ldapData['cedula'],
+                    $ldapData['nombre'],
+                    $ldapData['email'],
+                    User::STATUS_ACTIVE,
+                ]);
                 Log::info("Usuario actualizado desde LDAP: {$ldapData['cedula']}");
+                return User::hydrate(array_map(fn($r) => (array) $r, $updated))->first();
             } else {
-                // Usuario nuevo, crear
-                $user = User::create($syncData);
+                // Usuario nuevo: crear con password vacio (LDAP gestiona autenticacion)
+                $created = DB::select('CALL SP_CREAR_USUARIO(?, ?, ?, ?, ?)', [
+                    $ldapData['cedula'],
+                    $ldapData['nombre'],
+                    $ldapData['email'],
+                    User::STATUS_ACTIVE,
+                    '',
+                ]);
                 Log::info("Usuario creado desde LDAP: {$ldapData['cedula']}");
+                return User::hydrate(array_map(fn($r) => (array) $r, $created))->first();
             }
-            
-            return $user;
-            
+
         } catch (Exception $e) {
             Log::error("Error sincronizando usuario desde LDAP: " . $e->getMessage(), [
                 'ldap_data' => $ldapData,
-                'exception' => get_class($e)
+                'exception' => get_class($e),
             ]);
             throw $e;
         }

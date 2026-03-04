@@ -36,7 +36,13 @@ class RoleController extends Controller
                 'id' => $role->id,
                 'name' => $role->name,
                 'description' => $role->description,
-                'permissions' => $role->permissions,
+                'permissions' => $role->permissions->map(function ($permission) {
+                    return [
+                        'id'    => $permission->id,
+                        'name'  => $permission->name,
+                        'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
+                    ];
+                }),
                 'users_count' => $role->users()->count(),
                 'is_protected' => $this->roleService->isProtectedRole($role),
                 'can_delete' => $this->roleService->canDeleteRole($role)['can_delete'],

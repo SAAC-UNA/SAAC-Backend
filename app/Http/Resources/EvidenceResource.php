@@ -21,12 +21,23 @@ class EvidenceResource extends JsonResource
             'activo'              => $this->activo ?? true,
             'fecha_publicacion'   => optional($this->created_at)->toISOString(),
             'updated_at'          => optional($this->updated_at)->toISOString(),
-            // Relaciones opcionales
-            'criterion'           => new CriterionResource($this->whenLoaded('criterion')),
-            'estado_evidencia'    => $this->when(
-                $this->relationLoaded('evidenceState') && $this->evidenceState,
-                fn() => ['nombre' => $this->evidenceState->nombre]
-            ),
+            // Relaciones opcionales — usa la relación Eloquent si está cargada,
+            // o los campos planos que devuelve el SP cuando no hay eager loading.
+            'criterion'           => $this->relationLoaded('criterion') && $this->criterion
+                ? new CriterionResource($this->criterion)
+                : ($this->criterio_nomenclatura !== null
+                    ? [
+                        'id'           => $this->criterio_id,
+                        'nomenclatura' => $this->criterio_nomenclatura,
+                        'descripcion'  => $this->criterio_descripcion ?? null,
+                        'activo'       => true,
+                    ]
+                    : null),
+            'estado_evidencia'    => $this->relationLoaded('evidenceState') && $this->evidenceState
+                ? ['nombre' => $this->evidenceState->nombre]
+                : ($this->estado_nombre !== null
+                    ? ['nombre' => $this->estado_nombre]
+                    : null),
             'responsables'        => $this->when(
                 $this->relationLoaded('assignments'),
                 fn() => $this->assignments->map(fn($assignment) => [

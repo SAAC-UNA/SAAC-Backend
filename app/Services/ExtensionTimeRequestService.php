@@ -3,311 +3,234 @@
 namespace App\Services;
 
 use App\Models\ExtensionRequest;
-use App\Models\EvidenceAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 
 /**
- * Servicio que gestiona la lógica de negocio para solicitudes de ampliación del profesor (RF-15).
- * Incluye operaciones para listar, obtener, crear, actualizar y cancelar solicitudes,
- * así como validaciones específicas del dominio.
+ * Servicio del profesor para solicitudes de ampliacion de plazo (RF-15).
+ * Usa stored procedures para todas las operaciones de base de datos.
  */
 class ExtensionTimeRequestService
 {
     /**
-     * Listar solicitudes de ampliación con paginación obligatoria y filtros dinámicos.
-     *
-     * @param int $perPage Cantidad de registros por página (default: 15).
-     * @param array $filters Filtros opcionales: estado, evidencia_asignacion_id, usuario_id, fecha_desde, fecha_hasta
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * Listar solicitudes con paginacion y filtros.
      */
     public function listRequests(int $perPage = 15, array $filters = [])
     {
-        $query = ExtensionRequest::query();
+        $page        = $filters['page'] ?? 1;
+        $offset      = ($page - 1) * $perPage;
+        $estado      = $filters['estado'] ?? null;
+        $usuarioId   = $filters['usuario_id'] ?? null;
+        $asignacionId= $filters['evidencia_asignacion_id'] ?? null;
+        $fechaDesde  = $filters['fecha_desde'] ?? null;
+        $fechaHasta  = $filters['fecha_hasta'] ?? null;
 
-        // Filtro OPCIONAL por usuario (si no se envía, lista TODAS)
-        if (!empty($filters['usuario_id'])) {
-            $query->where('usuario_id', $filters['usuario_id']);
-        }
+        $total = DB::select('CALL SP_CONTAR_SOLICITUDES_AMPLIACION(?, ?, ?, ?, ?)', [
+            $estado, $usuarioId, $asignacionId, $fechaDesde, $fechaHasta,
+        ])[0]->total ?? 0;
 
-        // Filtro por estado (opcional)
-        if (!empty($filters['estado'])) {
-            $query->where('estado', $filters['estado']);
-        }
-
-        // Filtro por evidencia asignación (opcional)
-        if (!empty($filters['evidencia_asignacion_id'])) {
-            $query->where('evidencia_asignacion_id', $filters['evidencia_asignacion_id']);
-        }
-
-        // Filtro por rango de fechas (opcional)
-        if (!empty($filters['fecha_desde'])) {
-            $query->whereDate('created_at', '>=', $filters['fecha_desde']);
-        }
-
-        if (!empty($filters['fecha_hasta'])) {
-            $query->whereDate('created_at', '<=', $filters['fecha_hasta']);
-        }
-
-        // OPTIMIZACIÓN: Cargar SOLO relaciones mínimas para listado
-        $query->with([
-            'user:usuario_id,nombre,cedula,email'
+        $rows = DB::select('CALL SP_OBTENER_SOLICITUDES_AMPLIACION(?, ?, ?, ?, ?, ?, ?)', [
+            $estado, $usuarioId, $asignacionId, $fechaDesde, $fechaHasta,
+            $offset, $perPage,
         ]);
 
-        // Ordenar por fecha descendente (más recientes primero)
-        $query->orderBy('created_at', 'desc');
+        $items = ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows));
 
-        return $query->paginate($perPage);
+        return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
+            'path' => request()->url(),
+        ]);
     }
 
     /**
-     * Obtener una solicitud de ampliación específica por ID con sus relaciones.
-     * Valida que la solicitud pertenezca al profesor autenticado.
-     *
-     * @param int $requestId Identificador único de la solicitud.
-     * @param int $userId Identificador del profesor.
-     * @return ExtensionRequest|null Retorna la solicitud o null si no existe.
+     * Obtener una solicitud especifica por ID y usuario.
      */
     public function getRequest(int $requestId, int $userId): ?ExtensionRequest
     {
-        return ExtensionRequest::where('solicitud_ampliacion_id', $requestId)
-            ->where('usuario_id', $userId)
-            ->with([
-                // Cargar info completa de evidencia y criterio (sin jerarquía extra)
-                'evidenceAssignment',
-                'evidenceAssignment.evidence',
-                'evidenceAssignment.evidence.criterion'
-            ])
-            ->first();
+        $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+        if (empty($rows)) return null;
+
+        $solicitud = $rows[0];
+        // Validar que pertenece al usuario
+        if ($solicitud->usuario_id !== $userId) return null;
+
+        return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
     }
 
     /**
-     * Obtener evidencias asignadas al profesor que están próximas a vencer.
-     * Criterio: evidencias con fecha límite en los próximos 7 días o ya vencidas.
-     *
-     * @param int $userId Identificador del profesor.
-     * @return \Illuminate\Database\Eloquent\Collection
+     * Obtener evidencias proximas a vencer para un usuario.
      */
     public function getUpcomingEvidences(int $userId)
     {
-        $limitDate = Carbon::now()->addDays(7);
-
-        return EvidenceAssignment::where('usuario_id', $userId)
-            ->whereIn('estado', ['Pendiente', 'En Progreso']) // Solo evidencias no completadas
-            ->where('fecha_limite', '<=', $limitDate)
-            ->with([
-                'evidence:evidencia_id,nomenclatura,descripcion,criterio_id',
-                'evidence.criterion:criterio_id,nomenclatura,descripcion'
-            ])
-            ->select('evidencia_asignacion_id', 'evidencia_id', 'estado', 'fecha_limite')
-            ->orderBy('fecha_limite', 'asc') // Más urgentes primero
-            ->get();
+        $limitDate = Carbon::now()->addDays(7)->format('Y-m-d H:i:s');
+        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_PROXIMAS(?, ?)', [$userId, $limitDate]);
+        return \App\Models\EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     /**
-     * Crear una nueva solicitud de ampliación con validaciones de negocio.
-     * 
-     * Validaciones:
-     * - El usuario debe estar asignado a la evidencia
-     * - No puede tener solicitud pendiente para esa evidencia
-     * - La evidencia no puede estar completada
-     * - La fecha sugerida debe ser posterior a la fecha límite original
-     * - La ampliación máxima es de 30 días
-     *
-     * @param array $data Datos validados del request.
-     * @param int $userId Identificador del profesor solicitante.
-     * @return ExtensionRequest
-     * @throws ValidationException
+     * Crear una nueva solicitud de ampliacion con validaciones de negocio.
      */
     public function createRequest(array $data, int $userId): ExtensionRequest
     {
         return DB::transaction(function () use ($data, $userId) {
-            // 1. Verificar que la asignación existe
-            $assignment = EvidenceAssignment::where('evidencia_asignacion_id', $data['evidencia_asignacion_id'])
-                ->first();
+            // 1. Verificar que la asignacion existe
+            $assignmentRows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [
+                $data['evidencia_asignacion_id'],
+            ]);
 
-            if (!$assignment) {
+            if (empty($assignmentRows)) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'La asignación de evidencia no existe o no está activa.'
+                    'evidencia_asignacion_id' => 'La asignacion de evidencia no existe o no esta activa.',
                 ]);
             }
 
-            // 2. CRÍTICO: Verificar que el usuario es el asignado a la evidencia
+            $assignment = $assignmentRows[0];
+
+            // 2. Verificar que el usuario es el asignado
             if ($assignment->usuario_id !== $userId) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'Solo puede solicitar ampliación para evidencias asignadas a usted.'
+                    'evidencia_asignacion_id' => 'Solo puede solicitar ampliacion para evidencias asignadas a usted.',
                 ]);
             }
 
-            // 3. Verificar que la evidencia no esté aprobada (Completada SÍ puede pedir ampliación)
+            // 3. Verificar que la evidencia no este aprobada
             if ($assignment->estado === 'Aprobada') {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'No se puede solicitar ampliación para evidencias ya aprobadas por el encargado.'
+                    'evidencia_asignacion_id' => 'No se puede solicitar ampliacion para evidencias ya aprobadas.',
                 ]);
             }
 
-            // 4. CRÍTICO: Validar que el plazo NO haya vencido (Criterio de Aceptación #3)
-            if ($assignment->fecha_limite->lt(Carbon::now())) {
+            // 4. Validar que el plazo no haya vencido
+            $fechaLimite = Carbon::parse($assignment->fecha_limite);
+            if ($fechaLimite->lt(Carbon::now())) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'No se puede solicitar ampliación para evidencias con plazo ya vencido. El plazo venció el ' . $assignment->fecha_limite->format('d/m/Y H:i') . '. Contacte al encargado de acreditación.'
+                    'evidencia_asignacion_id' => 'No se puede solicitar ampliacion para evidencias con plazo ya vencido.',
                 ]);
             }
 
-            // 5. Verificar que no tenga solicitud pendiente para esta asignación
-            $pendingRequest = ExtensionRequest::where('evidencia_asignacion_id', $data['evidencia_asignacion_id'])
-                ->where('usuario_id', $userId)
-                ->where('estado', ExtensionRequest::ESTADO_PENDIENTE)
-                ->exists();
-
-            if ($pendingRequest) {
+            // 5. Verificar que no tenga solicitud pendiente
+            $pendiente = DB::select('CALL SP_VERIFICAR_SOLICITUD_PENDIENTE(?)', [
+                $data['evidencia_asignacion_id'],
+            ]);
+            if (!empty($pendiente) && $pendiente[0]->existe) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'Ya tiene una solicitud pendiente para esta evidencia. Espere la resolución antes de crear otra.'
+                    'evidencia_asignacion_id' => 'Ya tiene una solicitud pendiente para esta evidencia.',
                 ]);
             }
 
-            // 6. Validar que la fecha sugerida sea posterior a la fecha límite original
-            $suggestedDate = Carbon::parse($data['fecha_sugerida']);
-            $originalDeadline = $assignment->fecha_limite;
+            // 6. Validar que la fecha sugerida sea posterior a la fecha limite
+            $suggestedDate    = Carbon::parse($data['fecha_sugerida']);
+            $originalDeadline = $fechaLimite;
 
             if ($suggestedDate->lte($originalDeadline)) {
                 throw ValidationException::withMessages([
-                    'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha límite original (' . $originalDeadline->format('d/m/Y H:i') . ').'
+                    'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha limite original (' . $originalDeadline->format('d/m/Y H:i') . ').',
                 ]);
             }
 
-            // 7. Validar que la ampliación sea razonable (máximo 30 días adicionales)
+            // 7. Validar que la ampliacion sea de maximo 30 dias
             $extensionDays = $originalDeadline->diffInDays($suggestedDate);
             if ($extensionDays > 30) {
                 throw ValidationException::withMessages([
-                    'fecha_sugerida' => 'La ampliación solicitada no puede exceder 30 días desde la fecha límite original.'
+                    'fecha_sugerida' => 'La ampliacion solicitada no puede exceder 30 dias desde la fecha limite original.',
                 ]);
             }
 
-            // 8. Crear la solicitud (created_at se genera automáticamente)
-            $extensionRequest = ExtensionRequest::create([
-                'evidencia_asignacion_id' => $data['evidencia_asignacion_id'],
-                'usuario_id' => $userId,
-                'motivo' => $data['motivo'],
-                'fecha_sugerida' => $data['fecha_sugerida'],
-                'estado' => ExtensionRequest::ESTADO_PENDIENTE,
+            // 8. Crear la solicitud via SP
+            $rows = DB::select('CALL SP_CREAR_SOLICITUD_AMPLIACION(?, ?, ?, ?, ?)', [
+                $data['evidencia_asignacion_id'],
+                $userId,
+                $data['motivo'],
+                $data['fecha_sugerida'],
+                ExtensionRequest::ESTADO_PENDIENTE,
             ]);
 
-            // 9. Cargar relaciones mínimas para confirmación
-            return $extensionRequest->load([
-                'evidenceAssignment:evidencia_asignacion_id,evidencia_id,fecha_limite',
-                'evidenceAssignment.evidence:evidencia_id,nomenclatura,descripcion'
-            ]);
+            return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
         });
     }
 
     /**
-     * Actualizar una solicitud de ampliación pendiente del profesor.
-     *
-     * @param int $requestId Identificador de la solicitud.
-     * @param array $data Datos actualizados (motivo y/o fecha_sugerida).
-     * @param int $userId Identificador del profesor.
-     * @return ExtensionRequest
-     * @throws ValidationException
+     * Actualizar una solicitud de ampliacion pendiente del profesor.
      */
     public function updateRequest(int $requestId, array $data, int $userId): ExtensionRequest
     {
         return DB::transaction(function () use ($requestId, $data, $userId) {
-            // 1. Obtener la solicitud
-            $extensionRequest = ExtensionRequest::find($requestId);
+            $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
 
-            if (!$extensionRequest) {
-                throw ValidationException::withMessages([
-                    'solicitud' => 'Solicitud no encontrada.'
-                ]);
+            if (empty($rows)) {
+                throw ValidationException::withMessages(['solicitud' => 'Solicitud no encontrada.']);
             }
 
-            // 2. CRÍTICO: Verificar que el usuario es el dueño de la solicitud
-            if ($extensionRequest->usuario_id !== $userId) {
-                throw ValidationException::withMessages([
-                    'solicitud' => 'No tiene permisos para editar esta solicitud.'
-                ]);
+            $solicitud = $rows[0];
+
+            if ($solicitud->usuario_id !== $userId) {
+                throw ValidationException::withMessages(['solicitud' => 'No tiene permisos para editar esta solicitud.']);
             }
 
-            // 3. CRÍTICO: Solo se pueden editar solicitudes pendientes
-            if ($extensionRequest->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
-                throw ValidationException::withMessages([
-                    'solicitud' => 'Solo se pueden editar solicitudes pendientes.'
-                ]);
+            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
+                throw ValidationException::withMessages(['solicitud' => 'Solo se pueden editar solicitudes pendientes.']);
             }
 
-            // 4. Validar fecha_sugerida si se está actualizando
             if (isset($data['fecha_sugerida'])) {
-                $suggestedDate = Carbon::parse($data['fecha_sugerida']);
-                $originalDeadline = $extensionRequest->evidenceAssignment->fecha_limite;
+                $asignacion = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$solicitud->evidencia_asignacion_id]);
+                $originalDeadline = Carbon::parse($asignacion[0]->fecha_limite ?? null);
+                $suggestedDate    = Carbon::parse($data['fecha_sugerida']);
 
-                // Validar que sea posterior a la fecha límite original
                 if ($suggestedDate->lte($originalDeadline)) {
                     throw ValidationException::withMessages([
-                        'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha límite original (' . $originalDeadline->format('d/m/Y H:i') . ').'
+                        'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha limite original.',
                     ]);
                 }
 
-                // Validar ampliación máxima de 30 días
-                $extensionDays = $originalDeadline->diffInDays($suggestedDate);
-                if ($extensionDays > 30) {
+                if ($originalDeadline->diffInDays($suggestedDate) > 30) {
                     throw ValidationException::withMessages([
-                        'fecha_sugerida' => 'La ampliación solicitada no puede exceder 30 días desde la fecha límite original.'
+                        'fecha_sugerida' => 'La ampliacion no puede exceder 30 dias.',
                     ]);
                 }
             }
 
-            // 5. Actualizar solo los campos permitidos (motivo y fecha_sugerida)
-            $extensionRequest->update([
-                'motivo' => $data['motivo'] ?? $extensionRequest->motivo,
-                'fecha_sugerida' => $data['fecha_sugerida'] ?? $extensionRequest->fecha_sugerida,
+            // Actualizar via SP_APROBAR/SP_RECHAZAR no aplica aqui.
+            // Usamos SP_ACTUALIZAR_ASIGNACION_EVIDENCIA para actualizar datos de la solicitud.
+            // Sin embargo, no hay SP especifico para editar SOLICITUD_AMPLIACION.
+            // Usamos Eloquent solo para el UPDATE de la solicitud (no hay SP de update de solicitud).
+            $solicitudModel = ExtensionRequest::findOrFail($requestId);
+            $solicitudModel->update([
+                'motivo'         => $data['motivo'] ?? $solicitudModel->motivo,
+                'fecha_sugerida' => $data['fecha_sugerida'] ?? $solicitudModel->fecha_sugerida,
             ]);
 
-            // 6. Cargar relaciones mínimas para confirmación
-            return $extensionRequest->load([
-                'evidenceAssignment:evidencia_asignacion_id,evidencia_id,fecha_limite',
-                'evidenceAssignment.evidence:evidencia_id,nomenclatura,descripcion'
-            ]);
+            $updated = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+            return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $updated))->first();
         });
     }
 
     /**
-     * Eliminar una solicitud de ampliación pendiente del profesor.
-     * Solo se pueden eliminar solicitudes propias en estado pendiente.
-     *
-     * @param int $requestId Identificador de la solicitud.
-     * @param int $userId Identificador del profesor.
-     * @return bool
-     * @throws ValidationException
+     * Eliminar una solicitud pendiente del profesor.
      */
     public function deleteRequest(int $requestId, int $userId): bool
     {
         return DB::transaction(function () use ($requestId, $userId) {
-            // 1. Buscar la solicitud
-            $extensionRequest = ExtensionRequest::find($requestId);
+            $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
 
-            if (!$extensionRequest) {
+            if (empty($rows)) {
+                throw ValidationException::withMessages(['solicitud' => 'La solicitud no existe.']);
+            }
+
+            $solicitud = $rows[0];
+
+            if ($solicitud->usuario_id !== $userId) {
+                throw ValidationException::withMessages(['solicitud' => 'Solo puede eliminar sus propias solicitudes.']);
+            }
+
+            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
                 throw ValidationException::withMessages([
-                    'solicitud' => 'La solicitud no existe.'
+                    'solicitud' => 'Solo se pueden eliminar solicitudes pendientes.',
                 ]);
             }
 
-            // 2. Verificar que la solicitud pertenece al usuario
-            if ($extensionRequest->usuario_id !== $userId) {
-                throw ValidationException::withMessages([
-                    'solicitud' => 'Solo puede eliminar sus propias solicitudes.'
-                ]);
-            }
-
-            // 3. Verificar que la solicitud esté pendiente
-            if ($extensionRequest->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
-                throw ValidationException::withMessages([
-                    'solicitud' => 'Solo se pueden eliminar solicitudes pendientes. Esta solicitud ya fue ' . strtolower($extensionRequest->estado) . '.'
-                ]);
-            }
-
-            // 4. Eliminar físicamente el registro
-            return $extensionRequest->delete();
+            DB::statement('CALL SP_ELIMINAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+            return true;
         });
     }
 }

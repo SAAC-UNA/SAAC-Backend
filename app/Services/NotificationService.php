@@ -4,23 +4,25 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\AuditLogService;
+use App\Mail\TestNotificationMail;
 
 /**
  * Servicio de Notificaciones del Sistema
- * 
- * HU-018: Notificaciones automáticas
- * 
+ *
+ * HU-018: Notificaciones automaticas
+ *
  * Responsabilidades:
- * - Crear notificaciones internas en BD
- * - Enviar notificaciones por email según criticidad
- * - Registrar en bitácora todas las notificaciones
+ * - Crear notificaciones internas en BD via stored procedures
+ * - Enviar notificaciones por email segun criticidad
+ * - Registrar en bitacora todas las notificaciones
  * - Validar y confirmar entrega
  * - Evitar duplicados
- * 
+ *
  * Uso:
  * ```php
  * NotificationService::create([
@@ -33,23 +35,21 @@ use App\Services\AuditLogService;
  * ]);
  * ```
  */
-use App\Mail\TestNotificationMail;
-
 class NotificationService
 {
     /**
-     * Crear una notificación
-     * 
-     * @param array $data Datos de la notificación
+     * Crear una notificacion
+     *
+     * @param array $data Datos de la notificacion
      *   - usuario_id: ID del usuario destinatario (requerido)
      *   - tipo_evento: Tipo de evento (requerido)
-     *   - titulo: Título breve (requerido)
+     *   - titulo: Titulo breve (requerido)
      *   - mensaje: Mensaje completo (requerido)
      *   - relacionado: Modelo Eloquent relacionado (opcional)
      *   - enlace: URL/ruta del sistema (opcional)
      *   - metadatos: Array con datos adicionales (opcional)
-     *   - forzar_email: Enviar email aunque no sea crítico (opcional, default: false)
-     * 
+     *   - forzar_email: Enviar email aunque no sea critico (opcional, default: false)
+     *
      * @return Notification
      */
     public static function create(array $data): Notification
@@ -57,42 +57,53 @@ class NotificationService
         // Validar datos requeridos
         self::validateData($data);
 
-        // Verificar duplicados (misma notificación en últimos 5 minutos)
+        // Verificar duplicados (misma notificacion en ultimos 5 minutos)
         if (self::isDuplicate($data)) {
-            Log::warning('Notificación duplicada detectada y evitada', $data);
-            // Retornar la notificación existente
-            return Notification::where('usuario_id', $data['usuario_id'])
-                ->where('tipo_evento', $data['tipo_evento'])
-                ->where('created_at', '>=', now()->subMinutes(5))
-                ->latest()
-                ->first();
+            Log::warning('Notificacion duplicada detectada y evitada', $data);
+            // Retornar la notificacion existente
+            $rows = DB::select('CALL SP_OBTENER_ULTIMA_NOTIFICACION(?, ?)', [
+                $data['usuario_id'],
+                $data['tipo_evento'],
+            ]);
+            return Notification::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
         }
 
-        // Determinar canal según criticidad
+        // Determinar canal segun criticidad
         $canal = self::determinarCanal($data['tipo_evento'], $data['forzar_email'] ?? false);
 
-        // Crear notificación interna
-        $notificacion = new Notification([
-            'usuario_id' => $data['usuario_id'],
-            'tipo_evento' => $data['tipo_evento'],
-            'canal' => $canal,
-            'titulo' => $data['titulo'],
-            'mensaje' => $data['mensaje'],
-            'enlace' => $data['enlace'] ?? null,
-            'metadatos' => $data['metadatos'] ?? null,
-        ]);
-
-        // Asociar entidad relacionada si existe
+        // Extraer tipo e ID de entidad relacionada si existe
+        $relacionadoType = null;
+        $relacionadoId   = null;
         if (isset($data['relacionado']) && $data['relacionado'] instanceof Model) {
-            $notificacion->relacionado()->associate($data['relacionado']);
+            $relacionadoType = get_class($data['relacionado']);
+            $relacionadoId   = $data['relacionado']->getKey();
         }
 
-        $notificacion->save();
+        // Estado email inicial
+        $estadoEmail = in_array($canal, [Notification::CANAL_EMAIL, Notification::CANAL_AMBOS])
+            ? Notification::EMAIL_PENDIENTE
+            : Notification::EMAIL_NO_APLICA;
 
-        // Registrar éxito en bitácora
+        // Crear notificacion via stored procedure
+        $rows = DB::select('CALL SP_CREAR_NOTIFICACION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            $data['usuario_id'],
+            $data['tipo_evento'],
+            $canal,
+            $data['titulo'],
+            $data['mensaje'],
+            $data['enlace'] ?? null,
+            isset($data['metadatos']) ? json_encode($data['metadatos']) : null,
+            $relacionadoType,
+            $relacionadoId,
+            $estadoEmail,
+        ]);
+
+        $notificacion = Notification::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+
+        // Registrar exito en bitacora
         AuditLogService::log(
             'notificar',
-            "Notificación '{$notificacion->titulo}' creada para usuario #{$notificacion->usuario_id} (Tipo: {$notificacion->tipo_evento}, Canal: {$canal})",
+            "Notificacion '{$notificacion->titulo}' creada para usuario #{$notificacion->usuario_id} (Tipo: {$notificacion->tipo_evento}, Canal: {$canal})",
             'Notificaciones'
         );
 
@@ -105,10 +116,10 @@ class NotificationService
     }
 
     /**
-     * Crear múltiples notificaciones (para múltiples usuarios)
-     * 
+     * Crear multiples notificaciones (para multiples usuarios)
+     *
      * @param array $usuariosIds Array de IDs de usuarios
-     * @param array $data Datos de la notificación (sin usuario_id)
+     * @param array $data Datos de la notificacion (sin usuario_id)
      * @return array Array de notificaciones creadas
      */
     public static function createMany(array $usuariosIds, array $data): array
@@ -125,31 +136,21 @@ class NotificationService
     }
 
     /**
-     * Marcar notificación como leída
+     * Marcar notificacion como leida
      */
     public static function markAsRead(int $notificacionId): bool
     {
-        $notificacion = Notification::find($notificacionId);
-        
-        if (!$notificacion) {
-            return false;
-        }
-
-        $notificacion->markAsRead();
+        DB::statement('CALL SP_MARCAR_NOTIFICACION_LEIDA(?)', [$notificacionId]);
         return true;
     }
 
     /**
-     * Marcar todas las notificaciones de un usuario como leídas
+     * Marcar todas las notificaciones de un usuario como leidas
      */
     public static function markAllAsRead(int $usuarioId): int
     {
-        return Notification::where('usuario_id', $usuarioId)
-            ->where('leida', false)
-            ->update([
-                'leida' => true,
-                'fecha_lectura' => now(),
-            ]);
+        $result = DB::select('CALL SP_MARCAR_TODAS_NOTIFICACIONES_LEIDAS(?)', [$usuarioId]);
+        return $result[0]->affected ?? 0;
     }
 
     /**
@@ -157,53 +158,43 @@ class NotificationService
      */
     public static function getForUser(int $usuarioId, array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
-        $query = Notification::where('usuario_id', $usuarioId)
-            ->with('relacionado')
-            ->orderBy('created_at', 'desc');
+        $leida      = isset($filters['leida']) ? (int) $filters['leida'] : null;
+        $tipoEvento = $filters['tipo_evento'] ?? null;
+        $fechaDesde = $filters['fecha_desde'] ?? null;
+        $fechaHasta = $filters['fecha_hasta'] ?? null;
 
-        // Filtros opcionales
-        if (isset($filters['leida'])) {
-            $query->where('leida', $filters['leida']);
-        }
+        $rows = DB::select('CALL SP_OBTENER_NOTIFICACIONES(?, ?, ?, ?, ?)', [
+            $usuarioId,
+            $leida,
+            $tipoEvento,
+            $fechaDesde,
+            $fechaHasta,
+        ]);
 
-        if (isset($filters['tipo_evento'])) {
-            $query->where('tipo_evento', $filters['tipo_evento']);
-        }
-
-        if (isset($filters['fecha_desde'])) {
-            $query->where('created_at', '>=', $filters['fecha_desde']);
-        }
-
-        if (isset($filters['fecha_hasta'])) {
-            $query->where('created_at', '<=', $filters['fecha_hasta']);
-        }
-
-        return $query->get();
+        return Notification::hydrate(array_map(fn($r) => (array) $r, $rows));
     }
 
     /**
-     * Obtener contador de notificaciones no leídas
+     * Obtener contador de notificaciones no leidas
      */
     public static function getUnreadCount(int $usuarioId): int
     {
-        return Notification::where('usuario_id', $usuarioId)
-            ->where('leida', false)
-            ->count();
+        $result = DB::select('CALL SP_CONTAR_NO_LEIDAS(?)', [$usuarioId]);
+        return $result[0]->total ?? 0;
     }
 
     /**
-     * Eliminar notificaciones antiguas (limpieza automática)
-     * 
-     * @param int $dias Días de antigüedad (default: 90 días)
+     * Eliminar notificaciones antiguas (limpieza automatica)
+     *
+     * @param int $dias Dias de antiguedad (default: 90 dias)
      */
     public static function cleanOldNotifications(int $dias = 90): int
     {
-        return Notification::where('created_at', '<', now()->subDays($dias))
-            ->where('leida', true) // Solo eliminar las leídas
-            ->delete();
+        $result = DB::select('CALL SP_LIMPIAR_NOTIFICACIONES_ANTIGUAS(?)', [$dias]);
+        return $result[0]->deleted ?? 0;
     }
 
-    // ===== MÉTODOS PRIVADOS =====
+    // ===== METODOS PRIVADOS =====
 
     /**
      * Validar datos requeridos
@@ -211,37 +202,39 @@ class NotificationService
     private static function validateData(array $data): void
     {
         $required = ['usuario_id', 'tipo_evento', 'titulo', 'mensaje'];
-        
+
         foreach ($required as $field) {
             if (!isset($data[$field])) {
-                throw new \InvalidArgumentException("El campo {$field} es requerido para crear una notificación");
+                throw new \InvalidArgumentException("El campo {$field} es requerido para crear una notificacion");
             }
         }
 
-        // Validar que el usuario existe
-        if (!User::find($data['usuario_id'])) {
+        // Validar que el usuario existe via SP
+        $rows = DB::select('CALL SP_BUSCAR_USUARIO(?)', [$data['usuario_id']]);
+        if (empty($rows)) {
             throw new \InvalidArgumentException("El usuario {$data['usuario_id']} no existe");
         }
     }
 
     /**
-     * Verificar si es una notificación duplicada
+     * Verificar si es una notificacion duplicada
      */
     private static function isDuplicate(array $data): bool
     {
-        return Notification::where('usuario_id', $data['usuario_id'])
-            ->where('tipo_evento', $data['tipo_evento'])
-            ->where('titulo', $data['titulo'])
-            ->where('created_at', '>=', now()->subMinutes(5)) // Últimos 5 minutos
-            ->exists();
+        $result = DB::select('CALL SP_VERIFICAR_NOTIFICACION_DUPLICADA(?, ?, ?)', [
+            $data['usuario_id'],
+            $data['tipo_evento'],
+            $data['titulo'],
+        ]);
+        return ($result[0]->total ?? 0) > 0;
     }
 
     /**
-     * Determinar canal de notificación según criticidad
+     * Determinar canal de notificacion segun criticidad
      */
     private static function determinarCanal(string $tipoEvento, bool $forzarEmail = false): string
     {
-        // Eventos críticos siempre van por ambos canales
+        // Eventos criticos siempre van por ambos canales
         $eventosCriticos = [
             Notification::TIPO_ASIGNACION_EVIDENCIA,
             Notification::TIPO_VENCIMIENTO_PLAZO,
@@ -253,49 +246,55 @@ class NotificationService
             return Notification::CANAL_AMBOS;
         }
 
-        // El resto solo notificación interna
+        // El resto solo notificacion interna
         return Notification::CANAL_INTERNO;
     }
 
     /**
-     * Enviar notificación por email
+     * Enviar notificacion por email
      */
     private static function sendEmail(Notification $notificacion): void
     {
         try {
-            $user = $notificacion->user;
+            $rows = DB::select('CALL SP_BUSCAR_USUARIO(?)', [$notificacion->usuario_id]);
+            $user = !empty($rows) ? User::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
 
             // Verificar que el usuario tenga email
             if (!$user || !$user->email) {
-                Log::warning('Usuario sin email, no se puede enviar notificación por correo', [
+                Log::warning('Usuario sin email, no se puede enviar notificacion por correo', [
                     'notificacion_id' => $notificacion->notificacion_id,
-                    'usuario_id' => $notificacion->usuario_id,
+                    'usuario_id'      => $notificacion->usuario_id,
                 ]);
-                $notificacion->update(['estado_email' => Notification::EMAIL_NO_APLICA]);
+                DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
+                    $notificacion->notificacion_id,
+                    Notification::EMAIL_NO_APLICA,
+                    null,
+                ]);
                 return;
             }
 
-            // Marcar como pendiente
-            $notificacion->update(['estado_email' => Notification::EMAIL_PENDIENTE]);
-
             // Enviar email con plantilla profesional
             Mail::to($user->email)->send(new TestNotificationMail(
-                userName: $user->nombre,
-                notificationTitle: $notificacion->titulo,
+                userName:            $user->nombre,
+                notificationTitle:   $notificacion->titulo,
                 notificationMessage: $notificacion->mensaje,
-                actionUrl: $notificacion->enlace ? config('app.url') . $notificacion->enlace : null,
-                actionText: 'Ver en el sistema'
+                actionUrl:           $notificacion->enlace ? config('app.url') . $notificacion->enlace : null,
+                actionText:          'Ver en el sistema'
             ));
 
             // Marcar como enviado
-            $notificacion->update(['estado_email' => Notification::EMAIL_ENVIADO]);
-
-            Log::info('Email de notificación enviado', [
-                'notificacion_id' => $notificacion->notificacion_id,
-                'email' => $user->email,
+            DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
+                $notificacion->notificacion_id,
+                Notification::EMAIL_ENVIADO,
+                null,
             ]);
 
-            // Registrar envío exitoso en bitácora
+            Log::info('Email de notificacion enviado', [
+                'notificacion_id' => $notificacion->notificacion_id,
+                'email'           => $user->email,
+            ]);
+
+            // Registrar envio exitoso en bitacora
             AuditLogService::log(
                 'notificar',
                 "Email enviado: '{$notificacion->titulo}' a {$user->email}",
@@ -304,17 +303,18 @@ class NotificationService
 
         } catch (\Exception $e) {
             // Marcar como fallido
-            $notificacion->update([
-                'estado_email' => Notification::EMAIL_FALLIDO,
-                'detalle_error' => $e->getMessage(),
+            DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
+                $notificacion->notificacion_id,
+                Notification::EMAIL_FALLIDO,
+                $e->getMessage(),
             ]);
 
-            Log::error('Error enviando email de notificación', [
+            Log::error('Error enviando email de notificacion', [
                 'notificacion_id' => $notificacion->notificacion_id,
-                'error' => $e->getMessage(),
+                'error'           => $e->getMessage(),
             ]);
 
-            // Registrar fallo en bitácora
+            // Registrar fallo en bitacora
             AuditLogService::log(
                 'notificar_fallido',
                 "Error enviando email '{$notificacion->titulo}': {$e->getMessage()}",
