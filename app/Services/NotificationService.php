@@ -85,7 +85,7 @@ class NotificationService
             : Notification::EMAIL_NO_APLICA;
 
         // Crear notificacion via stored procedure
-        $rows = DB::select('CALL SP_CREAR_NOTIFICACION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        $rows = DB::select('CALL SP_CREAR_NOTIFICACION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             $data['usuario_id'],
             $data['tipo_evento'],
             $canal,
