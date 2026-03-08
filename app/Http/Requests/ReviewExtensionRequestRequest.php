@@ -32,16 +32,17 @@ class ReviewExtensionRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Estado: solo puede ser 'aprobada' o 'rechazada'
+            // Estado: opcional porque la acción ya está implícita en la ruta (/aprobar vs /rechazar)
             'estado' => [
-                'required',
+                'sometimes',
+                'nullable',
                 'string',
                 Rule::in(['aprobada', 'rechazada'])
             ],
             
-            // Justificación: obligatoria si se rechaza, máximo 500 caracteres
+            // Justificación: máximo 500 caracteres
             'justificacion' => [
-                'required_if:estado,rechazada',
+                'sometimes',
                 'nullable',
                 'string',
                 'max:500',

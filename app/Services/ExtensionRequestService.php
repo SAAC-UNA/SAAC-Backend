@@ -94,7 +94,7 @@ class ExtensionRequestService
             $pendiente = DB::select('CALL SP_VERIFICAR_SOLICITUD_PENDIENTE(?)', [
                 $data['evidencia_asignacion_id'],
             ]);
-            if (!empty($pendiente) && $pendiente[0]->existe) {
+            if (!empty($pendiente) && $pendiente[0]->total > 0) {
                 throw new \Exception('Ya existe una solicitud pendiente para esta asignacion.');
             }
 

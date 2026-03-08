@@ -158,6 +158,8 @@ return [
             
             // Aprobaciones
             'aprobaciones.view',
+            'aprobaciones.approve',
+            'aprobaciones.reject',
             
             // Compromisos de mejora
             'compromisos_mejora.view',
