@@ -28,12 +28,12 @@ class FileResource extends JsonResource
             
             // Metadatos (solo para archivos físicos)
             'tamanio' => $this->when(
-                $this->relationLoaded('fileMetadata') && $this->tipo === 'archivo',
-                fn() => $this->fileMetadata->tamanio ?? null
+                $this->tipo === 'archivo',
+                fn() => $this->tamanio
             ),
             'tipo_mime' => $this->when(
-                $this->relationLoaded('fileMetadata') && $this->tipo === 'archivo',
-                fn() => $this->fileMetadata->tipo_mime ?? null
+                $this->tipo === 'archivo',
+                fn() => $this->tipo_mime
             ),
             
             // Acceso público

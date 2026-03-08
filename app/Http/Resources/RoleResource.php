@@ -26,10 +26,11 @@ class RoleResource extends JsonResource
             'description' => $this->description,
             // Permisos con estructura completa para el frontend (id, name, label)
             'permissions' => $this->permissions->map(function ($permission) {
+                $descriptions = config('permissions.descriptions', []);
                 return [
                     'id'    => $permission->id,
                     'name'  => $permission->name,
-                    'label' => config('permissions.descriptions')[$permission->name] ?? $permission->name,
+                    'label' => $descriptions[$permission->name] ?? $permission->name,
                 ];
             }),
               'creadoEl'  => $this->created_at?->format('Y-m-d H:i:s'),

@@ -42,7 +42,11 @@ return new class extends Migration
             
             // NUEVO: Nombre original del archivo (legible por humanos)
             $table->string('nombre_original', 255);
-            
+
+            // Metadatos del archivo físico (null para enlaces)
+            $table->unsignedBigInteger('tamanio')->nullable();
+            $table->string('tipo_mime', 255)->nullable();
+
             // NUEVO: Bandera de acceso público
             $table->boolean('is_publico')->default(false);
             

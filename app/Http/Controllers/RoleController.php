@@ -32,15 +32,16 @@ class RoleController extends Controller
         
         // Agregar metadata sobre si el rol es protegido
         $rolesWithMetadata = $roles->map(function ($role) {
+            $descriptions = config('permissions.descriptions', []);
             return [
                 'id' => $role->id,
                 'name' => $role->name,
                 'description' => $role->description,
-                'permissions' => $role->permissions->map(function ($permission) {
+                'permissions' => $role->permissions->map(function ($permission) use ($descriptions) {
                     return [
                         'id'    => $permission->id,
                         'name'  => $permission->name,
-                        'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
+                        'label' => $descriptions[$permission->name] ?? $permission->name,
                     ];
                 }),
                 'users_count' => $role->users()->count(),

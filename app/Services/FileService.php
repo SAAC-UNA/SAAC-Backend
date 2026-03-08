@@ -50,6 +50,11 @@ class FileService
 
             $archivo = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
 
+            // Guardar metadatos del archivo
+            $archivo->tamanio  = $file->getSize();
+            $archivo->tipo_mime = $file->getMimeType();
+            $archivo->save();
+
             $diskPath      = Storage::disk($this->disk)->path('');
             $diskFreeSpace = disk_free_space($diskPath);
             Log::info('Archivo subido exitosamente', [

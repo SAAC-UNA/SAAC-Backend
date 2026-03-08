@@ -26,6 +26,8 @@ class File extends Model
         'path',
         'url',
         'nombre_original',
+        'tamanio',
+        'tipo_mime',
         'is_publico',
         'token_publico',
         'link_expira_en',

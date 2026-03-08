@@ -8,6 +8,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -70,6 +71,16 @@ class Handler extends ExceptionHandler
                 return $this->jsonError(
                     $exception->getMessage() ?: 'Acción no autorizada. No tiene permisos suficientes.',
                     403
+                );
+            }
+        });
+
+        // 500 - Error de base de datos: nunca exponer SQL ni esquema, sin importar APP_DEBUG
+        $this->renderable(function (QueryException $exception, $request) {
+            if ($request->expectsJson()) {
+                return $this->jsonError(
+                    'Error al procesar la solicitud. Contacte al administrador del sistema.',
+                    500
                 );
             }
         });
