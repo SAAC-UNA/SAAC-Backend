@@ -62,7 +62,7 @@ class FileResource extends JsonResource
                 $this->relationLoaded('user'),
                 fn() => [
                     'usuario_id' => $this->user->usuario_id,
-                    'nombre_completo' => $this->user->nombre_completo,
+                    'nombre_completo' => $this->user->nombre,
                     'email' => $this->user->email,
                 ]
             ),

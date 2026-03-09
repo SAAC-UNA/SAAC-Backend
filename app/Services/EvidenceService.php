@@ -100,7 +100,11 @@ class EvidenceService
 
             // Filtrar con Eloquent para respetar lista de IDs asignados
             $query = Evidence::withoutGlobalScope('byCareerCampus')
-                ->with('criterion', 'evidenceState')
+                ->with('criterion', 'evidenceState', 'assignments.user')
+                ->withCount([
+                    'files as archivos_count' => fn($q) => $q->where('tipo', 'archivo'),
+                    'files as enlaces_count'  => fn($q) => $q->where('tipo', 'enlace'),
+                ])
                 ->whereIn('evidencia_id', $assignedEvidenciaIds);
 
             if ($criterioId) $query->where('criterio_id', $criterioId);
@@ -132,6 +136,7 @@ class EvidenceService
         ]);
 
         $items = Evidence::hydrate(array_map(fn($r) => (array) $r, $rows));
+        $items->load('assignments.user');
 
         return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
             'path' => request()->url(),

@@ -169,8 +169,12 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByUser(int $usuarioId)
     {
-        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, $usuarioId, null]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        $rows  = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, $usuarioId, null]);
+        $items = EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        // Cargar el criterio a través de la evidencia para que EvidenceAssignmentResource
+        // pueda exponer criterion en lugar de retornar null (el SP no lo incluye como campo plano).
+        $items->loadMissing('evidence.criterion');
+        return $items;
     }
 
     /**
