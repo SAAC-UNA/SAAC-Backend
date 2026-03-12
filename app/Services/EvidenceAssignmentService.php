@@ -16,11 +16,21 @@ class EvidenceAssignmentService
     private const WITH_BASE = ['evidence.criterion', 'user', 'process'];
 
     /**
+     * Builder base con eager loading de relaciones y EXISTS para solicitudes pendientes.
+     * withExists evita el N+1 que producía el DB::table inline en EvidenceAssignmentResource.
+     */
+    private function baseQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return EvidenceAssignment::with(self::WITH_BASE)
+            ->withExists('pendingExtensionRequests as has_pending_extension_request');
+    }
+
+    /**
      * Obtener todas las asignaciones de evidencias.
      */
     public function getAll()
     {
-        return EvidenceAssignment::with(self::WITH_BASE)
+        return $this->baseQuery()
             ->orderBy('fecha_asignacion', 'desc')
             ->get();
     }
@@ -30,7 +40,7 @@ class EvidenceAssignmentService
      */
     public function findById(int $id): ?EvidenceAssignment
     {
-        return EvidenceAssignment::with(self::WITH_BASE)->find($id);
+        return $this->baseQuery()->find($id);
     }
 
     /**
@@ -136,6 +146,7 @@ class EvidenceAssignmentService
 
         // Cargar relaciones para el evento y el retorno
         $assignment->load(self::WITH_BASE);
+        $assignment->loadExists('pendingExtensionRequests as has_pending_extension_request');
 
         // Disparar evento de asignacion para notificaciones
         event(new EvidenceAssigned($assignment));
@@ -154,7 +165,7 @@ class EvidenceAssignmentService
             'comentario'  => $data['comentario']  ?? null,
         ], fn ($v) => $v !== null));
 
-        return $assignment->fresh(self::WITH_BASE);
+        return $this->baseQuery()->find($assignment->getKey());
     }
 
     /**
@@ -170,7 +181,7 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByUser(int $usuarioId)
     {
-        return EvidenceAssignment::with(self::WITH_BASE)
+        return $this->baseQuery()
             ->where('usuario_id', $usuarioId)
             ->orderBy('fecha_asignacion', 'desc')
             ->get();
@@ -181,7 +192,7 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByEvidence(int $evidenciaId)
     {
-        return EvidenceAssignment::with(self::WITH_BASE)
+        return $this->baseQuery()
             ->where('evidencia_id', $evidenciaId)
             ->orderBy('fecha_asignacion', 'desc')
             ->get();
@@ -192,7 +203,7 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByProcess(int $procesoId)
     {
-        return EvidenceAssignment::with(self::WITH_BASE)
+        return $this->baseQuery()
             ->where('proceso_id', $procesoId)
             ->orderBy('fecha_asignacion', 'desc')
             ->get();

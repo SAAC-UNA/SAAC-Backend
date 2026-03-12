@@ -54,11 +54,8 @@ class EvidenceAssignmentResource extends JsonResource
                 ],
             
             // HU-016: Indicar si tiene una solicitud de ampliación pendiente
-            // Usa DB::table para evitar problemas de lazy loading
-            'has_pending_extension_request' => \DB::table('SOLICITUD_AMPLIACION')
-                ->where('evidencia_asignacion_id', $this->evidencia_asignacion_id)
-                ->where('estado', 'pendiente')
-                ->exists(),
+            // El servicio carga este valor via withExists() — sin N+1
+            'has_pending_extension_request' => (bool) $this->has_pending_extension_request,
         ];
     }
 }

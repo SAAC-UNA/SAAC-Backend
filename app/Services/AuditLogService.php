@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\ActionType;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -22,7 +23,12 @@ class AuditLogService
         try {
             $userId = $userId ?? Auth::id();
 
-            $tipoAccionId = ActionType::where('descripcion', $actionName)->value('tipo_accion_id');
+            // Cache del catálogo de tipos de acción (raramente cambia)
+            $actionTypes = Cache::remember('audit_action_types', 3600, fn() =>
+                ActionType::pluck('tipo_accion_id', 'descripcion')->all()
+            );
+
+            $tipoAccionId = $actionTypes[$actionName] ?? null;
 
             if (!$tipoAccionId) {
                 Log::warning("Tipo de accion '{$actionName}' no encontrado en catalogo");
@@ -81,11 +87,13 @@ class AuditLogService
      */
     public function getModules()
     {
-        return AuditLog::select('modulo')
-            ->whereNotNull('modulo')
-            ->distinct()
-            ->orderBy('modulo')
-            ->pluck('modulo');
+        return Cache::remember('bitacora_modulos', 300, fn() =>
+            AuditLog::select('modulo')
+                ->whereNotNull('modulo')
+                ->distinct()
+                ->orderBy('modulo')
+                ->pluck('modulo')
+        );
     }
 
     /**
