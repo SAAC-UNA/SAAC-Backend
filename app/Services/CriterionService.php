@@ -4,52 +4,51 @@ namespace App\Services;
 
 use App\Models\Criterion;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class CriterionService
 {
+    private const CACHE_KEY = 'criterios.all';
+    private const CACHE_TTL = 300;
+
     public function getAll()
     {
-        return Cache::remember('criterios.all', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_CRITERIOS()');
-            return Criterion::hydrate(array_map(fn($r) => (array) $r, $rows));
-        });
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () =>
+            Criterion::with('component.dimension')->orderBy('nomenclatura')->get()
+        );
     }
 
     public function findById(int $id): ?Criterion
     {
-        $rows = DB::select('CALL SP_BUSCAR_CRITERIO(?)', [$id]);
-        return $rows ? Criterion::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return Criterion::with('component.dimension')->find($id);
     }
 
     public function create(array $data): Criterion
     {
-        $rows = DB::select('CALL SP_CREAR_CRITERIO(?, ?, ?, ?)', [
-            $data['componente_id'],
-            $data['descripcion'],
-            $data['nomenclatura'],
-            $data['activo'] ?? 1,
+        $criterion = Criterion::create([
+            'componente_id' => $data['componente_id'],
+            'descripcion'   => $data['descripcion'],
+            'nomenclatura'  => $data['nomenclatura'],
+            'activo'        => $data['activo'] ?? true,
         ]);
-        Cache::forget('criterios.all');
-        return Criterion::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $criterion->load('component.dimension');
     }
 
     public function update(Criterion $criterion, array $data): Criterion
     {
-        $rows = DB::select('CALL SP_ACTUALIZAR_CRITERIO(?, ?, ?, ?, ?)', [
-            $criterion->criterio_id,
-            $data['componente_id'] ?? $criterion->componente_id,
-            $data['descripcion'] ?? $criterion->descripcion,
-            $data['nomenclatura'] ?? $criterion->nomenclatura,
-            $data['activo'] ?? $criterion->activo,
+        $criterion->update([
+            'componente_id' => $data['componente_id'] ?? $criterion->componente_id,
+            'descripcion'   => $data['descripcion']   ?? $criterion->descripcion,
+            'nomenclatura'  => $data['nomenclatura']  ?? $criterion->nomenclatura,
+            'activo'        => $data['activo']        ?? $criterion->activo,
         ]);
-        Cache::forget('criterios.all');
-        return Criterion::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $criterion->fresh('component.dimension');
     }
 
     public function delete(Criterion $criterion): void
     {
-        DB::statement('CALL SP_ELIMINAR_CRITERIO(?)', [$criterion->criterio_id]);
-        Cache::forget('criterios.all');
+        $criterion->delete();
+        Cache::forget(self::CACHE_KEY);
     }
 }

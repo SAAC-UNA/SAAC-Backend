@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\ActionType;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -23,20 +22,19 @@ class AuditLogService
         try {
             $userId = $userId ?? Auth::id();
 
-            // Buscar tipo de accion por descripcion
-            $rows = DB::select('CALL SP_BUSCAR_TIPO_ACCION_POR_NOMBRE(?)', [$actionName]);
-            if (empty($rows)) {
+            $tipoAccionId = ActionType::where('descripcion', $actionName)->value('tipo_accion_id');
+
+            if (!$tipoAccionId) {
                 Log::warning("Tipo de accion '{$actionName}' no encontrado en catalogo");
                 return false;
             }
-            $tipoAccionId = $rows[0]->tipo_accion_id;
 
-            DB::statement('CALL SP_REGISTRAR_ACCION(?, ?, ?, ?, ?)', [
-                $userId,
-                $tipoAccionId,
-                $modulo,
-                $detail,
-                now()->format('Y-m-d H:i:s'),
+            AuditLog::create([
+                'usuario_id'     => $userId,
+                'tipo_accion_id' => $tipoAccionId,
+                'modulo'         => $modulo,
+                'detalle'        => $detail,
+                'fecha_hora'     => now(),
             ]);
 
             return true;
@@ -56,44 +54,26 @@ class AuditLogService
      */
     public function list(array $filters = [])
     {
-        $perPage     = $filters['per_page'] ?? 15;
-        $page        = $filters['page'] ?? 1;
-        $offset      = ($page - 1) * $perPage;
-        $usuarioId   = $filters['usuario_id'] ?? null;
+        $perPage    = $filters['per_page'] ?? 15;
+        $usuarioId  = $filters['usuario_id'] ?? null;
         $modulo      = $filters['modulo'] ?? null;
         $fechaDesde  = $filters['fecha_desde'] ?? null;
         $fechaHasta  = $filters['fecha_hasta'] ?? null;
 
-        // Resolver tipo_accion_id desde nombre si viene como texto
         $tipoAccionId = $filters['tipo_accion_id'] ?? null;
         if (!$tipoAccionId && !empty($filters['tipo_accion'])) {
-            $rows = DB::select('CALL SP_BUSCAR_TIPO_ACCION_POR_NOMBRE(?)', [$filters['tipo_accion']]);
-            $tipoAccionId = $rows[0]->tipo_accion_id ?? null;
+            $tipoAccionId = ActionType::where('descripcion', $filters['tipo_accion'])
+                ->value('tipo_accion_id');
         }
 
-        $total = DB::select('CALL SP_CONTAR_BITACORA(?, ?, ?, ?, ?)', [
-            $usuarioId,
-            $tipoAccionId,
-            $modulo,
-            $fechaDesde,
-            $fechaHasta,
-        ])[0]->total ?? 0;
-
-        $rows = DB::select('CALL SP_OBTENER_BITACORA(?, ?, ?, ?, ?, ?, ?)', [
-            $usuarioId,
-            $tipoAccionId,
-            $modulo,
-            $fechaDesde,
-            $fechaHasta,
-            $offset,
-            $perPage,
-        ]);
-
-        $items = AuditLog::hydrate(array_map(fn($r) => (array) $r, $rows));
-
-        return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
-            'path' => request()->url(),
-        ]);
+        return AuditLog::with(['user', 'actionType'])
+            ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
+            ->when($tipoAccionId, fn($q) => $q->where('tipo_accion_id', $tipoAccionId))
+            ->when($modulo,       fn($q) => $q->where('modulo', 'like', "%{$modulo}%"))
+            ->when($fechaDesde,   fn($q) => $q->where('fecha_hora', '>=', $fechaDesde))
+            ->when($fechaHasta,   fn($q) => $q->where('fecha_hora', '<=', $fechaHasta))
+            ->orderBy('fecha_hora', 'desc')
+            ->paginate($perPage);
     }
 
     /**
@@ -101,8 +81,11 @@ class AuditLogService
      */
     public function getModules()
     {
-        $rows = DB::select('CALL SP_OBTENER_MODULOS_BITACORA()');
-        return collect($rows)->pluck('modulo');
+        return AuditLog::select('modulo')
+            ->whereNotNull('modulo')
+            ->distinct()
+            ->orderBy('modulo')
+            ->pluck('modulo');
     }
 
     /**
@@ -110,8 +93,7 @@ class AuditLogService
      */
     public function getActionTypes()
     {
-        $rows = DB::select('CALL SP_OBTENER_TIPOS_ACCION()');
-        return ActionType::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return ActionType::orderBy('descripcion')->get();
     }
 
     /**
@@ -121,7 +103,7 @@ class AuditLogService
     {
         $exportSafetyLimit = config('saac.export_limit', 20000);
 
-        $count = DB::select('CALL SP_CONTAR_BITACORA_EXPORTACION(?, ?)', [$desde, $hasta])[0]->total ?? 0;
+        $count = AuditLog::whereBetween('fecha_hora', [$desde, $hasta])->count();
 
         if ($count > $exportSafetyLimit) {
             throw new \Exception(
@@ -131,7 +113,9 @@ class AuditLogService
             );
         }
 
-        $rows = DB::select('CALL SP_OBTENER_BITACORA_EXPORTACION(?, ?)', [$desde, $hasta]);
-        return AuditLog::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return AuditLog::with(['user', 'actionType'])
+            ->whereBetween('fecha_hora', [$desde, $hasta])
+            ->orderBy('fecha_hora', 'desc')
+            ->get();
     }
 }

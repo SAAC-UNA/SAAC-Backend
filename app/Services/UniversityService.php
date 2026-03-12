@@ -4,48 +4,47 @@ namespace App\Services;
 
 use App\Models\University;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class UniversityService
 {
+    private const CACHE_KEY = 'universidades.all';
+    private const CACHE_TTL = 300;
+
     public function getAll()
     {
-        return Cache::remember('universidades.all', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_UNIVERSIDADES()');
-            return University::hydrate(array_map(fn($r) => (array) $r, $rows));
-        });
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () =>
+            University::orderBy('nombre')->get()
+        );
     }
 
-    public function findById($id): ?University
+    public function findById(int $id): ?University
     {
-        $rows = DB::select('CALL SP_BUSCAR_UNIVERSIDAD(?)', [$id]);
-        return $rows ? University::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return University::find($id);
     }
 
     public function create(array $data): University
     {
-        $rows = DB::select('CALL SP_CREAR_UNIVERSIDAD(?, ?)', [
-            $data['nombre'],
-            $data['activo'] ?? 1,
+        $university = University::create([
+            'nombre' => $data['nombre'],
+            'activo' => $data['activo'] ?? true,
         ]);
-        Cache::forget('universidades.all');
-        return University::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $university;
     }
 
     public function update(University $university, array $data): University
     {
-        $rows = DB::select('CALL SP_ACTUALIZAR_UNIVERSIDAD(?, ?, ?)', [
-            $university->universidad_id,
-            $data['nombre'] ?? $university->nombre,
-            $data['activo'] ?? $university->activo,
+        $university->update([
+            'nombre' => $data['nombre'] ?? $university->nombre,
+            'activo' => $data['activo'] ?? $university->activo,
         ]);
-        Cache::forget('universidades.all');
-        return University::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $university->fresh();
     }
 
     public function delete(University $university): void
     {
-        DB::statement('CALL SP_ELIMINAR_UNIVERSIDAD(?)', [$university->universidad_id]);
-        Cache::forget('universidades.all');
+        $university->delete();
+        Cache::forget(self::CACHE_KEY);
     }
 }

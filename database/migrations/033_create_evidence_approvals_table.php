@@ -27,9 +27,9 @@ return new class extends Migration
             $table->foreign('usuario_id')->references('usuario_id')->on('USUARIO')->onDelete('cascade');
 
             // Indexes
-            $table->index(['evidencia_id', 'proceso_id']);
-            $table->index('criterio_aprobacion_id');
-            $table->index('evidencia_id', 'idx_ae_evidencia_id');
+            $table->index(['evidencia_id', 'proceso_id'], 'idx_ae_evidencia_proceso'); // cubre búsquedas por evidencia_id también
+            $table->index('criterio_aprobacion_id', 'idx_ae_criterio_aprobacion_id');
+            $table->index('usuario_id', 'idx_ae_usuario_id');
             $table->index('estado', 'idx_ae_estado');
         });
     }

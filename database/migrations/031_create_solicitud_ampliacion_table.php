@@ -32,7 +32,7 @@ return new class extends Migration
             $table->datetime('fecha_sugerida');
             
             // Estado de la solicitud: pendiente, aprobada, rechazada
-            $table->string('estado', 30)->default('pendiente');
+            $table->enum('estado', ['pendiente', 'aprobada', 'rechazada'])->default('pendiente');
             
             // Fecha y hora cuando se resolvió la solicitud (nullable)
             $table->datetime('fecha_resolucion')->nullable();

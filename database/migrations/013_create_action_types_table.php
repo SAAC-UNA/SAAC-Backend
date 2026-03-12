@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('descripcion', 100);
             // Timestamps de creación y actualización
             $table->timestamps();
+
+            // Índice de performance para búsqueda por nombre
+            $table->index('descripcion', 'idx_ta_descripcion');
         });
     }
 

@@ -31,7 +31,7 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400, // 1 día — evita OPTIONS preflight repetido desde el SPA
 
     'supports_credentials' => true,
 

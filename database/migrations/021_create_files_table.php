@@ -60,11 +60,13 @@ return new class extends Migration
             $table->timestamps();
             
             // Índices para optimización
-            $table->index('evidencia_id');
-            $table->index('usuario_id');
-            $table->index('proceso_id');
-            $table->index('token_publico');
-            $table->index(['is_publico', 'link_expira_en']);
+            $table->index('evidencia_id', 'idx_ar_evidencia_id');
+            $table->index('usuario_id', 'idx_ar_usuario_id');
+            $table->index('proceso_id', 'idx_ar_proceso_id');
+            $table->index('token_publico', 'idx_ar_token_publico');
+            $table->index('tipo', 'idx_ar_tipo');                              // WHERE tipo = 'archivo'/'enlace'
+            $table->index(['evidencia_id', 'tipo'], 'idx_ar_evidencia_tipo');  // withCount por tipo en evidencia
+            $table->index(['is_publico', 'link_expira_en'], 'idx_ar_publico_expira');
         });
     }
 

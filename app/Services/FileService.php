@@ -34,26 +34,19 @@ class FileService
         return DB::transaction(function () use ($file, $extension, $uuid, $filename, $evidenciaId, $usuarioId, $procesoId) {
             $path = Storage::disk($this->disk)->putFileAs('', $file, $filename);
 
-            $rows = DB::select('CALL SP_CREAR_ARCHIVO(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $evidenciaId,
-                $usuarioId,
-                $procesoId,
-                now()->format('Y-m-d H:i:s'),
-                'archivo',
-                $path,
-                null,
-                $file->getClientOriginalName(),
-                0,
-                null,
-                null,
+            $archivo = File::create([
+                'evidencia_id'    => $evidenciaId,
+                'usuario_id'      => $usuarioId,
+                'proceso_id'      => $procesoId,
+                'fecha_subida'    => now(),
+                'tipo'            => 'archivo',
+                'path'            => $path,
+                'url'             => null,
+                'nombre_original' => $file->getClientOriginalName(),
+                'tamanio'         => $file->getSize(),
+                'tipo_mime'       => $file->getMimeType(),
+                'is_publico'      => false,
             ]);
-
-            $archivo = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
-
-            // Guardar metadatos del archivo
-            $archivo->tamanio  = $file->getSize();
-            $archivo->tipo_mime = $file->getMimeType();
-            $archivo->save();
 
             $diskPath      = Storage::disk($this->disk)->path('');
             $diskFreeSpace = disk_free_space($diskPath);
@@ -90,21 +83,17 @@ class FileService
         }
 
         return DB::transaction(function () use ($url, $evidenciaId, $usuarioId, $procesoId, $nombreDescriptivo) {
-            $rows = DB::select('CALL SP_CREAR_ARCHIVO(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $evidenciaId,
-                $usuarioId,
-                $procesoId,
-                now()->format('Y-m-d H:i:s'),
-                'enlace',
-                null,
-                $url,
-                $nombreDescriptivo,
-                0,
-                null,
-                null,
+            $enlace = File::create([
+                'evidencia_id'    => $evidenciaId,
+                'usuario_id'      => $usuarioId,
+                'proceso_id'      => $procesoId,
+                'fecha_subida'    => now(),
+                'tipo'            => 'enlace',
+                'path'            => null,
+                'url'             => $url,
+                'nombre_original' => $nombreDescriptivo,
+                'is_publico'      => false,
             ]);
-
-            $enlace = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
 
             Log::info('Enlace guardado exitosamente', [
                 'archivo_id'        => $enlace->archivo_id,
@@ -127,15 +116,13 @@ class FileService
         $expiresAt = $expiresAt ?? now()->addYear()->toDateTime();
         $expira    = $expiresAt instanceof \DateTime ? $expiresAt->format('Y-m-d H:i:s') : $expiresAt;
 
-        DB::statement('CALL SP_ACTUALIZAR_ARCHIVO_PUBLICO(?, ?, ?, ?)', [
-            $archivo->archivo_id,
-            1,
-            $token,
-            $expira,
+        $archivo->update([
+            'is_publico'     => true,
+            'token_publico'  => $token,
+            'link_expira_en' => $expira,
         ]);
 
-        $rows = DB::select('CALL SP_BUSCAR_ARCHIVO(?)', [$archivo->archivo_id]);
-        $actualizado = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $archivo->refresh();
 
         Log::info('Archivo marcado como publico', [
             'archivo_id'    => $archivo->archivo_id,
@@ -143,7 +130,7 @@ class FileService
             'expira_en'     => $expira,
         ]);
 
-        return $actualizado;
+        return $archivo;
     }
 
     /**
@@ -151,19 +138,17 @@ class FileService
      */
     public function revokePublicAccess(File $archivo): File
     {
-        DB::statement('CALL SP_ACTUALIZAR_ARCHIVO_PUBLICO(?, ?, ?, ?)', [
-            $archivo->archivo_id,
-            0,
-            null,
-            null,
+        $archivo->update([
+            'is_publico'     => false,
+            'token_publico'  => null,
+            'link_expira_en' => null,
         ]);
 
-        $rows = DB::select('CALL SP_BUSCAR_ARCHIVO(?)', [$archivo->archivo_id]);
-        $actualizado = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $archivo->refresh();
 
         Log::info('Acceso publico revocado', ['archivo_id' => $archivo->archivo_id]);
 
-        return $actualizado;
+        return $archivo;
     }
 
     /**
@@ -179,7 +164,7 @@ class FileService
             Storage::disk($this->disk)->delete($path);
         }
 
-        DB::statement('CALL SP_ELIMINAR_ARCHIVO(?)', [$archivoId]);
+        $archivo->delete();
 
         Log::info($tipo === 'enlace' ? 'Enlace eliminado' : 'Archivo eliminado', [
             'archivo_id' => $archivoId,
@@ -197,8 +182,7 @@ class FileService
     {
         $updated = [];
         foreach ($archivosIds as $id) {
-            $rows    = DB::select('CALL SP_BUSCAR_ARCHIVO(?)', [$id]);
-            $archivo = File::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+            $archivo = File::find($id);
             if ($archivo) {
                 $updated[] = $this->makePublic($archivo, $expiresAt);
             }
