@@ -11,7 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class FileService
 {
-    private string $disk = 'simulated_nas';
+    private string $disk;
+
+    public function __construct()
+    {
+        $this->disk = config('saac.storage_disk', 'simulated_nas');
+    }
 
     public function getDisk(): string
     {

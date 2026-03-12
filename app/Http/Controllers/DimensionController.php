@@ -47,13 +47,6 @@ class DimensionController extends Controller
         $dimension = $this->service->create($request->validated());
         $primaryKeyName = $dimension->getKeyName();
 
-        // Registro en el log de bitácora
-        AuditLogService::log(
-'crear',
-    "Se creó la dimensión \"{$dimension->nombre}\" (ID: {$dimension->dimension_id}).",
-    'Dimensión'
-        );
-
         return response()
             ->json(['message' => 'Dimensión creada correctamente.', 'data' => $dimension], 201)
             ->header('Location', route('dimensiones.show', $dimension->$primaryKeyName));
@@ -70,20 +63,6 @@ class DimensionController extends Controller
         }
 
         $updated = $this->service->update($dimension, $request->validated());
-        // Registro en el log de bitácora
-        $oldName = $dimension->nombre;
-        // oldnomenclatura
-        $oldNomen = $dimension->nomenclatura;
-
-        if ($oldName !== $updated->nombre || $oldNomen !== $updated->nomenclatura) {
-            AuditLogService::log(
-                'editar',
-                "Se actualizó la dimensión ID {$dimension->dimension_id}: ".
-                "nombre anterior \"{$oldName}\", nuevo nombre \"{$updated->nombre}\"; ".
-                "nomenclatura anterior \"{$oldNomen}\", nueva nomenclatura \"{$updated->nomenclatura}\".",
-                'Dimensión'
-            );
-        }
 
         return response()->json(['message' => 'Dimensión actualizada correctamente.', 'data' => $updated], 200);
     }
@@ -100,12 +79,7 @@ class DimensionController extends Controller
 
         try {
             $this->service->delete($dimension); // antes: $d->delete()
-            // Registro en el log de bitácora
-            AuditLogService::log(
-    'eliminar',
-        "Se eliminó la dimensión \"{$dimension->nombre}\" (ID: {$dimension->dimension_id}), nomenclatura {$dimension->nomenclatura}.",
-        'Dimensión'
-            );
+
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
@@ -133,41 +107,40 @@ class DimensionController extends Controller
         ]);
 
         $newActiveState = $validated['active'];
+        $estadoAnterior = $dimension->activo ? 'ACTIVA' : 'INACTIVA'; // capturar ANTES de modificar
 
-        // Actualizar el estado de la dimensión
+        // Actualizar estado (saveQuietly: el log manual de abajo cubre esta acción)
         $dimension->activo = $newActiveState;
-        $dimension->save();
+        $dimension->saveQuietly();
 
         // Aplicar cambio en cascada a todos los elementos hijos
         foreach ($dimension->components as $component) {
             $component->activo = $newActiveState;
-            $component->save();
+            $component->saveQuietly();
 
             // Aplicar a criterios del componente
             foreach ($component->criteria as $criterion) {
                 $criterion->activo = $newActiveState;
-                $criterion->save();
+                $criterion->saveQuietly();
 
                 // Aplicar a estándares del criterio
                 foreach ($criterion->standards as $standard) {
                     $standard->activo = $newActiveState;
-                    $standard->save();
+                    $standard->saveQuietly();
                 }
 
                 // Aplicar a evidencias del criterio
                 foreach ($criterion->evidences as $evidence) {
                     $evidence->activo = $newActiveState;
-                    $evidence->save();
+                    $evidence->saveQuietly();
                 }
             }
         }
 
-        $cascadeMessage = $newActiveState 
-            ? ' Elementos hijos activados en cascada.' 
+        $cascadeMessage = $newActiveState
+            ? ' Elementos hijos activados en cascada.'
             : ' Elementos hijos desactivados en cascada.';
-        // Registro en el log de bitácora$estadoAnterior = $dimension->activo ? 'ACTIVA' : 'INACTIVA';
-        $estadoAnterior = $dimension->activo ? 'ACTIVA' : 'INACTIVA';
-        $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+        $estadoNuevo = $newActiveState ? 'ACTIVA' : 'INACTIVA';
 
         AuditLogService::log(
 'editar',
