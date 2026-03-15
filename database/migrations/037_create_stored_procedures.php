@@ -1743,6 +1743,118 @@ BEGIN
     WHERE compromiso_mejora_id = p_compromiso_id;
 END
         ');
+
+        // =====================================================================
+        // JERARQUIA (Flexible Hierarchy for SINAES 2026)
+        // =====================================================================
+        DB::unprepared('
+CREATE PROCEDURE SP_OBTENER_JERARQUIAS(IN p_tipo VARCHAR(30))
+BEGIN
+    SELECT * FROM JERARQUIA
+    WHERE (p_tipo IS NULL OR tipo = p_tipo)
+    ORDER BY parent_id, orden, nombre;
+END
+        ');
+
+        DB::unprepared('
+CREATE PROCEDURE SP_BUSCAR_JERARQUIA(IN p_id BIGINT)
+BEGIN
+    SELECT * FROM JERARQUIA WHERE jerarquia_id = p_id LIMIT 1;
+END
+        ');
+
+        DB::unprepared('
+CREATE PROCEDURE SP_CREAR_JERARQUIA(
+    IN p_parent_id BIGINT,
+    IN p_nombre VARCHAR(100),
+    IN p_tipo VARCHAR(30),
+    IN p_nomenclatura VARCHAR(20),
+    IN p_descripcion TEXT,
+    IN p_orden INT,
+    IN p_activo TINYINT
+)
+BEGIN
+    INSERT INTO JERARQUIA (parent_id, nombre, tipo, nomenclatura, descripcion, orden, activo, created_at, updated_at)
+    VALUES (p_parent_id, p_nombre, p_tipo, p_nomenclatura, p_descripcion, p_orden, p_activo, NOW(), NOW());
+    
+    SELECT * FROM JERARQUIA WHERE jerarquia_id = LAST_INSERT_ID() LIMIT 1;
+END
+        ');
+
+        DB::unprepared('
+CREATE PROCEDURE SP_ACTUALIZAR_JERARQUIA(
+    IN p_id BIGINT,
+    IN p_parent_id BIGINT,
+    IN p_nombre VARCHAR(100),
+    IN p_tipo VARCHAR(30),
+    IN p_nomenclatura VARCHAR(20),
+    IN p_descripcion TEXT,
+    IN p_orden INT,
+    IN p_activo TINYINT
+)
+BEGIN
+    UPDATE JERARQUIA
+    SET parent_id = p_parent_id,
+        nombre = p_nombre,
+        tipo = p_tipo,
+        nomenclatura = p_nomenclatura,
+        descripcion = p_descripcion,
+        orden = p_orden,
+        activo = p_activo,
+        updated_at = NOW()
+    WHERE jerarquia_id = p_id;
+    
+    SELECT * FROM JERARQUIA WHERE jerarquia_id = p_id LIMIT 1;
+END
+        ');
+
+        DB::unprepared('
+CREATE PROCEDURE SP_ELIMINAR_JERARQUIA(IN p_id BIGINT)
+BEGIN
+    DELETE FROM JERARQUIA WHERE jerarquia_id = p_id;
+END
+        ');
+
+        DB::unprepared('
+CREATE PROCEDURE SP_OBTENER_ARBOL_JERARQUIA(IN p_root_id BIGINT)
+BEGIN
+    WITH RECURSIVE arbol AS (
+        -- Caso base: nodo raíz
+        SELECT 
+            jerarquia_id,
+            parent_id,
+            nombre,
+            tipo,
+            nomenclatura,
+            descripcion,
+            orden,
+            activo,
+            0 AS nivel,
+            CAST(jerarquia_id AS CHAR(255)) AS ruta
+        FROM JERARQUIA
+        WHERE (p_root_id IS NULL AND parent_id IS NULL) 
+           OR (p_root_id IS NOT NULL AND jerarquia_id = p_root_id)
+        
+        UNION ALL
+        
+        -- Caso recursivo: hijos
+        SELECT 
+            j.jerarquia_id,
+            j.parent_id,
+            j.nombre,
+            j.tipo,
+            j.nomenclatura,
+            j.descripcion,
+            j.orden,
+            j.activo,
+            a.nivel + 1,
+            CONCAT(a.ruta, \'->\', j.jerarquia_id)
+        FROM JERARQUIA j
+        INNER JOIN arbol a ON j.parent_id = a.jerarquia_id
+    )
+    SELECT * FROM arbol ORDER BY ruta, orden;
+END
+        ');
     }
 
     public function down(): void
@@ -1837,6 +1949,9 @@ END
             'SP_OBTENER_IDS_EVIDENCIAS_COMPROMISO', 'SP_VINCULAR_EVIDENCIA_COMPROMISO',
             'SP_DESVINCULAR_EVIDENCIAS_COMPROMISO', 'SP_VINCULAR_ASIGNACION_COMPROMISO',
             'SP_DESVINCULAR_ASIGNACIONES_COMPROMISO', 'SP_OBTENER_IDS_ASIGNACIONES_COMPROMISO',
+            // JERARQUIA
+            'SP_OBTENER_JERARQUIAS', 'SP_BUSCAR_JERARQUIA', 'SP_CREAR_JERARQUIA',
+            'SP_ACTUALIZAR_JERARQUIA', 'SP_ELIMINAR_JERARQUIA', 'SP_OBTENER_ARBOL_JERARQUIA',
         ];
 
         foreach ($procedures as $sp) {

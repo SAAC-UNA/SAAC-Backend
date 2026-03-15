@@ -16,6 +16,9 @@ use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\JerarquiaController;
+use App\Http\Controllers\ModeloEstructuraController;
+use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
@@ -178,15 +181,45 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive'])
         ->middleware('permission:estandares.edit');
     
+    // ===== JERARQUIA (Nueva tabla flexible) =====
+    Route::middleware(['permission:jerarquia.view'])->group(function () {
+        Route::get('estructura/jerarquia', [JerarquiaController::class, 'index']);
+        Route::get('estructura/jerarquia/arbol', [JerarquiaController::class, 'tree']);
+        Route::get('estructura/jerarquia/{id}', [JerarquiaController::class, 'show']);
+    });
+    Route::post('estructura/jerarquia', [JerarquiaController::class, 'store'])
+        ->middleware('permission:jerarquia.create');
+    Route::match(['put', 'patch'], 'estructura/jerarquia/{id}', [JerarquiaController::class, 'update'])
+        ->middleware('permission:jerarquia.edit');
+    Route::delete('estructura/jerarquia/{id}', [JerarquiaController::class, 'destroy'])
+        ->middleware('permission:jerarquia.delete');
+    
+    // ===== MODELOS DE ESTRUCTURA (Opcional - Admin) =====
+    Route::get('estructura/modelos', [ModeloEstructuraController::class, 'index']);
+    Route::get('estructura/modelos/activos', [ModeloEstructuraController::class, 'activos']);
+    Route::get('estructura/modelos/{id}', [ModeloEstructuraController::class, 'show']);
+    Route::post('estructura/modelos', [ModeloEstructuraController::class, 'store'])
+        ->middleware('permission:admin');
+    Route::match(['put', 'patch'], 'estructura/modelos/{id}', [ModeloEstructuraController::class, 'update'])
+        ->middleware('permission:admin');
+    Route::patch('estructura/modelos/{id}/toggle', [ModeloEstructuraController::class, 'toggleActivo'])
+        ->middleware('permission:admin');
+    
     // ===== PROCESOS Y CICLOS =====
     Route::middleware(['permission:ciclos.view'])->group(function () {
-        Route::get('estructura/procesos', function () {
-            return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
-        });
+        Route::get('estructura/procesos', [ProcessController::class, 'index']);
+        Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
         Route::get('estructura/ciclos-acreditacion', function () {
             return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
         });
     });
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+        ->middleware('permission:ciclos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+        ->middleware('permission:ciclos.edit');
+    Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
+        ->middleware('permission:ciclos.delete');
 });
 
 // ============================================
