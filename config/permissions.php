@@ -56,6 +56,9 @@ return [
         'criterios' => ['view', 'create', 'edit', 'delete'],
         'estandares' => ['view', 'create', 'edit', 'delete'],
         
+        // Jerarquía Flexible (Modelo 2026)
+        'jerarquia' => ['view', 'create', 'edit', 'delete'],
+        
         // Evidencias (HU-012)
         'evidencias' => ['view', 'create', 'edit', 'delete', 'assign'],
         
@@ -131,6 +134,12 @@ return [
             'criterios.view',
             'estandares.view',
             
+            // Jerarquía (gestión completa - igual que dimensiones)
+            'jerarquia.view',
+            'jerarquia.create',
+            'jerarquia.edit',
+            'jerarquia.delete',
+            
             // Evidencias (gestión completa)
             'evidencias.view',
             'evidencias.create',
@@ -200,6 +209,9 @@ return [
             'criterios.view',
             'estandares.view',
             
+            // Jerarquía (solo lectura)
+            'jerarquia.view',
+            
             // Evidencias (ver y editar estados)
             'evidencias.view',
             'evidencias.edit',
@@ -249,6 +261,9 @@ return [
             'dimensiones.view',
             'componentes.view',
             'criterios.view',
+            
+            // Jerarquía (solo lectura)
+            'jerarquia.view',
             
             // Evidencias (ver y gestionar las asignadas)
             'evidencias.view',
@@ -342,6 +357,12 @@ return [
         'estandares.create' => 'Crear estándares',
         'estandares.edit' => 'Editar estándares',
         'estandares.delete' => 'Eliminar estándares',
+        
+        // Jerarquía
+        'jerarquia.view' => 'Ver jerarquía',
+        'jerarquia.create' => 'Crear jerarquía',
+        'jerarquia.edit' => 'Editar jerarquía',
+        'jerarquia.delete' => 'Eliminar jerarquía',
         
         // Evidencias
         'evidencias.view' => 'Ver evidencias',

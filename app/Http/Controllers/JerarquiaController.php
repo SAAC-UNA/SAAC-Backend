@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Jerarquia;
 use App\Services\JerarquiaService;
 use App\Services\AuditLogService;
+use App\Http\Requests\JerarquiaRequest;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class JerarquiaController extends Controller
 {
@@ -46,7 +46,11 @@ class JerarquiaController extends Controller
     /**
      * GET /api/estructura/jerarquia/arbol
      * Query params: ?root_id=5&modelo_estructura_id=2
+     * 
+     * COMENTADO: Funcionalidad de árbol jerárquico para futuro.
+     * Usará SP_OBTENER_ARBOL_JERARQUIA para construir estructura completa.
      */
+    /*
     public function tree(Request $request)
     {
         $rootId = $request->query('root_id') ? (int)$request->query('root_id') : null;
@@ -54,25 +58,14 @@ class JerarquiaController extends Controller
         $tree = $this->service->getTree($rootId, $modeloId);
         return response()->json($tree, 200);
     }
+    */
 
     /**
      * POST /api/estructura/jerarquia
      */
-    public function store(Request $request)
+    public function store(JerarquiaRequest $request)
     {
-        $validated = $request->validate([
-            'modelo_estructura_id' => 'required|exists:MODELO_ESTRUCTURA,modelo_estructura_id',
-            'parent_id' => 'nullable|exists:JERARQUIA,jerarquia_id',
-            'nombre' => 'required|string|max:100',
-            'tipo' => 'required|string|max:30',
-            'categoria' => 'nullable|in:A,B,C,D',
-            'nomenclatura' => 'nullable|string|max:20',
-            'descripcion' => 'nullable|string',
-            'orden' => 'nullable|integer|min:0',
-            'activo' => 'boolean'
-        ]);
-
-        $item = $this->service->create($validated);
+        $item = $this->service->create($request->validated());
 
         AuditLogService::log(
             'crear',
@@ -89,7 +82,7 @@ class JerarquiaController extends Controller
     /**
      * PUT/PATCH /api/estructura/jerarquia/{id}
      */
-    public function update(Request $request, $id)
+    public function update(JerarquiaRequest $request, $id)
     {
         $item = Jerarquia::find($id);
         
@@ -97,23 +90,7 @@ class JerarquiaController extends Controller
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
         }
 
-        $validated = $request->validate([
-            'parent_id' => [
-                'nullable',
-                'exists:JERARQUIA,jerarquia_id',
-                // Evitar que un elemento sea su propio padre
-                Rule::notIn([$id])
-            ],
-            'nombre' => 'sometimes|required|string|max:100',
-            'tipo' => 'sometimes|required|string|max:30',
-            'categoria' => 'nullable|in:A,B,C,D',
-            'nomenclatura' => 'nullable|string|max:20',
-            'descripcion' => 'nullable|string',
-            'orden' => 'nullable|integer|min:0',
-            'activo' => 'boolean'
-        ]);
-
-        $updated = $this->service->update($item, $validated);
+        $updated = $this->service->update($item, $request->validated());
 
         AuditLogService::log(
             'editar',
@@ -155,6 +132,42 @@ class JerarquiaController extends Controller
 
         return response()->json([
             'message' => 'Elemento eliminado correctamente.'
+        ], 200);
+    }
+
+    /**
+     * PATCH /api/estructura/jerarquia/{id}/active
+     * Activar/Desactivar un elemento de jerarquía.
+     * ACTUALIZADO: Ahora usa JerarquiaService (patrón Service consistente)
+     */
+    public function setActive(Request $request, $id)
+    {
+        $item = Jerarquia::find($id);
+        
+        if (!$item) {
+            return response()->json(['message' => 'Elemento no encontrado.'], 404);
+        }
+
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+
+        // Si el estado solicitado es diferente al actual, hacer toggle
+        if ($item->activo !== $validated['active']) {
+            $item = $this->service->toggleActive($item);
+        }
+
+        $statusText = $item->activo ? 'activado' : 'desactivado';
+
+        AuditLogService::log(
+            'editar',
+            "Se {$statusText} el elemento de jerarquía \"{$item->nombre}\" (ID: {$item->jerarquia_id}).",
+            'Jerarquía'
+        );
+
+        return response()->json([
+            'message' => "Elemento {$statusText} correctamente.",
+            'data' => $item
         ], 200);
     }
 }

@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Process;
+use App\Http\Requests\ProcessRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Services\AuditLogService;
 
 class ProcessController extends Controller
 {
@@ -35,23 +36,15 @@ class ProcessController extends Controller
     /**
      * Crear un nuevo proceso.
      */
-    public function store(Request $request)
+    public function store(ProcessRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'ciclo_acreditacion_id' => 'required|exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
-            'tipo_proceso' => 'required|string|max:50',
-            'modelo_estructura_id' => 'required|exists:MODELO_ESTRUCTURA,modelo_estructura_id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $proceso = Process::create($request->only([
-            'ciclo_acreditacion_id',
-            'tipo_proceso',
-            'modelo_estructura_id'
-        ]));
+        $proceso = Process::create($request->validated());
+        
+        AuditLogService::log(
+            'crear',
+            "Se creó el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            'Proceso'
+        );
         
         return response()->json([
             'message' => 'Proceso creado exitosamente.',
@@ -76,25 +69,17 @@ class ProcessController extends Controller
     /**
      * Actualizar un proceso existente.
      */
-    public function update(Request $request, $id)
+    public function update(ProcessRequest $request, $id)
     {
         $proceso = Process::findOrFail($id);
         
-        $validator = Validator::make($request->all(), [
-            'ciclo_acreditacion_id' => 'sometimes|exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
-            'tipo_proceso' => 'sometimes|string|max:50',
-            'modelo_estructura_id' => 'sometimes|exists:MODELO_ESTRUCTURA,modelo_estructura_id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $proceso->update($request->only([
-            'ciclo_acreditacion_id',
-            'tipo_proceso',
-            'modelo_estructura_id'
-        ]));
+        $proceso->update($request->validated());
+        
+        AuditLogService::log(
+            'editar',
+            "Se actualizó el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            'Proceso'
+        );
         
         return response()->json([
             'message' => 'Proceso actualizado exitosamente.',
@@ -103,8 +88,45 @@ class ProcessController extends Controller
     }
 
     /**
-     * Eliminar un proceso.
+     * Activar/Desactivar un proceso.
+     * PATCH /api/estructura/procesos/{id}/active
      */
+    public function setActive(Request $request, $id)
+    {
+        $proceso = Process::findOrFail($id);
+        
+        $validated = $request->validate([
+            'active' => ['required', 'boolean'],
+        ]);
+        
+        $newActiveState = $validated['active'];
+        $proceso->activo = $newActiveState;
+        $proceso->save();
+        
+        $estadoTexto = $newActiveState ? 'activado' : 'desactivado';
+        
+        AuditLogService::log(
+            'editar',
+            "Se {$estadoTexto} el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            'Proceso'
+        );
+        
+        return response()->json([
+            'message' => "Proceso {$estadoTexto} exitosamente.",
+            'data' => $proceso->load(['accreditationCycle', 'modeloEstructura'])
+        ], 200);
+    }
+
+    // =====================================================
+    // MÉTODO destroy() DESHABILITADO
+    // Los procesos NO se eliminan físicamente.
+    // Solo se activan/desactivan usando setActive()
+    // =====================================================
+    /**
+     * Eliminar un proceso.
+     * DESHABILITADO: Los procesos no se eliminan, solo se activan/desactivan.
+     */
+    /*
     public function destroy($id)
     {
         $proceso = Process::findOrFail($id);
@@ -114,5 +136,6 @@ class ProcessController extends Controller
             'message' => 'Proceso eliminado exitosamente.'
         ]);
     }
+    */
 }
 

@@ -286,7 +286,8 @@ return new class extends Migration
                     updated_at = NOW()
                 WHERE jerarquia_id = p_jerarquia_id;
                 
-                SELECT ROW_COUNT() AS affected_rows;
+                -- Devolver el registro actualizado (no affected_rows)
+                SELECT * FROM JERARQUIA WHERE jerarquia_id = p_jerarquia_id LIMIT 1;
             END
         ");
 

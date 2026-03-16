@@ -22,6 +22,7 @@ class Process extends BaseCareer
         'ciclo_acreditacion_id',
         'tipo_proceso',
         'modelo_estructura_id',
+        'activo',
     ];
 
     /**

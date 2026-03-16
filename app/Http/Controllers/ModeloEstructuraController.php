@@ -3,21 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\ModeloEstructura;
-use Illuminate\Http\Request;
+// use App\Http\Requests\ModeloEstructuraRequest; // Ya no se usa - no se permite crear/editar modelos
+use App\Services\ModeloEstructuraService;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 
 class ModeloEstructuraController extends Controller
 {
+    protected ModeloEstructuraService $service;
+
+    public function __construct(ModeloEstructuraService $service)
+    {
+        $this->service = $service;
+    }
     /**
      * Obtener todos los modelos de estructura
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $rows = DB::select('CALL SP_OBTENER_MODELOS_ESTRUCTURA()');
-        $modelos = ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows));
-
-        return response()->json($modelos);
+        $models = $this->service->getAll();
+        return response()->json($models);
     }
 
     /**
@@ -25,10 +30,8 @@ class ModeloEstructuraController extends Controller
      */
     public function activos(): JsonResponse
     {
-        $rows = DB::select('CALL SP_OBTENER_MODELOS_ACTIVOS()');
-        $modelos = ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows));
-
-        return response()->json($modelos);
+        $models = $this->service->getActive();
+        return response()->json($models);
     }
 
     /**
@@ -36,90 +39,92 @@ class ModeloEstructuraController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $rows = DB::select('CALL SP_BUSCAR_MODELO_ESTRUCTURA(?)', [$id]);
+        $model = $this->service->findById($id);
         
-        if (empty($rows)) {
+        if (!$model) {
             return response()->json([
                 'message' => 'Modelo de estructura no encontrado.'
             ], 404);
         }
-
-        $modelo = ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
         
-        return response()->json($modelo);
+        return response()->json($model);
     }
 
     /**
-     * Crear un nuevo modelo (admin only - raro)
+     * COMENTADO: No se permite crear modelos - ya están predefinidos en migración
+     * (SINAES 2018 tradicional y SINAES 2026 jerarquia_flexible)
      */
-    public function store(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string',
-            'tipo' => 'required|string|max:30|in:tradicional,jerarquia_flexible,hibrido,custom',
-            'version' => 'nullable|string|max:20',
-            'activo' => 'boolean',
-        ]);
+    // public function store(ModeloEstructuraRequest $request): JsonResponse
+    // {
+    //     $model = $this->service->create($request->validated());
 
-        $modelo = ModeloEstructura::create($validated);
+    //     AuditLogService::log(
+    //         'crear',
+    //         "Se creó el modelo de estructura \"{$model->nombre}\" (Tipo: {$model->tipo}).",
+    //         'Modelo Estructura'
+    //     );
 
-        return response()->json([
-            'message' => 'Modelo de estructura creado exitosamente.',
-            'data' => $modelo
-        ], 201);
-    }
+    //     return response()->json([
+    //         'message' => 'Modelo de estructura creado exitosamente.',
+    //         'data' => $model
+    //     ], 201);
+    // }
 
     /**
-     * Actualizar modelo existente
+     * COMENTADO: No se permite editar modelos - son predefinidos del sistema
+     * Para cambios usar toggleActivo() o modificar directamente en BD si es necesario
      */
-    public function update(Request $request, int $id): JsonResponse
-    {
-        $modelo = ModeloEstructura::find($id);
+    // public function update(ModeloEstructuraRequest $request, int $id): JsonResponse
+    // {
+    //     $model = ModeloEstructura::find($id);
 
-        if (!$modelo) {
-            return response()->json([
-                'message' => 'Modelo de estructura no encontrado.'
-            ], 404);
-        }
+    //     if (!$model) {
+    //         return response()->json([
+    //             'message' => 'Modelo de estructura no encontrado.'
+    //         ], 404);
+    //     }
 
-        $validated = $request->validate([
-            'nombre' => 'sometimes|string|max:100',
-            'descripcion' => 'nullable|string',
-            'tipo' => 'sometimes|string|max:30|in:tradicional,jerarquia_flexible,hibrido,custom',
-            'version' => 'nullable|string|max:20',
-            'activo' => 'boolean',
-        ]);
+    //     $updated = $this->service->update($model, $request->validated());
 
-        $modelo->update($validated);
+    //     AuditLogService::log(
+    //         'editar',
+    //         "Se actualizó el modelo de estructura ID {$updated->modelo_estructura_id} (Nombre: {$updated->nombre}).",
+    //         'Modelo Estructura'
+    //     );
 
-        return response()->json([
-            'message' => 'Modelo de estructura actualizado exitosamente.',
-            'data' => $modelo
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Modelo de estructura actualizado exitosamente.',
+    //         'data' => $updated
+    //     ]);
+    // }
 
     /**
      * Activar/Desactivar modelo (no eliminar para mantener integridad con PROCESO)
      */
     public function toggleActivo(int $id): JsonResponse
     {
-        $modelo = ModeloEstructura::find($id);
+        $model = ModeloEstructura::find($id);
 
-        if (!$modelo) {
+        if (!$model) {
             return response()->json([
                 'message' => 'Modelo de estructura no encontrado.'
             ], 404);
         }
 
-        $modelo->activo = !$modelo->activo;
-        $modelo->save();
+        $updated = $this->service->toggleActive($model);
+        $statusText = $updated->activo ? 'activado' : 'desactivado';
+
+        AuditLogService::log(
+            'editar',
+            "Se {$statusText} el modelo de estructura ID {$updated->modelo_estructura_id} (Nombre: {$updated->nombre}).",
+            'Modelo Estructura'
+        );
 
         return response()->json([
-            'message' => $modelo->activo 
+            'message' => $updated->activo 
                 ? 'Modelo activado exitosamente.' 
                 : 'Modelo desactivado exitosamente.',
-            'data' => $modelo
+            'data' => $updated
         ]);
     }
 }

@@ -23,8 +23,13 @@ class ModeloEstructura extends Model
     ];
 
     // Constantes para tipos de modelo
-    const TIPO_TRADICIONAL = 'tradicional';
-    const TIPO_JERARQUIA_FLEXIBLE = 'jerarquia_flexible';
+    // Son VALORES FIJOS del sistema, NO se inventan nuevos tipos
+    const TIPO_TRADICIONAL = 'tradicional';           // Modelo SINAES 2018 → usa DIMENSION/COMPONENTE/CRITERIO
+    const TIPO_JERARQUIA_FLEXIBLE = 'jerarquia_flexible'; // Modelo SINAES 2026 → usa JERARQUIA
+    
+    // Tipos futuros comentados (no se usan actualmente):
+    // const TIPO_HIBRIDO = 'hibrido';                   // Modelo mixto → usa ambas estructuras
+    // const TIPO_CUSTOM = 'custom';                     // Modelo personalizado por institución
 
     /**
      * Procesos que usan este modelo
@@ -49,6 +54,24 @@ class ModeloEstructura extends Model
     {
         return $this->tipo === self::TIPO_JERARQUIA_FLEXIBLE;
     }
+
+    // Métodos para tipos futuros comentados (no se usan actualmente):
+    
+    // /**
+    //  * Verificar si es modelo híbrido
+    //  */
+    // public function esHibrido(): bool
+    // {
+    //     return $this->tipo === self::TIPO_HIBRIDO;
+    // }
+
+    // /**
+    //  * Verificar si es modelo personalizado
+    //  */
+    // public function esCustom(): bool
+    // {
+    //     return $this->tipo === self::TIPO_CUSTOM;
+    // }
 
     /**
      * Scope para modelos activos

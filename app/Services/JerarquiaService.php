@@ -32,6 +32,11 @@ class JerarquiaService
 
     /**
      * Crear nuevo elemento
+     * 
+     * NOTA sobre 'orden': Aunque no usamos árbol visual, el campo 'orden' es NECESARIO para:
+     * - Ordenar elementos hermanos (mismo parent_id) en listados
+     * - Controlar secuencia de dimensiones/criterios (ej: "Dimensión 1, 2, 3...")
+     * - Prioridad de visualización en frontend (independiente del árbol)
      */
     public function create(array $data): Jerarquia
     {
@@ -43,7 +48,7 @@ class JerarquiaService
             $data['categoria'] ?? null,
             $data['nomenclatura'] ?? null,
             $data['descripcion'] ?? null,
-            $data['orden'] ?? 0,
+            $data['orden'] ?? 0,  // Orden para sorting, NO para árbol
             $data['activo'] ?? 1,
         ]);
 
@@ -84,17 +89,61 @@ class JerarquiaService
     }
 
     /**
-     * Obtener árbol completo (recursivo)
+     * Activar/Desactivar elemento (toggle)
+     * Siguiendo patrón Service como ModeloEstructuraService
+     * 
+     * LÓGICA DE CASCADA (igual que modelo tradicional):
+     * - Al DESACTIVAR: desactiva en cascada todos los hijos recursivamente
+     * - Al ACTIVAR: solo activa el elemento actual (no toca hijos)
      */
-    public function getTree(?int $rootId = null, ?int $modeloEstructuraId = null)
+    public function toggleActive(Jerarquia $jerarquia): Jerarquia
     {
-        $cacheKey = "jerarquia.tree.{$rootId}.modelo.{$modeloEstructuraId}";
+        $newActiveState = !$jerarquia->activo;
         
-        return Cache::remember($cacheKey, 300, function () use ($rootId, $modeloEstructuraId) {
-            $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $modeloEstructuraId]);
-            return array_map(fn($r) => (array) $r, $rows);
-        });
+        $jerarquia->activo = $newActiveState;
+        $jerarquia->save();
+
+        // Si desactivamos, aplicar cascada a todos los hijos
+        if (!$newActiveState) {
+            $this->deactivateChildrenRecursively($jerarquia);
+        }
+
+        $this->clearCache($jerarquia->tipo);
+        return $jerarquia;
     }
+
+    /**
+     * Desactivar hijos recursivamente
+     * Recorre todos los descendientes y los desactiva en cascada
+     */
+    private function deactivateChildrenRecursively(Jerarquia $parent): void
+    {
+        foreach ($parent->children as $child) {
+            $child->activo = false;
+            $child->save();
+            
+            // Recursión: si el hijo tiene hijos, desactivarlos también
+            if ($child->hasChildren()) {
+                $this->deactivateChildrenRecursively($child);
+            }
+        }
+    }
+
+    /**
+     * Obtener árbol completo (recursivo)
+     * COMENTADO: Funcionalidad de árbol no se usa actualmente
+     * El frontend maneja jerarquías como lista plana con parent_id
+     * Descomentar si se implementa visualización tipo árbol en el futuro
+     */
+    // public function getTree(?int $rootId = null, ?int $modeloEstructuraId = null)
+    // {
+    //     $cacheKey = "jerarquia.tree.{$rootId}.modelo.{$modeloEstructuraId}";
+    //     
+    //     return Cache::remember($cacheKey, 300, function () use ($rootId, $modeloEstructuraId) {
+    //         $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $modeloEstructuraId]);
+    //         return array_map(fn($r) => (array) $r, $rows);
+    //     });
+    // }
 
     /**
      * Limpiar caché

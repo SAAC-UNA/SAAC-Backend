@@ -184,7 +184,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // ===== JERARQUIA (Nueva tabla flexible) =====
     Route::middleware(['permission:jerarquia.view'])->group(function () {
         Route::get('estructura/jerarquia', [JerarquiaController::class, 'index']);
-        Route::get('estructura/jerarquia/arbol', [JerarquiaController::class, 'tree']);
+        // Route::get('estructura/jerarquia/arbol', [JerarquiaController::class, 'tree']); // TODO: Funcionalidad tree para futuro
         Route::get('estructura/jerarquia/{id}', [JerarquiaController::class, 'show']);
     });
     Route::post('estructura/jerarquia', [JerarquiaController::class, 'store'])
@@ -193,17 +193,21 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:jerarquia.edit');
     Route::delete('estructura/jerarquia/{id}', [JerarquiaController::class, 'destroy'])
         ->middleware('permission:jerarquia.delete');
+    Route::patch('estructura/jerarquia/{id}/active', [JerarquiaController::class, 'setActive'])
+        ->middleware('permission:jerarquia.edit');
     
-    // ===== MODELOS DE ESTRUCTURA (Opcional - Admin) =====
+    // ===== MODELOS DE ESTRUCTURA (Solo lectura - modelos predefinidos en migración) =====
     Route::get('estructura/modelos', [ModeloEstructuraController::class, 'index']);
     Route::get('estructura/modelos/activos', [ModeloEstructuraController::class, 'activos']);
     Route::get('estructura/modelos/{id}', [ModeloEstructuraController::class, 'show']);
-    Route::post('estructura/modelos', [ModeloEstructuraController::class, 'store'])
-        ->middleware('permission:admin');
-    Route::match(['put', 'patch'], 'estructura/modelos/{id}', [ModeloEstructuraController::class, 'update'])
-        ->middleware('permission:admin');
     Route::patch('estructura/modelos/{id}/toggle', [ModeloEstructuraController::class, 'toggleActivo'])
-        ->middleware('permission:admin');
+        ->middleware('role:Superusuario');
+    
+    // No se permite crear/editar modelos - ya están predefinidos (SINAES 2018 y 2026)
+    // Route::post('estructura/modelos', [ModeloEstructuraController::class, 'store'])
+    //     ->middleware('role:Superusuario');
+    // Route::match(['put', 'patch'], 'estructura/modelos/{id}', [ModeloEstructuraController::class, 'update'])
+    //     ->middleware('role:Superusuario');
     
     // ===== PROCESOS Y CICLOS =====
     Route::middleware(['permission:ciclos.view'])->group(function () {
@@ -218,8 +222,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:ciclos.create');
     Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
         ->middleware('permission:ciclos.edit');
-    Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
-        ->middleware('permission:ciclos.delete');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+        ->middleware('permission:ciclos.edit');
+    // Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
+    //     ->middleware('permission:ciclos.delete'); // Procesos NO se eliminan, solo se activan/desactivan
 });
 
 // ============================================
