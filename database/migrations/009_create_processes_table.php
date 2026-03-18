@@ -27,9 +27,11 @@ return new class extends Migration
             
             // Timestamps de creación y actualización
 
+
               //  Indica si el proceso está vigente o en curso
             //$table->boolean('activo')->default(true); //nnuevo
             $table->enum('tipo_proceso', ['Autoevaluación', 'Compromiso de mejora']);
+
 
             $table->timestamps();
             
