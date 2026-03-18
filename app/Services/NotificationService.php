@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Notification;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
@@ -60,12 +59,10 @@ class NotificationService
         // Verificar duplicados (misma notificacion en ultimos 5 minutos)
         if (self::isDuplicate($data)) {
             Log::warning('Notificacion duplicada detectada y evitada', $data);
-            // Retornar la notificacion existente
-            $rows = DB::select('CALL SP_OBTENER_ULTIMA_NOTIFICACION(?, ?)', [
-                $data['usuario_id'],
-                $data['tipo_evento'],
-            ]);
-            return Notification::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+            return Notification::where('usuario_id', $data['usuario_id'])
+                ->where('tipo_evento', $data['tipo_evento'])
+                ->latest()
+                ->firstOrFail();
         }
 
         // Determinar canal segun criticidad
@@ -84,21 +81,19 @@ class NotificationService
             ? Notification::EMAIL_PENDIENTE
             : Notification::EMAIL_NO_APLICA;
 
-        // Crear notificacion via stored procedure
-        $rows = DB::select('CALL SP_CREAR_NOTIFICACION(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            $data['usuario_id'],
-            $data['tipo_evento'],
-            $canal,
-            $data['titulo'],
-            $data['mensaje'],
-            $data['enlace'] ?? null,
-            isset($data['metadatos']) ? json_encode($data['metadatos']) : null,
-            $relacionadoType,
-            $relacionadoId,
-            $estadoEmail,
+        // Crear notificacion via Eloquent
+        $notificacion = Notification::create([
+            'usuario_id'        => $data['usuario_id'],
+            'tipo_evento'       => $data['tipo_evento'],
+            'canal'             => $canal,
+            'titulo'            => $data['titulo'],
+            'mensaje'           => $data['mensaje'],
+            'enlace'            => $data['enlace'] ?? null,
+            'metadatos'         => $data['metadatos'] ?? null,
+            'relacionado_type'  => $relacionadoType,
+            'relacionado_id'    => $relacionadoId,
+            'estado_email'      => $estadoEmail,
         ]);
-
-        $notificacion = Notification::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
 
         // Registrar exito en bitacora
         AuditLogService::log(
@@ -140,7 +135,8 @@ class NotificationService
      */
     public static function markAsRead(int $notificacionId): bool
     {
-        DB::statement('CALL SP_MARCAR_NOTIFICACION_LEIDA(?)', [$notificacionId]);
+        Notification::where('notificacion_id', $notificacionId)
+            ->update(['leida' => true, 'fecha_lectura' => now()]);
         return true;
     }
 
@@ -149,8 +145,9 @@ class NotificationService
      */
     public static function markAllAsRead(int $usuarioId): int
     {
-        $result = DB::select('CALL SP_MARCAR_TODAS_NOTIFICACIONES_LEIDAS(?)', [$usuarioId]);
-        return $result[0]->affected ?? 0;
+        return Notification::where('usuario_id', $usuarioId)
+            ->where('leida', false)
+            ->update(['leida' => true, 'fecha_lectura' => now()]);
     }
 
     /**
@@ -158,20 +155,18 @@ class NotificationService
      */
     public static function getForUser(int $usuarioId, array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
-        $leida      = isset($filters['leida']) ? (int) $filters['leida'] : null;
+        $leida      = isset($filters['leida']) ? (bool) $filters['leida'] : null;
         $tipoEvento = $filters['tipo_evento'] ?? null;
         $fechaDesde = $filters['fecha_desde'] ?? null;
         $fechaHasta = $filters['fecha_hasta'] ?? null;
 
-        $rows = DB::select('CALL SP_OBTENER_NOTIFICACIONES(?, ?, ?, ?, ?)', [
-            $usuarioId,
-            $leida,
-            $tipoEvento,
-            $fechaDesde,
-            $fechaHasta,
-        ]);
-
-        return Notification::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return Notification::where('usuario_id', $usuarioId)
+            ->when($leida !== null, fn($q) => $q->where('leida', $leida))
+            ->when($tipoEvento, fn($q) => $q->where('tipo_evento', $tipoEvento))
+            ->when($fechaDesde, fn($q) => $q->where('created_at', '>=', $fechaDesde))
+            ->when($fechaHasta, fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     /**
@@ -179,8 +174,9 @@ class NotificationService
      */
     public static function getUnreadCount(int $usuarioId): int
     {
-        $result = DB::select('CALL SP_CONTAR_NO_LEIDAS(?)', [$usuarioId]);
-        return $result[0]->total ?? 0;
+        return Notification::where('usuario_id', $usuarioId)
+            ->where('leida', false)
+            ->count();
     }
 
     /**
@@ -190,8 +186,7 @@ class NotificationService
      */
     public static function cleanOldNotifications(int $dias = 90): int
     {
-        $result = DB::select('CALL SP_LIMPIAR_NOTIFICACIONES_ANTIGUAS(?)', [$dias]);
-        return $result[0]->deleted ?? 0;
+        return Notification::where('created_at', '<', now()->subDays($dias))->delete();
     }
 
     // ===== METODOS PRIVADOS =====
@@ -209,9 +204,8 @@ class NotificationService
             }
         }
 
-        // Validar que el usuario existe via SP
-        $rows = DB::select('CALL SP_BUSCAR_USUARIO(?)', [$data['usuario_id']]);
-        if (empty($rows)) {
+        // Validar que el usuario existe
+        if (!User::where('usuario_id', $data['usuario_id'])->exists()) {
             throw new \InvalidArgumentException("El usuario {$data['usuario_id']} no existe");
         }
     }
@@ -221,12 +215,11 @@ class NotificationService
      */
     private static function isDuplicate(array $data): bool
     {
-        $result = DB::select('CALL SP_VERIFICAR_NOTIFICACION_DUPLICADA(?, ?, ?)', [
-            $data['usuario_id'],
-            $data['tipo_evento'],
-            $data['titulo'],
-        ]);
-        return ($result[0]->total ?? 0) > 0;
+        return Notification::where('usuario_id', $data['usuario_id'])
+            ->where('tipo_evento', $data['tipo_evento'])
+            ->where('titulo', $data['titulo'])
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->exists();
     }
 
     /**
@@ -256,8 +249,7 @@ class NotificationService
     private static function sendEmail(Notification $notificacion): void
     {
         try {
-            $rows = DB::select('CALL SP_BUSCAR_USUARIO(?)', [$notificacion->usuario_id]);
-            $user = !empty($rows) ? User::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+            $user = User::find($notificacion->usuario_id);
 
             // Verificar que el usuario tenga email
             if (!$user || !$user->email) {
@@ -265,11 +257,7 @@ class NotificationService
                     'notificacion_id' => $notificacion->notificacion_id,
                     'usuario_id'      => $notificacion->usuario_id,
                 ]);
-                DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
-                    $notificacion->notificacion_id,
-                    Notification::EMAIL_NO_APLICA,
-                    null,
-                ]);
+                $notificacion->update(['estado_email' => Notification::EMAIL_NO_APLICA]);
                 return;
             }
 
@@ -283,11 +271,7 @@ class NotificationService
             ));
 
             // Marcar como enviado
-            DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
-                $notificacion->notificacion_id,
-                Notification::EMAIL_ENVIADO,
-                null,
-            ]);
+            $notificacion->update(['estado_email' => Notification::EMAIL_ENVIADO]);
 
             Log::info('Email de notificacion enviado', [
                 'notificacion_id' => $notificacion->notificacion_id,
@@ -303,10 +287,9 @@ class NotificationService
 
         } catch (\Exception $e) {
             // Marcar como fallido
-            DB::statement('CALL SP_ACTUALIZAR_ESTADO_EMAIL_NOTIFICACION(?, ?, ?)', [
-                $notificacion->notificacion_id,
-                Notification::EMAIL_FALLIDO,
-                $e->getMessage(),
+            $notificacion->update([
+                'estado_email'  => Notification::EMAIL_FALLIDO,
+                'detalle_error' => $e->getMessage(),
             ]);
 
             Log::error('Error enviando email de notificacion', [

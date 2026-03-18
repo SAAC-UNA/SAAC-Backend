@@ -24,8 +24,8 @@ return new class extends Migration
             // Relación con usuario (restrict: no borrar usuario si tiene asignaciones)
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             
-            // Estado de la asignación (varchar de 30)
-            $table->string('estado', 30)->default('pendiente');
+            // Estado de la asignación
+            $table->enum('estado', ['Pendiente', 'En Progreso', 'Completado', 'Vencido'])->default('Pendiente');
             
             // Fecha cuando se realizó la asignación
             $table->datetime('fecha_asignacion');

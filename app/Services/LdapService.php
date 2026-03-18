@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 use LdapRecord\Container;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -38,31 +37,17 @@ class LdapService
             }
             
             $connection = Container::getConnection('default');
-            
-            // Construir el DN del usuario basado en la cédula
-            // Formato: uid=203948609,ou=profesores,ou=users,dc=una,dc=local
-            // o: uid=203948609,ou=estudiantes,ou=users,dc=una,dc=local
-            
-            // Intentar primero como profesor
-            $userDn = "uid={$cedula},ou=profesores,ou=users," . config('ldap.connections.default.base_dn');
-            
-            if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticación LDAP exitosa (profesor)", [
-                    'cedula_hash' => hash('sha256', $cedula),
-                    'cedula_last4' => substr($cedula, -4),
-                ]);
-                return $this->getUserDataFromLdap($cedula, $connection);
-            }
-            
-            // Intentar como estudiante
-            $userDn = "uid={$cedula},ou=estudiantes,ou=users," . config('ldap.connections.default.base_dn');
-            
-            if ($connection->auth()->attempt($userDn, $password)) {
-                Log::info("Autenticación LDAP exitosa (estudiante)", [
-                    'cedula_hash' => hash('sha256', $cedula),
-                    'cedula_last4' => substr($cedula, -4),
-                ]);
-                return $this->getUserDataFromLdap($cedula, $connection);
+            $baseDn     = config('ldap.connections.default.base_dn');
+
+            foreach (config('ldap.organizational_units', ['profesores', 'estudiantes']) as $ou) {
+                $userDn = "uid={$cedula},ou={$ou},ou=users,{$baseDn}";
+                if ($connection->auth()->attempt($userDn, $password)) {
+                    Log::info("Autenticación LDAP exitosa ({$ou})", [
+                        'cedula_hash'  => hash('sha256', $cedula),
+                        'cedula_last4' => substr($cedula, -4),
+                    ]);
+                    return $this->getUserDataFromLdap($cedula, $connection);
+                }
             }
             
             Log::warning("Autenticación LDAP fallida", [
@@ -135,34 +120,21 @@ class LdapService
     public function syncUserFromLdap(array $ldapData): User
     {
         try {
-            // Buscar usuario por cedula via SP
-            $rows = DB::select('CALL SP_BUSCAR_USUARIO_POR_CEDULA(?)', [$ldapData['cedula']]);
+            $user = User::updateOrCreate(
+                ['cedula' => $ldapData['cedula']],
+                [
+                    'nombre' => $ldapData['nombre'],
+                    'email'  => $ldapData['email'],
+                    'status' => User::STATUS_ACTIVE,
+                ]
+            );
 
-            if (!empty($rows)) {
-                // Usuario existe: actualizar datos sin tocar password
-                $userId = $rows[0]->usuario_id;
-                $updated = DB::select('CALL SP_ACTUALIZAR_USUARIO(?, ?, ?, ?, ?)', [
-                    $userId,
-                    $ldapData['cedula'],
-                    $ldapData['nombre'],
-                    $ldapData['email'],
-                    User::STATUS_ACTIVE,
-                ]);
-                Log::info("Usuario actualizado desde LDAP: {$ldapData['cedula']}");
-                return User::hydrate(array_map(fn($r) => (array) $r, $updated))->first();
-            } else {
-                // Usuario nuevo: crear con password vacio (LDAP gestiona autenticacion)
-                $created = DB::select('CALL SP_CREAR_USUARIO(?, ?, ?, ?, ?)', [
-                    $ldapData['cedula'],
-                    $ldapData['nombre'],
-                    $ldapData['email'],
-                    User::STATUS_ACTIVE,
-                    '',
-                ]);
-                Log::info("Usuario creado desde LDAP: {$ldapData['cedula']}");
-                return User::hydrate(array_map(fn($r) => (array) $r, $created))->first();
-            }
+            Log::info($user->wasRecentlyCreated
+                ? "Usuario creado desde LDAP: {$ldapData['cedula']}"
+                : "Usuario actualizado desde LDAP: {$ldapData['cedula']}"
+            );
 
+            return $user;
         } catch (Exception $e) {
             Log::error("Error sincronizando usuario desde LDAP: " . $e->getMessage(), [
                 'ldap_data' => $ldapData,

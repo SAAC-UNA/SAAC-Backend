@@ -3,58 +3,37 @@
 namespace App\Services;
 
 use App\Models\CriterionApproval;
+use App\Models\EvidenceApproval;
+use App\Models\Evidence;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Exception;
 
 /**
- * Servicio de aprobacion de criterios. Usa stored procedures para todas las
- * operaciones de base de datos.
+ * Servicio de aprobacion de criterios con Eloquent ORM.
  */
 class CriterionApprovalService
 {
     public function __construct() {}
 
     /**
-     * Listar todas las aprobaciones de criterios.
+     * Listar aprobaciones de criterios.
      * Si el usuario es Profesor, filtra solo criterios con evidencias asignadas a el.
      */
     public function listApprovals()
     {
-        $rows = DB::select('CALL SP_OBTENER_APROBACIONES_CRITERIO()');
-        $approvals = collect($rows);
+        $query = CriterionApproval::with(['criterion', 'process', 'user']);
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user && $user->hasRole('Profesor')) {
-            // Obtener asignaciones del usuario para extraer criterio_ids
-            $asignaciones = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [
-                null, $user->usuario_id, null,
-            ]);
-
-            $evidenciaIds = array_unique(array_column($asignaciones, 'evidencia_id'));
-
-            if (empty($evidenciaIds)) {
-                return collect();
-            }
-
-            // Obtener criterio_ids de esas evidencias
-            $criterioIds = [];
-            foreach ($evidenciaIds as $evId) {
-                $ev = DB::select('CALL SP_BUSCAR_EVIDENCIA(?)', [$evId]);
-                if (!empty($ev)) {
-                    $criterioIds[] = $ev[0]->criterio_id;
-                }
-            }
-            $criterioIds = array_unique($criterioIds);
-
-            $approvals = $approvals->filter(fn($a) => in_array($a->criterio_id, $criterioIds));
+            $query->whereHas(
+                'criterion.evidences.assignments',
+                fn($q) => $q->where('usuario_id', $user->usuario_id)
+            );
         }
 
-        return CriterionApproval::hydrate(
-            $approvals->map(fn($r) => (array) $r)->values()->toArray()
-        );
+        return $query->get();
     }
 
     /**
@@ -62,8 +41,7 @@ class CriterionApprovalService
      */
     public function getApproval(int $approvalId): ?CriterionApproval
     {
-        $rows = DB::select('CALL SP_BUSCAR_APROBACION_CRITERIO(?)', [$approvalId]);
-        return $rows ? CriterionApproval::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return CriterionApproval::with(['criterion', 'process', 'user'])->find($approvalId);
     }
 
     /**
@@ -71,10 +49,9 @@ class CriterionApprovalService
      */
     public function getApprovalByCriterionAndProcess(int $criterioId, int $procesoId): ?CriterionApproval
     {
-        $rows = DB::select('CALL SP_BUSCAR_APROBACION_CRITERIO_PROCESO(?, ?)', [
-            $criterioId, $procesoId,
-        ]);
-        return $rows ? CriterionApproval::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return CriterionApproval::where('criterio_id', $criterioId)
+            ->where('proceso_id', $procesoId)
+            ->first();
     }
 
     /**
@@ -87,31 +64,25 @@ class CriterionApprovalService
         ?string $comentario = null
     ): CriterionApproval {
         return DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario) {
-            // Upsert aprobacion de criterio
-            $result = DB::select('CALL SP_UPSERT_APROBACION_CRITERIO(?, ?, ?, ?, ?)', [
-                $criterioId,
-                $procesoId,
-                $usuarioId,
-                'aprobado',
-                $comentario,
-            ]);
+            $approval = CriterionApproval::updateOrCreate(
+                ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
+                ['usuario_id'  => $usuarioId, 'estado' => 'aprobado', 'comentario' => $comentario]
+            );
 
-            $aprobacionCriterioId = $result[0]->aprobacion_criterio_id;
+            Evidence::where('criterio_id', $criterioId)->active()->each(
+                function ($evidencia) use ($procesoId, $approval, $usuarioId) {
+                    EvidenceApproval::updateOrCreate(
+                        ['evidencia_id' => $evidencia->evidencia_id, 'proceso_id' => $procesoId],
+                        [
+                            'criterio_aprobacion_id' => $approval->aprobacion_criterio_id,
+                            'usuario_id'             => $usuarioId,
+                            'estado'                 => 'aprobado',
+                        ]
+                    );
+                }
+            );
 
-            // Aprobar cada evidencia del criterio
-            $evidencias = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_CRITERIO_APROBACION(?)', [$criterioId]);
-            foreach ($evidencias as $evidencia) {
-                DB::statement('CALL SP_UPSERT_APROBACION_EVIDENCIA(?, ?, ?, ?, ?)', [
-                    $evidencia->evidencia_id,
-                    $procesoId,
-                    $aprobacionCriterioId,
-                    $usuarioId,
-                    'aprobado',
-                ]);
-            }
-
-            $rows = DB::select('CALL SP_BUSCAR_APROBACION_CRITERIO(?)', [$aprobacionCriterioId]);
-            return CriterionApproval::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+            return $approval->load(['criterion', 'process', 'user']);
         });
     }
 
@@ -125,29 +96,25 @@ class CriterionApprovalService
         ?string $comentario = null
     ): CriterionApproval {
         return DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario) {
-            $result = DB::select('CALL SP_UPSERT_APROBACION_CRITERIO(?, ?, ?, ?, ?)', [
-                $criterioId,
-                $procesoId,
-                $usuarioId,
-                'rechazado',
-                $comentario,
-            ]);
+            $approval = CriterionApproval::updateOrCreate(
+                ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
+                ['usuario_id'  => $usuarioId, 'estado' => 'rechazado', 'comentario' => $comentario]
+            );
 
-            $aprobacionCriterioId = $result[0]->aprobacion_criterio_id;
+            Evidence::where('criterio_id', $criterioId)->active()->each(
+                function ($evidencia) use ($procesoId, $approval, $usuarioId) {
+                    EvidenceApproval::updateOrCreate(
+                        ['evidencia_id' => $evidencia->evidencia_id, 'proceso_id' => $procesoId],
+                        [
+                            'criterio_aprobacion_id' => $approval->aprobacion_criterio_id,
+                            'usuario_id'             => $usuarioId,
+                            'estado'                 => 'rechazado',
+                        ]
+                    );
+                }
+            );
 
-            $evidencias = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_CRITERIO_APROBACION(?)', [$criterioId]);
-            foreach ($evidencias as $evidencia) {
-                DB::statement('CALL SP_UPSERT_APROBACION_EVIDENCIA(?, ?, ?, ?, ?)', [
-                    $evidencia->evidencia_id,
-                    $procesoId,
-                    $aprobacionCriterioId,
-                    $usuarioId,
-                    'rechazado',
-                ]);
-            }
-
-            $rows = DB::select('CALL SP_BUSCAR_APROBACION_CRITERIO(?)', [$aprobacionCriterioId]);
-            return CriterionApproval::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+            return $approval->load(['criterion', 'process', 'user']);
         });
     }
 }

@@ -4,52 +4,51 @@ namespace App\Services;
 
 use App\Models\Component;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class ComponentService
 {
+    private const CACHE_KEY = 'componentes.all';
+    private const CACHE_TTL = 300;
+
     public function getAll()
     {
-        return Cache::remember('componentes.all', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_COMPONENTES()');
-            return Component::hydrate(array_map(fn($r) => (array) $r, $rows));
-        });
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () =>
+            Component::with('dimension')->orderBy('nombre')->get()
+        );
     }
 
     public function findById(int $id): ?Component
     {
-        $rows = DB::select('CALL SP_BUSCAR_COMPONENTE(?)', [$id]);
-        return $rows ? Component::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return Component::with('dimension')->find($id);
     }
 
     public function create(array $data): Component
     {
-        $rows = DB::select('CALL SP_CREAR_COMPONENTE(?, ?, ?, ?)', [
-            $data['dimension_id'],
-            $data['nombre'],
-            $data['nomenclatura'],
-            $data['activo'] ?? 1,
+        $component = Component::create([
+            'dimension_id' => $data['dimension_id'],
+            'nombre'       => $data['nombre'],
+            'nomenclatura' => $data['nomenclatura'],
+            'activo'       => $data['activo'] ?? true,
         ]);
-        Cache::forget('componentes.all');
-        return Component::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $component->load('dimension');
     }
 
     public function update(Component $component, array $data): Component
     {
-        $rows = DB::select('CALL SP_ACTUALIZAR_COMPONENTE(?, ?, ?, ?, ?)', [
-            $component->componente_id,
-            $data['dimension_id'] ?? $component->dimension_id,
-            $data['nombre'] ?? $component->nombre,
-            $data['nomenclatura'] ?? $component->nomenclatura,
-            $data['activo'] ?? $component->activo,
+        $component->update([
+            'dimension_id' => $data['dimension_id'] ?? $component->dimension_id,
+            'nombre'       => $data['nombre']       ?? $component->nombre,
+            'nomenclatura' => $data['nomenclatura'] ?? $component->nomenclatura,
+            'activo'       => $data['activo']       ?? $component->activo,
         ]);
-        Cache::forget('componentes.all');
-        return Component::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_KEY);
+        return $component->fresh('dimension');
     }
 
     public function delete(Component $component): void
     {
-        DB::statement('CALL SP_ELIMINAR_COMPONENTE(?)', [$component->componente_id]);
-        Cache::forget('componentes.all');
+        $component->delete();
+        Cache::forget(self::CACHE_KEY);
     }
 }

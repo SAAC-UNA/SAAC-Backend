@@ -30,8 +30,9 @@ class UserController extends Controller
      */
     public function index()
     {
-        // Cargamos roles y permisos directos para evitar N+1
-        $users = User::with(['roles', 'permissions'])
+        // Cargamos roles, permisos directos y permisos de cada rol
+        // para que getAllPermissions() en UserResource no dispare lazy loads por usuario
+        $users = User::with(['roles', 'permissions', 'roles.permissions'])
             ->orderBy('created_at', 'desc')
             ->get();
 

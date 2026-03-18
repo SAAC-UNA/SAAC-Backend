@@ -23,6 +23,10 @@ return new class extends Migration
             $table->date('fecha_fin')->nullable();
             // Timestamps de creación y actualización
             $table->timestamps();
+
+            // Índices de performance
+            $table->index('proceso_id', 'idx_au_proceso_id');
+            $table->index(['fecha_inicio', 'fecha_fin'], 'idx_au_fechas');
         });
     }
 

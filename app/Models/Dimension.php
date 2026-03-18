@@ -19,6 +19,14 @@ class Dimension extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = ['nombre', 'nomenclatura', 'activo'];
 
+    // --- Scopes ---
+
+    /** Filtra solo dimensiones activas */
+    public function scopeActive($query)
+    {
+        return $query->where('activo', true);
+    }
+
     /**
      * Relación: Una dimensión tiene muchos componentes.
      *

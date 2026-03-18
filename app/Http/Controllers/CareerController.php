@@ -48,12 +48,6 @@ class CareerController extends Controller
         $career = $this->service->create($request->validated());
         $primaryKeyName = $career->getKeyName();
 
-        // Registro en el log de bitacora
-        AuditLogService::log(
-'crear',
-    "Se creó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}).",
-    'Carrera'
-        );
         // Respuesta con código 201 y Location header
         return response()
             ->json(['message' => 'Carrera creada correctamente.', 'data' => $career], 201)
@@ -71,16 +65,6 @@ class CareerController extends Controller
         }
 
         $updated = $this->service->update($career, $request->validated());
-        $oldName = $career->nombre;
-        // Registro en el log de bitácora
-        if ($oldName !== $updated->nombre) {
-        AuditLogService::log(
-'editar',
-    "Se actualizó la carrera ID {$career->carrera_id}: ".
-            "nombre anterior \"{$oldName}\", nombre actual \"{$updated->nombre}\",.",
-    'Carrera'
-        );
-        }
 
         return response()->json(['message' => 'Carrera actualizada correctamente.', 'data' => $updated], 200);
     }
@@ -96,15 +80,8 @@ class CareerController extends Controller
         }
 
         try {
-            // antes: $career->delete()
             $this->service->delete($career);
 
-            // Registro en el log de bitácora
-            AuditLogService::log(
-    'eliminar',
-        "Se eliminó la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}), perteneciente a la facultad ID {$career->facultad_id}.",
-        'Carrera'
-            );
             return response()->noContent(); // 204
         } catch (QueryException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
@@ -137,7 +114,7 @@ class CareerController extends Controller
 
         // Actualizar el estado de la carrera
         $career->activo = $newActiveState;
-        $career->save();
+        $career->saveQuietly(); // observer omitido: el log manual de abajo cubre esta acción
         //agregar para log
         $estadoAnterior = $previousState ? 'ACTIVA' : 'INACTIVA';
         $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
