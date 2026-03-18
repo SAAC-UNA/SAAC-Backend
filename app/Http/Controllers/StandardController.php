@@ -48,13 +48,7 @@ class StandardController extends Controller
     {
         try {
             $standar = $this->service->create($request->validated());
-            // Registro en el log de bitácora
-            AuditLogService::log(
-'crear',
-    "Se creó el estándar \"{$standar->nombre}\" (ID: {$standar->estandar_id}), ".
-            "perteneciente al criterio ID {$standar->criterio_id}.",
-    'Estándar'
-        );
+
             return response()->json($standar, 201);
         } catch (\Illuminate\Database\QueryException $e) {
             return response()->json(['message' => 'Error al crear el estándar.'], 500);
@@ -71,24 +65,6 @@ class StandardController extends Controller
 
         try {
             $standar = $this->service->update($standar, $request->validated());
-            // Registro en el log de bitácora si hubo cambios
-            $oldName = $standar->getOriginal('nombre');
-            $oldCode = $standar->getOriginal('codigo') ?? null;
-            $oldDesc = $standar->getOriginal('descripcion') ?? null;
-
-            if (
-                $oldName !== $standar->nombre ||
-                $oldCode !== ($standar->codigo ?? null) ||
-                $oldDesc !== ($standar->descripcion ?? null)
-            ) {
-                AuditLogService::log(
-                    'editar',
-                    "Se actualizó el estándar ID {$standar->estandar_id}: ".
-                    "nombre anterior \"{$oldName}\", nuevo nombre \"{$standar->nombre}\"; ".
-                    "otros campos modificados según corresponda.",
-                    'Estándar'
-                );
-            }
 
             return response()->json($standar, 200);
         } catch (\Illuminate\Database\QueryException $e) {
@@ -107,12 +83,7 @@ class StandardController extends Controller
 
         try {
             $this->service->delete($standar); // antes: $std->delete()
-            // Registro en el log de bitácora
-            AuditLogService::log(
-'eliminar',
-    "Se eliminó el estándar \"{$standar->nombre}\" (ID: {$standar->estandar_id}), perteneciente al criterio ID {$standar->criterio_id}.",
-    'Estándar'
-            );
+
             return response()->noContent(); //204
         } catch (QueryException $e) {
             return response()->json(['message' => 'No se puede eliminar.'], 409);
@@ -133,10 +104,10 @@ class StandardController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
+        $estadoAnterior = $standar->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
         $standar->activo = $validated['active'];
-        $standar->save();
-        $estadoAnterior = $standar->activo ? 'ACTIVO' : 'INACTIVO';
-        $estadoNuevo    = $validated['active'] ? 'ACTIVO' : 'INACTIVO';
+        $standar->saveQuietly(); // observer omitido: el log manual cubre esta acción
+        $estadoNuevo = $validated['active'] ? 'ACTIVO' : 'INACTIVO';
 
         AuditLogService::log(
 'editar',

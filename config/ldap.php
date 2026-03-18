@@ -86,4 +86,16 @@ return [
         'driver' => env('CACHE_DRIVER', 'file'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | LDAP Organizational Units
+    |--------------------------------------------------------------------------
+    |
+    | Unidades organizacionales donde se buscará el DN del usuario al autenticar.
+    | Para agregar un nuevo OU (ej. administrativos) basta con actualizar
+    | LDAP_OUS en .env sin modificar el código fuente (OCP).
+    |
+    */
+    'organizational_units' => array_filter(explode(',', env('LDAP_OUS', 'profesores,estudiantes'))),
+
 ];

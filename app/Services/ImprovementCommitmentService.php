@@ -3,8 +3,11 @@ namespace App\Services;
 
 use App\Models\ImprovementCommitment;
 use App\Models\User;
+use App\Models\Process;
+use App\Models\Standard;
+use App\Models\Evidence;
+use App\Models\EvidenceAssignment;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -24,37 +27,23 @@ class ImprovementCommitmentService
      */
     public function listCommitments(int $perPage = 10, array $filters = [])
     {
-        $page     = request()->get('page', 1);
-        $offset   = ($page - 1) * $perPage;
-        $search   = $filters['search']    ?? null;
-        $estado   = $filters['estado']    ?? null;
-        $procesoId  = $filters['proceso_id']  ?? null;
-        $usuarioId  = $filters['usuario_id']  ?? null;
+        $search    = $filters['search']    ?? null;
+        $estado    = $filters['estado']    ?? null;
+        $procesoId = $filters['proceso_id'] ?? null;
+        $usuarioId = $filters['usuario_id'] ?? null;
 
-        $total = DB::select('CALL SP_CONTAR_COMPROMISOS_MEJORA(?, ?, ?, ?)', [
-            $search, $estado, $procesoId, $usuarioId,
-        ])[0]->total ?? 0;
-
-        $rows = DB::select('CALL SP_OBTENER_COMPROMISOS_MEJORA(?, ?, ?, ?, ?, ?)', [
-            $search, $estado, $procesoId, $usuarioId, $offset, $perPage,
-        ]);
-
-        $items = ImprovementCommitment::hydrate(array_map(fn($r) => (array) $r, $rows));
-
-        // Cargar relaciones para mantener la estructura de respuesta original
-        if ($items->isNotEmpty()) {
-            $items->load([
+        return ImprovementCommitment::with([
                 'process',
                 'evidences.criterion.component.dimension',
                 'evidences.criterion.standards',
                 'assignedEvidences.evidence',
                 'assignedEvidences.user',
-            ]);
-        }
-
-        return new LengthAwarePaginator($items, $total, $perPage, $page, [
-            'path' => request()->url(),
-        ]);
+            ])
+            ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
+            ->when($estado, fn($q) => $q->where('estado', $estado))
+            ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
+            ->when($usuarioId, fn($q) => $q->whereHas('assignedEvidences', fn($sub) => $sub->where('usuario_id', $usuarioId)))
+            ->paginate($perPage);
     }
 
     /**
@@ -65,20 +54,14 @@ class ImprovementCommitmentService
      */
     public function getCommitment(int $id): ?ImprovementCommitment
     {
-        $rows = DB::select('CALL SP_BUSCAR_COMPROMISO_MEJORA(?)', [$id]);
-        if (empty($rows)) {
-            return null;
-        }
-        $commitment = ImprovementCommitment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
-        $commitment->load([
+        return ImprovementCommitment::with([
             'process.accreditationCycle.careerCampus.career',
             'process.accreditationCycle.careerCampus.campus',
             'evidences.criterion.component.dimension',
             'evidences.criterion.standards',
             'assignedEvidences.evidence',
             'assignedEvidences.user',
-        ]);
-        return $commitment;
+        ])->find($id);
     }
 
     /**
@@ -100,35 +83,15 @@ class ImprovementCommitmentService
      */
     public function getCommitmentsByEvidence(int $evidenciaId)
     {
-        // Not directly supported by SP; use listCommitments which supports
-        // proceso_id/usuario_id filters; for evidence filtering we fall back
-        // to full list and filter in PHP (evidence-level filter is uncommon).
-        $page   = request()->get('page', 1);
-        $offset = 0;
-
-        $total = DB::select('CALL SP_CONTAR_COMPROMISOS_MEJORA(?, ?, ?, ?)', [null, null, null, null])[0]->total ?? 0;
-        $rows  = DB::select('CALL SP_OBTENER_COMPROMISOS_MEJORA(?, ?, ?, ?, ?, ?)', [null, null, null, null, $offset, $total ?: 1]);
-
-        $items = ImprovementCommitment::hydrate(array_map(fn($r) => (array) $r, $rows))
-            ->filter(function (ImprovementCommitment $c) use ($evidenciaId) {
-                $evidenceIds = $this->getCommitmentEvidenceIds($c->compromiso_mejora_id);
-                return in_array($evidenciaId, $evidenceIds);
-            })->values();
-
-        // Cargar relaciones para mantener la estructura de respuesta original
-        if ($items->isNotEmpty()) {
-            $items->load([
+        return ImprovementCommitment::with([
                 'process',
                 'evidences.criterion.component.dimension',
                 'evidences.criterion.standards',
                 'assignedEvidences.evidence',
                 'assignedEvidences.user',
-            ]);
-        }
-
-        return new LengthAwarePaginator($items, $items->count(), $items->count() ?: 1, 1, [
-            'path' => request()->url(),
-        ]);
+            ])
+            ->whereHas('evidences', fn($q) => $q->where('evidencia_id', $evidenciaId))
+            ->paginate(15);
     }
 
     /**
@@ -148,21 +111,19 @@ class ImprovementCommitmentService
             $processId = $data['proceso_id'] ?? $this->getOrCreateImprovementProcess($data['ciclo_acreditacion_id']);
 
             // Validar que NO exista ya un compromiso en este proceso
-            $existingRows = DB::select('CALL SP_BUSCAR_COMPROMISO_MEJORA_POR_PROCESO(?)', [$processId]);
-            if (!empty($existingRows)) {
+            if (ImprovementCommitment::where('proceso_id', $processId)->exists()) {
                 return null;
             }
 
             // Crear nuevo compromiso con estado inicial "Pendiente"
-            $rows = DB::select('CALL SP_CREAR_COMPROMISO_MEJORA(?, ?, ?, ?, ?, ?)', [
-                $processId,
-                $data['descripcion'],
-                $data['fecha_inicio'],
-                $data['fecha_fin'],
-                'Pendiente',
-                1,
+            $commitment = ImprovementCommitment::create([
+                'proceso_id'   => $processId,
+                'descripcion'  => $data['descripcion'],
+                'fecha_inicio' => $data['fecha_inicio'],
+                'fecha_fin'    => $data['fecha_fin'],
+                'estado'       => 'Pendiente',
+                'activo'       => 1,
             ]);
-            $commitment = ImprovementCommitment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
 
             $allNewEvidenceIds = [];
 
@@ -176,16 +137,8 @@ class ImprovementCommitmentService
                 $allNewEvidenceIds = array_merge($allNewEvidenceIds, $evidenceIds);
             }
 
-            // Eliminar duplicados
-            $allNewEvidenceIds = array_unique($allNewEvidenceIds);
-
-            // Vincular evidencias al compromiso via SP (una por una)
-            foreach ($allNewEvidenceIds as $evidenciaId) {
-                DB::statement('CALL SP_VINCULAR_EVIDENCIA_COMPROMISO(?, ?)', [
-                    $commitment->compromiso_mejora_id,
-                    $evidenciaId,
-                ]);
-            }
+            // Vincular evidencias al compromiso (una sola operacion)
+            $commitment->evidences()->sync(array_unique($allNewEvidenceIds));
 
             // Crear asignaciones de evidencias a usuarios si se proporcionan
             if (!empty($data['evidencias_asignar'])) {
@@ -260,14 +213,8 @@ class ImprovementCommitmentService
                 }
                 $newEvidenceIds = array_unique($newEvidenceIds);
 
-                // Reemplazar completamente: desvincular → vincular
-                DB::statement('CALL SP_DESVINCULAR_EVIDENCIAS_COMPROMISO(?)', [$commitment->compromiso_mejora_id]);
-                foreach ($newEvidenceIds as $evidenciaId) {
-                    DB::statement('CALL SP_VINCULAR_EVIDENCIA_COMPROMISO(?, ?)', [
-                        $commitment->compromiso_mejora_id,
-                        $evidenciaId,
-                    ]);
-                }
+                // Reemplazar completamente evidencias vinculadas
+                $commitment->evidences()->sync($newEvidenceIds);
                 $hasChanges = true;
             }
 
@@ -277,13 +224,15 @@ class ImprovementCommitmentService
             }
 
             // Aplicar cambios de campos basicos
-            $rows = DB::select('CALL SP_ACTUALIZAR_COMPROMISO_MEJORA(?, ?, ?, ?, ?)', [
-                $commitment->compromiso_mejora_id,
-                $processId !== $commitment->proceso_id ? $processId : null,
-                $descripcion,
-                $fechaFin,
-                $estado,
-            ]);
+            $changes = array_filter([
+                'proceso_id'  => $processId !== $commitment->proceso_id ? $processId : null,
+                'descripcion' => $descripcion,
+                'fecha_fin'   => $fechaFin,
+                'estado'      => $estado,
+            ], fn($v) => $v !== null);
+            if (!empty($changes)) {
+                $commitment->update($changes);
+            }
 
             // Reemplazar asignaciones si se proporcionan
             if (isset($data['evidencias_asignar'])) {
@@ -303,11 +252,9 @@ class ImprovementCommitmentService
      */
     public function setActive(ImprovementCommitment $commitment, bool $activo): ImprovementCommitment
     {
-        $rows = DB::select('CALL SP_ESTABLECER_ACTIVO_COMPROMISO_MEJORA(?, ?)', [
-            $commitment->compromiso_mejora_id,
-            $activo ? 1 : 0,
-        ]);
-        return ImprovementCommitment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $commitment->update(['activo' => $activo ? 1 : 0]);
+        $commitment->refresh();
+        return $commitment;
     }
 
     /**
@@ -315,8 +262,8 @@ class ImprovementCommitmentService
      */
     private function getCommitmentEvidenceIds(int $compromisoId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_IDS_EVIDENCIAS_COMPROMISO(?)', [$compromisoId]);
-        return array_map(fn($r) => $r->evidencia_id, $rows);
+        return ImprovementCommitment::find($compromisoId)
+            ?->evidences()->pluck('evidencia_id')->toArray() ?? [];
     }
 
     /**
@@ -324,8 +271,8 @@ class ImprovementCommitmentService
      */
     private function getCommitmentAssignmentIds(int $compromisoId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_IDS_ASIGNACIONES_COMPROMISO(?)', [$compromisoId]);
-        return array_map(fn($r) => $r->evidencia_asignacion_id, $rows);
+        return ImprovementCommitment::find($compromisoId)
+            ?->assignedEvidences()->pluck('evidencia_asignacion_id')->toArray() ?? [];
     }
 
     /**
@@ -359,30 +306,28 @@ class ImprovementCommitmentService
 
             // Asignar a usuarios directamente
             foreach ($usuarios as $usuarioId) {
-                // Verificar duplicado via SP
-                $dup = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
-                    $processId, $evidenciaId, $usuarioId,
-                ]);
-                if (($dup[0]->existe ?? 0)) {
+                if (EvidenceAssignment::where('proceso_id', $processId)
+                        ->where('evidencia_id', $evidenciaId)
+                        ->where('usuario_id', $usuarioId)
+                        ->exists()) {
                     throw ValidationException::withMessages([
                         'evidencias_asignar' => "La evidencia con ID {$evidenciaId} ya esta asignada al usuario con ID {$usuarioId}.",
                     ]);
                 }
 
-                $assignRows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
-                    $processId, $evidenciaId, $usuarioId, 'Pendiente',
-                    $fechaAsignacion, $fechaLimite, $comentario,
+                $newAssignment = EvidenceAssignment::create([
+                    'proceso_id'       => $processId,
+                    'evidencia_id'     => $evidenciaId,
+                    'usuario_id'       => $usuarioId,
+                    'estado'           => 'Pendiente',
+                    'fecha_asignacion' => $fechaAsignacion,
+                    'fecha_limite'     => $fechaLimite,
+                    'comentario'       => $comentario,
                 ]);
-                $assignmentObj = !empty($assignRows) ? $assignRows[0] : null;
-                $assignmentId  = $assignmentObj->evidencia_asignacion_id ?? null;
 
-                if ($assignmentId) {
-                    DB::statement('CALL SP_VINCULAR_ASIGNACION_COMPROMISO(?, ?, ?)', [
-                        $commitment->compromiso_mejora_id,
-                        $assignmentId,
-                        $comentario,
-                    ]);
-                }
+                $commitment->assignedEvidences()->attach($newAssignment->evidencia_asignacion_id, [
+                    'comentario' => $comentario,
+                ]);
             }
 
             // Asignar a usuarios que tienen los roles especificados
@@ -394,31 +339,29 @@ class ImprovementCommitmentService
                     ]);
                 }
 
-                // Obtener usuarios activos con ese rol usando Spatie
                 $usuariosConRol = User::role($role->name)->active()->get();
 
                 foreach ($usuariosConRol as $usuario) {
-                    $dup = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
-                        $processId, $evidenciaId, $usuario->usuario_id,
-                    ]);
-                    if ($dup[0]->existe ?? 0) {
-                        continue; // Omitir silenciosamente
+                    if (EvidenceAssignment::where('proceso_id', $processId)
+                            ->where('evidencia_id', $evidenciaId)
+                            ->where('usuario_id', $usuario->usuario_id)
+                            ->exists()) {
+                        continue;
                     }
 
-                    $assignRows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
-                        $processId, $evidenciaId, $usuario->usuario_id, 'Pendiente',
-                        $fechaAsignacion, $fechaLimite, $comentario,
+                    $newAssignment = EvidenceAssignment::create([
+                        'proceso_id'       => $processId,
+                        'evidencia_id'     => $evidenciaId,
+                        'usuario_id'       => $usuario->usuario_id,
+                        'estado'           => 'Pendiente',
+                        'fecha_asignacion' => $fechaAsignacion,
+                        'fecha_limite'     => $fechaLimite,
+                        'comentario'       => $comentario,
                     ]);
-                    $assignmentObj = !empty($assignRows) ? $assignRows[0] : null;
-                    $assignmentId  = $assignmentObj->evidencia_asignacion_id ?? null;
 
-                    if ($assignmentId) {
-                        DB::statement('CALL SP_VINCULAR_ASIGNACION_COMPROMISO(?, ?, ?)', [
-                            $commitment->compromiso_mejora_id,
-                            $assignmentId,
-                            $comentario,
-                        ]);
-                    }
+                    $commitment->assignedEvidences()->attach($newAssignment->evidencia_asignacion_id, [
+                        'comentario' => $comentario,
+                    ]);
                 }
             }
         }
@@ -438,7 +381,7 @@ class ImprovementCommitmentService
         $commitmentEvidenceIds = $this->getCommitmentEvidenceIds($commitment->compromiso_mejora_id);
 
         // Desvincular asignaciones existentes del compromiso
-        DB::statement('CALL SP_DESVINCULAR_ASIGNACIONES_COMPROMISO(?)', [$commitment->compromiso_mejora_id]);
+        $commitment->assignedEvidences()->detach();
 
         if (empty($assignmentsData)) {
             return;
@@ -459,38 +402,28 @@ class ImprovementCommitmentService
             $fechaAsignacion = $assignment['fecha_asignacion'] ?? now()->toDateTimeString();
 
             foreach ($usuarios as $usuarioId) {
-                // Buscar asignacion existente via SP
-                $existingRows = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
-                    $processId, $evidenciaId, $usuarioId,
+                $existing = EvidenceAssignment::where('proceso_id', $processId)
+                    ->where('evidencia_id', $evidenciaId)
+                    ->where('usuario_id', $usuarioId)
+                    ->first();
+
+                if (!$existing) {
+                    $existing = EvidenceAssignment::create([
+                        'proceso_id'       => $processId,
+                        'evidencia_id'     => $evidenciaId,
+                        'usuario_id'       => $usuarioId,
+                        'estado'           => 'Pendiente',
+                        'fecha_asignacion' => $fechaAsignacion,
+                        'fecha_limite'     => $fechaLimite,
+                        'comentario'       => $comentario,
+                    ]);
+                } elseif (isset($assignment['fecha_limite'])) {
+                    $existing->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                }
+
+                $commitment->assignedEvidences()->attach($existing->evidencia_asignacion_id, [
+                    'comentario' => $comentario,
                 ]);
-                $existe = $existingRows[0]->existe ?? 0;
-
-                if (!$existe) {
-                    $assignRows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
-                        $processId, $evidenciaId, $usuarioId, 'Pendiente',
-                        $fechaAsignacion, $fechaLimite, $comentario,
-                    ]);
-                    $assignmentId = $assignRows[0]->evidencia_asignacion_id ?? null;
-                } else {
-                    // Obtener ID de asignacion existente para vincular
-                    $asignRows    = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [$processId, $usuarioId, $evidenciaId]);
-                    $assignmentId = !empty($asignRows) ? $asignRows[0]->evidencia_asignacion_id : null;
-
-                    // Actualizar fecha_limite si cambio
-                    if ($assignmentId && isset($assignment['fecha_limite'])) {
-                        DB::statement('CALL SP_ACTUALIZAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?)', [
-                            $assignmentId, null, $fechaLimite, $comentario,
-                        ]);
-                    }
-                }
-
-                if ($assignmentId) {
-                    DB::statement('CALL SP_VINCULAR_ASIGNACION_COMPROMISO(?, ?, ?)', [
-                        $commitment->compromiso_mejora_id,
-                        $assignmentId,
-                        $comentario,
-                    ]);
-                }
             }
 
             foreach ($roles as $roleId) {
@@ -504,35 +437,28 @@ class ImprovementCommitmentService
                 $usuariosConRol = User::role($role->name)->active()->get();
 
                 foreach ($usuariosConRol as $usuario) {
-                    $existingRows = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
-                        $processId, $evidenciaId, $usuario->usuario_id,
+                    $existing = EvidenceAssignment::where('proceso_id', $processId)
+                        ->where('evidencia_id', $evidenciaId)
+                        ->where('usuario_id', $usuario->usuario_id)
+                        ->first();
+
+                    if (!$existing) {
+                        $existing = EvidenceAssignment::create([
+                            'proceso_id'       => $processId,
+                            'evidencia_id'     => $evidenciaId,
+                            'usuario_id'       => $usuario->usuario_id,
+                            'estado'           => 'Pendiente',
+                            'fecha_asignacion' => $fechaAsignacion,
+                            'fecha_limite'     => $fechaLimite,
+                            'comentario'       => $comentario,
+                        ]);
+                    } elseif (isset($assignment['fecha_limite'])) {
+                        $existing->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                    }
+
+                    $commitment->assignedEvidences()->attach($existing->evidencia_asignacion_id, [
+                        'comentario' => $comentario,
                     ]);
-                    $existe = $existingRows[0]->existe ?? 0;
-
-                    if (!$existe) {
-                        $assignRows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
-                            $processId, $evidenciaId, $usuario->usuario_id, 'Pendiente',
-                            $fechaAsignacion, $fechaLimite, $comentario,
-                        ]);
-                        $assignmentId = $assignRows[0]->evidencia_asignacion_id ?? null;
-                    } else {
-                        $asignRows    = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [$processId, $usuario->usuario_id, $evidenciaId]);
-                        $assignmentId = !empty($asignRows) ? $asignRows[0]->evidencia_asignacion_id : null;
-
-                        if ($assignmentId && isset($assignment['fecha_limite'])) {
-                            DB::statement('CALL SP_ACTUALIZAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?)', [
-                                $assignmentId, null, $fechaLimite, $comentario,
-                            ]);
-                        }
-                    }
-
-                    if ($assignmentId) {
-                        DB::statement('CALL SP_VINCULAR_ASIGNACION_COMPROMISO(?, ?, ?)', [
-                            $commitment->compromiso_mejora_id,
-                            $assignmentId,
-                            $comentario,
-                        ]);
-                    }
                 }
             }
         }
@@ -581,8 +507,9 @@ class ImprovementCommitmentService
      */
     private function getOrCreateImprovementProcess(int $cycleId): int
     {
-        $result = DB::select('CALL SP_OBTENER_O_CREAR_PROCESO_MEJORA(?)', [$cycleId]);
-        return $result[0]->proceso_id;
+        return Process::firstOrCreate(
+            ['ciclo_acreditacion_id' => $cycleId, 'tipo_proceso' => 'Compromiso de mejora']
+        )->proceso_id;
     }
 
     /**
@@ -607,25 +534,34 @@ class ImprovementCommitmentService
 
     private function getEvidencesByStandard(int $standardId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_ESTANDAR(?)', [$standardId]);
-        return array_map(fn($r) => $r->evidencia_id, $rows);
+        $criterioId = Standard::where('estandar_id', $standardId)->value('criterio_id');
+        if (!$criterioId) {
+            return [];
+        }
+        return Evidence::where('criterio_id', $criterioId)->pluck('evidencia_id')->toArray();
     }
 
     private function getEvidencesByDimension(int $dimensionId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_DIMENSION(?)', [$dimensionId]);
-        return array_map(fn($r) => $r->evidencia_id, $rows);
+        return Evidence::active()
+            ->whereHas('criterion.component', fn($q) => $q->where('dimension_id', $dimensionId))
+            ->pluck('evidencia_id')
+            ->toArray();
     }
 
     private function getEvidencesByComponent(int $componentId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_COMPONENTE(?)', [$componentId]);
-        return array_map(fn($r) => $r->evidencia_id, $rows);
+        return Evidence::active()
+            ->whereHas('criterion', fn($q) => $q->where('componente_id', $componentId))
+            ->pluck('evidencia_id')
+            ->toArray();
     }
 
     private function getEvidencesByCriterion(int $criterionId): array
     {
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_POR_CRITERIO(?)', [$criterionId]);
-        return array_map(fn($r) => $r->evidencia_id, $rows);
+        return Evidence::active()
+            ->where('criterio_id', $criterionId)
+            ->pluck('evidencia_id')
+            ->toArray();
     }
 }

@@ -3,44 +3,37 @@
 namespace App\Services;
 
 use App\Models\ExtensionRequest;
+use App\Models\EvidenceAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 
 /**
  * Servicio del profesor para solicitudes de ampliacion de plazo (RF-15).
- * Usa stored procedures para todas las operaciones de base de datos.
  */
 class ExtensionTimeRequestService
 {
+    private const WITH_BASE = ['evidenceAssignment.evidence.criterion', 'user', 'resolutor'];
+
     /**
      * Listar solicitudes con paginacion y filtros.
      */
     public function listRequests(int $perPage = 15, array $filters = [])
     {
-        $page        = $filters['page'] ?? 1;
-        $offset      = ($page - 1) * $perPage;
         $estado      = $filters['estado'] ?? null;
         $usuarioId   = $filters['usuario_id'] ?? null;
         $asignacionId= $filters['evidencia_asignacion_id'] ?? null;
         $fechaDesde  = $filters['fecha_desde'] ?? null;
         $fechaHasta  = $filters['fecha_hasta'] ?? null;
 
-        $total = DB::select('CALL SP_CONTAR_SOLICITUDES_AMPLIACION(?, ?, ?, ?, ?)', [
-            $estado, $usuarioId, $asignacionId, $fechaDesde, $fechaHasta,
-        ])[0]->total ?? 0;
-
-        $rows = DB::select('CALL SP_OBTENER_SOLICITUDES_AMPLIACION(?, ?, ?, ?, ?, ?, ?)', [
-            $estado, $usuarioId, $asignacionId, $fechaDesde, $fechaHasta,
-            $offset, $perPage,
-        ]);
-
-        $items = ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows));
-
-        return new LengthAwarePaginator($items, (int) $total, $perPage, $page, [
-            'path' => request()->url(),
-        ]);
+        return ExtensionRequest::with(self::WITH_BASE)
+            ->when($estado,       fn($q) => $q->where('estado', $estado))
+            ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
+            ->when($asignacionId, fn($q) => $q->where('evidencia_asignacion_id', $asignacionId))
+            ->when($fechaDesde,   fn($q) => $q->where('created_at', '>=', $fechaDesde))
+            ->when($fechaHasta,   fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
     }
 
     /**
@@ -48,14 +41,11 @@ class ExtensionTimeRequestService
      */
     public function getRequest(int $requestId, int $userId): ?ExtensionRequest
     {
-        $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
-        if (empty($rows)) return null;
-
-        $solicitud = $rows[0];
-        // Validar que pertenece al usuario
-        if ($solicitud->usuario_id !== $userId) return null;
-
-        return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $solicitud = ExtensionRequest::with(self::WITH_BASE)->find($requestId);
+        if (!$solicitud || $solicitud->usuario_id !== $userId) {
+            return null;
+        }
+        return $solicitud;
     }
 
     /**
@@ -63,9 +53,13 @@ class ExtensionTimeRequestService
      */
     public function getUpcomingEvidences(int $userId)
     {
-        $limitDate = Carbon::now()->addDays(7)->format('Y-m-d H:i:s');
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_PROXIMAS(?, ?)', [$userId, $limitDate]);
-        return \App\Models\EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        $limitDate = Carbon::now()->addDays(7);
+        return EvidenceAssignment::with(['evidence.criterion', 'process'])
+            ->where('usuario_id', $userId)
+            ->whereIn('estado', ['Pendiente', 'En Progreso'])
+            ->where('fecha_limite', '<=', $limitDate)
+            ->orderBy('fecha_limite', 'asc')
+            ->get();
     }
 
     /**
@@ -75,17 +69,13 @@ class ExtensionTimeRequestService
     {
         return DB::transaction(function () use ($data, $userId) {
             // 1. Verificar que la asignacion existe
-            $assignmentRows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [
-                $data['evidencia_asignacion_id'],
-            ]);
+            $assignment = EvidenceAssignment::find($data['evidencia_asignacion_id']);
 
-            if (empty($assignmentRows)) {
+            if (!$assignment) {
                 throw ValidationException::withMessages([
                     'evidencia_asignacion_id' => 'La asignacion de evidencia no existe o no esta activa.',
                 ]);
             }
-
-            $assignment = $assignmentRows[0];
 
             // 2. Verificar que el usuario es el asignado
             if ($assignment->usuario_id !== $userId) {
@@ -110,10 +100,10 @@ class ExtensionTimeRequestService
             }
 
             // 5. Verificar que no tenga solicitud pendiente
-            $pendiente = DB::select('CALL SP_VERIFICAR_SOLICITUD_PENDIENTE(?)', [
-                $data['evidencia_asignacion_id'],
-            ]);
-            if (!empty($pendiente) && $pendiente[0]->existe) {
+            $tienePendiente = ExtensionRequest::where('evidencia_asignacion_id', $data['evidencia_asignacion_id'])
+                ->where('estado', ExtensionRequest::ESTADO_PENDIENTE)
+                ->exists();
+            if ($tienePendiente) {
                 throw ValidationException::withMessages([
                     'evidencia_asignacion_id' => 'Ya tiene una solicitud pendiente para esta evidencia.',
                 ]);
@@ -137,16 +127,14 @@ class ExtensionTimeRequestService
                 ]);
             }
 
-            // 8. Crear la solicitud via SP
-            $rows = DB::select('CALL SP_CREAR_SOLICITUD_AMPLIACION(?, ?, ?, ?, ?)', [
-                $data['evidencia_asignacion_id'],
-                $userId,
-                $data['motivo'],
-                $data['fecha_sugerida'],
-                ExtensionRequest::ESTADO_PENDIENTE,
+            // 8. Crear la solicitud
+            return ExtensionRequest::create([
+                'evidencia_asignacion_id' => $data['evidencia_asignacion_id'],
+                'usuario_id'              => $userId,
+                'motivo'                  => $data['motivo'],
+                'fecha_sugerida'          => $data['fecha_sugerida'],
+                'estado'                  => ExtensionRequest::ESTADO_PENDIENTE,
             ]);
-
-            return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
         });
     }
 
@@ -172,9 +160,8 @@ class ExtensionTimeRequestService
                 throw ValidationException::withMessages(['solicitud' => 'Solo se pueden editar solicitudes pendientes.']);
             }
 
-            if (isset($data['fecha_sugerida'])) {
-                $asignacion = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$solicitud->evidencia_asignacion_id]);
-                $originalDeadline = Carbon::parse($asignacion[0]->fecha_limite ?? null);
+            if (isset($data['fecha_sugerida']) && $solicitud->evidenceAssignment) {
+                $originalDeadline = Carbon::parse($solicitud->evidenceAssignment->fecha_limite);
                 $suggestedDate    = Carbon::parse($data['fecha_sugerida']);
 
                 if ($suggestedDate->lte($originalDeadline)) {
@@ -190,18 +177,12 @@ class ExtensionTimeRequestService
                 }
             }
 
-            // Actualizar via SP_APROBAR/SP_RECHAZAR no aplica aqui.
-            // Usamos SP_ACTUALIZAR_ASIGNACION_EVIDENCIA para actualizar datos de la solicitud.
-            // Sin embargo, no hay SP especifico para editar SOLICITUD_AMPLIACION.
-            // Usamos Eloquent solo para el UPDATE de la solicitud (no hay SP de update de solicitud).
-            $solicitudModel = ExtensionRequest::findOrFail($requestId);
-            $solicitudModel->update([
-                'motivo'         => $data['motivo'] ?? $solicitudModel->motivo,
-                'fecha_sugerida' => $data['fecha_sugerida'] ?? $solicitudModel->fecha_sugerida,
+            $solicitud->update([
+                'motivo'         => $data['motivo']         ?? $solicitud->motivo,
+                'fecha_sugerida' => $data['fecha_sugerida'] ?? $solicitud->fecha_sugerida,
             ]);
 
-            $updated = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
-            return ExtensionRequest::hydrate(array_map(fn($r) => (array) $r, $updated))->first();
+            return $solicitud->refresh();
         });
     }
 
@@ -211,25 +192,21 @@ class ExtensionTimeRequestService
     public function deleteRequest(int $requestId, int $userId): bool
     {
         return DB::transaction(function () use ($requestId, $userId) {
-            $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+            $solicitud = ExtensionRequest::find($requestId);
 
-            if (empty($rows)) {
+            if (!$solicitud) {
                 throw ValidationException::withMessages(['solicitud' => 'La solicitud no existe.']);
             }
-
-            $solicitud = $rows[0];
-
             if ($solicitud->usuario_id !== $userId) {
                 throw ValidationException::withMessages(['solicitud' => 'Solo puede eliminar sus propias solicitudes.']);
             }
-
             if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
                 throw ValidationException::withMessages([
                     'solicitud' => 'Solo se pueden eliminar solicitudes pendientes.',
                 ]);
             }
 
-            DB::statement('CALL SP_ELIMINAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+            $solicitud->delete();
             return true;
         });
     }

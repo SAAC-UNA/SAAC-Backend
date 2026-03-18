@@ -43,13 +43,7 @@ class CriterionController extends Controller
     public function store(CriterionRequest $request)
     {
         $criterion = $this->service->create($request->validated());
-        // registro en el log de bitacora
-        AuditLogService::log(
-'crear',
-    "Se creó el criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}), ".
-            "perteneciente al componente ID {$criterion->componente_id}.",
-    'Criterio'
-        );
+
         return \App\Http\Resources\CriterionResource::make($criterion)
             ->response()
             ->setStatusCode(201);
@@ -65,25 +59,6 @@ class CriterionController extends Controller
         }
 
         $updated = $this->service->update($criterion, $request->validated());
-        // Registro en el log de bitácora
-        $oldName  = $criterion->nombre;
-        $oldCode  = $criterion->codigo ?? null;
-        $oldDesc  = $criterion->descripcion ?? null;
-
-        if (
-            $oldName !== $updated->nombre ||
-            $oldCode !== ($updated->codigo ?? null) ||
-            $oldDesc !== ($updated->descripcion ?? null)
-        ) {
-            AuditLogService::log(
-                'editar',
-                "Se actualizó el criterio ID {$criterion->criterio_id}: ".
-                "nombre anterior \"{$oldName}\", nuevo nombre \"{$updated->nombre}\"; ".
-                "otros campos actualizados según corresponda.",
-                'Criterio'
-            );
-        }
-
 
         return \App\Http\Resources\CriterionResource::make($updated)
             ->response()
@@ -101,13 +76,6 @@ class CriterionController extends Controller
 
         try {
             $this->service->delete($criterion);
-            // Registro en el log de bitácora
-            AuditLogService::log(
-    'eliminar',
-        "Se eliminó el criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}), ".
-                "perteneciente al componente ID {$criterion->componente_id}.",
-        'Criterio'
-            );
 
             return response()->noContent(); // 204
         } catch (QueryException $e) {
@@ -136,30 +104,29 @@ class CriterionController extends Controller
         ]);
 
         $newActiveState = $validated['active'];
+        $estadoAnterior = $criterion->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
 
-        // Actualizar el estado del criterio
+        // Actualizar el estado del criterio (saveQuietly: el log manual cubre esta acción)
         $criterion->activo = $newActiveState;
-        $criterion->save();
+        $criterion->saveQuietly();
 
         // Aplicar cambio en cascada a todos los elementos hijos
         // Aplicar a estándares del criterio
         foreach ($criterion->standards as $standard) {
             $standard->activo = $newActiveState;
-            $standard->save();
+            $standard->saveQuietly();
         }
 
         // Aplicar a evidencias del criterio
         foreach ($criterion->evidences as $evidence) {
             $evidence->activo = $newActiveState;
-            $evidence->save();
+            $evidence->saveQuietly();
         }
 
-        $cascadeMessage = $newActiveState 
-            ? ' Elementos hijos activados en cascada.' 
+        $cascadeMessage = $newActiveState
+            ? ' Elementos hijos activados en cascada.'
             : ' Elementos hijos desactivados en cascada.';
-            // === Registrar en bitácora ===
-        $estadoAnterior = $criterion->activo ? 'ACTIVO' : 'INACTIVO';
-        $estadoNuevo    = $newActiveState ? 'ACTIVO' : 'INACTIVO';
+        $estadoNuevo = $newActiveState ? 'ACTIVO' : 'INACTIVO';
 
         AuditLogService::log(
 'editar',

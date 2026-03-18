@@ -29,6 +29,14 @@ class Criterion extends BaseCareer
         'activo'
     ];
 
+    // --- Scopes ---
+
+    /** Filtra solo criterios activos */
+    public function scopeActive($query)
+    {
+        return $query->where('activo', true);
+    }
+
     /**
      * Relación: Un criterio tiene muchas evidencias.
      *
