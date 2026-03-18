@@ -13,6 +13,18 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Disco de almacenamiento activo
+    |--------------------------------------------------------------------------
+    |
+    | Controla qué disco de Filesystems usa FileService para subir archivos.
+    | Para cambiar de almacenamiento (local NAS → S3, etc.) basta con
+    | actualizar STORAGE_DISK en .env sin tocar el código fuente (DIP).
+    |
+    */
+    'storage_disk' => env('STORAGE_DISK', 'simulated_nas'),
+
     'export_limit' => 20000,
 
 ];

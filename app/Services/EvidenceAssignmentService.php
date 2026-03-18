@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\EvidenceAssignment;
+use App\Models\Evidence;
+use App\Models\Process;
 use App\Models\User;
 use App\Models\Role;
 use App\Events\EvidenceAssigned;
@@ -10,13 +12,27 @@ use Illuminate\Support\Facades\DB;
 
 class EvidenceAssignmentService
 {
+    /** Relaciones que se cargan en casi todos los queries */
+    private const WITH_BASE = ['evidence.criterion', 'user', 'process'];
+
+    /**
+     * Builder base con eager loading de relaciones y EXISTS para solicitudes pendientes.
+     * withExists evita el N+1 que producía el DB::table inline en EvidenceAssignmentResource.
+     */
+    private function baseQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return EvidenceAssignment::with(self::WITH_BASE)
+            ->withExists('pendingExtensionRequests as has_pending_extension_request');
+    }
+
     /**
      * Obtener todas las asignaciones de evidencias.
      */
     public function getAll()
     {
-        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, null, null]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return $this->baseQuery()
+            ->orderBy('fecha_asignacion', 'desc')
+            ->get();
     }
 
     /**
@@ -24,8 +40,7 @@ class EvidenceAssignmentService
      */
     public function findById(int $id): ?EvidenceAssignment
     {
-        $rows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$id]);
-        return $rows ? EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return $this->baseQuery()->find($id);
     }
 
     /**
@@ -45,15 +60,11 @@ class EvidenceAssignmentService
 
         DB::beginTransaction();
         try {
-            // Verificar que el proceso existe
-            $proceso = DB::select('CALL SP_BUSCAR_PROCESO(?)', [$procesoId]);
-            if (empty($proceso)) {
+            // Verificar existencia con Eloquent (evita N+1 si se reutiliza)
+            if (!Process::find($procesoId)) {
                 throw new \Exception('El proceso especificado no existe.');
             }
-
-            // Verificar que la evidencia existe
-            $evidencia = DB::select('CALL SP_BUSCAR_EVIDENCIA(?)', [$evidenciaId]);
-            if (empty($evidencia)) {
+            if (!Evidence::find($evidenciaId)) {
                 throw new \Exception('La evidencia especificada no existe.');
             }
 
@@ -75,7 +86,7 @@ class EvidenceAssignmentService
                     continue;
                 }
 
-                // Spatie se mantiene para gestion de roles
+                // Spatie se mantiene para gestión de roles
                 $usuariosConRol = User::role($role->name)->active()->get();
 
                 foreach ($usuariosConRol as $usuario) {
@@ -91,10 +102,10 @@ class EvidenceAssignmentService
             DB::commit();
 
             return [
-                'asignaciones'      => $asignaciones,
-                'errores'           => $errores,
-                'total_asignaciones'=> count($asignaciones),
-                'total_errores'     => count($errores),
+                'asignaciones'       => $asignaciones,
+                'errores'            => $errores,
+                'total_asignaciones' => count($asignaciones),
+                'total_errores'      => count($errores),
             ];
 
         } catch (\Exception $e) {
@@ -113,26 +124,29 @@ class EvidenceAssignmentService
         ?string $fechaLimite,
         ?string $comentario
     ): ?EvidenceAssignment {
-        // Verificar duplicado via SP
-        $duplicado = DB::select('CALL SP_VERIFICAR_DUPLICADO_ASIGNACION(?, ?, ?)', [
-            $procesoId, $evidenciaId, $usuarioId,
-        ]);
+        // Verificar duplicado con Eloquent — 1 query, sin SP extra
+        $existe = EvidenceAssignment::where('proceso_id', $procesoId)
+            ->where('evidencia_id', $evidenciaId)
+            ->where('usuario_id', $usuarioId)
+            ->exists();
 
-        if (!empty($duplicado) && $duplicado[0]->total > 0) {
+        if ($existe) {
             return null;
         }
 
-        $rows = DB::select('CALL SP_CREAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?, ?, ?, ?)', [
-            $procesoId,
-            $evidenciaId,
-            $usuarioId,
-            'pendiente',
-            now()->format('Y-m-d H:i:s'),
-            $fechaLimite,
-            $comentario,
+        $assignment = EvidenceAssignment::create([
+            'proceso_id'       => $procesoId,
+            'evidencia_id'     => $evidenciaId,
+            'usuario_id'       => $usuarioId,
+            'estado'           => 'Pendiente',
+            'fecha_asignacion' => now(),
+            'fecha_limite'     => $fechaLimite,
+            'comentario'       => $comentario,
         ]);
 
-        $assignment = EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        // Cargar relaciones para el evento y el retorno
+        $assignment->load(self::WITH_BASE);
+        $assignment->loadExists('pendingExtensionRequests as has_pending_extension_request');
 
         // Disparar evento de asignacion para notificaciones
         event(new EvidenceAssigned($assignment));
@@ -145,15 +159,13 @@ class EvidenceAssignmentService
      */
     public function updateAssignment(EvidenceAssignment $assignment, array $data): EvidenceAssignment
     {
-        DB::statement('CALL SP_ACTUALIZAR_ASIGNACION_EVIDENCIA(?, ?, ?, ?)', [
-            $assignment->evidencia_asignacion_id,
-            $data['estado'] ?? null,
-            $data['fecha_limite'] ?? null,
-            $data['comentario'] ?? null,
-        ]);
+        $assignment->update(array_filter([
+            'estado'      => $data['estado']      ?? null,
+            'fecha_limite'=> $data['fecha_limite'] ?? null,
+            'comentario'  => $data['comentario']  ?? null,
+        ], fn ($v) => $v !== null));
 
-        $rows = DB::select('CALL SP_BUSCAR_ASIGNACION_EVIDENCIA(?)', [$assignment->evidencia_asignacion_id]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        return $this->baseQuery()->find($assignment->getKey());
     }
 
     /**
@@ -161,7 +173,7 @@ class EvidenceAssignmentService
      */
     public function deleteAssignment(EvidenceAssignment $assignment): void
     {
-        DB::statement('CALL SP_ELIMINAR_ASIGNACION_EVIDENCIA(?)', [$assignment->evidencia_asignacion_id]);
+        $assignment->delete();
     }
 
     /**
@@ -169,12 +181,10 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByUser(int $usuarioId)
     {
-        $rows  = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, $usuarioId, null]);
-        $items = EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
-        // Cargar el criterio a través de la evidencia para que EvidenceAssignmentResource
-        // pueda exponer criterion en lugar de retornar null (el SP no lo incluye como campo plano).
-        $items->loadMissing('evidence.criterion');
-        return $items;
+        return $this->baseQuery()
+            ->where('usuario_id', $usuarioId)
+            ->orderBy('fecha_asignacion', 'desc')
+            ->get();
     }
 
     /**
@@ -182,8 +192,10 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByEvidence(int $evidenciaId)
     {
-        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [null, null, $evidenciaId]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return $this->baseQuery()
+            ->where('evidencia_id', $evidenciaId)
+            ->orderBy('fecha_asignacion', 'desc')
+            ->get();
     }
 
     /**
@@ -191,16 +203,23 @@ class EvidenceAssignmentService
      */
     public function getAssignmentsByProcess(int $procesoId)
     {
-        $rows = DB::select('CALL SP_OBTENER_ASIGNACIONES_EVIDENCIA(?, ?, ?)', [$procesoId, null, null]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return $this->baseQuery()
+            ->where('proceso_id', $procesoId)
+            ->orderBy('fecha_asignacion', 'desc')
+            ->get();
     }
 
     /**
-     * Obtener evidencias proximas a vencer para un usuario.
+     * Obtener evidencias próximas a vencer para un usuario.
+     * Reemplaza SP_OBTENER_EVIDENCIAS_PROXIMAS.
      */
     public function getUpcomingEvidences(int $usuarioId, string $limitDate)
     {
-        $rows = DB::select('CALL SP_OBTENER_EVIDENCIAS_PROXIMAS(?, ?)', [$usuarioId, $limitDate]);
-        return EvidenceAssignment::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return EvidenceAssignment::with(['evidence.criterion', 'user'])
+            ->where('usuario_id', $usuarioId)
+            ->whereIn('estado', ['Pendiente', 'En Progreso'])
+            ->where('fecha_limite', '<=', $limitDate)
+            ->orderBy('fecha_limite', 'asc')
+            ->get();
     }
 }

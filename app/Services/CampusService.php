@@ -4,58 +4,59 @@ namespace App\Services;
 
 use App\Models\Campus;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class CampusService
 {
+    private const CACHE_ALL  = 'campuses.all';
+    private const CACHE_TTL  = 300;
+
     /**
      * Lista sedes con filtro opcional por universidad_id.
-     * Pasa NULL para obtener todas las sedes.
+     * Pasa NULL para obtener todas las sedes con su universidad eager-loaded.
      */
     public function getAll(?int $universidadId = null)
     {
         if ($universidadId !== null) {
-            $rows = DB::select('CALL SP_OBTENER_SEDES(?)', [$universidadId]);
-            return Campus::hydrate(array_map(fn($r) => (array) $r, $rows));
+            return Campus::with('university')
+                ->where('universidad_id', $universidadId)
+                ->orderBy('nombre')
+                ->get();
         }
 
-        return Cache::remember('campuses.all', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_SEDES(?)', [null]);
-            return Campus::hydrate(array_map(fn($r) => (array) $r, $rows));
-        });
+        return Cache::remember(self::CACHE_ALL, self::CACHE_TTL, fn () =>
+            Campus::with('university')->orderBy('nombre')->get()
+        );
     }
 
     public function findById(int $id): ?Campus
     {
-        $rows = DB::select('CALL SP_BUSCAR_SEDE(?)', [$id]);
-        return $rows ? Campus::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return Campus::with('university')->find($id);
     }
 
     public function create(array $data): Campus
     {
-        $rows = DB::select('CALL SP_CREAR_SEDE(?, ?, ?)', [
-            $data['universidad_id'],
-            $data['nombre'],
-            $data['activo'] ?? 1,
+        $campus = Campus::create([
+            'universidad_id' => $data['universidad_id'],
+            'nombre'         => $data['nombre'],
+            'activo'         => $data['activo'] ?? true,
         ]);
-        Cache::forget('campuses.all');
-        return Campus::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_ALL);
+        return $campus->load('university');
     }
 
     public function update(Campus $campus, array $data): Campus
     {
-        $rows = DB::select('CALL SP_ACTUALIZAR_SEDE(?, ?, ?)', [
-            $campus->sede_id,
-            $data['nombre'] ?? $campus->nombre,
-            $data['activo'] ?? $campus->activo,
+        $campus->update([
+            'nombre' => $data['nombre'] ?? $campus->nombre,
+            'activo' => $data['activo'] ?? $campus->activo,
         ]);
-        Cache::forget('campuses.all');
-        return Campus::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        Cache::forget(self::CACHE_ALL);
+        return $campus->fresh('university');
     }
 
     public function delete(Campus $campus): void
     {
-        DB::statement('CALL SP_ELIMINAR_SEDE(?)', [$campus->sede_id]);
-        Cache::forget('campuses.all');
+        $campus->delete();
+        Cache::forget(self::CACHE_ALL);
     }
 }

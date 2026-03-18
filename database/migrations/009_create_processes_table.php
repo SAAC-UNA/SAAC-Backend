@@ -19,13 +19,18 @@ return new class extends Migration
                   ->onDelete('restrict');
             
             // Tipo de proceso (Autoevaluación, Compromiso de mejora, etc.)
-            $table->string('tipo_proceso', 50);
+            //$table->string('tipo_proceso', 50);
             
             // Estado activo/inactivo (NO se eliminan físicamente, solo se desactivan)
             $table->boolean('activo')->default(true)
                   ->comment('true=activo, false=inactivo');
             
             // Timestamps de creación y actualización
+
+              //  Indica si el proceso está vigente o en curso
+            //$table->boolean('activo')->default(true); //nnuevo
+            $table->enum('tipo_proceso', ['Autoevaluación', 'Compromiso de mejora']);
+
             $table->timestamps();
             
             // Índices de performance

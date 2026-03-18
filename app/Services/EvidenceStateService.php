@@ -3,41 +3,42 @@
 namespace App\Services;
 
 use App\Models\EvidenceState;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class EvidenceStateService
 {
+    private const CACHE_KEY = 'estados_evidencia.all';
+    private const CACHE_TTL = 600; // catálogo muy estático
+
     public function getAll()
     {
-        $rows = DB::select('CALL SP_OBTENER_ESTADOS_EVIDENCIA()');
-        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows));
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () =>
+            EvidenceState::orderBy('estado_evidencia_id')->get()
+        );
     }
 
     public function findById(int $id): ?EvidenceState
     {
-        $rows = DB::select('CALL SP_BUSCAR_ESTADO_EVIDENCIA(?)', [$id]);
-        return $rows ? EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return EvidenceState::find($id);
     }
 
     public function create(array $data): EvidenceState
     {
-        $rows = DB::select('CALL SP_CREAR_ESTADO_EVIDENCIA(?)', [
-            $data['nombre'],
-        ]);
-        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $state = EvidenceState::create(['nombre' => $data['nombre']]);
+        Cache::forget(self::CACHE_KEY);
+        return $state;
     }
 
     public function update(EvidenceState $estado, array $data): EvidenceState
     {
-        $rows = DB::select('CALL SP_ACTUALIZAR_ESTADO_EVIDENCIA(?, ?)', [
-            $estado->estado_evidencia_id,
-            $data['nombre'] ?? $estado->nombre,
-        ]);
-        return EvidenceState::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $estado->update(['nombre' => $data['nombre'] ?? $estado->nombre]);
+        Cache::forget(self::CACHE_KEY);
+        return $estado->fresh();
     }
 
     public function delete(EvidenceState $estado): void
     {
-        DB::statement('CALL SP_ELIMINAR_ESTADO_EVIDENCIA(?)', [$estado->estado_evidencia_id]);
+        $estado->delete();
+        Cache::forget(self::CACHE_KEY);
     }
 }

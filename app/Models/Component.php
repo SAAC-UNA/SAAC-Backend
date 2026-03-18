@@ -19,6 +19,14 @@ class Component extends  Model
     // Campos que se pueden asignar masivamente
     protected $fillable = ['dimension_id', 'nombre', 'nomenclatura', 'activo'];
 
+    // --- Scopes ---
+
+    /** Filtra solo componentes activos */
+    public function scopeActive($query)
+    {
+        return $query->where('activo', true);
+    }
+
     // --- Relaciones ---
 
     /**

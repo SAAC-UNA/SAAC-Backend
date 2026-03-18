@@ -31,8 +31,8 @@ return new class extends Migration
             // Password requerido por Authenticatable (siempre NULL, no se usa)
             $table->string('password', 255)->nullable();
             
-            // Estado del usuario (active/inactive)
-            $table->string('status', 20)->default('active');
+            // Estado del usuario
+            $table->enum('status', ['active', 'inactive'])->default('active');
             
             // Timestamps de creación y actualización
             $table->timestamps();

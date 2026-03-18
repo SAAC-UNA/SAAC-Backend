@@ -82,4 +82,13 @@ class EvidenceAssignment extends Model
     {
         return $this->hasMany(ExtensionRequest::class, 'evidencia_asignacion_id', 'evidencia_asignacion_id');
     }
+
+    /**
+     * Relación filtrada: solicitudes de ampliación en estado pendiente.
+     * Usada con withExists() para evitar N+1 en EvidenceAssignmentResource.
+     */
+    public function pendingExtensionRequests()
+    {
+        return $this->extensionRequests()->where('estado', ExtensionRequest::ESTADO_PENDIENTE);
+    }
 }

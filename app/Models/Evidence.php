@@ -18,6 +18,27 @@ class Evidence extends BaseCareer
 
     // Campos que se pueden asignar masivamente
     protected $fillable = ['criterio_id','estado_evidencia_id', 'descripcion', 'nomenclatura', 'activo'];
+
+    // --- Scopes ---
+
+    /** Filtra solo evidencias activas */
+    public function scopeActive($query)
+    {
+        return $query->where('activo', true);
+    }
+
+    /** Filtra por estado de evidencia */
+    public function scopeByState($query, int $estadoId)
+    {
+        return $query->where('estado_evidencia_id', $estadoId);
+    }
+
+    /** Filtra por criterio */
+    public function scopeByCriterion($query, int $criterioId)
+    {
+        return $query->where('criterio_id', $criterioId);
+    }
+
     /**
      * Relación: Una evidencia pertenece a un criterio.
      *

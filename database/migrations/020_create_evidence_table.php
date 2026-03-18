@@ -22,7 +22,7 @@ return new class extends Migration
            // $table->foreignId('proceso_id') ->constrained('PROCESO', 'proceso_id') ->onDelete('cascade');
             $table->foreignId('estado_evidencia_id')->constrained('ESTADO_EVIDENCIA', 'estado_evidencia_id')->onDelete('restrict');
             // Descripción de la evidencia
-            $table->string('descripcion', 80);
+            $table->string('descripcion', 300);
             // Nomenclatura de la evidencia
             $table->string('nomenclatura', 20);
             // Estado de la evidencia
