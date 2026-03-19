@@ -77,8 +77,8 @@ return [
         // Compromisos de Mejora
         'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
         
-        // Ciclos de Acreditación (NO se pueden eliminar, solo desactivar)
-        'ciclos' => ['view', 'create', 'edit'],
+        // Ciclos de Acreditación
+        'ciclos' => ['view', 'create', 'edit', 'delete'],
         
         // Reportes
         'reportes' => ['view', 'generate', 'export'],
@@ -176,10 +176,11 @@ return [
             'compromisos_mejora.edit',
             'compromisos_mejora.delete',
             
-            // Ciclos (no se pueden eliminar, solo desactivar)
+            // Ciclos
             'ciclos.view',
             'ciclos.create',
             'ciclos.edit',
+            'ciclos.delete',
             
             // Reportes
             'reportes.view',

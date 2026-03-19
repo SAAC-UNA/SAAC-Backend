@@ -91,7 +91,7 @@ class AuthService
             sameSite: 'lax'
         );
 
-        return ['success' => true, 'user' => $user, 'cookie' => $cookie];
+        return ['success' => true, 'user' => $user, 'cookie' => $cookie, 'token' => $token];
     }
 
     /**

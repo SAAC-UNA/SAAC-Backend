@@ -33,6 +33,7 @@ use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AccreditationCycleController;
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -213,10 +214,30 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::middleware(['permission:ciclos.view'])->group(function () {
         Route::get('estructura/procesos', [ProcessController::class, 'index']);
         Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
-        Route::get('estructura/ciclos-acreditacion', function () {
+        Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
+        Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
+       /* Route::get('estructura/ciclos-acreditacion', function () {
             return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
-        });
+        });*/
+
     });
+
+    // POST, PUT, DELETE - cada uno con su propio permiso
+     // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
+        Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
+        ->middleware('permission:ciclos.create');
+        Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])
+        ->middleware('permission:ciclos.edit');
+        Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
+        ->middleware('permission:ciclos.delete');
+
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+    ->middleware('permission:ciclos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+    ->middleware('permission:ciclos.edit');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+    ->middleware('permission:ciclos.edit');
     
     Route::post('estructura/procesos', [ProcessController::class, 'store'])
         ->middleware('permission:ciclos.create');

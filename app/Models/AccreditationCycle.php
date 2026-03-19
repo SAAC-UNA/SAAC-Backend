@@ -13,6 +13,12 @@ class AccreditationCycle extends BaseCareer
     /** @use HasFactory<\Database\Factories\AccreditationCycleFactory> */
     use HasFactory;
 
+
+    // Estados posibles del ciclo
+    public const STATUS_ACTIVE = 'activo';
+    public const STATUS_INACTIVE = 'inactivo';
+    public const STATUS_COMPLETED = 'completado';
+
     // Nombre de la tabla en la base de datos
     protected $table = 'CICLO_ACREDITACION';
 
@@ -20,8 +26,36 @@ class AccreditationCycle extends BaseCareer
     protected $primaryKey = 'ciclo_acreditacion_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['carrera_sede_id', 'nombre'];
+    protected $fillable = ['carrera_sede_id', 'nombre', 'estado'];
 
+    //helpers de dominio para verificar el estado del ciclo
+    public function isActive(): bool
+    {        return $this->estado === self::STATUS_ACTIVE;
+    }
+    public function isInactive(): bool
+    {
+        return $this->estado === self::STATUS_INACTIVE;
+    }
+    public function isCompleted(): bool
+    {        return $this->estado === self::STATUS_COMPLETED;
+    }
+    public function isEditable(): bool
+    {
+        // Solo se puede editar si el ciclo está activo
+        return $this->estado === self::STATUS_ACTIVE;
+    }
+ 
+    
+    //scopes para filtrar por estado
+    public function scopeActive($query){
+        return $query->where('estado', self::STATUS_ACTIVE);
+    }
+    public function scopeInactive($query){
+        return $query->where('estado', self::STATUS_INACTIVE);
+    }
+    public function scopeCompleted($query){
+        return $query->where('estado', self::STATUS_COMPLETED);
+    }
     /**
      * Relación: Un ciclo de acreditación pertenece a una sede de carrera.
      *

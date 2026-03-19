@@ -11,6 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         // SP para obtener todos los modelos
+        DB::unprepared('DROP PROCEDURE IF EXISTS SP_OBTENER_MODELOS_ESTRUCTURA');
         DB::unprepared('
 CREATE PROCEDURE SP_OBTENER_MODELOS_ESTRUCTURA()
 BEGIN
@@ -19,6 +20,7 @@ END
         ');
 
         // SP para obtener modelos activos
+        DB::unprepared('DROP PROCEDURE IF EXISTS SP_OBTENER_MODELOS_ACTIVOS');
         DB::unprepared('
 CREATE PROCEDURE SP_OBTENER_MODELOS_ACTIVOS()
 BEGIN
@@ -27,6 +29,7 @@ END
         ');
 
         // SP para buscar modelo por ID
+        DB::unprepared('DROP PROCEDURE IF EXISTS SP_BUSCAR_MODELO_ESTRUCTURA');
         DB::unprepared('
 CREATE PROCEDURE SP_BUSCAR_MODELO_ESTRUCTURA(IN p_id BIGINT)
 BEGIN

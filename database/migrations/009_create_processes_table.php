@@ -26,6 +26,12 @@ return new class extends Migration
                   ->comment('true=activo, false=inactivo');
             
             // Timestamps de creación y actualización
+<<<<<<< HEAD
+=======
+              //  Indica si el proceso está vigente o en curso
+            //$table->boolean('activo')->default(true); //nnuevo
+            $table->enum('tipo_proceso', ['Autoevaluación', 'Compromiso de mejora']);
+>>>>>>> development
             $table->timestamps();
             
             // Índices de performance

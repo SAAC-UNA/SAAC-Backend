@@ -30,7 +30,7 @@ class AuthController extends Controller
                 }], $result['status']);
             }
 
-            return response()->json(['user' => new UserResource($result['user'])], 200)
+            return response()->json(['user' => new UserResource($result['user']), 'token' => $result['token']], 200)
                 ->cookie($result['cookie']);
 
         } catch (\Exception $e) {
