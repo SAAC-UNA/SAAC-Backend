@@ -40,6 +40,11 @@ class ExtensionRequestResource extends JsonResource
                 'evidencia_id' => $this->whenLoaded('evidenceAssignment', $this->evidenceAssignment?->evidencia_id),
                 'estado' => $this->whenLoaded('evidenceAssignment', $this->evidenceAssignment?->estado),
                 'fecha_limite' => $this->whenLoaded('evidenceAssignment', optional($this->evidenceAssignment?->fecha_limite)->toISOString()),
+                'evidencia' => $this->whenLoaded('evidenceAssignment', fn() => $this->evidenceAssignment?->evidence ? [
+                    'evidencia_id' => $this->evidenceAssignment->evidence->evidencia_id,
+                    'nomenclatura' => $this->evidenceAssignment->evidence->nomenclatura,
+                    'descripcion' => $this->evidenceAssignment->evidence->descripcion,
+                ] : null),
             ],
             
             // Usuario solicitante (cuando está cargado)
