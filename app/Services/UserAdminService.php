@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class UserAdminService
 {
@@ -26,14 +25,14 @@ class UserAdminService
 
     public function activate(User $user): User
     {
-        $rows = DB::select('CALL SP_ACTIVAR_USUARIO(?)', [$user->usuario_id]);
-        return User::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $user->activate();
+        return $user->fresh();
     }
 
     public function deactivate(User $user): User
     {
-        $rows = DB::select('CALL SP_DESACTIVAR_USUARIO(?)', [$user->usuario_id]);
-        return User::hydrate(array_map(fn($r) => (array) $r, $rows))->first();
+        $user->deactivate();
+        return $user->fresh();
     }
 
      /**

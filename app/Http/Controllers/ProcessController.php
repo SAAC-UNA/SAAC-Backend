@@ -14,23 +14,13 @@ class ProcessController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Process::with([
-            'accreditationCycle.careerCampus.career', 
+        $processes = Process::with([
+            'accreditationCycle.careerCampus.career',
             'accreditationCycle.careerCampus.campus',
-            'modeloEstructura'
-        ]);
-        
-        // Filtrar por modelo_estructura_id opcional
-        if ($request->has('modelo_estructura_id')) {
-            $query->where('modelo_estructura_id', $request->modelo_estructura_id);
-        }
-        
-        // Filtrar por ciclo_acreditacion_id opcional
-        if ($request->has('ciclo_acreditacion_id')) {
-            $query->where('ciclo_acreditacion_id', $request->ciclo_acreditacion_id);
-        }
-        
-        return response()->json($query->get());
+            'accreditationCycle.modeloEstructura',
+        ])->get();
+
+        return response()->json($processes);
     }
 
     /**
@@ -38,17 +28,17 @@ class ProcessController extends Controller
      */
     public function store(ProcessRequest $request)
     {
-        $proceso = Process::create($request->validated());
+        $process = Process::create($request->validated());
         
         AuditLogService::log(
             'crear',
-            "Se creó el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            "Se creó el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
             'Proceso'
         );
         
         return response()->json([
             'message' => 'Proceso creado exitosamente.',
-            'data' => $proceso->load(['accreditationCycle', 'modeloEstructura'])
+            'data'    => $process,
         ], 201);
     }
 
@@ -57,13 +47,9 @@ class ProcessController extends Controller
      */
     public function show($id)
     {
-        $proceso = Process::with([
-            'accreditationCycle.careerCampus.career', 
-            'accreditationCycle.careerCampus.campus',
-            'modeloEstructura'
-        ])->findOrFail($id);
-        
-        return response()->json($proceso);
+        $process = Process::findOrFail($id);
+
+        return response()->json($process);
     }
 
     /**
@@ -71,19 +57,19 @@ class ProcessController extends Controller
      */
     public function update(ProcessRequest $request, $id)
     {
-        $proceso = Process::findOrFail($id);
+        $process = Process::findOrFail($id);
         
-        $proceso->update($request->validated());
+        $process->update($request->validated());
         
         AuditLogService::log(
             'editar',
-            "Se actualizó el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            "Se actualizó el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
             'Proceso'
         );
         
         return response()->json([
             'message' => 'Proceso actualizado exitosamente.',
-            'data' => $proceso->load(['accreditationCycle', 'modeloEstructura'])
+            'data'    => $process,
         ]);
     }
 
@@ -93,27 +79,27 @@ class ProcessController extends Controller
      */
     public function setActive(Request $request, $id)
     {
-        $proceso = Process::findOrFail($id);
+        $process = Process::findOrFail($id);
         
         $validated = $request->validate([
             'active' => ['required', 'boolean'],
         ]);
         
         $newActiveState = $validated['active'];
-        $proceso->activo = $newActiveState;
-        $proceso->save();
+        $process->activo = $newActiveState;
+        $process->save();
         
-        $estadoTexto = $newActiveState ? 'activado' : 'desactivado';
+        $statusText = $newActiveState ? 'activado' : 'desactivado';
         
         AuditLogService::log(
             'editar',
-            "Se {$estadoTexto} el proceso ID {$proceso->proceso_id} (Tipo: {$proceso->tipo_proceso}).",
+            "Se {$statusText} el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
             'Proceso'
         );
         
         return response()->json([
-            'message' => "Proceso {$estadoTexto} exitosamente.",
-            'data' => $proceso->load(['accreditationCycle', 'modeloEstructura'])
+            'message' => "Proceso {$statusText} exitosamente.",
+            'active'  => $process->activo,
         ], 200);
     }
 

@@ -49,13 +49,39 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Forzar respuestas JSON para todas las rutas /api/*
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if ($request->is('api/*') || $request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Unauthenticated.',
-                ], 401);
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'No autenticado.'], 401);
             }
-
             throw $e;
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'No autorizado.'], 403);
+            }
+        });
+
+        // Spatie lanza su propia excepción (no la de Laravel) — hay que capturarla aparte
+        $exceptions->render(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'No tienes permiso para realizar esta acción.'], 403);
+            }
+        });
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Recurso no encontrado.'], 404);
+            }
+        });
+
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Datos inválidos.',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
         });
     })->create();

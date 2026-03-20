@@ -20,7 +20,7 @@ class AccreditationCycle extends BaseCareer
     protected $primaryKey = 'ciclo_acreditacion_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['carrera_sede_id', 'nombre'];
+    protected $fillable = ['carrera_sede_id', 'nombre', 'modelo_estructura_id'];
 
     /**
      * Relación: Un ciclo de acreditación pertenece a una sede de carrera.
@@ -42,5 +42,15 @@ class AccreditationCycle extends BaseCareer
     {
         // Relación con Process
         return $this->hasMany(Process::class, 'ciclo_acreditacion_id');
+    }
+
+    /**
+     * Relación: Un ciclo de acreditación pertenece a un modelo de estructura SINAES.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function modeloEstructura()
+    {
+        return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
 }

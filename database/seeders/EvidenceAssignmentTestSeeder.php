@@ -12,6 +12,12 @@ class EvidenceAssignmentTestSeeder extends Seeder
      */
     public function run(): void
     {
+        // Si no hay procesos (porque no hay modelos creados aún), omitir silenciosamente
+        if (!DB::table('PROCESO')->exists()) {
+            $this->command->warn('⚠️  EvidenceAssignmentTestSeeder omitido: no hay procesos en BD.');
+            return;
+        }
+
         echo "📝 Insertando datos de prueba para aprobación de criterios...\n";
 
         // Eliminar asignaciones previas de prueba

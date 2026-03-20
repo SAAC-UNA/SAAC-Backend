@@ -15,7 +15,14 @@ class AccreditationCycleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Obtener todas las relaciones carrera-sede
+        // Los ciclos de prueba usan el modelo tradicional (SINAES 2018), insertado por StructureModelSeeder.
+        $primerModelo = DB::table('MODELO_ESTRUCTURA')->where('tipo', 'tradicional')->value('modelo_estructura_id');
+
+        if (!$primerModelo) {
+            $this->command->warn('⚠️  AccreditationCycleSeeder omitido: no existe el modelo tradicional.');
+            $this->command->warn('   Ejecutá primero: php artisan db:seed --class=StructureModelSeeder');
+            return;
+        }
         $carrerasSede = DB::table('CARRERA_SEDE')
             ->join('CARRERA', 'CARRERA_SEDE.carrera_id', '=', 'CARRERA.carrera_id')
             ->join('SEDE', 'CARRERA_SEDE.sede_id', '=', 'SEDE.sede_id')
@@ -35,6 +42,7 @@ class AccreditationCycleSeeder extends Seeder
             $ciclos[] = [
                 'carrera_sede_id' => $carreraSede->carrera_sede_id,
                 'nombre' => 'Ciclo de Acreditación 2024-2028',
+                'modelo_estructura_id' => $primerModelo,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -43,6 +51,7 @@ class AccreditationCycleSeeder extends Seeder
             $ciclos[] = [
                 'carrera_sede_id' => $carreraSede->carrera_sede_id,
                 'nombre' => 'Ciclo de Acreditación 2025-2029',
+                'modelo_estructura_id' => $primerModelo,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
