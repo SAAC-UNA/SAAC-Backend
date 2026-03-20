@@ -85,7 +85,9 @@ class EvidenceService
             default                      => 'created_at',
         };
 
-        $query = Evidence::with([...self::WITH_BASE, 'assignments.user'])
+        $rolId = $filters['rol_id'] ?? null;
+
+        $query = Evidence::with([...self::WITH_BASE, 'assignments.user.roles'])
             ->withCount([
                 'files as archivos_count' => fn ($q) => $q->where('tipo', 'archivo'),
                 'files as enlaces_count'  => fn ($q) => $q->where('tipo', 'enlace'),
@@ -111,6 +113,9 @@ class EvidenceService
         }
         if ($fechaHasta) {
             $query->where('created_at', '<=', $fechaHasta . ' 23:59:59');
+        }
+        if ($rolId) {
+            $query->whereHas('assignments.user.roles', fn ($q) => $q->where('id', $rolId));
         }
 
         return $query->orderBy($sortColumn, $sortOrder)->paginate($perPage, ['*'], 'page', $page);

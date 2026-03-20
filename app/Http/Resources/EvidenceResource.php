@@ -46,6 +46,15 @@ class EvidenceResource extends JsonResource
                     'email'      => $assignment->user->email,
                 ])
             ),
+            'roles_acceso'        => $this->when(
+                $this->relationLoaded('assignments'),
+                fn() => $this->assignments
+                    ->filter(fn($a) => $a->relationLoaded('user') && $a->user?->relationLoaded('roles'))
+                    ->flatMap(fn($a) => $a->user->roles->pluck('name'))
+                    ->unique()
+                    ->values()
+                    ->toArray()
+            ),
             // Contadores de recursos
             'archivos_count'      => $this->archivos_count ?? 0,
             'enlaces_count'       => $this->enlaces_count ?? 0,
