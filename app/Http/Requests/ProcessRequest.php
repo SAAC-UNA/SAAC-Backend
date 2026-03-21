@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Process;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ProcessRequest extends FormRequest
@@ -49,5 +50,47 @@ class ProcessRequest extends FormRequest
             'fecha_finalizacion.after_or_equal' => 'La fecha de finalización debe ser igual o posterior a la fecha de inicio.',
             'activo.boolean'                 => 'El campo activo debe ser verdadero o falso.',
         ];
+    }
+
+    /**
+     * Regla de negocio:
+     * No puede existir otro proceso activo del mismo tipo para el mismo ciclo.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $processId = $this->route('id');
+            $currentProcess = $processId ? Process::find($processId) : null;
+
+            $cicloId = $this->input('ciclo_acreditacion_id')
+                ?? $currentProcess?->ciclo_acreditacion_id;
+
+            $tipoProceso = $this->input('tipo_proceso')
+                ?? $currentProcess?->tipo_proceso;
+
+            $activo = $this->has('activo')
+                ? (bool) $this->input('activo')
+                : ($currentProcess?->activo ?? true);
+
+            // Si no quedará activo, no aplica la restricción.
+            if (!$activo || !$cicloId || !$tipoProceso) {
+                return;
+            }
+
+            $conflictQuery = Process::where('ciclo_acreditacion_id', $cicloId)
+                ->where('tipo_proceso', $tipoProceso)
+                ->where('activo', true);
+
+            if ($currentProcess) {
+                $conflictQuery->where('proceso_id', '!=', $currentProcess->proceso_id);
+            }
+
+            if ($conflictQuery->exists()) {
+                $validator->errors()->add(
+                    'tipo_proceso',
+                    'Ya existe otro proceso activo de este tipo para el ciclo seleccionado.'
+                );
+            }
+        });
     }
 }

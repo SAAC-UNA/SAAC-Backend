@@ -86,6 +86,21 @@ class ProcessController extends Controller
         ]);
         
         $newActiveState = $validated['active'];
+
+        if ($newActiveState) {
+            $existsActiveConflict = Process::where('ciclo_acreditacion_id', $process->ciclo_acreditacion_id)
+                ->where('tipo_proceso', $process->tipo_proceso)
+                ->where('activo', true)
+                ->where('proceso_id', '!=', $process->proceso_id)
+                ->exists();
+
+            if ($existsActiveConflict) {
+                return response()->json([
+                    'message' => 'No se puede activar el proceso porque ya existe otro proceso activo del mismo tipo para este ciclo.',
+                ], 422);
+            }
+        }
+
         $process->activo = $newActiveState;
         $process->save();
         
