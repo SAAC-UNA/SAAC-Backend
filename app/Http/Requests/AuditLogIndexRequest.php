@@ -27,6 +27,7 @@ class AuditLogIndexRequest extends FormRequest
             'fecha_desde' => 'nullable|date',
             'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
             'per_page' => 'nullable|integer|min:1|max:100',
+            'search' => 'nullable|string|max:255',
         ];
     }
 }
