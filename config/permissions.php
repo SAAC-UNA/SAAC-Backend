@@ -56,8 +56,8 @@ return [
         'criterios' => ['view', 'create', 'edit', 'delete'],
         'estandares' => ['view', 'create', 'edit', 'delete'],
         
-        // Jerarquía Flexible (Modelo 2026)
-        'jerarquia' => ['view', 'create', 'edit', 'delete'],
+        // Elementos - Jerarquía Flexible (Modelo 2026)
+        'elemento' => ['view', 'create', 'edit', 'delete'],
         
         // Evidencias (HU-012)
         'evidencias' => ['view', 'create', 'edit', 'delete', 'assign'],
@@ -79,6 +79,9 @@ return [
         
         // Ciclos de Acreditación
         'ciclos' => ['view', 'create', 'edit', 'delete'],
+        
+        // Procesos de Acreditación (NO se pueden eliminar, solo desactivar)
+        'procesos' => ['view', 'create', 'edit'],
         
         // Reportes
         'reportes' => ['view', 'generate', 'export'],
@@ -134,11 +137,11 @@ return [
             'criterios.view',
             'estandares.view',
             
-            // Jerarquía (gestión completa - igual que dimensiones)
-            'jerarquia.view',
-            'jerarquia.create',
-            'jerarquia.edit',
-            'jerarquia.delete',
+            // Elementos (gestión completa - igual que dimensiones)
+            'elemento.view',
+            'elemento.create',
+            'elemento.edit',
+            'elemento.delete',
             
             // Evidencias (gestión completa)
             'evidencias.view',
@@ -182,6 +185,11 @@ return [
             'ciclos.edit',
             'ciclos.delete',
             
+            // Procesos (no se pueden eliminar, solo desactivar)
+            'procesos.view',
+            'procesos.create',
+            'procesos.edit',
+            
             // Reportes
             'reportes.view',
             'reportes.generate',
@@ -210,8 +218,8 @@ return [
             'criterios.view',
             'estandares.view',
             
-            // Jerarquía (solo lectura)
-            'jerarquia.view',
+            // Elementos (solo lectura)
+            'elemento.view',
             
             // Evidencias (ver y editar estados)
             'evidencias.view',
@@ -242,8 +250,13 @@ return [
             'compromisos_mejora.create',
             'compromisos_mejora.edit',
             
-            // Ciclos (lectura)
+            // Ciclos (solo lectura)
             'ciclos.view',
+            
+            // Procesos (gestión completa: crear, editar, desactivar)
+            'procesos.view',
+            'procesos.create',
+            'procesos.edit',
             
             // Reportes
             'reportes.view',
@@ -263,8 +276,8 @@ return [
             'componentes.view',
             'criterios.view',
             
-            // Jerarquía (solo lectura)
-            'jerarquia.view',
+            // Elementos (solo lectura)
+            'elemento.view',
             
             // Evidencias (ver y gestionar las asignadas)
             'evidencias.view',
@@ -359,11 +372,11 @@ return [
         'estandares.edit' => 'Editar estándares',
         'estandares.delete' => 'Eliminar estándares',
         
-        // Jerarquía
-        'jerarquia.view' => 'Ver jerarquía',
-        'jerarquia.create' => 'Crear jerarquía',
-        'jerarquia.edit' => 'Editar jerarquía',
-        'jerarquia.delete' => 'Eliminar jerarquía',
+        // Elementos
+        'elemento.view' => 'Ver elementos de estructura',
+        'elemento.create' => 'Crear elementos de estructura',
+        'elemento.edit' => 'Editar elementos de estructura',
+        'elemento.delete' => 'Eliminar elementos de estructura',
         
         // Evidencias
         'evidencias.view' => 'Ver evidencias',
@@ -408,6 +421,11 @@ return [
         'ciclos.view' => 'Ver ciclos de acreditación',
         'ciclos.create' => 'Crear ciclos de acreditación',
         'ciclos.edit' => 'Editar ciclos de acreditación',
+        
+        // Procesos de acreditación
+        'procesos.view' => 'Ver procesos de acreditación',
+        'procesos.create' => 'Crear procesos de acreditación',
+        'procesos.edit' => 'Editar procesos de acreditación',
         
         // Reportes
         'reportes.view' => 'Ver reportes',

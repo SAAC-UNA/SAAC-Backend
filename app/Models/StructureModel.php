@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ModeloEstructura extends Model
+class StructureModel extends Model
 {
     protected $table = 'MODELO_ESTRUCTURA';
     protected $primaryKey = 'modelo_estructura_id';
@@ -25,7 +25,7 @@ class ModeloEstructura extends Model
     // Constantes para tipos de modelo
     // Son VALORES FIJOS del sistema, NO se inventan nuevos tipos
     const TIPO_TRADICIONAL = 'tradicional';           // Modelo SINAES 2018 → usa DIMENSION/COMPONENTE/CRITERIO
-    const TIPO_JERARQUIA_FLEXIBLE = 'jerarquia_flexible'; // Modelo SINAES 2026 → usa JERARQUIA
+    const TIPO_ELEMENTO_FLEXIBLE = 'elemento_flexible'; // Modelo SINAES 2026+ → usa ELEMENTO (arbol con padre_id)
     
     // Tipos futuros comentados (no se usan actualmente):
     // const TIPO_HIBRIDO = 'hibrido';                   // Modelo mixto → usa ambas estructuras
@@ -34,9 +34,9 @@ class ModeloEstructura extends Model
     /**
      * Procesos que usan este modelo
      */
-    public function procesos(): HasMany
+    public function ciclosAcreditacion(): HasMany
     {
-        return $this->hasMany(Process::class, 'modelo_estructura_id', 'modelo_estructura_id');
+        return $this->hasMany(AccreditationCycle::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
 
     /**
@@ -50,9 +50,9 @@ class ModeloEstructura extends Model
     /**
      * Verificar si es modelo de jerarquía flexible
      */
-    public function esJerarquiaFlexible(): bool
+    public function esElementoFlexible(): bool
     {
-        return $this->tipo === self::TIPO_JERARQUIA_FLEXIBLE;
+        return $this->tipo === self::TIPO_ELEMENTO_FLEXIBLE;
     }
 
     // Métodos para tipos futuros comentados (no se usan actualmente):

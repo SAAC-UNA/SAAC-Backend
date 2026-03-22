@@ -5,31 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Jerarquia extends Model
+class StructureElement extends Model
 {
     use HasFactory;
 
     // Tabla
-    protected $table = 'JERARQUIA';
+    protected $table = 'ELEMENTO';
 
     // Primary Key
-    protected $primaryKey = 'jerarquia_id';
+    protected $primaryKey = 'elemento_id';
 
     // Fillable
     protected $fillable = [
-        'parent_id',
-        'nombre',
+        'modelo_estructura_id',
+        'padre_id',
         'tipo',
+        'categoria',
         'nomenclatura',
         'descripcion',
-        'orden',
         'activo'
     ];
 
     // Casts
     protected $casts = [
         'activo' => 'boolean',
-        'orden' => 'integer',
     ];
 
     // ===== RELACIONES =====
@@ -39,7 +38,7 @@ class Jerarquia extends Model
      */
     public function parent()
     {
-        return $this->belongsTo(Jerarquia::class, 'parent_id', 'jerarquia_id');
+        return $this->belongsTo(StructureElement::class, 'padre_id', 'elemento_id');
     }
 
     /**
@@ -47,9 +46,8 @@ class Jerarquia extends Model
      */
     public function children()
     {
-        return $this->hasMany(Jerarquia::class, 'parent_id', 'jerarquia_id')
-                    ->orderBy('orden')
-                    ->orderBy('nombre');
+        return $this->hasMany(StructureElement::class, 'padre_id', 'elemento_id')
+                    ->orderBy('elemento_id');
     }
 
     /**
@@ -95,15 +93,15 @@ class Jerarquia extends Model
      */
     public function scopeRoots($query)
     {
-        return $query->whereNull('parent_id');
+        return $query->whereNull('padre_id');
     }
 
     /**
      * Scope: Hijos de un padre específico
      */
-    public function scopeChildrenOf($query, int $parentId)
+    public function scopeChildrenOf($query, int $padreId)
     {
-        return $query->where('parent_id', $parentId);
+        return $query->where('padre_id', $padreId);
     }
 
     // ===== MÉTODOS DE UTILIDAD =====

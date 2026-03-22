@@ -1,0 +1,135 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\StructureElement;
+use Illuminate\Support\Facades\Cache;
+
+class StructureElementService
+{
+    /**
+     * Obtener todos los elementos, opcionalmente filtrados por tipo y/o modelo
+     */
+    public function getAll(?string $tipo = null, ?int $modeloEstructuraId = null)
+    {
+        $cacheKey = "elementos.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
+        
+        return Cache::remember($cacheKey, 300, function () use ($tipo, $modeloEstructuraId) {
+            $query = StructureElement::where('activo', true)
+                ->orderBy('elemento_id');
+
+            if ($tipo !== null) {
+                $query->where('tipo', $tipo);
+            }
+
+            if ($modeloEstructuraId !== null) {
+                $query->where('modelo_estructura_id', $modeloEstructuraId);
+            }
+
+            return $query->get();
+        });
+    }
+
+    /**
+     * Buscar por ID
+     */
+    public function findById(int $id): ?StructureElement
+    {
+        return StructureElement::find($id);
+    }
+
+    /**
+     * Crear nuevo elemento. El orden de listado es por elemento_id (orden de creación).
+     */
+    public function create(array $data): StructureElement
+    {
+        $elemento = StructureElement::create([
+            'modelo_estructura_id' => $data['modelo_estructura_id'],
+            'padre_id'             => $data['padre_id'] ?? null,
+            'tipo'                 => $data['tipo'],
+            'categoria'            => $data['categoria'] ?? null,
+            'nomenclatura'         => $data['nomenclatura'] ?? null,
+            'descripcion'          => $data['descripcion'] ?? null,
+            'activo'               => $data['activo'] ?? true,
+        ]);
+
+        $this->clearCache($data['tipo'] ?? null);
+
+        return $elemento;
+    }
+
+    /**
+     * Actualizar elemento existente
+     */
+    public function update(StructureElement $elemento, array $data): StructureElement
+    {
+        $elemento->update([
+            'padre_id'     => $data['padre_id'] ?? $elemento->padre_id,
+            'tipo'         => $data['tipo'] ?? $elemento->tipo,
+            'categoria'    => $data['categoria'] ?? $elemento->categoria,
+            'nomenclatura' => $data['nomenclatura'] ?? $elemento->nomenclatura,
+            'descripcion'  => $data['descripcion'] ?? $elemento->descripcion,
+            'activo'       => $data['activo'] ?? $elemento->activo,
+        ]);
+
+        $this->clearCache($elemento->tipo);
+
+        return $elemento->fresh();
+    }
+
+    /**
+     * Eliminar elemento
+     */
+    public function delete(StructureElement $elemento): void
+    {
+        $tipo = $elemento->tipo;
+        $elemento->delete();
+        $this->clearCache($tipo);
+    }
+
+    /**
+     * Activar/Desactivar elemento con cascada bidireccional.
+     * Igual que la jerarquía tradicional (DimensionController):
+     * - Al ACTIVAR: activa en cascada todos los hijos recursivamente
+     * - Al DESACTIVAR: desactiva en cascada todos los hijos recursivamente
+     */
+    public function setActiveWithCascade(StructureElement $elemento, bool $active): void
+    {
+        $elemento->activo = $active;
+        $elemento->saveQuietly();
+        $this->clearCache($elemento->tipo);
+
+        foreach ($elemento->children as $child) {
+            $this->setActiveWithCascade($child, $active);
+        }
+    }
+
+    /**
+     * Obtener árbol completo (recursivo)
+     * COMENTADO: Funcionalidad de árbol no se usa actualmente
+     * El frontend maneja jerarquías como lista plana con parent_id
+     * Descomentar si se implementa visualización tipo árbol en el futuro
+     */
+    // public function getTree(?int $rootId = null, ?int $modeloEstructuraId = null)
+    // {
+    //     $cacheKey = "jerarquia.tree.{$rootId}.modelo.{$modeloEstructuraId}";
+    //     
+    //     return Cache::remember($cacheKey, 300, function () use ($rootId, $modeloEstructuraId) {
+    //         $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $modeloEstructuraId]);
+    //         return array_map(fn($r) => (array) $r, $rows);
+    //     });
+    // }
+
+    /**
+     * Limpiar caché
+     */
+    private function clearCache(?string $tipo = null): void
+    {
+        Cache::forget('elementos.all');
+        Cache::forget('elemento.tree.all');
+        
+        if ($tipo) {
+            Cache::forget("elementos.tipo.{$tipo}");
+        }
+    }
+}

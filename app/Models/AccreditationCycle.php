@@ -77,4 +77,14 @@ class AccreditationCycle extends BaseCareer
         // Relación con Process
         return $this->hasMany(Process::class, 'ciclo_acreditacion_id');
     }
+
+    /**
+     * Relación: Un ciclo de acreditación pertenece a un modelo de estructura SINAES.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function modeloEstructura()
+    {
+        return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
+    }
 }

@@ -21,8 +21,15 @@ class Process extends BaseCareer
     protected $fillable = [
         'ciclo_acreditacion_id',
         'tipo_proceso',
-        'modelo_estructura_id',
+        'fecha_inicio',
+        'fecha_finalizacion',
         'activo',
+    ];
+
+    protected $casts = [
+        'fecha_inicio'       => 'date:Y-m-d',
+        'fecha_finalizacion' => 'date:Y-m-d',
+        'activo'             => 'boolean',
     ];
 
     /**
@@ -33,16 +40,6 @@ class Process extends BaseCareer
     public function accreditationCycle()
     {
         return $this->belongsTo(AccreditationCycle::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
-    }
-    
-    /**
-     * Relación: Un proceso pertenece a un modelo de estructura SINAES.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function modeloEstructura()
-    {
-        return $this->belongsTo(ModeloEstructura::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
     
     /**

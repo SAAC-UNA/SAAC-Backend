@@ -5,33 +5,31 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class JerarquiaExampleSeeder extends Seeder
+class ElementoExampleSeeder extends Seeder
 {
     /**
-     * Seed para crear datos de ejemplo en JERARQUIA
+     * Seed para crear datos de ejemplo en ELEMENTO
      * Estructura basada en SINAES 2026 con pautas y fuentes
      * 
-     * Ejecutar con: php artisan db:seed --class=JerarquiaExampleSeeder
+     * Ejecutar con: php artisan db:seed --class=ElementoExampleSeeder
      */
     public function run(): void
     {
-        $this->command->info('🌱 Iniciando seed de JERARQUIA con datos de ejemplo...');
+        $this->command->info('🌱 Iniciando seed de ELEMENTO con datos de ejemplo...');
 
         // Limpiar tabla (opcional, comentar si no quieres limpiar)
-        // DB::table('JERARQUIA')->truncate();
+        // DB::table('ELEMENTO')->truncate();
 
         // ============================================
         // Dimensión principal (nivel raíz)
         // ============================================
-        $dimensionId = DB::table('JERARQUIA')->insertGetId([
+        $dimensionId = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2, // SINAES 2026 - Flexible
-            'parent_id' => null,
-            'nombre' => 'Formación Profesional',
+            'padre_id' => null,
             'tipo' => 'dimension',
-            'categoria' => null, // Dimensiones no tienen categoría
+            'categoria' => null,
             'nomenclatura' => 'D1',
             'descripcion' => 'Dimensión orientada a la formación integral del estudiante',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -42,15 +40,13 @@ class JerarquiaExampleSeeder extends Seeder
         // ============================================
         // Pauta 1 bajo la dimensión
         // ============================================
-        $pauta1Id = DB::table('JERARQUIA')->insertGetId([
+        $pauta1Id = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $dimensionId,
-            'nombre' => 'Pauta 1: Plan de Estudios',
+            'padre_id' => $dimensionId,
             'tipo' => 'pauta',
-            'categoria' => 'A', // Categoría A = Mayor importancia
+            'categoria' => 'A',
             'nomenclatura' => 'P1',
             'descripcion' => 'Aspectos relacionados con el diseño y actualización del plan de estudios',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -59,29 +55,25 @@ class JerarquiaExampleSeeder extends Seeder
         $this->command->info("✅ Pauta 1 creada: ID {$pauta1Id}");
 
         // Fuentes de información bajo Pauta 1
-        $fuente1_1 = DB::table('JERARQUIA')->insertGetId([
+        $fuente1_1 = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $pauta1Id,
-            'nombre' => 'Plan de estudios vigente',
+            'padre_id' => $pauta1Id,
             'tipo' => 'fuente',
-            'categoria' => null, // Fuentes no tienen categoría
+            'categoria' => null,
             'nomenclatura' => 'F1.1',
             'descripcion' => 'Documento oficial del plan de estudios aprobado',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $fuente1_2 = DB::table('JERARQUIA')->insertGetId([
+        $fuente1_2 = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $pauta1Id,
-            'nombre' => 'Mallas curriculares',
+            'padre_id' => $pauta1Id,
             'tipo' => 'fuente',
             'categoria' => null,
             'nomenclatura' => 'F1.2',
             'descripcion' => 'Estructuras de cursos y requisitos',
-            'orden' => 2,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -92,15 +84,13 @@ class JerarquiaExampleSeeder extends Seeder
         // ============================================
         // Pauta 2 bajo la dimensión
         // ============================================
-        $pauta2Id = DB::table('JERARQUIA')->insertGetId([
+        $pauta2Id = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $dimensionId,
-            'nombre' => 'Pauta 2: Perfil de Egreso',
+            'padre_id' => $dimensionId,
             'tipo' => 'pauta',
-            'categoria' => 'B', // Categoría B
+            'categoria' => 'B',
             'nomenclatura' => 'P2',
             'descripcion' => 'Define las competencias y habilidades del egresado',
-            'orden' => 2,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -109,29 +99,25 @@ class JerarquiaExampleSeeder extends Seeder
         $this->command->info("✅ Pauta 2 creada: ID {$pauta2Id}");
 
         // Fuentes de información bajo Pauta 2
-        $fuente2_1 = DB::table('JERARQUIA')->insertGetId([
+        $fuente2_1 = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $pauta2Id,
-            'nombre' => 'Documento de perfil de egreso',
+            'padre_id' => $pauta2Id,
             'tipo' => 'fuente',
             'categoria' => null,
             'nomenclatura' => 'F2.1',
             'descripcion' => 'Perfil académico y profesional del egresado',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $fuente2_2 = DB::table('JERARQUIA')->insertGetId([
+        $fuente2_2 = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $pauta2Id,
-            'nombre' => 'Matriz de competencias',
+            'padre_id' => $pauta2Id,
             'tipo' => 'fuente',
             'categoria' => null,
             'nomenclatura' => 'F2.2',
             'descripcion' => 'Relación de competencias con cursos',
-            'orden' => 2,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -142,15 +128,13 @@ class JerarquiaExampleSeeder extends Seeder
         // ============================================
         // Otra dimensión para demostrar múltiples raíces
         // ============================================
-        $dimension2Id = DB::table('JERARQUIA')->insertGetId([
+        $dimension2Id = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => null,
-            'nombre' => 'Gestión Académica y Administrativa',
+            'padre_id' => null,
             'tipo' => 'dimension',
             'categoria' => null,
             'nomenclatura' => 'D2',
             'descripcion' => 'Dimensión orientada a procesos administrativos',
-            'orden' => 2,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -159,29 +143,25 @@ class JerarquiaExampleSeeder extends Seeder
         $this->command->info("✅ Dimensión 2 creada: ID {$dimension2Id}");
 
         // Pauta bajo segunda dimensión
-        $pauta3Id = DB::table('JERARQUIA')->insertGetId([
+        $pauta3Id = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $dimension2Id,
-            'nombre' => 'Pauta 3: Gestión de Personal Académico',
+            'padre_id' => $dimension2Id,
             'tipo' => 'pauta',
-            'categoria' => 'C', // Categoría C
+            'categoria' => 'C',
             'nomenclatura' => 'P3',
             'descripcion' => 'Procesos de contratación y evaluación docente',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $fuente3_1 = DB::table('JERARQUIA')->insertGetId([
+        $fuente3_1 = DB::table('ELEMENTO')->insertGetId([
             'modelo_estructura_id' => 2,
-            'parent_id' => $pauta3Id,
-            'nombre' => 'Currículos del personal académico',
+            'padre_id' => $pauta3Id,
             'tipo' => 'fuente',
-            'categoria' => null, // Fuentes no tienen categoría
+            'categoria' => null,
             'nomenclatura' => 'F3.1',
             'descripcion' => 'CVs actualizados de docentes',
-            'orden' => 1,
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -192,7 +172,7 @@ class JerarquiaExampleSeeder extends Seeder
         // ============================================
         // Resumen
         // ============================================
-        $total = DB::table('JERARQUIA')->count();
+        $total = DB::table('ELEMENTO')->count();
         $this->command->info('');
         $this->command->info('========================================');
         $this->command->info('✅ Seed completado exitosamente');
@@ -212,8 +192,8 @@ class JerarquiaExampleSeeder extends Seeder
         $this->command->info('      📄 F3.1: Currículos del personal académico');
         $this->command->info('');
         $this->command->info('🔍 Puedes probar con:');
-        $this->command->info('  GET /api/estructura/jerarquia');
-        $this->command->info('  GET /api/estructura/jerarquia/arbol');
-        $this->command->info('  GET /api/estructura/jerarquia?tipo=pauta');
+        $this->command->info('  GET /api/estructura/elementos');
+        $this->command->info('  GET /api/estructura/elementos/arbol');
+        $this->command->info('  GET /api/estructura/elementos?tipo=pauta');
     }
 }

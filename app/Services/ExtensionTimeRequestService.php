@@ -144,13 +144,11 @@ class ExtensionTimeRequestService
     public function updateRequest(int $requestId, array $data, int $userId): ExtensionRequest
     {
         return DB::transaction(function () use ($requestId, $data, $userId) {
-            $rows = DB::select('CALL SP_BUSCAR_SOLICITUD_AMPLIACION(?)', [$requestId]);
+            $solicitud = ExtensionRequest::with('evidenceAssignment')->find($requestId);
 
-            if (empty($rows)) {
+            if (!$solicitud) {
                 throw ValidationException::withMessages(['solicitud' => 'Solicitud no encontrada.']);
             }
-
-            $solicitud = $rows[0];
 
             if ($solicitud->usuario_id !== $userId) {
                 throw ValidationException::withMessages(['solicitud' => 'No tiene permisos para editar esta solicitud.']);

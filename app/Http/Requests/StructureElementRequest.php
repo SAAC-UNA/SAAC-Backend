@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+
+class StructureElementRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true; // Authorization handled by middleware
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $elementoId = $this->route('id');
+        $isUpdate = $this->isMethod('put') || $this->isMethod('patch');
+
+        return [
+            'modelo_estructura_id' => $isUpdate
+                ? 'sometimes|exists:MODELO_ESTRUCTURA,modelo_estructura_id'
+                : [
+                    'required',
+                    'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
+                    function ($attribute, $value, $fail) {
+                        $tipo = DB::table('MODELO_ESTRUCTURA')
+                            ->where('modelo_estructura_id', $value)
+                            ->value('tipo');
+                        if ($tipo !== 'elemento_flexible') {
+                            $fail('El modelo de estructura debe ser de tipo elemento_flexible para crear elementos.');
+                        }
+                    },
+                ],
+            'padre_id' => [
+                'nullable',
+                'exists:ELEMENTO,elemento_id',
+                // Evitar que un elemento sea su propio padre en UPDATE
+                $isUpdate ? Rule::notIn([$elementoId]) : '',
+                // El padre debe pertenecer al mismo modelo_estructura_id
+                function ($attribute, $value, $fail) use ($isUpdate, $elementoId) {
+                    if ($value === null) {
+                        return; // raíz, sin padre, válido
+                    }
+
+                    // Obtener el modelo del padre
+                    $modeloPadre = DB::table('ELEMENTO')
+                        ->where('elemento_id', $value)
+                        ->value('modelo_estructura_id');
+
+                    // Obtener el modelo del elemento actual
+                    if ($isUpdate) {
+                        // En update, modelo_estructura_id puede venir en el body o se toma del elemento existente
+                        $modeloActual = $this->input('modelo_estructura_id')
+                            ?? DB::table('ELEMENTO')->where('elemento_id', $elementoId)->value('modelo_estructura_id');
+                    } else {
+                        $modeloActual = $this->input('modelo_estructura_id');
+                    }
+
+                    if ($modeloPadre !== $modeloActual) {
+                        $fail('El elemento padre debe pertenecer al mismo modelo de estructura.');
+                    }
+                },
+            ],
+            'tipo' => $isUpdate ? 'sometimes|required|string|max:30' : 'required|string|max:30',
+            'categoria' => 'nullable|in:A,B,C,D',
+            'nomenclatura' => 'nullable|string|max:20',
+            'descripcion' => 'nullable|string',
+            'activo' => 'boolean',
+        ];
+    }
+
+    /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'modelo_estructura_id.required' => 'El modelo de estructura es obligatorio.',
+            'modelo_estructura_id.exists' => 'El modelo de estructura seleccionado no es válido.',
+            'padre_id.exists' => 'El elemento padre seleccionado no existe.',
+            'padre_id.not_in' => 'Un elemento no puede ser su propio padre.',
+            'padre_id.same_model' => 'El elemento padre debe pertenecer al mismo modelo de estructura.',
+            'tipo.required' => 'El tipo es obligatorio.',
+            'tipo.max' => 'El tipo no puede exceder 30 caracteres.',
+            'categoria.in' => 'La categoría debe ser A, B, C o D.',
+            'nomenclatura.max' => 'La nomenclatura no puede exceder 20 caracteres.',
+            'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
+        ];
+    }
+}

@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\ModeloEstructura;
+use App\Models\StructureModel;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
-class ModeloEstructuraService
+class StructureModelService
 {
     /**
      * Obtener todos los modelos de estructura
@@ -14,8 +13,7 @@ class ModeloEstructuraService
     public function getAll()
     {
         return Cache::remember('modelos_estructura.all', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_MODELOS_ESTRUCTURA()');
-            return ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows));
+            return StructureModel::orderBy('modelo_estructura_id')->get();
         });
     }
 
@@ -25,41 +23,37 @@ class ModeloEstructuraService
     public function getActive()
     {
         return Cache::remember('modelos_estructura.active', 300, function () {
-            $rows = DB::select('CALL SP_OBTENER_MODELOS_ACTIVOS()');
-            return ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows));
+            return StructureModel::where('activo', true)->orderBy('modelo_estructura_id')->get();
         });
     }
 
     /**
      * Buscar modelo específico por ID
      */
-    public function findById(int $id): ?ModeloEstructura
+    public function findById(int $id): ?StructureModel
     {
-        $rows = DB::select('CALL SP_BUSCAR_MODELO_ESTRUCTURA(?)', [$id]);
-        return $rows ? ModeloEstructura::hydrate(array_map(fn($r) => (array) $r, $rows))->first() : null;
+        return StructureModel::find($id);
     }
 
     /**
-     * COMENTADO: No se permite crear modelos - ya están predefinidos en migración
-     * (SINAES 2018 tradicional y SINAES 2026 jerarquia_flexible)
+     * Crear nuevo modelo de estructura
      */
-    // public function create(array $data): ModeloEstructura
-    // {
-    //     $model = ModeloEstructura::create($data);
-    //     $this->clearCache();
-    //     return $model;
-    // }
+    public function create(array $data): StructureModel
+    {
+        $model = StructureModel::create($data);
+        $this->clearCache();
+        return $model;
+    }
 
     /**
-     * COMENTADO: No se permite editar modelos - son predefinidos del sistema
-     * Los únicos cambios permitidos son: activo (vía toggleActive)
+     * Actualizar metadata del modelo (nombre, descripcion, version)
      */
-    // public function update(ModeloEstructura $model, array $data): ModeloEstructura
-    // {
-    //     $model->update($data);
-    //     $this->clearCache();
-    //     return $model->fresh();
-    // }
+    public function update(StructureModel $model, array $data): StructureModel
+    {
+        $model->update($data);
+        $this->clearCache();
+        return $model->fresh();
+    }
 
     /**
      * Activar/Desactivar modelo
@@ -71,13 +65,13 @@ class ModeloEstructuraService
      * - Validar que no haya procesos activos antes de desactivar
      * - Desactivar en cascada la estructura asociada:
      *   * Si esTradicional(): DIMENSION → COMPONENTE → CRITERIO → ESTANDAR
-     *   * Si esJerarquiaFlexible(): JERARQUIA (WHERE modelo_estructura_id)
+     *   * Si esElementoFlexible(): ELEMENTO (WHERE modelo_estructura_id)
      * - NO desactivar EVIDENCIA (las evidencias deben permanecer activas)
      * 
      * Referencia código pendiente:
      * if ($model->activo && !$newState) {
      *     // Validar procesos activos
-     *     if ($model->procesos()->where('activo', true)->exists()) {
+     *     if ($model->ciclosAcreditacion()->whereHas('processes', fn($q) => $q->where('activo', true))->exists()) {
      *         throw new \Exception('No se puede desactivar - tiene procesos activos');
      *     }
      *     // Desactivar estructura
@@ -86,12 +80,12 @@ class ModeloEstructuraService
      *         DB::table('COMPONENTE')->update(['activo' => false]);
      *         DB::table('CRITERIO')->update(['activo' => false]);
      *         DB::table('ESTANDAR')->update(['activo' => false]);
-     *     } elseif ($model->esJerarquiaFlexible()) {
-     *         DB::table('JERARQUIA')->where('modelo_estructura_id', $model->modelo_estructura_id)->update(['activo' => false]);
+     *     } elseif ($model->esElementoFlexible()) {
+     *         DB::table('ELEMENTO')->where('modelo_estructura_id', $model->modelo_estructura_id)->update(['activo' => false]);
      *     }
      * }
      */
-    public function toggleActive(ModeloEstructura $model): ModeloEstructura
+    public function toggleActive(StructureModel $model): StructureModel
     {
         $model->activo = !$model->activo;
         $model->save();

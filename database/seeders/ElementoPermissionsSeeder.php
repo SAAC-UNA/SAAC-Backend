@@ -5,21 +5,21 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 
-class JerarquiaPermissionsSeeder extends Seeder
+class ElementoPermissionsSeeder extends Seeder
 {
     /**
-     * Seed para agregar los permisos de JERARQUIA
+     * Seed para agregar los permisos de ELEMENTO
      * 
-     * Ejecutar con: php artisan db:seed --class=JerarquiaPermissionsSeeder
+     * Ejecutar con: php artisan db:seed --class=ElementoPermissionsSeeder
      */
     public function run(): void
     {
-        // Definir permisos de jerarquía
+        // Definir permisos de elemento
         $permissions = [
-            ['name' => 'jerarquia.view', 'guard_name' => 'api'],
-            ['name' => 'jerarquia.create', 'guard_name' => 'api'],
-            ['name' => 'jerarquia.edit', 'guard_name' => 'api'],
-            ['name' => 'jerarquia.delete', 'guard_name' => 'api'],
+            ['name' => 'elemento.view', 'guard_name' => 'api'],
+            ['name' => 'elemento.create', 'guard_name' => 'api'],
+            ['name' => 'elemento.edit', 'guard_name' => 'api'],
+            ['name' => 'elemento.delete', 'guard_name' => 'api'],
         ];
 
         // Crear los permisos
@@ -29,13 +29,13 @@ class JerarquiaPermissionsSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Permisos de jerarquía creados exitosamente');
+        $this->command->info('✅ Permisos de elemento creados exitosamente');
         
         // Opcional: Asignar permisos al rol Superusuario
         try {
             $superRole = \Spatie\Permission\Models\Role::where('name', 'Superusuario')->first();
             if ($superRole) {
-                $superRole->givePermissionTo(['jerarquia.view', 'jerarquia.create', 'jerarquia.edit', 'jerarquia.delete']);
+                $superRole->givePermissionTo(['elemento.view', 'elemento.create', 'elemento.edit', 'elemento.delete']);
                 $this->command->info('✅ Permisos asignados al rol Superusuario');
             }
         } catch (\Exception $e) {

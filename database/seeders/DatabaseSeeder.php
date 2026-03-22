@@ -43,7 +43,8 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,               // 7. Comentarios (temporal - relación será refactorizada)
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
-            DimensionSeeder::class,             // 8. Dimensiones
+            StructureModelSeeder::class,        // 8. Modelo de estructura tradicional (singleton del sistema)
+            DimensionSeeder::class,             // 9. Dimensiones
             ComponentSeeder::class,             // 9. Componentes (dependen de dimensiones)
             CriterionSeeder::class,             // 10. Criterios (dependen de componentes)
             StandardSeeder::class,              // 11. Estándares (dependen de criterios)

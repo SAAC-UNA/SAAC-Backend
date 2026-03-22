@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Jerarquia;
-use App\Services\JerarquiaService;
+use App\Models\StructureElement;
+use App\Services\StructureElementService;
 use App\Services\AuditLogService;
-use App\Http\Requests\JerarquiaRequest;
+use App\Http\Requests\StructureElementRequest;
 use Illuminate\Http\Request;
 
-class JerarquiaController extends Controller
+class StructureElementController extends Controller
 {
     protected $service;
 
-    public function __construct(JerarquiaService $service)
+    public function __construct(StructureElementService $service)
     {
         $this->service = $service;
     }
 
     /**
-     * GET /api/estructura/jerarquia
+     * GET /api/estructura/elementos
      * Query params: ?tipo=pauta&modelo_estructura_id=2
      */
     public function index(Request $request)
@@ -30,7 +30,7 @@ class JerarquiaController extends Controller
     }
 
     /**
-     * GET /api/estructura/jerarquia/{id}
+     * GET /api/estructura/elementos/{id}
      */
     public function show($id)
     {
@@ -61,16 +61,16 @@ class JerarquiaController extends Controller
     */
 
     /**
-     * POST /api/estructura/jerarquia
+     * POST /api/estructura/elementos
      */
-    public function store(JerarquiaRequest $request)
+    public function store(StructureElementRequest $request)
     {
         $item = $this->service->create($request->validated());
 
         AuditLogService::log(
             'crear',
-            "Se creó el elemento de jerarquía \"{$item->nombre}\" (Tipo: {$item->tipo}, ID: {$item->jerarquia_id}).",
-            'Jerarquía'
+            "Se creó el elemento \"{$item->nombre}\" (Tipo: {$item->tipo}, ID: {$item->elemento_id}).",
+            'Elemento'
         );
 
         return response()->json([
@@ -80,11 +80,11 @@ class JerarquiaController extends Controller
     }
 
     /**
-     * PUT/PATCH /api/estructura/jerarquia/{id}
+     * PUT/PATCH /api/estructura/elementos/{id}
      */
-    public function update(JerarquiaRequest $request, $id)
+    public function update(StructureElementRequest $request, $id)
     {
-        $item = Jerarquia::find($id);
+        $item = StructureElement::find($id);
         
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
@@ -94,8 +94,8 @@ class JerarquiaController extends Controller
 
         AuditLogService::log(
             'editar',
-            "Se actualizó el elemento de jerarquía ID {$item->jerarquia_id} (Tipo: {$item->tipo}).",
-            'Jerarquía'
+            "Se actualizó el elemento ID {$item->elemento_id} (Tipo: {$item->tipo}).",
+            'Elemento'
         );
 
         return response()->json([
@@ -105,11 +105,11 @@ class JerarquiaController extends Controller
     }
 
     /**
-     * DELETE /api/estructura/jerarquia/{id}
+     * DELETE /api/estructura/elementos/{id}
      */
     public function destroy($id)
     {
-        $item = Jerarquia::find($id);
+        $item = StructureElement::find($id);
         
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
@@ -126,8 +126,8 @@ class JerarquiaController extends Controller
 
         AuditLogService::log(
             'eliminar',
-            "Se eliminó el elemento de jerarquía \"{$item->nombre}\" (Tipo: {$item->tipo}, ID: {$item->jerarquia_id}).",
-            'Jerarquía'
+            "Se eliminó el elemento \"{$item->nombre}\" (Tipo: {$item->tipo}, ID: {$item->elemento_id}).",
+            'Elemento'
         );
 
         return response()->json([
@@ -136,13 +136,13 @@ class JerarquiaController extends Controller
     }
 
     /**
-     * PATCH /api/estructura/jerarquia/{id}/active
-     * Activar/Desactivar un elemento de jerarquía.
-     * ACTUALIZADO: Ahora usa JerarquiaService (patrón Service consistente)
+     * PATCH /api/estructura/elementos/{id}/active
+     * Activar/Desactivar un elemento.
+     * ACTUALIZADO: Ahora usa ElementoService (patrón Service consistente)
      */
     public function setActive(Request $request, $id)
     {
-        $item = Jerarquia::find($id);
+        $item = StructureElement::find($id);
         
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
@@ -152,22 +152,21 @@ class JerarquiaController extends Controller
             'active' => ['required', 'boolean'],
         ]);
 
-        // Si el estado solicitado es diferente al actual, hacer toggle
-        if ($item->activo !== $validated['active']) {
-            $item = $this->service->toggleActive($item);
-        }
+        $newActiveState = $validated['active'];
+        $this->service->setActiveWithCascade($item, $newActiveState);
 
-        $statusText = $item->activo ? 'activado' : 'desactivado';
+        $statusText = $newActiveState ? 'activado' : 'desactivado';
+        $cascadeMessage = ' Elementos hijos actualizados en cascada.';
 
         AuditLogService::log(
             'editar',
-            "Se {$statusText} el elemento de jerarquía \"{$item->nombre}\" (ID: {$item->jerarquia_id}).",
-            'Jerarquía'
+            "Se {$statusText} el elemento tipo \"{$item->tipo}\" [nomenclatura: {$item->nomenclatura}] (ID: {$item->elemento_id}). Se aplicó cambio en cascada a hijos.",
+            'Elemento'
         );
 
         return response()->json([
-            'message' => "Elemento {$statusText} correctamente.",
-            'data' => $item
+            'message' => "Elemento {$statusText} correctamente.{$cascadeMessage}",
+            'active'  => $newActiveState,
         ], 200);
     }
 }
