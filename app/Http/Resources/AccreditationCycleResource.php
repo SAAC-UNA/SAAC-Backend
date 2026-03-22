@@ -19,10 +19,19 @@ class AccreditationCycleResource extends JsonResource
             // Datos principales del ciclo
             'ciclo_acreditacion_id' => $this->ciclo_acreditacion_id,
             'carrera_sede_id'       => $this->carrera_sede_id,
+            'modelo_estructura_id'  => $this->modelo_estructura_id,
             'nombre'                => $this->nombre,
             'estado'                => $this->estado,
             'created_at'            => optional($this->created_at)->toISOString(),
             'updated_at'            => optional($this->updated_at)->toISOString(),
+
+            // Relación con modelo de estructura (cuando está cargada)
+            'modelo_estructura' => $this->whenLoaded('modeloEstructura', fn() => [
+                'modelo_estructura_id' => $this->modeloEstructura?->modelo_estructura_id,
+                'nombre'               => $this->modeloEstructura?->nombre,
+                'tipo'                 => $this->modeloEstructura?->tipo,
+                'version'              => $this->modeloEstructura?->version,
+            ]),
 
             // Relación con carrera sede (cuando está cargada)
             'carrera_sede' => $this->whenLoaded('careerCampus', fn() => [

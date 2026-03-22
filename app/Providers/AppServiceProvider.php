@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\AccreditationCycle;
 use App\Models\Career;
 use App\Models\Campus;
 use App\Models\Dimension;
@@ -21,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        AccreditationCycle::observe(new AuditObserver('Ciclos de Acreditación'));
         Career::observe(new AuditObserver('Carrera'));
         Campus::observe(new AuditObserver('Campus'));
         Dimension::observe(new AuditObserver('Dimensión'));

@@ -10,9 +10,11 @@ class AccreditationCycleService
      * Obtener todos los ciclos
      * El filtro por carrera_sede se aplica automáticamente via BaseCareer
      */
-    public function getAll()
+    public function getAll(array $filters = [])
     {
-        return AccreditationCycle::with('careerCampus')->get();
+        $perPage = $filters['per_page'] ?? 15;
+
+        return AccreditationCycle::with('careerCampus', 'modeloEstructura')->paginate($perPage);
     }
 
     /**
@@ -20,7 +22,7 @@ class AccreditationCycleService
      */
     public function findById(int $id): ?AccreditationCycle
     {
-        return AccreditationCycle::with('careerCampus')->find($id);
+        return AccreditationCycle::with('careerCampus', 'modeloEstructura')->find($id);
     }
 
     /**
@@ -29,12 +31,13 @@ class AccreditationCycleService
     public function create(array $data): AccreditationCycle
     {
         $cycle = AccreditationCycle::create([
-            'carrera_sede_id' => $data['carrera_sede_id'],
-            'nombre'          => $data['nombre'],
-            'estado'          => $data['estado'] ?? AccreditationCycle::STATUS_ACTIVE,
+            'carrera_sede_id'      => $data['carrera_sede_id'],
+            'modelo_estructura_id' => $data['modelo_estructura_id'],
+            'nombre'               => $data['nombre'],
+            'estado'               => $data['estado'] ?? AccreditationCycle::STATUS_ACTIVE,
         ]);
 
-        return $cycle->load('careerCampus');
+        return $cycle->load(['careerCampus', 'modeloEstructura']);
     }
 
     /**
@@ -45,12 +48,13 @@ class AccreditationCycleService
     {
         // quehace este metodo? AC-4: Solo se puede editar si el ciclo está activo
         $cycle->update([
-            'carrera_sede_id' => $data['carrera_sede_id'] ?? $cycle->carrera_sede_id,
-            'nombre'          => $data['nombre']          ?? $cycle->nombre,
-            'estado'          => $data['estado']          ?? $cycle->estado,
+            'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
+            'modelo_estructura_id' => $data['modelo_estructura_id'] ?? $cycle->modelo_estructura_id,
+            'nombre'               => $data['nombre']               ?? $cycle->nombre,
+            'estado'               => $data['estado']               ?? $cycle->estado,
         ]);
 
-        return $cycle->fresh('careerCampus');
+        return $cycle->fresh(['careerCampus', 'modeloEstructura']);
     }
 
     /**

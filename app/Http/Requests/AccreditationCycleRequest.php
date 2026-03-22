@@ -14,17 +14,19 @@ class AccreditationCycleRequest extends FormRequest
 
     public function rules(): array
     {
+        $isPost   = $this->isMethod('POST');
         $isUpdate = in_array($this->method(), ['PUT', 'PATCH']);
         $id = $this->route('accreditation_cycle') ?? $this->route('id');
 
         $rules = [
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
             'carrera_sede_id' => [
-                $isUpdate ? 'sometimes' : 'required',
+                $isPost ? 'required' : 'sometimes',
                 'integer',
                 'exists:CARRERA_SEDE,carrera_sede_id',
             ],
             'nombre' => [
-                $isUpdate ? 'sometimes' : 'required',
+                $isPost ? 'required' : 'sometimes',
                 'string',
                 'max:50',
                 // Unicidad por par (nombre + carrera_sede_id)
@@ -36,6 +38,11 @@ class AccreditationCycleRequest extends FormRequest
                     ->when($isUpdate && $id, fn($rule) => 
                         $rule->ignore($id, 'ciclo_acreditacion_id')
                     ),
+            ],
+            'modelo_estructura_id' => [
+                $isPost ? 'required' : 'sometimes',
+                'integer',
+                'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
             ],
             'estado' => [
                 'sometimes',
@@ -58,7 +65,9 @@ class AccreditationCycleRequest extends FormRequest
             'nombre.required'          => 'El nombre del ciclo es obligatorio.',
             'nombre.max'               => 'El nombre no puede superar los 250 caracteres.',
             'nombre.unique'            => 'Ya existe un ciclo con ese nombre en esta sede.',
-            'estado.in'                => 'El estado debe ser activo, inactivo o completado.',
+            'modelo_estructura_id.required' => 'El modelo de estructura es obligatorio.',
+            'modelo_estructura_id.exists'   => 'El modelo de estructura no existe.',
+            'estado.in'                    => 'El estado debe ser activo, inactivo o completado.',
         ];
     }
 
@@ -67,7 +76,7 @@ class AccreditationCycleRequest extends FormRequest
     {
         if (in_array($this->method(), ['PUT', 'PATCH'])) {
             $validator->after(function ($v) {
-                if (!$this->hasAny(['carrera_sede_id', 'nombre', 'estado'])) {
+                if (!$this->hasAny(['carrera_sede_id', 'modelo_estructura_id', 'nombre', 'estado'])) {
                     $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
                 }
             });

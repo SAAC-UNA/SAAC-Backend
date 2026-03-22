@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\AccreditationCycle;
 use App\Services\AccreditationCycleService;
 use App\Http\Requests\AccreditationCycleRequest;
-use Illuminate\Database\QueryException;
+use App\Http\Resources\AccreditationCycleResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class AccreditationCycleController extends Controller
 {
+    use AuthorizesRequests;
+
     protected $service;
 
     public function __construct(AccreditationCycleService $service)
@@ -20,11 +23,13 @@ class AccreditationCycleController extends Controller
      * GET /api/ciclos
      * AC-3: El filtro por rol se aplica automáticamente via BaseCareer
      */
-    public function index()
+    public function index(AccreditationCycleRequest $request)
     {
-        $cycles = $this->service->getAll();
+        $this->authorize('viewAny', AccreditationCycle::class);
 
-        return response()->json($cycles, 200);
+        $cycles = $this->service->getAll($request->validated());
+
+        return AccreditationCycleResource::collection($cycles);
     }
 
     /**
@@ -32,13 +37,15 @@ class AccreditationCycleController extends Controller
      */
     public function show($id)
     {
-        $cycle = $this->service->findById((int)$id);
+        $cycle = $this->service->findById($id);
 
         if (!$cycle) {
             return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
         }
 
-        return response()->json($cycle, 200);
+        $this->authorize('view', $cycle);
+
+        return new AccreditationCycleResource($cycle);
     }
 
     /**
@@ -48,60 +55,52 @@ class AccreditationCycleController extends Controller
      */
     public function store(AccreditationCycleRequest $request)
     {
+        $this->authorize('create', AccreditationCycle::class);
+
         $cycle = $this->service->create($request->validated());
 
-        return response()->json([
-            'message' => 'Ciclo de acreditación creado correctamente.',
-            'data'    => $cycle,
-        ], 201);
+        return AccreditationCycleResource::make($cycle)
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
      * PUT/PATCH /api/ciclos/{id}
-     * AC-4: Bloquea edición si el ciclo no está activo
+     * AC-4: Bloquea edición si el ciclo no está activo (verificado en Policy)
+     * AC-5: Requiere permiso ciclos.edit (verificado en Policy)
      */
     public function update(AccreditationCycleRequest $request, $id)
     {
-        $cycle = AccreditationCycle::find($id);
+        $cycle = $this->service->findById($id);
 
         if (!$cycle) {
             return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
         }
 
-        if (!$cycle->isEditable()) {
-            return response()->json([
-                'message' => 'No se puede modificar un ciclo inactivo o completado.'
-            ], 403);
-        }
+        $this->authorize('update', $cycle);
 
         $updated = $this->service->update($cycle, $request->validated());
 
-        return response()->json([
-            'message' => 'Ciclo de acreditación actualizado correctamente.',
-            'data'    => $updated,
-        ], 200);
+        return AccreditationCycleResource::make($updated)->response();
     }
 
     /**
      * DELETE /api/ciclos/{id}
-     * AC-4: Bloquea eliminación si tiene procesos asociados
+     * Los ciclos NO se eliminan físicamente.
+     * Solo se inactivan mediante PATCH con estado='inactivo'.
+     * La Policy siempre deniega esta acción (delete → false).
      */
     public function destroy($id)
     {
-        $cycle = AccreditationCycle::find($id);
+        $cycle = $this->service->findById($id);
 
         if (!$cycle) {
             return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
         }
 
-        try {
-            $this->service->delete($cycle);
+        $this->authorize('delete', $cycle);
 
-            return response()->noContent();
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 409);
-        }
+        // Nunca se alcanza: la Policy bloquea el DELETE físico.
+        return response()->noContent();
     }
 }

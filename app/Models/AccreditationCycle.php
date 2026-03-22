@@ -26,7 +26,7 @@ class AccreditationCycle extends BaseCareer
     protected $primaryKey = 'ciclo_acreditacion_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['carrera_sede_id', 'nombre', 'estado'];
+    protected $fillable = ['carrera_sede_id', 'modelo_estructura_id', 'nombre', 'estado'];
 
     //helpers de dominio para verificar el estado del ciclo
     public function isActive(): bool

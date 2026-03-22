@@ -214,6 +214,9 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::middleware(['permission:procesos.view'])->group(function () {
         Route::get('estructura/procesos', [ProcessController::class, 'index']);
         Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
+    });
+
+    Route::middleware(['permission:ciclos.view'])->group(function () {
         Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
         Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
        /* Route::get('estructura/ciclos-acreditacion', function () {
