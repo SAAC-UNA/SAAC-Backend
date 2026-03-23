@@ -16,6 +16,9 @@ use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\StructureElementController;
+use App\Http\Controllers\StructureModelController;
+use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
@@ -178,15 +181,51 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive'])
         ->middleware('permission:estandares.edit');
     
+    // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
+    Route::middleware(['permission:elemento.view'])->group(function () {
+        Route::get('estructura/elementos', [StructureElementController::class, 'index']);
+        // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
+        Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
+    });
+    Route::post('estructura/elementos', [StructureElementController::class, 'store'])
+        ->middleware('permission:elemento.create');
+    Route::match(['put', 'patch'], 'estructura/elementos/{id}', [StructureElementController::class, 'update'])
+        ->middleware('permission:elemento.edit');
+    Route::delete('estructura/elementos/{id}', [StructureElementController::class, 'destroy'])
+        ->middleware('permission:elemento.delete');
+    Route::patch('estructura/elementos/{id}/active', [StructureElementController::class, 'setActive'])
+        ->middleware('permission:elemento.edit');
+    
+    // ===== MODELOS DE ESTRUCTURA =====
+    Route::get('estructura/modelos', [StructureModelController::class, 'index']);
+    Route::get('estructura/modelos/activos', [StructureModelController::class, 'activos']);
+    Route::get('estructura/modelos/{id}', [StructureModelController::class, 'show']);
+    Route::post('estructura/modelos', [StructureModelController::class, 'store'])
+        ->middleware('role:Superusuario');
+    Route::patch('estructura/modelos/{id}/active', [StructureModelController::class, 'setActive'])
+        ->middleware('role:Superusuario');
+    Route::put('estructura/modelos/{id}', [StructureModelController::class, 'update'])
+        ->middleware('role:Superusuario');
+    Route::patch('estructura/modelos/{id}', [StructureModelController::class, 'update'])
+        ->middleware('role:Superusuario');
+    
     // ===== PROCESOS Y CICLOS =====
-    Route::middleware(['permission:ciclos.view'])->group(function () {
-        Route::get('estructura/procesos', function () {
-            return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
-        });
+    Route::middleware(['permission:procesos.view'])->group(function () {
+        Route::get('estructura/procesos', [ProcessController::class, 'index']);
+        Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
         Route::get('estructura/ciclos-acreditacion', function () {
             return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
         });
     });
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+        ->middleware('permission:procesos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+        ->middleware('permission:procesos.edit');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+        ->middleware('permission:procesos.edit');
+    // Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
+    //     ->middleware('permission:ciclos.delete'); // Procesos NO se eliminan, solo se activan/desactivan
 });
 
 // ============================================
