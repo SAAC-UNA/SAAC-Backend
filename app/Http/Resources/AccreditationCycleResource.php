@@ -42,9 +42,9 @@ class AccreditationCycleResource extends JsonResource
 
             // Relación con procesos (cuando está cargada)
             'processes' => $this->whenLoaded('processes', fn() =>
-                $this->processes->map(fn($p) => [
-                    'proceso_id'   => $p->proceso_id,
-                    'tipo_proceso' => $p->tipo_proceso,
+                $this->processes->map(fn($process) => [
+                    'proceso_id'   => $process->proceso_id,
+                    'tipo_proceso' => $process->tipo_proceso,
                 ])
             ),
         ];

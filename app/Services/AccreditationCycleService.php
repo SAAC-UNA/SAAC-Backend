@@ -46,7 +46,7 @@ class AccreditationCycleService
      */
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
-        // quehace este metodo? AC-4: Solo se puede editar si el ciclo está activo
+        // que hace este metodo? AC-4: Solo se puede editar si el ciclo está activo
         $cycle->update([
             'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
             'modelo_estructura_id' => $data['modelo_estructura_id'] ?? $cycle->modelo_estructura_id,

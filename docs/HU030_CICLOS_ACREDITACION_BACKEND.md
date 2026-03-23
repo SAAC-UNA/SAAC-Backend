@@ -97,6 +97,9 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] `PATCH` vacío `{}` retorna `422` con `errors.general`
 - [x] `PATCH` con `nombre` duplicado dentro de la misma `carrera_sede` retorna `422`
 - [x] `PATCH` con `nombre` duplicado en **otra** `carrera_sede` retorna `200` (unicidad es per sede)
+- [x] `POST` con `estado = "activo"` cuando ya existe un ciclo activo en la misma sede retorna `422`
+- [x] `PATCH` cambiando `estado` a `"activo"` cuando ya hay otro activo en la misma sede retorna `422`
+- [x] `PATCH` sobre el único ciclo activo de su sede (sin cambiar estado) retorna `200`
 
 ### AC-3 — Filtrado automático por rol
 - [x] `GET /ciclos-acreditacion` aplica scope `BaseCareer` automáticamente
@@ -109,6 +112,12 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] `PATCH` sobre ciclo con `estado = "completado"` retorna `403`
 - [x] `PATCH` sobre ciclo con `estado = "activo"` retorna `200`
 - [x] La validación de Policy se ejecuta **después** de la validación del request
+
+### AC-6 — Máximo un ciclo activo por carrera+sede
+- [x] `POST` con `estado = "activo"` y ya existe activo → `422` con error en `carrera_sede_id`
+- [x] `PATCH` cambiando a `"activo"` con otro ya activo en la misma sede → `422`
+- [x] El ciclo actual se excluye de la verificación (no se bloquea a sí mismo)
+- [x] Carreras en sedes distintas son independientes (Química Central ≠ Química Regional)
 
 ### AC-5 — Control de permisos
 - [x] `GET` sin token retorna `401`
@@ -140,6 +149,7 @@ GET /estructura/ciclos-acreditacion?per_page=10
   - [x] Campos `required` solo en POST, `sometimes` en GET y PATCH
   - [x] Unique por `(nombre, carrera_sede_id)` con ignore en update
   - [x] `withValidator` exige al menos un campo en update
+  - [x] `withValidator` valida máximo 1 ciclo activo por `carrera_sede_id` (AC-6)
 - [x] `AccreditationCycleResource` — expone `modelo_estructura` y `carrera_sede` via `whenLoaded()`
 
 ### Autorización
