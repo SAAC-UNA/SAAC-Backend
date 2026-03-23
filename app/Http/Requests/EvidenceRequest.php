@@ -3,11 +3,11 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 use App\Models\Evidence;
+use Illuminate\Validation\Rule;
 
 class EvidenceRequest extends FormRequest
 {
@@ -37,7 +37,7 @@ class EvidenceRequest extends FormRequest
 
         $rules = [
             'criterio_id'         => [$isUpdate ? 'sometimes' : 'required','integer','exists:CRITERIO,criterio_id'],
-            'estado_evidencia_id' => [$isUpdate ? 'sometimes' : 'required','integer','exists:ESTADO_EVIDENCIA,estado_evidencia_id'],
+            'estado'              => [$isUpdate ? 'sometimes' : 'required', 'string', Rule::in(Evidence::ESTADOS)],
             'descripcion'         => [
                 $isUpdate ? 'sometimes' : 'required',
                 'string',
@@ -86,8 +86,8 @@ class EvidenceRequest extends FormRequest
         return [
             'criterio_id.required'         => 'El criterio es obligatorio.',
             'criterio_id.exists'           => 'El criterio no existe.',
-            'estado_evidencia_id.required' => 'El estado es obligatorio.',
-            'estado_evidencia_id.exists'   => 'El estado no existe.',
+            'estado.required' => 'El estado es obligatorio.',
+            'estado.in'       => 'El estado indicado no es válido.',
             'descripcion.required'         => 'La descripción es obligatoria.',
             'descripcion.regex'            => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
             'descripcion.unique'           => 'Ya existe una evidencia con ese nombre en este componente.',
@@ -100,7 +100,7 @@ class EvidenceRequest extends FormRequest
     {
         if (in_array($this->method(), ['PUT','PATCH'])) {
             $validator->after(function ($v) {
-                if (!$this->hasAny(['criterio_id','estado_evidencia_id','descripcion','nomenclatura'])) {
+                if (!$this->hasAny(['criterio_id', 'estado', 'descripcion', 'nomenclatura'])) {
                     $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
                 }
             });
