@@ -65,14 +65,17 @@ class EvidenceService
      */
     public function filterEvidences(array $filters, User $user): LengthAwarePaginator
     {
-        $perPage    = (int) ($filters['per_page'] ?? 15);
-        $page       = (int) ($filters['page']     ?? 1);
-        $criterioId = $filters['criterio_id']         ?? null;
-        $estadoId   = $filters['estado_evidencia_id'] ?? null;
-        $fechaDesde = $filters['fecha_desde']         ?? null;
-        $fechaHasta = $filters['fecha_hasta']         ?? null;
-        $sortBy     = $filters['sort_by']             ?? 'created_at';
-        $sortOrder  = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
+        $perPage      = (int) ($filters['per_page'] ?? 15);
+        $page         = (int) ($filters['page']     ?? 1);
+        $criterioId   = $filters['criterio_id']         ?? null;
+        $componenteId = $filters['componente_id']       ?? null;
+        $dimensionId  = $filters['dimension_id']        ?? null;
+        $estandarId   = $filters['estandar_id']         ?? null;
+        $estadoId     = $filters['estado_evidencia_id'] ?? null;
+        $fechaDesde   = $filters['fecha_desde']         ?? null;
+        $fechaHasta   = $filters['fecha_hasta']         ?? null;
+        $sortBy       = $filters['sort_by']             ?? 'created_at';
+        $sortOrder    = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
                         ? strtolower($filters['sort_order'])
                         : 'desc';
 
@@ -87,7 +90,7 @@ class EvidenceService
 
         $rolId = $filters['rol_id'] ?? null;
 
-        $query = Evidence::with([...self::WITH_BASE, 'assignments.user.roles'])
+        $query = Evidence::with([...self::WITH_BASE, 'criterion.standards', 'assignments.user.roles'])
             ->withCount([
                 'files as archivos_count' => fn ($q) => $q->where('tipo', 'archivo'),
                 'files as enlaces_count'  => fn ($q) => $q->where('tipo', 'enlace'),
@@ -104,6 +107,21 @@ class EvidenceService
 
         if ($criterioId) {
             $query->where('criterio_id', $criterioId);
+        }
+        if ($componenteId) {
+            $query->whereHas('criterion.component', fn ($q) =>
+                $q->where('componente_id', $componenteId)
+            );
+        }
+        if ($dimensionId) {
+            $query->whereHas('criterion.component.dimension', fn ($q) =>
+                $q->where('dimension_id', $dimensionId)
+            );
+        }
+        if ($estandarId) {
+            $query->whereHas('criterion.standards', fn ($q) =>
+                $q->where('estandar_id', $estandarId)
+            );
         }
         if ($estadoId) {
             $query->where('estado_evidencia_id', $estadoId);
