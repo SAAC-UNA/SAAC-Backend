@@ -90,7 +90,7 @@ class EvidenceService
 
         $rolId = $filters['rol_id'] ?? null;
 
-        $query = Evidence::with([...self::WITH_BASE, 'criterion.standards', 'assignments.user.roles'])
+        $query = Evidence::with([...self::WITH_BASE, 'criterion.standards', 'assignments.user.roles', 'latestFile'])
             ->withCount([
                 'files as archivos_count' => fn ($q) => $q->where('tipo', 'archivo'),
                 'files as enlaces_count'  => fn ($q) => $q->where('tipo', 'enlace'),

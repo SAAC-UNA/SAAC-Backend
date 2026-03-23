@@ -89,4 +89,16 @@ class Evidence extends BaseCareer
         return $this->hasMany(File::class, 'evidencia_id', 'evidencia_id');
     }
 
+    /**
+     * Relación: El último archivo subido (tipo=archivo) de la evidencia.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function latestFile()
+    {
+        return $this->hasOne(File::class, 'evidencia_id', 'evidencia_id')
+            ->where('tipo', 'archivo')
+            ->latest('fecha_subida');
+    }
+
 }
