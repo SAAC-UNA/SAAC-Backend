@@ -123,16 +123,26 @@ class EvidenceService
         // 5. Notificación automática — FUERA de la transacción para que un fallo
         //    de email no revierta el cambio de estado ni el comentario ya guardado.
         //    Se notifica a todos los profesores con asignación activa en esta evidencia.
-        $evidenceActualizada->loadMissing('activeAssignments.user');
-        $responsables = $evidenceActualizada->activeAssignments
-            ->map(fn($a) => $a->user)
-            ->filter(); // descarta asignaciones sin usuario
+        //    El try/catch aísla cualquier fallo de SMTP o de carga de relaciones — el
+        //    endpoint ya respondió con 200; el error queda solo en el log.
+        try {
+            $evidenceActualizada->loadMissing('activeAssignments.user');
+            $responsables = $evidenceActualizada->activeAssignments
+                ->map(fn($assignment) => $assignment->user)
+                ->filter(); // descarta asignaciones sin usuario
 
-        if ($responsables->isNotEmpty()) {
-            Notification::send(
-                $responsables,
-                new EvidenciaRetroalimentada($evidenceActualizada, $reviewer, $data['comentario'], $data['estado'])
-            );
+            if ($responsables->isNotEmpty()) {
+                Notification::send(
+                    $responsables,
+                    new EvidenciaRetroalimentada($evidenceActualizada, $reviewer, $data['comentario'], $data['estado'])
+                );
+            }
+        } catch (\Throwable $e) {
+            // Loguear el fallo sin interrumpir la respuesta al cliente
+            logger()->error('EvidenciaRetroalimentada notification failed', [
+                'evidencia_id' => $evidenceActualizada->evidencia_id,
+                'error'        => $e->getMessage(),
+            ]);
         }
 
         return $evidenceActualizada;

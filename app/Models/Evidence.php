@@ -69,7 +69,8 @@ class Evidence extends BaseCareer
      */
     public function activeAssignments()
     {
-        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')->where('activo', true);
+        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')
+            ->whereIn('estado', ['Pendiente', 'En Progreso']);
     }
 
     /**
