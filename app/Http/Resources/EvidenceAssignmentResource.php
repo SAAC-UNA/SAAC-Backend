@@ -19,7 +19,7 @@ class EvidenceAssignmentResource extends JsonResource
             'proceso_id' => $this->proceso_id,
             'evidencia_id' => $this->evidencia_id,
             'usuario_id' => $this->usuario_id,
-            'estado' => $this->estado,
+            'estado' => strtolower(str_replace(' ', '_', $this->estado)),
             'fecha_asignacion' => optional($this->fecha_asignacion)->toISOString(),
             'fecha_limite' => optional($this->fecha_limite)->toISOString(),
             'comentario' => $this->comentario,
