@@ -5,11 +5,9 @@ namespace App\Services;
 use App\Models\Evidence;
 use App\Models\User;
 use App\Models\Comment;
-use App\Notifications\EvidenciaRetroalimentada;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 
 class EvidenceService
 {
@@ -132,9 +130,18 @@ class EvidenceService
                 ->filter(); // descarta asignaciones sin usuario
 
             if ($responsables->isNotEmpty()) {
-                Notification::send(
-                    $responsables,
-                    new EvidenciaRetroalimentada($evidenceActualizada, $reviewer, $data['comentario'], $data['estado'])
+                NotificationService::createMany(
+                    $responsables->pluck('usuario_id')->toArray(),
+                    [
+                        'tipo_evento'  => $data['estado'] === 'observada'
+                            ? \App\Models\Notification::TIPO_DEVOLUCION_OBSERVACION
+                            : \App\Models\Notification::TIPO_APROBACION_EVIDENCIA,
+                        'titulo'       => "Evidencia {$evidenceActualizada->nomenclatura} — " . strtoupper($data['estado']),
+                        'mensaje'      => "El evaluador {$reviewer->nombre} marcó la evidencia como \"{$data['estado']}\". Comentario: {$data['comentario']}",
+                        'relacionado'  => $evidenceActualizada,
+                        'enlace'       => "/evidencias/{$evidenceActualizada->evidencia_id}",
+                        'forzar_email' => true,
+                    ]
                 );
             }
         } catch (\Throwable $e) {
