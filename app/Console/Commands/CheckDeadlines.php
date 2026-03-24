@@ -59,7 +59,7 @@ class CheckDeadlines extends Command
             
             // Buscar asignaciones que vencen exactamente en N días
             $assignments = EvidenceAssignment::whereDate('fecha_limite', $targetDate)
-                ->whereIn('estado', ['Pendiente', 'En Progreso']) // Excluir completadas
+                ->whereIn('estado', ['pendiente', 'en_progreso']) // Excluir completadas
                 ->with(['evidence', 'user'])
                 ->get();
 
@@ -82,7 +82,7 @@ class CheckDeadlines extends Command
 
         // 2. Verificar plazos VENCIDOS (fecha_limite < hoy)
         $expiredAssignments = EvidenceAssignment::where('fecha_limite', '<', now()->startOfDay())
-            ->whereIn('estado', ['Pendiente', 'En Progreso'])
+            ->whereIn('estado', ['pendiente', 'en_progreso'])
             ->with(['evidence', 'user'])
             ->get();
 
@@ -93,10 +93,14 @@ class CheckDeadlines extends Command
 
             foreach ($expiredAssignments as $assignment) {
                 $daysOverdue = now()->startOfDay()->diffInDays($assignment->fecha_limite, false);
-                
-                // Disparar evento con días negativos (plazo vencido)
+
+                // Marcar la asignación como vencido — dispara EvidenceAssignmentObserver
+                // que recalcula EVIDENCIA.estado → EvidenceObserver recalcula CRITERIO.estado
+                $assignment->update(['estado' => 'vencido']);
+
+                // Disparar evento de notificación con días negativos (plazo vencido)
                 event(new DeadlineApproaching($assignment, (int)$daysOverdue));
-                
+
                 $this->line("    - Evidencia {$assignment->evidence->nomenclatura} → Usuario {$assignment->user->nombre} (vencido hace " . abs($daysOverdue) . " días)");
                 $totalNotifications++;
             }

@@ -10,8 +10,10 @@ use App\Models\Component;
 use App\Models\Criterion;
 use App\Models\Standard;
 use App\Models\Evidence;
+use App\Models\EvidenceAssignment;
 use App\Observers\AuditObserver;
 use App\Observers\EvidenceObserver;
+use App\Observers\EvidenceAssignmentObserver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -57,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerAudit(Standard::class, 'Estándar', 'descripcion');
         $this->registerAudit(Evidence::class, 'Evidencia', 'descripcion');
         Evidence::observe(EvidenceObserver::class); // recalcula CRITERIO.estado al guardar una evidencia
+        EvidenceAssignment::observe(EvidenceAssignmentObserver::class); // recalcula EVIDENCIA.estado al guardar una asignación
     }
 
     /**

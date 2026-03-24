@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Evidence;
 use App\Models\User;
 use App\Models\Comment;
+use App\Models\EvidenceAssignment;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -192,7 +193,7 @@ class EvidenceService
             $query->withoutGlobalScope('byCareerCampus')
                   ->whereHas('assignments', fn ($q) =>
                       $q->where('usuario_id', $user->usuario_id)
-                        ->whereIn('estado', ['Pendiente', 'En Progreso'])
+                        ->whereIn('estado', ['pendiente', 'en_progreso'])
                   );
         }
 
@@ -210,5 +211,57 @@ class EvidenceService
         }
 
         return $query->orderBy($sortColumn, $sortOrder)->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * Recalcula el estado de una evidencia a partir del estado de sus asignaciones.
+     *
+     * Nota: EVIDENCIA_ASIGNACION.estado usa lowercase con guión bajo
+     * ('pendiente', 'en_progreso', 'completado', 'vencido').
+     *
+     * Reglas (por orden de prioridad):
+     *  1. Sin asignaciones                                           → 'Pendiente'
+     *  2. Todas las asignaciones 'completado'                        → 'Completado'
+     *  3. Alguna asignación 'vencido' (sin todas completadas)        → 'Vencido'
+     *  4. Alguna 'en_progreso' o 'completado' (mezcla, sin 2/3)     → 'En Proceso'
+     *  5. Todas 'pendiente'                                          → 'Pendiente'
+     *
+     * No sobreescribe estados de retroalimentación (Observada, Validada, Aprobado,
+     * Rechazado) — esos los gestiona exclusivamente el encargado (HU-013).
+     */
+    public function recalcularEstadoEvidencia(int $evidenciaId): void
+    {
+        $evidence = Evidence::find($evidenciaId);
+        if (!$evidence) return;
+
+        // Respetar los estados de retroalimentación del encargado
+        if (in_array($evidence->estado, ['Observada', 'Validada', 'Aprobado', 'Rechazado'])) {
+            return;
+        }
+
+        $asignaciones = EvidenceAssignment::where('evidencia_id', $evidenciaId)->get();
+        $total        = $asignaciones->count();
+
+        if ($total === 0) {
+            $nuevoEstado = 'Pendiente';
+        } else {
+            $estados = $asignaciones->pluck('estado');
+
+            if ($estados->every(fn($e) => $e === 'completado')) {
+                $nuevoEstado = 'Completado';
+            } elseif ($estados->contains('vencido')) {
+                $nuevoEstado = 'Vencido';
+            } elseif ($estados->contains(fn($e) => in_array($e, ['en_progreso', 'completado']))) {
+                $nuevoEstado = 'En Proceso';
+            } else {
+                $nuevoEstado = 'Pendiente';
+            }
+        }
+
+        if ($evidence->estado !== $nuevoEstado) {
+            // update() dispara EvidenceObserver::updated → CriterionService::recalcularEstado()
+            $evidence->update(['estado' => $nuevoEstado]);
+            Cache::forget(self::CACHE_KEY);
+        }
     }
 }
