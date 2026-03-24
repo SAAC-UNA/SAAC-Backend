@@ -33,7 +33,7 @@ class EvidenceService
     {
         $evidence = Evidence::create([
             'criterio_id' => $data['criterio_id'],
-            'estado'      => $data['estado'] ?? 'pendiente',
+            'estado'      => $data['estado'] ?? 'Pendiente',
             'descripcion' => $data['descripcion'],
             'nomenclatura' => $data['nomenclatura'],
             'activo'      => $data['activo'] ?? true,
@@ -83,7 +83,7 @@ class EvidenceService
         // 'pendiente' significa que aún no fue enviada — no hay nada que revisar.
         // 'vencido' NO se bloquea: existe una HU de ampliación de plazo que permite
         //  gestionar evidencias vencidas, por lo que el evaluador sí puede retroalimentarlas.
-        $estadosNoRevisables = ['pendiente'];
+        $estadosNoRevisables = ['Pendiente'];
         if (in_array($evidence->estado, $estadosNoRevisables)) {
             throw new \InvalidArgumentException(
                 "No se puede retroalimentar una evidencia en estado \"{$evidence->estado}\". ".
@@ -133,7 +133,7 @@ class EvidenceService
                 NotificationService::createMany(
                     $responsables->pluck('usuario_id')->toArray(),
                     [
-                        'tipo_evento'  => $data['estado'] === 'observada'
+                        'tipo_evento'  => $data['estado'] === 'Observada'
                             ? \App\Models\Notification::TIPO_DEVOLUCION_OBSERVACION
                             : \App\Models\Notification::TIPO_APROBACION_EVIDENCIA,
                         'titulo'       => "Evidencia {$evidenceActualizada->nomenclatura} — " . strtoupper($data['estado']),

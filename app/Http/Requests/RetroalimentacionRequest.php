@@ -38,7 +38,7 @@ class RetroalimentacionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'estado'     => ['required', 'string', Rule::in(['observada', 'validada'])],
+            'estado'     => ['required', 'string', Rule::in(['Observada', 'Validada'])],
             'comentario' => ['required', 'string', 'min:5', 'max:800'],
         ];
     }
@@ -50,7 +50,7 @@ class RetroalimentacionRequest extends FormRequest
     {
         return [
             'estado.required'     => 'El estado es requerido.',
-            'estado.in'           => 'El estado debe ser "observada" o "validada".',
+            'estado.in'           => 'El estado debe ser "Observada" o "Validada".',
             'comentario.required' => 'El comentario es requerido.',
             'comentario.min'      => 'El comentario debe tener al menos 5 caracteres.',
             'comentario.max'      => 'El comentario no puede superar los 800 caracteres.',

@@ -9,18 +9,18 @@ use Illuminate\Support\Facades\Schema;
  * en EVIDENCIA, reemplazándolas por una columna enum directa en la misma tabla.
  *
  * Estados definidos por el equipo:
- *   pendiente   – evidencia recién creada, sin revisión
- *   en_proceso  – en construcción / siendo trabajada
- *   completado  – asignación completada por el responsable
- *   vencido     – plazo expirado sin completarse
- *   aprobado    – aprobada por evaluación interna
- *   rechazado   – rechazada, requiere correcciones
- *   observada   – HU-013: marcada con observaciones por encargado/vicerrectoría
- *   validada    – HU-013: validada formalmente por encargado/vicerrectoría
+ *   Pendiente   – evidencia recién creada, sin revisión
+ *   En Proceso  – en construcción / siendo trabajada
+ *   Completado  – asignación completada por el responsable
+ *   Vencido     – plazo expirado sin completarse
+ *   Aprobado    – aprobada por evaluación interna
+ *   Rechazado   – rechazada, requiere correcciones
+ *   Observada   – HU-013: marcada con observaciones por encargado/vicerrectoría
+ *   Validada    – HU-013: validada formalmente por encargado/vicerrectoría
  */
 return new class extends Migration
 {
-    private const ENUM_VALUES = ['pendiente', 'en_proceso', 'completado', 'vencido', 'aprobado', 'rechazado', 'observada', 'validada'];
+    private const ENUM_VALUES = ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'];
 
     public function up(): void
     {
@@ -34,7 +34,7 @@ return new class extends Migration
 
         // 2. Agregar columna enum directa
         Schema::table('EVIDENCIA', function (Blueprint $table) {
-            $table->enum('estado', self::ENUM_VALUES)->default('pendiente')->after('criterio_id');
+            $table->enum('estado', self::ENUM_VALUES)->default('Pendiente')->after('criterio_id');
             $table->index('estado', 'idx_ev_estado');
             $table->index(['estado', 'activo'], 'idx_ev_estado_activo');
         });

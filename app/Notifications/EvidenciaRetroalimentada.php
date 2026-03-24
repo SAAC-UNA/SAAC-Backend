@@ -55,7 +55,7 @@ class EvidenciaRetroalimentada extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $esObservada = $this->nuevoEstado === 'observada';
+        $esObservada = $this->nuevoEstado === 'Observada';
 
         $asunto = $esObservada
             ? "Evidencia observada: requiere corrección — SAAC"

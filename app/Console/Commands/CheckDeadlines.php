@@ -59,7 +59,7 @@ class CheckDeadlines extends Command
             
             // Buscar asignaciones que vencen exactamente en N días
             $assignments = EvidenceAssignment::whereDate('fecha_limite', $targetDate)
-                ->whereIn('estado', ['pendiente', 'en_progreso']) // Excluir completadas
+                ->whereIn('estado', ['Pendiente', 'En Progreso']) // Excluir completadas
                 ->with(['evidence', 'user'])
                 ->get();
 
@@ -82,7 +82,7 @@ class CheckDeadlines extends Command
 
         // 2. Verificar plazos VENCIDOS (fecha_limite < hoy)
         $expiredAssignments = EvidenceAssignment::where('fecha_limite', '<', now()->startOfDay())
-            ->whereIn('estado', ['pendiente', 'en_progreso'])
+            ->whereIn('estado', ['Pendiente', 'En Progreso'])
             ->with(['evidence', 'user'])
             ->get();
 

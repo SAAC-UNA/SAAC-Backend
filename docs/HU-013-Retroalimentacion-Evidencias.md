@@ -16,8 +16,8 @@ notificaciones automáticas a todos los profesores con asignación activa sobre 
 ## 🎯 Criterios de Aceptación Cumplidos
 
 - ✅ Solo roles autorizados pueden retroalimentar (`Encargado de Acreditación`, `Administrador`, `Superusuario`)
-- ✅ Solo se puede retroalimentar evidencias en estado revisable (bloquea `pendiente`)
-- ✅ Los únicos estados que el evaluador puede asignar son `observada` y `validada`
+- ✅ Solo se puede retroalimentar evidencias en estado revisable (bloquea `Pendiente`)
+- ✅ Los únicos estados que el evaluador puede asignar son `Observada` y `Validada`
 - ✅ El comentario es obligatorio (mín. 5 chars, máx. 800 chars)
 - ✅ El cambio de estado y el comentario se guardan en una transacción atómica
 - ✅ La acción queda registrada en bitácora vía `AuditLogService`
@@ -41,14 +41,14 @@ Content-Type: application/json
 
 | Campo       | Tipo   | Requerido | Restricciones                        |
 |-------------|--------|-----------|--------------------------------------|
-| `estado`    | string | ✅        | Solo `"observada"` o `"validada"`    |
+| `estado`    | string | ✅        | Solo `"Observada"` o `"Validada"`    |
 | `comentario`| string | ✅        | Mínimo 5 caracteres, máximo 800      |
 
 ### Ejemplo de Request
 
 ```json
 {
-    "estado": "observada",
+    "estado": "Observada",
     "comentario": "Falta adjuntar el acta firmada del comité. Por favor corregir."
 }
 ```
@@ -59,7 +59,7 @@ Content-Type: application/json
 {
     "data": {
         "evidencia_id": 12,
-        "estado": "observada",
+        "estado": "Observada",
         "nomenclatura": "E-C1-01",
         "descripcion": "Actas de reunión del comité curricular",
         "activo": true,
@@ -100,7 +100,7 @@ Content-Type: application/json
 | `app/Http/Requests/RetroalimentacionRequest.php` | Nuevo | Valida `estado` y `comentario` del body |
 | `app/Http/Controllers/EvidenceController.php` | Modificado | Método `retroalimentar()` |
 | `app/Services/EvidenceService.php` | Modificado | Método `retroalimentar()` con transacción + notificación |
-| `app/Models/Evidence.php` | Modificado | Añade `ESTADOS` con `observada`/`validada`, relación `comments()`, fix `activeAssignments()` |
+| `app/Models/Evidence.php` | Modificado | Añade `ESTADOS` con `Observada`/`Validada`, relación `comments()`, fix `activeAssignments()` |
 | `app/Http/Resources/EvidenceResource.php` | Modificado | Añade campo `comentarios[]` en la respuesta |
 | `routes/api.php` | Modificado | Registra la ruta `POST .../retroalimentacion` |
 
@@ -125,7 +125,7 @@ La operación ejecuta **5 pasos** en orden:
 - **Aislado en `try/catch(\Throwable)`** para que un fallo de email/SMTP no revierta el cambio de estado ya guardado.
 - Carga `activeAssignments.user` de la evidencia para obtener los profesores destinatarios.
 - Llama a `NotificationService::createMany(...)` con:
-  - `tipo_evento`: `TIPO_DEVOLUCION_OBSERVACION` si estado es `observada` (evento crítico → `CANAL_AMBOS` nativo); `TIPO_APROBACION_EVIDENCIA` si es `validada`
+  - `tipo_evento`: `TIPO_DEVOLUCION_OBSERVACION` si estado es `Observada` (evento crítico → `CANAL_AMBOS` nativo); `TIPO_APROBACION_EVIDENCIA` si es `Validada`
   - `forzar_email: true` en ambos casos — garantiza notificación interna (campana) + email
 - Si falla, el error se loguea en `laravel.log` sin interrumpir la respuesta al cliente.
 
@@ -147,14 +147,14 @@ La operación ejecuta **5 pasos** en orden:
 
 | Estado de la evidencia | ¿Se puede retroalimentar? |
 |------------------------|---------------------------|
-| `pendiente`            | ❌ — lanza 422             |
-| `en_proceso`           | ✅                        |
-| `completado`           | ✅                        |
-| `vencido`              | ✅ (HU de ampliación de plazo lo permite) |
-| `aprobado`             | ✅                        |
-| `rechazado`            | ✅                        |
-| `observada`            | ✅                        |
-| `validada`             | ✅                        |
+| `Pendiente`            | ❌ — lanza 422             |
+| `En Proceso`           | ✅                        |
+| `Completado`           | ✅                        |
+| `Vencido`              | ✅ (HU de ampliación de plazo lo permite) |
+| `Aprobado`             | ✅                        |
+| `Rechazado`            | ✅                        |
+| `Observada`            | ✅                        |
+| `Validada`             | ✅                        |
 
 ---
 
@@ -178,8 +178,8 @@ La operación ejecuta **5 pasos** en orden:
 
 | Estado asignado | `tipo_evento`                | Canal resultante | Email |
 |-----------------|------------------------------|------------------|-------|
-| `observada`     | `TIPO_DEVOLUCION_OBSERVACION` | `CANAL_AMBOS`    | ✅    |
-| `validada`      | `TIPO_APROBACION_EVIDENCIA`  | `CANAL_AMBOS`*   | ✅    |
+| `Observada`     | `TIPO_DEVOLUCION_OBSERVACION` | `CANAL_AMBOS`    | ✅    |
+| `Validada`      | `TIPO_APROBACION_EVIDENCIA`  | `CANAL_AMBOS`*   | ✅    |
 
 *`TIPO_APROBACION_EVIDENCIA` no está en `$eventosCriticos` nativo, pero `forzar_email: true` en `determinarCanal()` usa lógica OR, forzando `CANAL_AMBOS` igualmente.
 
@@ -197,13 +197,13 @@ Authorization: Bearer {token_encargado}
 Content-Type: application/json
 
 {
-    "estado": "observada",
+    "estado": "Observada",
     "comentario": "Falta la firma del coordinador en el documento principal."
 }
 ```
 
 **Verificar en respuesta:**
-- `data.estado` = `"observada"`
+- `data.estado` = `"Observada"`
 - `data.comentarios[0].texto` contiene el comentario enviado
 - `data.comentarios[0].autor` contiene el nombre del evaluador
 
@@ -213,10 +213,10 @@ Content-Type: application/json
 POST /api/estructura/evidencias/{id_pendiente}/retroalimentacion
 Authorization: Bearer {token_encargado}
 
-{ "estado": "validada", "comentario": "test de validación" }
+{ "estado": "Validada", "comentario": "test de validación" }
 ```
 
-**Respuesta esperada:** `422` con mensaje indicando que la evidencia está en `pendiente`.
+**Respuesta esperada:** `422` con mensaje indicando que la evidencia está en `Pendiente`.
 
 ### Caso de error — sin autorización
 
@@ -224,7 +224,7 @@ Authorization: Bearer {token_encargado}
 POST /api/estructura/evidencias/12/retroalimentacion
 Authorization: Bearer {token_profesor}
 
-{ "estado": "validada", "comentario": "prueba" }
+{ "estado": "Validada", "comentario": "prueba" }
 ```
 
 **Respuesta esperada:** `403 No autorizado para retroalimentar evidencias.`

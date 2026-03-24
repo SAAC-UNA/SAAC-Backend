@@ -20,7 +20,7 @@ class Evidence extends BaseCareer
     protected $fillable = ['criterio_id', 'estado', 'descripcion', 'nomenclatura', 'activo'];
 
     /** Valores válidos del enum estado */
-    public const ESTADOS = ['pendiente', 'en_proceso', 'completado', 'vencido', 'aprobado', 'rechazado', 'observada', 'validada'];
+    public const ESTADOS = ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'];
 
     // --- Scopes ---
 

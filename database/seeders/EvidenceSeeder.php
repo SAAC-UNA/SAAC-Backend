@@ -29,7 +29,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 1.1.1 (Información y promoción)
             [
                 'criterio_id' => $criterio1_1_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Lista descriptiva de los materiales informativos disponibles',
                 'nomenclatura' => '20',
                 'activo' => true,
@@ -38,7 +38,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio1_1_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Descripción de la estrategia de comunicación y divulgación',
                 'nomenclatura' => '21',
                 'activo' => true,
@@ -49,7 +49,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 1.1.2
             [
                 'criterio_id' => $criterio1_1_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Porcentaje de estudiantes que reciben información requerida',
                 'nomenclatura' => '22',
                 'activo' => true,
@@ -58,7 +58,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio1_1_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Porcentaje de estudiantes que opina sobre entrega oportuna',
                 'nomenclatura' => '23',
                 'activo' => true,
@@ -69,7 +69,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 1.2.1 (Proceso de admisión)
             [
                 'criterio_id' => $criterio1_2_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Normativa y lista de trámites y requisitos de ingreso',
                 'nomenclatura' => '24',
                 'activo' => true,
@@ -78,7 +78,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio1_2_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Medios de difusión de trámites y requisitos de ingreso',
                 'nomenclatura' => '25',
                 'activo' => true,
@@ -89,7 +89,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 1.2.2 (Igualdad de oportunidades)
             [
                 'criterio_id' => $criterio1_2_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Descripción de políticas que garantizan igualdad de oportunidades',
                 'nomenclatura' => '26',
                 'activo' => true,
@@ -98,7 +98,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio1_2_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Distribución de estudiantes admitidos por sexo y nacionalidad',
                 'nomenclatura' => '27',
                 'activo' => true,
@@ -107,7 +107,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio1_2_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Descripción de condiciones para personas con discapacidad',
                 'nomenclatura' => '28',
                 'activo' => true,
@@ -118,7 +118,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 2.1.1 (Plan de estudios)
             [
                 'criterio_id' => $criterio2_1_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Documento oficial con antecedentes y fundamentos conceptuales',
                 'nomenclatura' => '40',
                 'activo' => true,
@@ -127,7 +127,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio2_1_1->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Descripción de medios de divulgación del documento',
                 'nomenclatura' => '41',
                 'activo' => true,
@@ -138,7 +138,7 @@ class EvidenceSeeder extends Seeder
             // Evidencias del criterio 2.1.2
             [
                 'criterio_id' => $criterio2_1_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Justificación de congruencia de fines con postulados institucionales',
                 'nomenclatura' => '42',
                 'activo' => true,
@@ -147,7 +147,7 @@ class EvidenceSeeder extends Seeder
             ],
             [
                 'criterio_id' => $criterio2_1_2->criterio_id,
-                'estado' => 'pendiente',
+                'estado' => 'Pendiente',
                 'descripcion' => 'Porcentaje del personal que considera que fines guían el proceso',
                 'nomenclatura' => '43',
                 'activo' => true,
