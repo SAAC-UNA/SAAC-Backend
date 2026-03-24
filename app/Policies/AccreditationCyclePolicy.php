@@ -53,6 +53,15 @@ class AccreditationCyclePolicy
     }
 
     /**
+     * Reactivar un ciclo inactivo o completado.
+     * AC-R: Solo el Superusuario puede reactivar; sigue aplicando AC-6.
+     */
+    public function reactivate(User $user, AccreditationCycle $cycle): bool
+    {
+        return $user->can('ciclos.reactivar');
+    }
+
+    /**
      * Los ciclos NO se pueden eliminar físicamente.
      * Solo se pueden desactivar mediante update.
      */

@@ -103,4 +103,42 @@ class AccreditationCycleController extends Controller
         // Nunca se alcanza: la Policy bloquea el DELETE físico.
         return response()->noContent();
     }
+
+    /**
+     * PATCH /api/estructura/ciclos-acreditacion/{id}/reactivar
+     * AC-R: Solo Superusuario. Reactiva un ciclo inactivo/completado.
+     * Sigue respetando AC-6: no puede haber otro activo en la misma carrera+sede.
+     */
+    public function reactivate($id)
+    {
+        $cycle = $this->service->findById($id);
+
+        if (!$cycle) {
+            return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
+        }
+
+        $this->authorize('reactivate', $cycle);
+
+        if ($cycle->estado === AccreditationCycle::STATUS_ACTIVE) {
+            return response()->json(['message' => 'El ciclo ya está activo.'], 422);
+        }
+
+        // AC-6: verificar que no haya otro activo en la misma carrera+sede
+        $conflicto = AccreditationCycle::where('carrera_sede_id', $cycle->carrera_sede_id)
+            ->where('estado', AccreditationCycle::STATUS_ACTIVE)
+            ->where('ciclo_acreditacion_id', '!=', $cycle->ciclo_acreditacion_id)
+            ->exists();
+
+        if ($conflicto) {
+            return response()->json([
+                'errors' => [
+                    'carrera_sede_id' => ['Ya existe un ciclo activo para esta carrera en esta sede.'],
+                ],
+            ], 422);
+        }
+
+        $updated = $this->service->update($cycle, ['estado' => AccreditationCycle::STATUS_ACTIVE]);
+
+        return AccreditationCycleResource::make($updated)->response();
+    }
 }

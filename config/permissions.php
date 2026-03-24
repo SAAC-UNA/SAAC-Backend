@@ -78,7 +78,7 @@ return [
         'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
         
         // Ciclos de Acreditación
-        'ciclos' => ['view', 'create', 'edit', 'delete'],
+        'ciclos' => ['view', 'create', 'edit', 'delete', 'reactivar'],
         
         // Procesos de Acreditación (NO se pueden eliminar, solo desactivar)
         'procesos' => ['view', 'create', 'edit'],
