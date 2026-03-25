@@ -68,17 +68,19 @@ Authorization: Bearer <token>
 
 ---
 
-### A4. Crear modelo flexible /AQUI YO OUCUPO LA OPINIO DE LOS CHIQUILLOS NO SE SINCERAMENTE CUA SEA LA MEJOR OPCION DEJE ESTA POR EL MOEMNEETO ...
-> **Importante:** El modelo `tradicional` (SINAES 2018) es creado automáticamente por el sistema al instalar (`migrate:fresh --seed`).
+### A4. Crear modelo flexible
+> **Importante:** El modelo `tradicional` (SINAES 2018) es creado automáticamente por el sistema en la migración (`php artisan migrate`), no requiere `--seed`.
 > Por API solo se pueden crear modelos `elemento_flexible` — intentar crear `tipo: "tradicional"` retorna **422**.
 >
 > **¿Por qué el modelo tradicional no se crea desde el CRUD?**
 > - Es un dato del sistema, no del usuario
 > - El tipo `tradicional` está bloqueado activamente en `StructureModelRequest` — retorna 422, no es solo una convención
-> - El seeder es idempotente: verifica antes de insertar, no crea duplicados accidentalmente
+> - El insert está en la migración `007a` con `insertOrIgnore` — corre solo con `migrate`, cero acción manual
 > - Sus `nombre`, `descripcion` y `version` sí son editables después vía `PUT /estructura/modelos/{id}`
-
-> **Desventaja aceptada:** si se corre `migrate:fresh` sin `--seed`, el modelo no existe. Solución: siempre usar `--seed`
+>
+> **¿Una carrera que solo usa el modelo flexible necesita que exista el tradicional?**
+> - No funcionalmente: `DIMENSION`, `COMPONENTE` y `CRITERIO` son tablas independientes, sin FK a `MODELO_ESTRUCTURA`
+> - El modelo tradicional existe para que se puedan crear ciclos de tipo tradicional — si una carrera nunca crea ese tipo de ciclo, no le afecta
 
 ```
 POST /api/estructura/modelos
@@ -110,8 +112,10 @@ Content-Type: application/json
 |------|------|
 | Sin `nombre` | `{ "tipo": "elemento_flexible" }` |
 | Sin `tipo` | `{ "nombre": "Test" }` |
-| `tipo` = tradicional | `{ "nombre": "Test", "tipo": "tradicional" }` -> 422 "El unico tipo que puede crear es: elemento_flexible." |
+| `tipo` = tradicional | `{ "nombre": "Test", "tipo": "tradicional" }` → 422 "El unico tipo que puede crear es: elemento_flexible." |
 | `nombre` > 100 chars | string largo |
+| `nombre` con simbolos (`@#$`) | 422 regex |
+| `version` con simbolos (`@#$`) | 422 regex |
 
 ---
 
@@ -202,7 +206,7 @@ Authorization: Bearer <token>
 
 ---
 
-### B3. Crear elemento ra�z
+### B3. Crear elemento raíz
 ```
 POST /api/estructura/elementos
 Authorization: Bearer <token>
@@ -210,14 +214,12 @@ Content-Type: application/json
 ```
 ```json
 {
-    "modelo_estructura_id": 1,
+    "modelo_estructura_id": 2,
     "padre_id": null,
-    "nombre": "�rea de Gesti�n Acad�mica",
     "tipo": "area",
     "categoria": "A",
     "nomenclatura": "AG-01",
-    "descripcion": "�rea principal de gesti�n acad�mica",
-    "orden": 1,
+    "descripcion": "Area principal de gestion academica",
     "activo": true
 }
 ```
