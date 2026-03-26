@@ -8,6 +8,7 @@ use App\Http\Resources\EvidenceResource;
 use App\Services\EvidenceService;
 use App\Http\Requests\EvidenceRequest;
 use App\Http\Requests\FilterEvidenceRequest;
+use App\Http\Requests\RetroalimentacionRequest;
 use App\Services\AuditLogService;
 use App\Exports\EvidencesExport;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -93,6 +94,39 @@ class EvidenceController extends Controller
             return response()->json(['message' => 'Error al eliminar.', 'error' => $qe->getMessage()], 500);
         }
     }
+    /**
+     * POST /api/estructura/evidencias/{id}/retroalimentacion  (HU-013)
+     *
+     * Se usa POST (no PATCH) porque la operación NO es idempotente:
+     * cada llamada crea un nuevo comentario en COMENTARIO además de
+     * actualizar el estado. El servicio ejecuta en una transacción:
+     *   - Cambia el estado a 'observada' o 'validada'
+     *   - Guarda el comentario en COMENTARIO (relación polimórfica)
+     *   - Registra la acción en BITACORA
+     *   - Invalida el caché de lista
+     */
+    public function retroalimentar(RetroalimentacionRequest $request, $id)
+    {
+        // Verificar que el usuario tenga uno de los roles autorizados
+        $user = $request->user();
+        if (!$user->hasRole(['Encargado de Acreditación', 'Administrador', 'Superusuario'])) {
+            return response()->json(['message' => 'No autorizado para retroalimentar evidencias.'], 403);
+        }
+
+        $evidence = $this->service->findById((int) $id);
+        if (!$evidence) {
+            return response()->json(['message' => 'Evidencia no encontrada.'], 404);
+        }
+
+        try {
+            $evidence = $this->service->retroalimentar($evidence, $request->validated(), $user);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return EvidenceResource::make($evidence)->response();
+    }
+
     /**
      * PATCH /api/estructura/evidencias/{id}/active
      * Body JSON: { "active": true }

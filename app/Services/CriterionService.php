@@ -51,4 +51,44 @@ class CriterionService
         $criterion->delete();
         Cache::forget(self::CACHE_KEY);
     }
+
+    /**
+     * Recalcula el estado del criterio en función del estado de sus evidencias activas.
+     *
+     * Reglas (en orden de prioridad):
+     *  1. Sin evidencias, o todas 'Pendiente'                               → 'Pendiente'
+     *  2. Todas en ['Completado', 'Validada', 'Aprobado']                  → 'Completado'
+     *  3. Alguna en 'Vencido'                                               → 'Vencido'
+     *  4. Cualquier otro mix con progreso                                   → 'En Proceso'
+     */
+    public function recalcularEstado(int $criterioId): void
+    {
+        $criterion = Criterion::find($criterioId);
+        if (!$criterion) return;
+
+        $evidencias = $criterion->evidences()->where('activo', true)->get();
+        $total      = $evidencias->count();
+
+        if ($total === 0) {
+            $nuevoEstado = 'Pendiente';
+        } else {
+            $estados = $evidencias->pluck('estado');
+
+            if ($estados->every(fn($e) => $e === 'Pendiente')) {
+                $nuevoEstado = 'Pendiente';
+            } elseif ($estados->every(fn($e) => in_array($e, ['Completado', 'Validada', 'Aprobado']))) {
+                $nuevoEstado = 'Completado';
+            } elseif ($estados->contains('Vencido')) {
+                $nuevoEstado = 'Vencido';
+            } else {
+                $nuevoEstado = 'En Proceso';
+            }
+        }
+
+        if ($criterion->estado !== $nuevoEstado) {
+            $criterion->estado = $nuevoEstado;
+            $criterion->saveQuietly();
+            Cache::forget(self::CACHE_KEY);
+        }
+    }
 }

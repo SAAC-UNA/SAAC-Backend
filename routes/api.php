@@ -16,10 +16,12 @@ use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
 use App\Http\Controllers\CriterionController;
 use App\Http\Controllers\EvidenceController;
+use App\Http\Controllers\StructureElementController;
+use App\Http\Controllers\StructureModelController;
+use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
-use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AccreditationCycleController;
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -153,16 +156,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:evidencias.delete');
     Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive'])
         ->middleware('permission:evidencias.edit');
-    
-    // ===== ESTADOS DE EVIDENCIA =====
-    Route::get('estructura/estados-evidencia', [EvidenceStateController::class, 'index']);
-    Route::get('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'show']);
-    Route::post('estructura/estados-evidencia', [EvidenceStateController::class, 'store'])
-        ->middleware('role:Superusuario');
-    Route::match(['put', 'patch'], 'estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'update'])
-        ->middleware('role:Superusuario');
-    Route::delete('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'destroy'])
-        ->middleware('role:Superusuario');
+    // HU-013: Retroalimentación de evidencias (observar / validar + comentario)
+    // POST porque no es idempotente: cada llamada crea un nuevo comentario en COMENTARIO
+    Route::post('estructura/evidencias/{id}/retroalimentacion', [EvidenceController::class, 'retroalimentar'])
+        ->middleware('permission:evidencias.edit');
     
     // ===== ESTÁNDARES =====
     Route::middleware(['permission:estandares.view'])->group(function () {
@@ -178,15 +175,74 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive'])
         ->middleware('permission:estandares.edit');
     
-    // ===== PROCESOS Y CICLOS =====
-    Route::middleware(['permission:ciclos.view'])->group(function () {
-        Route::get('estructura/procesos', function () {
-            return Process::with('accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus')->get();
-        });
-        Route::get('estructura/ciclos-acreditacion', function () {
-            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
-        });
+    // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
+    Route::middleware(['permission:elemento.view'])->group(function () {
+        Route::get('estructura/elementos', [StructureElementController::class, 'index']);
+        // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
+        Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
     });
+    Route::post('estructura/elementos', [StructureElementController::class, 'store'])
+        ->middleware('permission:elemento.create');
+    Route::match(['put', 'patch'], 'estructura/elementos/{id}', [StructureElementController::class, 'update'])
+        ->middleware('permission:elemento.edit');
+    Route::delete('estructura/elementos/{id}', [StructureElementController::class, 'destroy'])
+        ->middleware('permission:elemento.delete');
+    Route::patch('estructura/elementos/{id}/active', [StructureElementController::class, 'setActive'])
+        ->middleware('permission:elemento.edit');
+    
+    // ===== MODELOS DE ESTRUCTURA =====
+    Route::get('estructura/modelos', [StructureModelController::class, 'index']);
+    Route::get('estructura/modelos/activos', [StructureModelController::class, 'activos']);
+    Route::get('estructura/modelos/{id}', [StructureModelController::class, 'show']);
+    Route::post('estructura/modelos', [StructureModelController::class, 'store'])
+        ->middleware('role:Superusuario');
+    Route::patch('estructura/modelos/{id}/active', [StructureModelController::class, 'setActive'])
+        ->middleware('role:Superusuario');
+    Route::put('estructura/modelos/{id}', [StructureModelController::class, 'update'])
+        ->middleware('role:Superusuario');
+    Route::patch('estructura/modelos/{id}', [StructureModelController::class, 'update'])
+        ->middleware('role:Superusuario');
+    
+    // ===== PROCESOS Y CICLOS =====
+    Route::middleware(['permission:procesos.view'])->group(function () {
+        Route::get('estructura/procesos', [ProcessController::class, 'index']);
+        Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
+    });
+
+    Route::middleware(['permission:ciclos.view'])->group(function () {
+        Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
+        Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
+       /* Route::get('estructura/ciclos-acreditacion', function () {
+            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+        });*/
+
+    });
+
+    // POST, PUT, DELETE - cada uno con su propio permiso
+     // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
+        Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
+        ->middleware('permission:ciclos.create');
+        Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])
+        ->middleware('permission:ciclos.edit');
+        Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
+        ->middleware('permission:ciclos.delete');
+
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+    ->middleware('permission:ciclos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+    ->middleware('permission:ciclos.edit');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+    ->middleware('permission:ciclos.edit');
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+        ->middleware('permission:procesos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+        ->middleware('permission:procesos.edit');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+        ->middleware('permission:procesos.edit');
+    // Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
+    //     ->middleware('permission:ciclos.delete'); // Procesos NO se eliminan, solo se activan/desactivan
 });
 
 // ============================================

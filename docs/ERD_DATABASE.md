@@ -2,6 +2,8 @@
 
 > Generado a partir de las migraciones Laravel del proyecto.
 > Para visualizarlo en VS Code instala la extensión **"Markdown Preview Mermaid Support"** (`bierner.markdown-mermaid`) y abre el preview (`Ctrl+Shift+V`).
+>
+> **Última actualización:** commits `ee2d23b` y `3eb399b` — se agregaron las tablas `MODELO_ESTRUCTURA` y `JERARQUIA`, y se actualizó `PROCESO`.
 
 ```mermaid
 erDiagram
@@ -35,7 +37,29 @@ erDiagram
     PROCESO {
         bigint proceso_id PK
         bigint ciclo_acreditacion_id FK
+        bigint modelo_estructura_id FK
         string tipo_proceso
+        boolean activo
+    }
+    MODELO_ESTRUCTURA {
+        bigint modelo_estructura_id PK
+        string nombre
+        text descripcion
+        string tipo
+        string version
+        boolean activo
+    }
+    JERARQUIA {
+        bigint jerarquia_id PK
+        bigint modelo_estructura_id FK
+        bigint parent_id FK
+        string nombre
+        string tipo
+        enum categoria
+        string nomenclatura
+        text descripcion
+        integer orden
+        boolean activo
     }
     AUTOEVALUACION {
         bigint autoevaluacion_id PK
@@ -185,6 +209,11 @@ erDiagram
     CARRERA ||--o{ CARRERA_SEDE : "ofertada en"
     CARRERA_SEDE ||--o{ CICLO_ACREDITACION : "tiene"
     CICLO_ACREDITACION ||--o{ PROCESO : "contiene"
+
+    %% ── Modelo de estructura y jerarquía flexible ──
+    MODELO_ESTRUCTURA ||--o{ PROCESO : "usado en"
+    MODELO_ESTRUCTURA ||--o{ JERARQUIA : "define"
+    JERARQUIA ||--o{ JERARQUIA : "contiene"
 
     %% ── Proceso → subentidades ──
     PROCESO ||--o| AUTOEVALUACION : "genera"

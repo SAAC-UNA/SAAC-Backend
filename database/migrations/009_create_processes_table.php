@@ -12,17 +12,29 @@ return new class extends Migration
         Schema::create('PROCESO', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('proceso_id');
+            
             // Relación con ciclo de acreditación
-            $table->foreignId('ciclo_acreditacion_id')->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')->onDelete('restrict');
+            $table->foreignId('ciclo_acreditacion_id')
+                  ->constrained('CICLO_ACREDITACION', 'ciclo_acreditacion_id')
+                  ->onDelete('restrict');
+            
+            // Tipo de proceso (Autoevaluación, Compromiso de mejora, etc.)
+            //$table->string('tipo_proceso', 50);
+            
+            // Estado activo/inactivo (NO se eliminan físicamente, solo se desactivan)
+            $table->boolean('activo')->default(true)
+                  ->comment('true=activo, false=inactivo');
+            
             // Timestamps de creación y actualización
-              //  Indica si el proceso está vigente o en curso
-            //$table->boolean('activo')->default(true); //nnuevo
             $table->enum('tipo_proceso', ['Autoevaluación', 'Compromiso de mejora']);
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_finalizacion')->nullable();
             $table->timestamps();
             
             // Índices de performance
             $table->index('ciclo_acreditacion_id', 'idx_pr_ciclo_id');
             $table->index('tipo_proceso', 'idx_pr_tipo_proceso');
+            $table->index('activo', 'idx_pr_activo');
         });
     }
 

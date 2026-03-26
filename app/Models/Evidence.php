@@ -17,7 +17,10 @@ class Evidence extends BaseCareer
     protected $primaryKey = 'evidencia_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['criterio_id','estado_evidencia_id', 'descripcion', 'nomenclatura', 'activo'];
+    protected $fillable = ['criterio_id', 'estado', 'descripcion', 'nomenclatura', 'activo'];
+
+    /** Valores válidos del enum estado */
+    public const ESTADOS = ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'];
 
     // --- Scopes ---
 
@@ -28,9 +31,9 @@ class Evidence extends BaseCareer
     }
 
     /** Filtra por estado de evidencia */
-    public function scopeByState($query, int $estadoId)
+    public function scopeByState($query, string $estado)
     {
-        return $query->where('estado_evidencia_id', $estadoId);
+        return $query->where('estado', $estado);
     }
 
     /** Filtra por criterio */
@@ -50,16 +53,6 @@ class Evidence extends BaseCareer
     }
 
     /**
-     * Relación: Una evidencia pertenece a un estado de evidencia.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function evidenceState()
-    {
-        return $this->belongsTo(EvidenceState::class, 'estado_evidencia_id', 'estado_evidencia_id');
-    }
-
-    /**
      * Relación: Una evidencia tiene muchas asignaciones.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
@@ -76,7 +69,8 @@ class Evidence extends BaseCareer
      */
     public function activeAssignments()
     {
-        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')->where('activo', true);
+        return $this->hasMany(EvidenceAssignment::class, 'evidencia_id', 'evidencia_id')
+            ->whereIn('estado', ['Pendiente', 'En Progreso']);
     }
 
     /**
@@ -87,6 +81,17 @@ class Evidence extends BaseCareer
     public function files()
     {
         return $this->hasMany(File::class, 'evidencia_id', 'evidencia_id');
+    }
+
+    /**
+     * Relación polimórfica: Una evidencia puede tener muchos comentarios (HU-013).
+     * Los comentarios se guardan en COMENTARIO con commentable_type = Evidence::class.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable', 'commentable_type', 'commentable_id', 'evidencia_id');
     }
 
 }

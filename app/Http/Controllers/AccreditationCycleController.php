@@ -3,64 +3,104 @@
 namespace App\Http\Controllers;
 
 use App\Models\AccreditationCycle;
-use App\Http\Requests\StoreAccreditationCycleRequest;
-use App\Http\Requests\UpdateAccreditationCycleRequest;
+use App\Services\AccreditationCycleService;
+use App\Http\Requests\AccreditationCycleRequest;
+use App\Http\Resources\AccreditationCycleResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class AccreditationCycleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use AuthorizesRequests;
+
+    protected $service;
+
+    public function __construct(AccreditationCycleService $service)
     {
-        //
+        $this->service = $service;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * GET /api/ciclos
+     * AC-3: El filtro por rol se aplica automáticamente via BaseCareer
      */
-    public function create()
+    public function index(AccreditationCycleRequest $request)
     {
-        //
+        $this->authorize('viewAny', AccreditationCycle::class);
+
+        $cycles = $this->service->getAll($request->validated());
+
+        return AccreditationCycleResource::collection($cycles);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * GET /api/ciclos/{id}
      */
-    public function store(StoreAccreditationCycleRequest $request)
+    public function show($id)
     {
-        //
+        $cycle = $this->service->findById($id);
+
+        if (!$cycle) {
+            return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
+        }
+
+        $this->authorize('view', $cycle);
+
+        return new AccreditationCycleResource($cycle);
     }
 
     /**
-     * Display the specified resource.
+     * POST /api/ciclos
+     * AC-1: Crear ciclo con nombre, carrera_sede y estado
+     * AC-2: Validaciones en AccreditationCycleRequest
      */
-    public function show(AccreditationCycle $accreditationCycle)
+    public function store(AccreditationCycleRequest $request)
     {
-        //
+        $this->authorize('create', AccreditationCycle::class);
+
+        $cycle = $this->service->create($request->validated());
+
+        return AccreditationCycleResource::make($cycle)
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * PUT/PATCH /api/ciclos/{id}
+     * AC-4: Bloquea edición si el ciclo no está activo (verificado en Policy)
+     * AC-5: Requiere permiso ciclos.edit (verificado en Policy)
      */
-    public function edit(AccreditationCycle $accreditationCycle)
+    public function update(AccreditationCycleRequest $request, $id)
     {
-        //
+        $cycle = $this->service->findById($id);
+
+        if (!$cycle) {
+            return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
+        }
+
+        $this->authorize('update', $cycle);
+
+        $updated = $this->service->update($cycle, $request->validated());
+
+        return AccreditationCycleResource::make($updated)->response();
     }
 
     /**
-     * Update the specified resource in storage.
+     * DELETE /api/ciclos/{id}
+     * Los ciclos NO se eliminan físicamente.
+     * Solo se inactivan mediante PATCH con estado='inactivo'.
+     * La Policy siempre deniega esta acción (delete → false).
      */
-    public function update(UpdateAccreditationCycleRequest $request, AccreditationCycle $accreditationCycle)
+    public function destroy($id)
     {
-        //
-    }
+        $cycle = $this->service->findById($id);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AccreditationCycle $accreditationCycle)
-    {
-        //
+        if (!$cycle) {
+            return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
+        }
+
+        $this->authorize('delete', $cycle);
+
+        // Nunca se alcanza: la Policy bloquea el DELETE físico.
+        return response()->noContent();
     }
 }

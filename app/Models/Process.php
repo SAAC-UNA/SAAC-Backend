@@ -21,6 +21,15 @@ class Process extends BaseCareer
     protected $fillable = [
         'ciclo_acreditacion_id',
         'tipo_proceso',
+        'fecha_inicio',
+        'fecha_finalizacion',
+        'activo',
+    ];
+
+    protected $casts = [
+        'fecha_inicio'       => 'date:Y-m-d',
+        'fecha_finalizacion' => 'date:Y-m-d',
+        'activo'             => 'boolean',
     ];
 
     /**

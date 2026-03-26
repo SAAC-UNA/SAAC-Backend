@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class EvidenceAssignmentService
 {
     /** Relaciones que se cargan en casi todos los queries */
-    private const WITH_BASE = ['evidence.criterion', 'user', 'process'];
+    private const WITH_BASE = ['evidence.criterion', 'evidence.comments.user', 'user', 'process'];
 
     /**
      * Builder base con eager loading de relaciones y EXISTS para solicitudes pendientes.
@@ -217,7 +217,7 @@ class EvidenceAssignmentService
     {
         return EvidenceAssignment::with(['evidence.criterion', 'user'])
             ->where('usuario_id', $usuarioId)
-            ->whereIn('estado', ['Pendiente', 'En Progreso'])
+            ->whereIn('estado', ['pendiente', 'en_progreso'])
             ->where('fecha_limite', '<=', $limitDate)
             ->orderBy('fecha_limite', 'asc')
             ->get();

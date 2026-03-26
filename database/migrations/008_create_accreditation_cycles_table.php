@@ -6,25 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    
     public function up(): void
     {
-        // Tabla de ciclos de acreditación
         Schema::create('CICLO_ACREDITACION', function (Blueprint $table) {
-            // Clave primaria 
-            $table->id()->name('ciclo_acreditacion_id');
-            // Relación con carrera_sede
+            $table->id('ciclo_acreditacion_id');
             $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('restrict');
-            // Nombre del ciclo
             $table->string('nombre', 50);
-            // Timestamps de creación y actualización
+            $table->unsignedBigInteger('modelo_estructura_id')
+                  ->comment('Modelo SINAES que usa este ciclo');
             $table->timestamps();
-            
-            // Índices de performance
+
+            $table->foreign('modelo_estructura_id', 'ciclo_modelo_estructura_id_foreign')
+                  ->references('modelo_estructura_id')
+                  ->on('MODELO_ESTRUCTURA')
+                  ->onDelete('restrict');
+
             $table->index('carrera_sede_id', 'idx_ca_carrera_sede_id');
+            $table->index('modelo_estructura_id', 'idx_ca_modelo_estructura');
         });
     }
-    
+
     public function down(): void
     {
         Schema::dropIfExists('CICLO_ACREDITACION');

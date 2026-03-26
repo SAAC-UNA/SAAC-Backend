@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Models\Evidence;
 use App\Models\User;
+use App\Models\Comment;
+use App\Models\EvidenceAssignment;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class EvidenceService
 {
@@ -13,7 +16,7 @@ class EvidenceService
     private const CACHE_TTL = 300;
 
     /** Relaciones eager-loaded en la mayoría de queries */
-    private const WITH_BASE = ['criterion.component.dimension', 'evidenceState'];
+    private const WITH_BASE = ['criterion.component.dimension'];
 
     public function getAll()
     {
@@ -30,11 +33,11 @@ class EvidenceService
     public function create(array $data): Evidence
     {
         $evidence = Evidence::create([
-            'criterio_id'        => $data['criterio_id'],
-            'estado_evidencia_id' => $data['estado_evidencia_id'],
-            'descripcion'        => $data['descripcion'],
-            'nomenclatura'       => $data['nomenclatura'],
-            'activo'             => $data['activo'] ?? true,
+            'criterio_id' => $data['criterio_id'],
+            'estado'      => $data['estado'] ?? 'Pendiente',
+            'descripcion' => $data['descripcion'],
+            'nomenclatura' => $data['nomenclatura'],
+            'activo'      => $data['activo'] ?? true,
         ]);
         Cache::forget(self::CACHE_KEY);
         return $evidence->load(self::WITH_BASE);
@@ -43,11 +46,11 @@ class EvidenceService
     public function update(Evidence $evidence, array $data): Evidence
     {
         $evidence->update([
-            'criterio_id'        => $data['criterio_id']        ?? $evidence->criterio_id,
-            'estado_evidencia_id' => $data['estado_evidencia_id'] ?? $evidence->estado_evidencia_id,
-            'descripcion'        => $data['descripcion']        ?? $evidence->descripcion,
-            'nomenclatura'       => $data['nomenclatura']       ?? $evidence->nomenclatura,
-            'activo'             => $data['activo']             ?? $evidence->activo,
+            'criterio_id'  => $data['criterio_id']  ?? $evidence->criterio_id,
+            'estado'       => $data['estado']       ?? $evidence->estado,
+            'descripcion'  => $data['descripcion']  ?? $evidence->descripcion,
+            'nomenclatura' => $data['nomenclatura'] ?? $evidence->nomenclatura,
+            'activo'       => $data['activo']       ?? $evidence->activo,
         ]);
         Cache::forget(self::CACHE_KEY);
         return $evidence->fresh(self::WITH_BASE);
@@ -60,6 +63,100 @@ class EvidenceService
     }
 
     /**
+     * Retroalimentar una evidencia (HU-013).
+     *
+     * El encargado de acreditación puede marcarla como 'observada' o 'validada'
+     * y dejar un comentario. Las 4 operaciones se ejecutan en una transacción
+     * atómica para garantizar consistencia:
+     *   1. Actualiza el estado de la evidencia
+     *   2. Guarda el comentario en COMENTARIO (relación polimórfica)
+     *   3. Registra la acción en BITACORA vía AuditLogService
+     *   4. Invalida el caché de lista de evidencias
+     *
+     * @param  Evidence  $evidence  Evidencia a retroalimentar
+     * @param  array     $data      ['estado' => ..., 'comentario' => ...]
+     * @param  User      $reviewer  Usuario que realiza la acción
+     * @return Evidence  La evidencia actualizada con sus relaciones base y comentarios
+     */
+    public function retroalimentar(Evidence $evidence, array $data, User $reviewer): Evidence
+    {
+        // Solo se puede retroalimentar si la evidencia tiene un estado revisable.
+        // 'pendiente' significa que aún no fue enviada — no hay nada que revisar.
+        // 'vencido' NO se bloquea: existe una HU de ampliación de plazo que permite
+        //  gestionar evidencias vencidas, por lo que el evaluador sí puede retroalimentarlas.
+        $estadosNoRevisables = ['Pendiente'];
+        if (in_array($evidence->estado, $estadosNoRevisables)) {
+            throw new \InvalidArgumentException(
+                "No se puede retroalimentar una evidencia en estado \"{$evidence->estado}\". ".
+                "Debe estar en proceso, completada, aprobada, rechazada, observada, validada o vencida."
+            );
+        }
+
+        $evidenceActualizada = DB::transaction(function () use ($evidence, $data, $reviewer) {
+            // 1. Cambia el estado ('observada' o 'validada')
+            $evidence->update(['estado' => $data['estado']]);
+
+            // 2. Guarda el comentario polimórfico enlazado a esta evidencia
+            Comment::create([
+                'usuario_id'       => $reviewer->usuario_id,
+                'commentable_type' => Evidence::class,
+                'commentable_id'   => $evidence->evidencia_id,
+                'texto'            => $data['comentario'],
+            ]);
+
+            // 3. Registra en bitácora con el tipo de acción 'retroalimentar'
+            AuditLogService::log(
+                'retroalimentar',
+                "Evidencia {$evidence->nomenclatura} (ID: {$evidence->evidencia_id}) marcada como \"{$data['estado']}\". Comentario: {$data['comentario']}",
+                'Evidencias',
+                $reviewer->usuario_id
+            );
+
+            // 4. Invalida el caché para que la lista se regenere con el nuevo estado
+            Cache::forget(self::CACHE_KEY);
+
+            // Retorna la evidencia fresca junto con sus relaciones base y sus comentarios
+            return $evidence->fresh([...self::WITH_BASE, 'comments.user']);
+        });
+
+        // 5. Notificación automática — FUERA de la transacción para que un fallo
+        //    de email no revierta el cambio de estado ni el comentario ya guardado.
+        //    Se notifica a todos los profesores con asignación activa en esta evidencia.
+        //    El try/catch aísla cualquier fallo de SMTP o de carga de relaciones — el
+        //    endpoint ya respondió con 200; el error queda solo en el log.
+        try {
+            $evidenceActualizada->loadMissing('activeAssignments.user');
+            $responsables = $evidenceActualizada->activeAssignments
+                ->map(fn($assignment) => $assignment->user)
+                ->filter(); // descarta asignaciones sin usuario
+
+            if ($responsables->isNotEmpty()) {
+                NotificationService::createMany(
+                    $responsables->pluck('usuario_id')->toArray(),
+                    [
+                        'tipo_evento'  => $data['estado'] === 'Observada'
+                            ? \App\Models\Notification::TIPO_DEVOLUCION_OBSERVACION
+                            : \App\Models\Notification::TIPO_APROBACION_EVIDENCIA,
+                        'titulo'       => "Evidencia {$evidenceActualizada->nomenclatura} — " . strtoupper($data['estado']),
+                        'mensaje'      => "El evaluador {$reviewer->nombre} marcó la evidencia como \"{$data['estado']}\". Comentario: {$data['comentario']}",
+                        'relacionado'  => $evidenceActualizada,
+                        'enlace'       => "/evidencias/{$evidenceActualizada->evidencia_id}",
+                        'forzar_email' => true,
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            // Loguear el fallo sin interrumpir la respuesta al cliente
+            logger()->error('EvidenciaRetroalimentada notification failed', [
+                'evidencia_id' => $evidenceActualizada->evidencia_id,
+                'error'        => $e->getMessage(),
+            ]);
+        }
+
+        return $evidenceActualizada;
+    }
+
+    /**
      * Filtrar evidencias con paginación (HU-012).
      * Usa Eloquent puro para ambos roles — elimina los SPs de filtrado y conteo.
      */
@@ -67,11 +164,11 @@ class EvidenceService
     {
         $perPage    = (int) ($filters['per_page'] ?? 15);
         $page       = (int) ($filters['page']     ?? 1);
-        $criterioId = $filters['criterio_id']         ?? null;
-        $estadoId   = $filters['estado_evidencia_id'] ?? null;
-        $fechaDesde = $filters['fecha_desde']         ?? null;
-        $fechaHasta = $filters['fecha_hasta']         ?? null;
-        $sortBy     = $filters['sort_by']             ?? 'created_at';
+        $criterioId = $filters['criterio_id'] ?? null;
+        $estado     = $filters['estado']      ?? null;
+        $fechaDesde = $filters['fecha_desde'] ?? null;
+        $fechaHasta = $filters['fecha_hasta'] ?? null;
+        $sortBy     = $filters['sort_by']     ?? 'created_at';
         $sortOrder  = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
                         ? strtolower($filters['sort_order'])
                         : 'desc';
@@ -81,7 +178,7 @@ class EvidenceService
             'fecha', 'fecha_publicacion' => 'created_at',
             'nomenclatura'               => 'nomenclatura',
             'descripcion'                => 'descripcion',
-            'estado'                     => 'estado_evidencia_id',
+            'estado'                     => 'estado',
             default                      => 'created_at',
         };
 
@@ -98,15 +195,15 @@ class EvidenceService
             $query->withoutGlobalScope('byCareerCampus')
                   ->whereHas('assignments', fn ($q) =>
                       $q->where('usuario_id', $user->usuario_id)
-                        ->whereIn('estado', ['Pendiente', 'En Progreso'])
+                        ->whereIn('estado', ['pendiente', 'en_progreso'])
                   );
         }
 
         if ($criterioId) {
             $query->where('criterio_id', $criterioId);
         }
-        if ($estadoId) {
-            $query->where('estado_evidencia_id', $estadoId);
+        if ($estado) {
+            $query->where('estado', $estado);
         }
         if ($fechaDesde) {
             $query->where('created_at', '>=', $fechaDesde . ' 00:00:00');
@@ -119,5 +216,57 @@ class EvidenceService
         }
 
         return $query->orderBy($sortColumn, $sortOrder)->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * Recalcula el estado de una evidencia a partir del estado de sus asignaciones.
+     *
+     * Nota: EVIDENCIA_ASIGNACION.estado usa lowercase con guión bajo
+     * ('pendiente', 'en_progreso', 'completado', 'vencido').
+     *
+     * Reglas (por orden de prioridad):
+     *  1. Sin asignaciones                                           → 'Pendiente'
+     *  2. Todas las asignaciones 'completado'                        → 'Completado'
+     *  3. Alguna asignación 'vencido' (sin todas completadas)        → 'Vencido'
+     *  4. Alguna 'en_progreso' o 'completado' (mezcla, sin 2/3)     → 'En Proceso'
+     *  5. Todas 'pendiente'                                          → 'Pendiente'
+     *
+     * No sobreescribe estados de retroalimentación (Observada, Validada, Aprobado,
+     * Rechazado) — esos los gestiona exclusivamente el encargado (HU-013).
+     */
+    public function recalcularEstadoEvidencia(int $evidenciaId): void
+    {
+        $evidence = Evidence::find($evidenciaId);
+        if (!$evidence) return;
+
+        // Respetar los estados de retroalimentación del encargado
+        if (in_array($evidence->estado, ['Observada', 'Validada', 'Aprobado', 'Rechazado'])) {
+            return;
+        }
+
+        $asignaciones = EvidenceAssignment::where('evidencia_id', $evidenciaId)->get();
+        $total        = $asignaciones->count();
+
+        if ($total === 0) {
+            $nuevoEstado = 'Pendiente';
+        } else {
+            $estados = $asignaciones->pluck('estado');
+
+            if ($estados->every(fn($e) => $e === 'completado')) {
+                $nuevoEstado = 'Completado';
+            } elseif ($estados->contains('vencido')) {
+                $nuevoEstado = 'Vencido';
+            } elseif ($estados->contains(fn($e) => in_array($e, ['en_progreso', 'completado']))) {
+                $nuevoEstado = 'En Proceso';
+            } else {
+                $nuevoEstado = 'Pendiente';
+            }
+        }
+
+        if ($evidence->estado !== $nuevoEstado) {
+            // update() dispara EvidenceObserver::updated → CriterionService::recalcularEstado()
+            $evidence->update(['estado' => $nuevoEstado]);
+            Cache::forget(self::CACHE_KEY);
+        }
     }
 }

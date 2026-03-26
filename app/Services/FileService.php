@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\File;
+use App\Models\EvidenceAssignment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -64,6 +65,8 @@ class FileService
                 'disk_free_gb'    => round($diskFreeSpace / (1024 ** 3), 2),
             ]);
 
+            $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
+
             return $archivo;
         });
     }
@@ -107,6 +110,8 @@ class FileService
                 'usuario_id'        => $usuarioId,
                 'evidencia_id'      => $evidenciaId,
             ]);
+
+            $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
 
             return $enlace;
         });
@@ -224,5 +229,20 @@ class FileService
     {
         if (!$this->fileExists($archivo)) return null;
         return Storage::disk($this->disk)->mimeType($archivo->path);
+    }
+
+    /**
+     * Si la asignación del usuario para esta evidencia está en 'pendiente',
+     * la pasa a 'en_progreso'. El EvidenceAssignmentObserver propaga el cambio
+     * hacia EVIDENCIA.estado y luego hacia CRITERIO.estado automáticamente.
+     */
+    private function marcarAsignacionEnProgreso(int $evidenciaId, int $usuarioId, int $procesoId): void
+    {
+        EvidenceAssignment::where('evidencia_id', $evidenciaId)
+            ->where('usuario_id', $usuarioId)
+            ->where('proceso_id', $procesoId)
+            ->where('estado', 'pendiente')
+            ->get()
+            ->each(fn($assignment) => $assignment->update(['estado' => 'en_progreso']));
     }
 }

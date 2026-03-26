@@ -15,7 +15,7 @@ class EvidenceResource extends JsonResource
         return [
             'evidencia_id'        => $this->evidencia_id,
             'criterio_id'         => $this->criterio_id,
-            'estado_evidencia_id' => $this->estado_evidencia_id,
+            'estado'              => $this->estado,
             'descripcion'         => $this->descripcion,
             'nomenclatura'        => $this->nomenclatura,
             'activo'              => $this->activo ?? true,
@@ -33,11 +33,7 @@ class EvidenceResource extends JsonResource
                         'activo'       => true,
                     ]
                     : null),
-            'estado_evidencia'    => $this->relationLoaded('evidenceState') && $this->evidenceState
-                ? ['nombre' => $this->evidenceState->nombre]
-                : ($this->estado_nombre !== null
-                    ? ['nombre' => $this->estado_nombre]
-                    : null),
+            // El estado ya es el string del enum — no requiere relación adicional
             'responsables'        => $this->when(
                 $this->relationLoaded('assignments'),
                 fn() => $this->assignments->map(fn($assignment) => [
@@ -58,6 +54,17 @@ class EvidenceResource extends JsonResource
             // Contadores de recursos
             'archivos_count'      => $this->archivos_count ?? 0,
             'enlaces_count'       => $this->enlaces_count ?? 0,
+            // Comentarios de retroalimentación (HU-013) — solo si la relación está cargada
+            'comentarios'         => $this->when(
+                $this->relationLoaded('comments'),
+                fn() => $this->comments->map(fn($c) => [
+                    'id'         => $c->comentario_id,
+                    'texto'      => $c->texto,
+                    'usuario_id' => $c->usuario_id,
+                    'autor'      => optional($c->user)->nombre,
+                    'fecha'      => optional($c->created_at)->toISOString(),
+                ])
+            ),
         ];
     }
 }
