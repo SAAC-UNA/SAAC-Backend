@@ -41,12 +41,12 @@ class AccreditationCycleService
     }
 
     /**
-     * Actualizar un ciclo existente
-     * AC-4: Solo se puede editar si está activo
+     * Actualizar un ciclo existente.
+     * Solo actualiza los campos que vienen en $data; los demás conservan su valor actual.
+     * La restricción AC-4 (solo editable si activo) se aplica en la Policy antes de llegar aquí.
      */
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
-        // que hace este metodo? AC-4: Solo se puede editar si el ciclo está activo
         $cycle->update([
             'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
             'modelo_estructura_id' => $data['modelo_estructura_id'] ?? $cycle->modelo_estructura_id,
@@ -58,8 +58,9 @@ class AccreditationCycleService
     }
 
     /**
-     * Eliminar un ciclo
-     * AC-4: No se puede eliminar si tiene procesos asociados
+     * Eliminar un ciclo.
+     * Lanza una excepción si el ciclo tiene procesos asociados (integridad referencial).
+     * Nota: en la práctica este método no se usa porque la Policy bloquea el DELETE físico.
      */
     public function delete(AccreditationCycle $cycle): void
     {

@@ -39,7 +39,6 @@ class AccreditationCyclePolicy
     }
 
     /**
-     * Determine whether the user can update the model.
      * AC-4: Solo se puede editar si el ciclo está activo
      * AC-5: Requiere permiso ciclos.edit
      */
