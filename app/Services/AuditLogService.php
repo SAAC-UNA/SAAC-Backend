@@ -65,6 +65,7 @@ class AuditLogService
         $modulo      = $filters['modulo'] ?? null;
         $fechaDesde  = $filters['fecha_desde'] ?? null;
         $fechaHasta  = $filters['fecha_hasta'] ?? null;
+        $search      = $filters['search'] ?? null;
 
         $tipoAccionId = $filters['tipo_accion_id'] ?? null;
         if (!$tipoAccionId && !empty($filters['tipo_accion'])) {
@@ -72,12 +73,23 @@ class AuditLogService
                 ->value('tipo_accion_id');
         }
 
-        return AuditLog::with(['user', 'actionType'])
+        return AuditLog::with(['user.roles', 'actionType'])
             ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
             ->when($tipoAccionId, fn($q) => $q->where('tipo_accion_id', $tipoAccionId))
             ->when($modulo,       fn($q) => $q->where('modulo', 'like', "%{$modulo}%"))
             ->when($fechaDesde,   fn($q) => $q->where('fecha_hora', '>=', $fechaDesde))
             ->when($fechaHasta,   fn($q) => $q->where('fecha_hora', '<=', $fechaHasta))
+            ->when($search,        fn($q) => $q->where(fn($inner) =>
+                $inner->whereHas('user', fn($u) =>
+                    $u->where('nombre', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                )
+                ->orWhereHas('actionType', fn($a) =>
+                    $a->where('descripcion', 'like', "%{$search}%")
+                )
+                ->orWhere('BITACORA.modulo', 'like', "%{$search}%")
+                ->orWhere('BITACORA.detalle', 'like', "%{$search}%")
+            ))
             ->orderBy('fecha_hora', 'desc')
             ->paginate($perPage);
     }
@@ -121,7 +133,7 @@ class AuditLogService
             );
         }
 
-        return AuditLog::with(['user', 'actionType'])
+        return AuditLog::with(['user.roles', 'actionType'])
             ->whereBetween('fecha_hora', [$desde, $hasta])
             ->orderBy('fecha_hora', 'desc')
             ->get();

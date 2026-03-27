@@ -93,10 +93,14 @@ class CheckDeadlines extends Command
 
             foreach ($expiredAssignments as $assignment) {
                 $daysOverdue = now()->startOfDay()->diffInDays($assignment->fecha_limite, false);
-                
-                // Disparar evento con días negativos (plazo vencido)
+
+                // Marcar la asignación como vencido — dispara EvidenceAssignmentObserver
+                // que recalcula EVIDENCIA.estado → EvidenceObserver recalcula CRITERIO.estado
+                $assignment->update(['estado' => 'vencido']);
+
+                // Disparar evento de notificación con días negativos (plazo vencido)
                 event(new DeadlineApproaching($assignment, (int)$daysOverdue));
-                
+
                 $this->line("    - Evidencia {$assignment->evidence->nomenclatura} → Usuario {$assignment->user->nombre} (vencido hace " . abs($daysOverdue) . " días)");
                 $totalNotifications++;
             }

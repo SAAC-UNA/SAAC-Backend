@@ -22,7 +22,6 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
-use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
@@ -157,16 +156,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:evidencias.delete');
     Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive'])
         ->middleware('permission:evidencias.edit');
-    
-    // ===== ESTADOS DE EVIDENCIA =====
-    Route::get('estructura/estados-evidencia', [EvidenceStateController::class, 'index']);
-    Route::get('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'show']);
-    Route::post('estructura/estados-evidencia', [EvidenceStateController::class, 'store'])
-        ->middleware('role:Superusuario');
-    Route::match(['put', 'patch'], 'estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'update'])
-        ->middleware('role:Superusuario');
-    Route::delete('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'destroy'])
-        ->middleware('role:Superusuario');
+    // HU-013: Retroalimentación de evidencias (observar / validar + comentario)
+    // POST porque no es idempotente: cada llamada crea un nuevo comentario en COMENTARIO
+    Route::post('estructura/evidencias/{id}/retroalimentacion', [EvidenceController::class, 'retroalimentar'])
+        ->middleware('permission:evidencias.edit');
     
     // ===== ESTÁNDARES =====
     Route::middleware(['permission:estandares.view'])->group(function () {
@@ -459,8 +452,8 @@ Route::prefix('bitacora')->middleware(['auth:sanctum', 'refresh.session', 'role:
 // ============================================
 if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
-        Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
-        Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
+        Route::post('/users', [DevUserController::class, 'store'])->middleware('auth:sanctum');       // POST /api/dev/users
+        Route::post('/comments', [DevCommentController::class, 'store'])->middleware('auth:sanctum'); // POST /api/dev/comments
 
         // Autenticación temporal para pruebas de middleware
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
@@ -493,7 +486,7 @@ if (App::environment('local')) {
                     'line' => $e->getLine()
                 ], 500);
             }
-        });
+        })->middleware('auth:sanctum');
     });
 }
 

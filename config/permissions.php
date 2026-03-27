@@ -324,11 +324,15 @@ return [
         'usuarios.edit' => 'Editar usuarios',
         'usuarios.delete' => 'Eliminar usuarios',
         
+        // Admin
+        'admin.super' => 'Acceso total al sistema',
+
         // Roles
         'roles.view' => 'Ver roles',
         'roles.create' => 'Crear roles',
         'roles.edit' => 'Editar roles',
         'roles.delete' => 'Eliminar roles',
+        'roles.assign' => 'Asignar roles',
         
         // Universidades
         'universidades.view' => 'Ver universidades',
@@ -434,6 +438,12 @@ return [
         
         // Notificaciones
         'notificaciones.view' => 'Ver notificaciones',
+
+        // Jerarquías
+        'jerarquias.view' => 'Ver jerarquías',
+        'jerarquias.create' => 'Crear jerarquías',
+        'jerarquias.edit' => 'Editar jerarquías',
+        'jerarquias.delete' => 'Eliminar jerarquías',
         
         // Bitácora
         'bitacora.view' => 'Ver bitácora del sistema',
