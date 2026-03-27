@@ -77,7 +77,12 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
-            // Verificar sesión en Redis
+            // Si no hay usuario en la solicitud, la sesión no es válida o ha expirado.
+            if (!$user) {
+                return response()->json(['message' => 'No autenticado'], 401);
+            }
+
+            // Verificar sesión en Redis (capa extra de seguridad)
             $sessionKey = "session:user:{$user->usuario_id}";
             $sessionData = Redis::get($sessionKey);
             
