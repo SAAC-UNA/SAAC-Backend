@@ -7,7 +7,6 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 
 class AuthController extends Controller
 {
@@ -82,19 +81,6 @@ class AuthController extends Controller
                 return response()->json(['message' => 'No autenticado'], 401);
             }
 
-            // Verificar sesión en Redis (capa extra de seguridad)
-            $sessionKey = "session:user:{$user->usuario_id}";
-            $sessionData = Redis::get($sessionKey);
-            
-            if (!$sessionData) {
-                return response()->json([
-                    'message' => 'Sesión expirada',
-                ], 401);
-            }
-
-            // Renovar TTL de la sesión (sliding expiration - 30 minutos más)
-            Redis::expire($sessionKey, 1800);
-
             // Cargar relaciones necesarias
             $user->load(['roles', 'permissions', 'careers']);
 
@@ -132,19 +118,6 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-
-            // Verificar sesión en Redis
-            $sessionKey = "session:user:{$user->usuario_id}";
-            $sessionData = Redis::get($sessionKey);
-            
-            if (!$sessionData) {
-                return response()->json([
-                    'message' => 'Sesión expirada',
-                ], 401);
-            }
-
-            // Renovar TTL de la sesión
-            Redis::expire($sessionKey, 1800);
 
             // Obtener roles del usuario
             $roles = $user->roles->pluck('name');

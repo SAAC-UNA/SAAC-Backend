@@ -450,8 +450,8 @@ Route::prefix('bitacora')->middleware(['auth:sanctum', 'refresh.session', 'role:
 // ============================================
 if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
-        Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
-        Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
+        Route::post('/users', [DevUserController::class, 'store'])->middleware('auth:sanctum');       // POST /api/dev/users
+        Route::post('/comments', [DevCommentController::class, 'store'])->middleware('auth:sanctum'); // POST /api/dev/comments
 
         // Autenticación temporal para pruebas de middleware
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
@@ -484,7 +484,7 @@ if (App::environment('local')) {
                     'line' => $e->getLine()
                 ], 500);
             }
-        });
+        })->middleware('auth:sanctum');
     });
 }
 
