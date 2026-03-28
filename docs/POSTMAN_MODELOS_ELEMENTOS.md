@@ -9,7 +9,7 @@
 ## 0. Login (obtener token)
 
 ```
-POST /api/login
+POST /api/auth/login
 Content-Type: application/json
 ```
 ```json
@@ -174,6 +174,79 @@ Idempotente: si ya está en el estado solicitado, no hace nada.
 
 ---
 
+### A7. Eliminar modelo (con confirmación)
+> Solo modelos `elemento_flexible`. El modelo `tradicional` (ID 1) nunca se puede eliminar.  
+> **Elimina en cascada TODO:** ciclos, procesos, autoevaluaciones, compromisos, asignaciones, archivos físicos, aprobaciones y elementos.
+
+**PASO 1 — Ver qué se eliminará** (enviar sin `confirmacion` o con valor incorrecto):
+```
+DELETE /api/estructura/modelos/{id}
+Authorization: Bearer <token>   (Superusuario)
+Content-Type: application/json
+```
+```json
+{}
+```
+**Respuesta 422** — resumen de lo que se borrará:
+```json
+{
+    "message": "Confirmación incorrecta. Envíe el nombre exacto del modelo en el campo \"confirmacion\" para confirmar la eliminación.",
+    "modelo_nombre": "SINAES 2026 - Estructura Flexible",
+    "advertencia": "Esta acción es irreversible y eliminará el modelo junto con los siguientes datos:",
+    "datos_a_eliminar": {
+        "ciclos_acreditacion": 2,
+        "procesos": 4,
+        "autoevaluaciones": 2,
+        "compromisos_mejora": 2,
+        "asignaciones_evidencia": 5,
+        "solicitudes_ampliacion": 1,
+        "aprobaciones": 3,
+        "archivos": 6,
+        "elementos": 12
+    }
+}
+```
+
+**PASO 2 — Confirmar con el nombre exacto del modelo:**
+```
+DELETE /api/estructura/modelos/{id}
+Authorization: Bearer <token>   (Superusuario)
+Content-Type: application/json
+```
+```json
+{
+    "confirmacion": "SINAES 2026 - Estructura Flexible"
+}
+```
+**Respuesta 200:**
+```json
+{
+    "message": "Modelo de estructura \"SINAES 2026 - Estructura Flexible\" eliminado exitosamente.",
+    "datos_eliminados": {
+        "ciclos_acreditacion": 2,
+        "procesos": 4,
+        "autoevaluaciones": 2,
+        "compromisos_mejora": 2,
+        "asignaciones_evidencia": 5,
+        "solicitudes_ampliacion": 1,
+        "aprobaciones": 3,
+        "archivos": 6,
+        "elementos": 12
+    }
+}
+```
+
+**Pruebas de error:**
+
+| Caso | Resultado esperado |
+|------|-------------------|
+| ID inexistente | 404 `Modelo de estructura no encontrado.` |
+| Modelo tradicional (ID 1) | 422 `El modelo tradicional del sistema no puede ser eliminado.` |
+| `confirmacion` incorrecta | 422 con `datos_a_eliminar` |
+| Sin header Authorization | 401 |
+
+---
+
 ## M�DULO B � ELEMENTOS (modelo tipo `elemento_flexible`)
 
 > Construyen el �rbol jer�rquico del modelo flexible.  
@@ -335,7 +408,7 @@ Authorization: Bearer <token>
 ### Tipos de proceso v�lidos (enum fijo):
 | Valor | Descripci�n |
 |---|---|
-| `Autoevaluaci�n` | Proceso de autoevaluaci�n de la carrera |
+| `Autoevaluación` | Proceso de autoevaluaci�n de la carrera |
 | `Compromiso de mejora` | Proceso de seguimiento de mejoras |
 
 ---
@@ -354,7 +427,7 @@ Respuesta incluye ciclo ? modelo ? carrera ? sede:
 [
   {
     "proceso_id": 1,
-    "tipo_proceso": "Autoevaluaci�n",
+    "tipo_proceso": "Autoevaluación",
     "fecha_inicio": "2026-01-15",
     "fecha_finalizacion": "2026-12-31",
     "activo": true,
@@ -387,7 +460,7 @@ Content-Type: application/json
 ```json
 {
     "ciclo_acreditacion_id": 1,
-    "tipo_proceso": "Autoevaluaci�n",
+    "tipo_proceso": "Autoevaluación",
     "fecha_inicio": "2026-01-15",
     "fecha_finalizacion": "2026-12-31",
     "activo": true
@@ -403,7 +476,7 @@ Content-Type: application/json
     "data": {
         "proceso_id": 1,
         "ciclo_acreditacion_id": 1,
-        "tipo_proceso": "Autoevaluaci�n",
+        "tipo_proceso": "Autoevaluación",
         "fecha_inicio": "2026-01-15",
         "fecha_finalizacion": "2026-12-31",
         "activo": true
@@ -416,10 +489,10 @@ Content-Type: application/json
 
 | Caso | Body |
 |------|------|
-| Sin `ciclo_acreditacion_id` | `{ "tipo_proceso": "Autoevaluaci�n" }` |
-| Ciclo inexistente | `{ "ciclo_acreditacion_id": 9999, "tipo_proceso": "Autoevaluaci�n" }` |
+| Sin `ciclo_acreditacion_id` | `{ "tipo_proceso": "Autoevaluación" }` |
+| Ciclo inexistente | `{ "ciclo_acreditacion_id": 9999, "tipo_proceso": "Autoevaluación" }` |
 | Sin `tipo_proceso` | `{ "ciclo_acreditacion_id": 1 }` |
-| `tipo_proceso` inv�lido | `{ "tipo_proceso": "otro" }` ? "debe ser: Autoevaluaci�n o Compromiso de mejora" |
+| `tipo_proceso` inv�lido | `{ "tipo_proceso": "otro" }` ? "debe ser: Autoevaluación o Compromiso de mejora" |
 | Fecha fin < fecha inicio | `{ "fecha_inicio": "2026-12-31", "fecha_finalizacion": "2026-01-01" }` |
 
 ---
@@ -462,7 +535,78 @@ Content-Type: application/json
     "active": false
 }
 ```
-> Solo devuelve el nuevo estado — no el objeto completo.  > `DELETE` est� deshabilitado � los procesos no se eliminan f�sicamente.
+> Solo devuelve el nuevo estado — no el objeto completo.
+
+---
+
+### C6. Eliminar proceso (con confirmación)
+> **Elimina en cascada TODO lo asociado:** autoevaluaciones, compromisos de mejora, asignaciones de evidencias, solicitudes de ampliación, aprobaciones y archivos físicos del disco.  
+> El campo `confirmacion` debe ser el **`tipo_proceso` exacto** del proceso a eliminar.
+
+**PASO 1 — Ver qué se eliminará** (sin `confirmacion`):
+```
+DELETE /api/estructura/procesos/{id}
+Authorization: Bearer <token>   (Superusuario)
+Content-Type: application/json
+```
+```json
+{}
+```
+**Respuesta 422:**
+```json
+{
+    "message": "Confirmación incorrecta...",
+    "datos_a_eliminar": {
+        "autoevaluaciones": 1,
+        "compromisos_mejora": 0,
+        "asignaciones_evidencia": 3,
+        "solicitudes_ampliacion": 1,
+        "aprobaciones": 2,
+        "archivos": 4
+    }
+}
+```
+
+**PASO 2 — Confirmar con el `tipo_proceso` exacto:**
+```
+DELETE /api/estructura/procesos/{id}
+Authorization: Bearer <token>   (Superusuario)
+Content-Type: application/json
+```
+```json
+{
+    "confirmacion": "Autoevaluación"
+}
+```
+o
+```json
+{
+    "confirmacion": "Compromiso de mejora"
+}
+```
+**Respuesta 200:**
+```json
+{
+    "message": "Proceso eliminado exitosamente.",
+    "datos_eliminados": {
+        "autoevaluaciones": 1,
+        "compromisos_mejora": 0,
+        "asignaciones_evidencia": 3,
+        "solicitudes_ampliacion": 1,
+        "aprobaciones": 2,
+        "archivos": 4
+    }
+}
+```
+
+**Pruebas de error:**
+
+| Caso | Resultado esperado |
+|------|-------------------|
+| ID inexistente | 404 |
+| `confirmacion` con tipo incorrecto | 422 con `datos_a_eliminar` |
+| Sin header Authorization | 401 |
+| Sin permiso `procesos.delete` | 403 |
 
 ---
 
@@ -470,7 +614,7 @@ Content-Type: application/json
 
 ```
 PASO 1 — Login
-  POST /api/login  →  guardar token
+  POST /api/auth/login  →  guardar token
 
 PASO 2 — El modelo tradicional ya existe (creado por seeder al instalar)
   GET  /api/estructura/modelos          →  ver modelo tradicional (id: 1)
@@ -500,7 +644,7 @@ PASO 5 — Crear ciclo (requiere modelo_estructura_id valido)
   POST a ciclos con modelo_estructura_id del Paso 2  →  guardar ciclo_acreditacion_id
 
 PASO 6 — Crear y operar procesos
-  POST /api/estructura/procesos  →  tipo: "Autoevaluacion",       con fechas
+  POST /api/estructura/procesos  →  tipo: "Autoevaluación",       con fechas
   POST /api/estructura/procesos  →  tipo: "Compromiso de mejora", sin fechas (nullable)
   POST /api/estructura/procesos  →  tipo: "invalido"              →  422
   POST /api/estructura/procesos  →  fecha_fin < fecha_ini         →  422
@@ -508,6 +652,17 @@ PASO 6 — Crear y operar procesos
   GET  /api/estructura/procesos/1                                 →  detalle completo con relaciones
   PATCH /api/estructura/procesos/1        →  cambiar fechas
   PATCH /api/estructura/procesos/1/active →  { "active": false }
+
+PASO 7 — Eliminar proceso
+  DELETE /api/estructura/procesos/1  {}                             →  422 muestra datos_a_eliminar
+  DELETE /api/estructura/procesos/1  { "confirmacion": "Autoevaluación" }   →  200 eliminado
+  DELETE /api/estructura/procesos/1  { "confirmacion": "Compromiso de mejora" } →  422 tipo incorrecto
+
+PASO 8 — Eliminar modelo (solo elemento_flexible, no el tradicional ID=1)
+  DELETE /api/estructura/modelos/2  {}                                          →  422 muestra datos_a_eliminar (incluye ciclos, procesos, etc.)
+  DELETE /api/estructura/modelos/2  { "confirmacion": "nombre incorrecto" }     →  422
+  DELETE /api/estructura/modelos/2  { "confirmacion": "SINAES 2026 - Estructura Flexible" }  →  200 eliminado
+  DELETE /api/estructura/modelos/1  { "confirmacion": "SINAES 2018 - Estructura Tradicional" } →  422 no se puede eliminar el tradicional
 ```
 
 ## Errores comunes

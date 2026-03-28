@@ -127,6 +127,59 @@ class StructureModelController extends Controller
     }
 
     /**
+     * Eliminar modelo de estructura con confirmación por nombre (GitHub-style).
+     * Solo para modelos de tipo 'elemento_flexible'. El modelo 'tradicional' nunca se elimina.
+     *
+     * Lógica de bloqueo:
+     *  - Si tiene ciclos de acreditación asociados → 422 BLOQUEADO (datos históricos institucionales)
+     *  - Si no tiene ciclos → se eliminan sus elementos (definición del modelo) y el modelo
+     *
+     * Body: { "confirmacion": "nombre exacto del modelo" }
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $model = $this->service->findById($id);
+
+        if (!$model) {
+            return response()->json([
+                'message' => 'Modelo de estructura no encontrado.',
+            ], 404);
+        }
+
+        if ($model->esTradicional()) {
+            return response()->json([
+                'message' => 'El modelo tradicional del sistema no puede ser eliminado.',
+            ], 422);
+        }
+
+        // Mostrar advertencia de todo lo que se eliminará con el modelo
+        $summary      = $this->service->getDeleteSummary($model);
+        $confirmacion = $request->input('confirmacion', '');
+
+        if ($confirmacion !== $model->nombre) {
+            return response()->json([
+                'message'          => 'Confirmación incorrecta. Envíe el nombre exacto del modelo en el campo "confirmacion" para confirmar la eliminación.',
+                'modelo_nombre'    => $model->nombre,
+                'advertencia'      => 'Esta acción es irreversible y eliminará el modelo junto con los siguientes datos:',
+                'datos_a_eliminar' => $summary,
+            ], 422);
+        }
+
+        $deleted = $this->service->delete($model);
+
+        AuditLogService::log(
+            'eliminar',
+            "Se eliminó el modelo de estructura \"{$model->nombre}\" (ID: {$id}, Tipo: {$model->tipo}).",
+            'Modelo Estructura'
+        );
+
+        return response()->json([
+            'message'          => "Modelo de estructura \"{$model->nombre}\" eliminado exitosamente.",
+            'datos_eliminados' => $deleted,
+        ]);
+    }
+
+    /**
      * Activar/Desactivar modelo (no eliminar para mantener integridad con PROCESO)
      */
     public function setActive(Request $request, int $id): JsonResponse
