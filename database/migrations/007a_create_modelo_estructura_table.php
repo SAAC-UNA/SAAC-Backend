@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -10,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('MODELO_ESTRUCTURA', function (Blueprint $table) {
             $table->id('modelo_estructura_id');
-            $table->string('nombre', 100);
+            $table->string('nombre', 100)->unique();
             $table->text('descripcion')->nullable();
             $table->enum('tipo', ['tradicional', 'elemento_flexible']);
             $table->string('version', 20)->nullable();
@@ -20,6 +21,19 @@ return new class extends Migration
             $table->index('tipo');
             $table->index('activo');
         });
+
+        // Dato del sistema: el modelo tradicional SINAES 2018 debe existir siempre.
+        // Se inserta aquí (no en seeder) para garantizar que esté disponible
+        // con solo `php artisan migrate`, sin necesitar `--seed`.
+        DB::table('MODELO_ESTRUCTURA')->insertOrIgnore([
+            'nombre'      => 'SINAES 2018 - Estructura Tradicional',
+            'tipo'        => 'tradicional',
+            'descripcion' => 'Modelo clásico SINAES: Dimensión > Componente > Criterio > Evidencia.',
+            'version'     => '2018',
+            'activo'      => true,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
     }
 
     public function down(): void

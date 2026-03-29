@@ -77,11 +77,18 @@ return [
         // Compromisos de Mejora
         'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
         
+
+        // Modelos de Estructura SINAES (solo Superusuario puede crear/editar/eliminar)
+        'modelos' => ['view', 'create', 'edit', 'delete'],
+
+        // Ciclos de Acreditación (NO se pueden eliminar, solo desactivar)
+
         // Ciclos de Acreditación
         'ciclos' => ['view', 'create', 'edit', 'delete'],
+
         
-        // Procesos de Acreditación (NO se pueden eliminar, solo desactivar)
-        'procesos' => ['view', 'create', 'edit'],
+        // Procesos de Acreditación
+        'procesos' => ['view', 'create', 'edit', 'delete'],
         
         // Reportes
         'reportes' => ['view', 'generate', 'export'],
@@ -142,6 +149,11 @@ return [
             'elemento.create',
             'elemento.edit',
             'elemento.delete',
+
+            // Modelos de Estructura (gestión completa excepto eliminar - solo Superusuario elimina)
+            'modelos.view',
+            'modelos.create',
+            'modelos.edit',
             
             // Evidencias (gestión completa)
             'evidencias.view',
@@ -220,7 +232,10 @@ return [
             
             // Elementos (solo lectura)
             'elemento.view',
-            
+
+            // Modelos de Estructura (solo lectura)
+            'modelos.view',
+
             // Evidencias (ver y editar estados)
             'evidencias.view',
             'evidencias.edit',

@@ -71,11 +71,13 @@ class StructureElementRequest extends FormRequest
                     }
                 },
             ],
-            'tipo' => $isUpdate ? 'sometimes|required|string|max:30' : 'required|string|max:30',
-            'categoria' => 'nullable|in:A,B,C,D',
-            'nomenclatura' => 'nullable|string|max:20',
-            'descripcion' => 'nullable|string',
-            'activo' => 'boolean',
+            'tipo' => $isUpdate
+                ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/']
+                : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/'],
+            'categoria'    => 'nullable|in:A,B,C,D',
+            'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
+            'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],
+            'activo'       => 'boolean',
         ];
     }
 
@@ -92,11 +94,15 @@ class StructureElementRequest extends FormRequest
             'padre_id.exists' => 'El elemento padre seleccionado no existe.',
             'padre_id.not_in' => 'Un elemento no puede ser su propio padre.',
             'padre_id.same_model' => 'El elemento padre debe pertenecer al mismo modelo de estructura.',
-            'tipo.required' => 'El tipo es obligatorio.',
-            'tipo.max' => 'El tipo no puede exceder 30 caracteres.',
-            'categoria.in' => 'La categoría debe ser A, B, C o D.',
-            'nomenclatura.max' => 'La nomenclatura no puede exceder 20 caracteres.',
-            'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
+            'tipo.required'      => 'El tipo es obligatorio.',
+            'tipo.max'           => 'El tipo no puede exceder 30 caracteres.',
+            'tipo.regex'         => 'El tipo solo puede contener letras, números y espacios (ej: area, subarea, pauta, nivel1).',
+            'categoria.in'       => 'La categoría debe ser A, B, C o D.',
+            'nomenclatura.max'   => 'La nomenclatura no puede exceder 20 caracteres.',
+            'nomenclatura.regex' => 'La nomenclatura solo puede contener letras, números, puntos, guiones y guiones bajos (ej: AG-01, F1.1).',
+            'descripcion.max'    => 'La descripción no puede exceder 500 caracteres.',
+            'descripcion.regex'  => 'La descripción contiene caracteres no permitidos (no se permiten @, #, $, % u otros símbolos).',
+            'activo.boolean'     => 'El campo activo debe ser verdadero o falso.',
         ];
     }
 }
