@@ -13,6 +13,7 @@ Todos los endpoints requieren `Authorization: Bearer {token}` (Sanctum).
 | PATCH | `/estructura/ciclos-acreditacion/{id}` | `ciclos.edit` | Actualizar ciclo (solo si está activo) |
 | PUT | `/estructura/ciclos-acreditacion/{id}` | `ciclos.edit` | Actualizar ciclo completo (solo si está activo) |
 | DELETE | `/estructura/ciclos-acreditacion/{id}` | `ciclos.delete` | Siempre retorna 403 (eliminación física no permitida) |
+| PATCH | `/estructura/ciclos-acreditacion/{id}/reactivar` | `ciclos.reactivar` | Reactivar ciclo inactivo/completado — **solo Superusuario** |
 
 ---
 
@@ -42,6 +43,17 @@ Todos los endpoints requieren `Authorization: Bearer {token}` (Sanctum).
 - Al menos un campo requerido, de lo contrario retorna `422`
 - Solo funciona si el ciclo tiene `estado = "activo"`, de lo contrario retorna `403`
 - `carrera_sede_id` no es editable en update (se ignora si se envía)
+
+### PATCH — Reactivar ciclo (solo Superusuario)
+```
+PATCH /estructura/ciclos-acreditacion/{id}/reactivar
+Body: (vacío, no se requiere)
+```
+- No acepta ni procesa ningún campo del body
+- Fuerza el estado a `activo` internamente
+- Retorna `422` si el ciclo ya está activo
+- Retorna `422` si ya existe otro ciclo activo en la misma `carrera_sede_id` (AC-6)
+- Retorna `403` si el usuario no tiene el permiso `ciclos.reactivar`
 
 ### Query params — GET index
 ```
@@ -97,6 +109,9 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] `PATCH` vacío `{}` retorna `422` con `errors.general`
 - [x] `PATCH` con `nombre` duplicado dentro de la misma `carrera_sede` retorna `422`
 - [x] `PATCH` con `nombre` duplicado en **otra** `carrera_sede` retorna `200` (unicidad es per sede)
+- [x] `POST` con `estado = "activo"` cuando ya existe un ciclo activo en la misma sede retorna `422`
+- [x] `PATCH` cambiando `estado` a `"activo"` cuando ya hay otro activo en la misma sede retorna `422`
+- [x] `PATCH` sobre el único ciclo activo de su sede (sin cambiar estado) retorna `200`
 
 ### AC-3 — Filtrado automático por rol
 - [x] `GET /ciclos-acreditacion` aplica scope `BaseCareer` automáticamente
@@ -110,12 +125,27 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] `PATCH` sobre ciclo con `estado = "activo"` retorna `200`
 - [x] La validación de Policy se ejecuta **después** de la validación del request
 
+### AC-6 — Máximo un ciclo activo por carrera+sede
+- [x] `POST` con `estado = "activo"` y ya existe activo → `422` con error en `carrera_sede_id`
+- [x] `PATCH` cambiando a `"activo"` con otro ya activo en la misma sede → `422`
+- [x] El ciclo actual se excluye de la verificación (no se bloquea a sí mismo)
+- [x] Carreras en sedes distintas son independientes (Química Central ≠ Química Regional)
+
 ### AC-5 — Control de permisos
 - [x] `GET` sin token retorna `401`
 - [x] `GET` con token sin permiso `ciclos.view` retorna `403`
 - [x] `POST` con token sin permiso `ciclos.create` retorna `403`
 - [x] `PATCH` con token sin permiso `ciclos.edit` retorna `403`
 - [x] `DELETE` siempre retorna `403` (eliminación física deshabilitada por Policy)
+- [x] `PATCH /reactivar` con token sin permiso `ciclos.reactivar` retorna `403`
+
+### AC-R — Reactivación de ciclos (Superusuario)
+- [x] `PATCH /reactivar` sobre ciclo `inactivo` sin conflicto retorna `200` con ciclo `activo`
+- [x] `PATCH /reactivar` sobre ciclo `completado` sin conflicto retorna `200` con ciclo `activo`
+- [x] `PATCH /reactivar` sobre ciclo ya `activo` retorna `422` `"El ciclo ya está activo."`
+- [x] `PATCH /reactivar` cuando ya hay otro activo en la misma `carrera_sede` retorna `422` (AC-6)
+- [x] Solo el rol `Superusuario` tiene el permiso `ciclos.reactivar`
+- [x] `Administrador` y demás roles reciben `403` al intentar reactivar
 
 ---
 
@@ -140,6 +170,7 @@ GET /estructura/ciclos-acreditacion?per_page=10
   - [x] Campos `required` solo en POST, `sometimes` en GET y PATCH
   - [x] Unique por `(nombre, carrera_sede_id)` con ignore en update
   - [x] `withValidator` exige al menos un campo en update
+  - [x] `withValidator` valida máximo 1 ciclo activo por `carrera_sede_id` (AC-6)
 - [x] `AccreditationCycleResource` — expone `modelo_estructura` y `carrera_sede` via `whenLoaded()`
 
 ### Autorización
@@ -148,6 +179,7 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] `create` → `ciclos.create`
 - [x] `update` → `isEditable() && ciclos.edit` (AC-4)
 - [x] `delete` → siempre `false`
+- [x] `reactivate` → `ciclos.reactivar` (bypasea `isEditable()`, solo Superusuario)
 
 ### Observabilidad
 - [x] `AuditObserver` registrado para `AccreditationCycle` en `AppServiceProvider`
@@ -158,6 +190,11 @@ GET /estructura/ciclos-acreditacion?per_page=10
 - [x] POST protegido con middleware `permission:ciclos.create`
 - [x] PATCH/PUT protegidos con middleware `permission:ciclos.edit`
 - [x] DELETE protegido con middleware `permission:ciclos.delete`
+- [x] `PATCH /{id}/reactivar` protegido con middleware `permission:ciclos.reactivar`
+
+### Seeder
+- [x] `AccreditationCycleSeeder` corregido: ciclo `2024-2028` nace como `completado`, ciclo `2025-2029` como `activo`
+- [x] `PermissionSeeder` actualizado: `ciclos.reactivar` registrado y asignado a `Superusuario` automáticamente vía `all_permissions: true`
 
 ---
 
@@ -166,7 +203,7 @@ GET /estructura/ciclos-acreditacion?per_page=10
 | Usuario | Cédula | Rol | Permisos ciclos |
 |---------|--------|-----|----------------|
 | Administrador | `208330811` | Administrador | view, create, edit |
-| Superusuario | `801490957` | Superusuario | Todos |
+| Superusuario | `801490957` | Superusuario | Todos (incluyendo `reactivar`) |
 
 Password de todos: `password123`
 

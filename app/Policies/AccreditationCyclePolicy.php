@@ -39,7 +39,6 @@ class AccreditationCyclePolicy
     }
 
     /**
-     * Determine whether the user can update the model.
      * AC-4: Solo se puede editar si el ciclo está activo
      * AC-5: Requiere permiso ciclos.edit
      */
@@ -53,12 +52,21 @@ class AccreditationCyclePolicy
     }
 
     /**
-     * Los ciclos NO se pueden eliminar físicamente.
-     * Solo se pueden desactivar mediante update.
+     * Reactivar un ciclo inactivo o completado.
+     * AC-R: Solo el Superusuario puede reactivar; sigue aplicando AC-6.
+     */
+    public function reactivate(User $user, AccreditationCycle $cycle): bool
+    {
+        return $user->can('ciclos.reactivar');
+    }
+
+    /**
+     * Solo el Superusuario puede eliminar ciclos físicamente.
+     * Requiere permiso ciclos.delete y que el ciclo no tenga procesos asociados.
      */
     public function delete(User $user, AccreditationCycle $accreditationCycle): bool
     {
-        return false;
+        return $user->can('ciclos.delete');
     }
 
     /**

@@ -28,32 +28,53 @@ class AccreditationCycle extends BaseCareer
     // Campos que se pueden asignar masivamente
     protected $fillable = ['carrera_sede_id', 'modelo_estructura_id', 'nombre', 'estado'];
 
-    //helpers de dominio para verificar el estado del ciclo
+    // --- Helpers de dominio: verifican el estado del ciclo ---
+
+    /** Retorna true si el ciclo está en estado 'activo'. */
     public function isActive(): bool
-    {        return $this->estado === self::STATUS_ACTIVE;
+    {
+        return $this->estado === self::STATUS_ACTIVE;
     }
+
+    /** Retorna true si el ciclo está en estado 'inactivo'. */
     public function isInactive(): bool
     {
         return $this->estado === self::STATUS_INACTIVE;
     }
+
+    /** Retorna true si el ciclo finalizó (estado 'completado'). */
     public function isCompleted(): bool
-    {        return $this->estado === self::STATUS_COMPLETED;
+    {
+        return $this->estado === self::STATUS_COMPLETED;
     }
+
+    /**
+     * AC-4: Un ciclo solo permite edición mientras está activo.
+     * La Policy llama este método antes de autorizar cualquier update.
+     */
     public function isEditable(): bool
     {
-        // Solo se puede editar si el ciclo está activo
         return $this->estado === self::STATUS_ACTIVE;
     }
  
     
-    //scopes para filtrar por estado
-    public function scopeActive($query){
+    // --- Scopes: filtros reutilizables por estado ---
+
+    /** Filtra solo ciclos activos: AccreditationCycle::active()->get() */
+    public function scopeActive($query)
+    {
         return $query->where('estado', self::STATUS_ACTIVE);
     }
-    public function scopeInactive($query){
+
+    /** Filtra solo ciclos inactivos: AccreditationCycle::inactive()->get() */
+    public function scopeInactive($query)
+    {
         return $query->where('estado', self::STATUS_INACTIVE);
     }
-    public function scopeCompleted($query){
+
+    /** Filtra solo ciclos completados: AccreditationCycle::completed()->get() */
+    public function scopeCompleted($query)
+    {
         return $query->where('estado', self::STATUS_COMPLETED);
     }
     /**

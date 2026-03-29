@@ -77,15 +77,11 @@ return [
         // Compromisos de Mejora
         'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
         
-
         // Modelos de Estructura SINAES (solo Superusuario puede crear/editar/eliminar)
         'modelos' => ['view', 'create', 'edit', 'delete'],
 
-        // Ciclos de Acreditación (NO se pueden eliminar, solo desactivar)
-
         // Ciclos de Acreditación
-        'ciclos' => ['view', 'create', 'edit', 'delete'],
-
+        'ciclos' => ['view', 'create', 'edit', 'delete', 'reactivar'],
         
         // Procesos de Acreditación
         'procesos' => ['view', 'create', 'edit', 'delete'],
@@ -191,11 +187,10 @@ return [
             'compromisos_mejora.edit',
             'compromisos_mejora.delete',
             
-            // Ciclos
+            // Ciclos (el Administrador no puede eliminar, solo el Superusuario)
             'ciclos.view',
             'ciclos.create',
             'ciclos.edit',
-            'ciclos.delete',
             
             // Procesos (no se pueden eliminar, solo desactivar)
             'procesos.view',

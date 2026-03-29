@@ -230,6 +230,8 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:ciclos.edit');
         Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
         ->middleware('permission:ciclos.delete');
+        Route::patch('estructura/ciclos-acreditacion/{id}/reactivar', [AccreditationCycleController::class, 'reactivate'])
+        ->middleware('permission:ciclos.reactivar');
 
     
     Route::post('estructura/procesos', [ProcessController::class, 'store'])

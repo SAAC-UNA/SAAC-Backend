@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
     {
         //
     }
-
+//Es para registrar los observers de auditoria en cada modelo, para que se registren las acciones de crear, actualizar y eliminar en la tabla de auditoria
     public function boot(): void
     {
         // -----------------------------------------------------------------------

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AccreditationCycle;
 use App\Services\AccreditationCycleService;
+use App\Services\AuditLogService;
 use App\Http\Requests\AccreditationCycleRequest;
 use App\Http\Resources\AccreditationCycleResource;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 class AccreditationCycleController extends Controller
 {
@@ -86,11 +88,10 @@ class AccreditationCycleController extends Controller
 
     /**
      * DELETE /api/ciclos/{id}
-     * Los ciclos NO se eliminan físicamente.
-     * Solo se inactivan mediante PATCH con estado='inactivo'.
-     * La Policy siempre deniega esta acción (delete → false).
+     * Solo Superusuario. Requiere confirmación con el nombre exacto del ciclo.
+     * Body: { "confirmacion": "nombre exacto del ciclo" }
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $cycle = $this->service->findById($id);
 
@@ -100,7 +101,66 @@ class AccreditationCycleController extends Controller
 
         $this->authorize('delete', $cycle);
 
-        // Nunca se alcanza: la Policy bloquea el DELETE físico.
-        return response()->noContent();
+        $confirmacion = $request->input('confirmacion', '');
+
+        if ($confirmacion !== $cycle->nombre) {
+            return response()->json([
+                'message'       => 'Confirmación incorrecta. Envíe el nombre exacto del ciclo en el campo "confirmacion" para confirmar la eliminación.',
+                'ciclo_nombre'  => $cycle->nombre,
+                'advertencia'   => 'Esta acción es irreversible.',
+            ], 422);
+        }
+
+        try {
+            $this->service->delete($cycle);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        AuditLogService::log(
+            'eliminar',
+            "Se eliminó el ciclo de acreditación \"{$cycle->nombre}\" (ID: {$id}).",
+            'Ciclo Acreditación'
+        );
+
+        return response()->json(['message' => "Ciclo \"{$cycle->nombre}\" eliminado exitosamente."]);
+    }
+
+    /**
+     * PATCH /api/estructura/ciclos-acreditacion/{id}/reactivar
+     * AC-R: Solo Superusuario. Reactiva un ciclo inactivo/completado.
+     * Sigue respetando AC-6: no puede haber otro activo en la misma carrera+sede.
+     */
+    public function reactivate($id)
+    {
+        $cycle = $this->service->findById($id);
+
+        if (!$cycle) {
+            return response()->json(['message' => 'Ciclo de acreditación no encontrado.'], 404);
+        }
+
+        $this->authorize('reactivate', $cycle);
+
+        if ($cycle->estado === AccreditationCycle::STATUS_ACTIVE) {
+            return response()->json(['message' => 'El ciclo ya está activo.'], 422);
+        }
+
+        // AC-6: verificar que no haya otro activo en la misma carrera+sede
+        $conflicto = AccreditationCycle::where('carrera_sede_id', $cycle->carrera_sede_id)
+            ->where('estado', AccreditationCycle::STATUS_ACTIVE)
+            ->where('ciclo_acreditacion_id', '!=', $cycle->ciclo_acreditacion_id)
+            ->exists();
+
+        if ($conflicto) {
+            return response()->json([
+                'errors' => [
+                    'carrera_sede_id' => ['Ya existe un ciclo activo para esta carrera en esta sede.'],
+                ],
+            ], 422);
+        }
+
+        $updated = $this->service->update($cycle, ['estado' => AccreditationCycle::STATUS_ACTIVE]);
+
+        return AccreditationCycleResource::make($updated)->response();
     }
 }

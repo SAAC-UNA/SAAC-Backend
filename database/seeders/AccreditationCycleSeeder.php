@@ -38,22 +38,24 @@ class AccreditationCycleSeeder extends Seeder
         
         // Crear ciclos de acreditación para cada carrera
         foreach ($carrerasSede as $carreraSede) {
-            // Ciclo actual 2024-2028
+            // Ciclo anterior 2024-2028 → completado (ya terminó)
             $ciclos[] = [
-                'carrera_sede_id' => $carreraSede->carrera_sede_id,
-                'nombre' => 'Ciclo de Acreditación 2024-2028',
+                'carrera_sede_id'      => $carreraSede->carrera_sede_id,
+                'nombre'               => 'Ciclo de Acreditación 2024-2028',
                 'modelo_estructura_id' => $primerModelo,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'estado'               => 'completado',
+                'created_at'           => now(),
+                'updated_at'           => now(),
             ];
 
-            // Ciclo próximo 2025-2029
+            // Ciclo actual 2025-2029 → activo (AC-6: solo uno activo por carrera+sede)
             $ciclos[] = [
-                'carrera_sede_id' => $carreraSede->carrera_sede_id,
-                'nombre' => 'Ciclo de Acreditación 2025-2029',
+                'carrera_sede_id'      => $carreraSede->carrera_sede_id,
+                'nombre'               => 'Ciclo de Acreditación 2025-2029',
                 'modelo_estructura_id' => $primerModelo,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'estado'               => 'activo',
+                'created_at'           => now(),
+                'updated_at'           => now(),
             ];
         }
 
