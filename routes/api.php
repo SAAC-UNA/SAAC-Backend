@@ -191,17 +191,21 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:elemento.edit');
     
     // ===== MODELOS DE ESTRUCTURA =====
-    Route::get('estructura/modelos', [StructureModelController::class, 'index']);
-    Route::get('estructura/modelos/activos', [StructureModelController::class, 'activos']);
-    Route::get('estructura/modelos/{id}', [StructureModelController::class, 'show']);
+    Route::middleware(['permission:modelos.view'])->group(function () {
+        Route::get('estructura/modelos', [StructureModelController::class, 'index']);
+        Route::get('estructura/modelos/activos', [StructureModelController::class, 'activos']);
+        Route::get('estructura/modelos/{id}', [StructureModelController::class, 'show']);
+    });
     Route::post('estructura/modelos', [StructureModelController::class, 'store'])
-        ->middleware('role:Superusuario');
+        ->middleware('permission:modelos.create');
     Route::patch('estructura/modelos/{id}/active', [StructureModelController::class, 'setActive'])
-        ->middleware('role:Superusuario');
+        ->middleware('permission:modelos.edit');
     Route::put('estructura/modelos/{id}', [StructureModelController::class, 'update'])
-        ->middleware('role:Superusuario');
+        ->middleware('permission:modelos.edit');
     Route::patch('estructura/modelos/{id}', [StructureModelController::class, 'update'])
-        ->middleware('role:Superusuario');
+        ->middleware('permission:modelos.edit');
+    Route::delete('estructura/modelos/{id}', [StructureModelController::class, 'destroy'])
+        ->middleware('permission:modelos.delete');
     
     // ===== PROCESOS Y CICLOS =====
     Route::middleware(['permission:procesos.view'])->group(function () {
@@ -243,8 +247,8 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:procesos.edit');
     Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
         ->middleware('permission:procesos.edit');
-    // Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
-    //     ->middleware('permission:ciclos.delete'); // Procesos NO se eliminan, solo se activan/desactivan
+    Route::delete('estructura/procesos/{id}', [ProcessController::class, 'destroy'])
+        ->middleware('permission:procesos.delete');
 });
 
 // ============================================
