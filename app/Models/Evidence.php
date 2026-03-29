@@ -93,6 +93,9 @@ class Evidence extends BaseCareer
         return $this->hasOne(File::class, 'evidencia_id', 'evidencia_id')
             ->where('tipo', 'archivo')
             ->latest('fecha_subida');
+    }
+
+    /*
      * Relación polimórfica: Una evidencia puede tener muchos comentarios (HU-013).
      * Los comentarios se guardan en COMENTARIO con commentable_type = Evidence::class.
      *
