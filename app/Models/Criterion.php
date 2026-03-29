@@ -21,12 +21,16 @@ class Criterion extends BaseCareer
     // Tipo de la clave primaria
     protected $keyType = 'int';
 
+    // Estados posibles del criterio (calculado automáticamente)
+    public const ESTADOS = ['Pendiente', 'En Proceso', 'Completado'];
+
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'componente_id',
         'descripcion',
         'nomenclatura',
-        'activo'
+        'activo',
+        'estado',
     ];
 
     // --- Scopes ---

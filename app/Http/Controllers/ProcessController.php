@@ -2,40 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Process;
 use App\Http\Requests\ProcessRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\AuditLogService;
+use App\Services\ProcessService;
 
 class ProcessController extends Controller
 {
+    protected ProcessService $service;
+
+    public function __construct(ProcessService $service)
+    {
+        $this->service = $service;
+    }
+
     /**
      * Listar todos los procesos con relaciones.
      */
-    public function index(Request $request)
+    public function index(): JsonResponse
     {
-        $processes = Process::with([
-            'accreditationCycle.careerCampus.career',
-            'accreditationCycle.careerCampus.campus',
-            'accreditationCycle.modeloEstructura',
-        ])->get();
-
-        return response()->json($processes);
+        return response()->json($this->service->getAll());
     }
 
     /**
      * Crear un nuevo proceso.
      */
-    public function store(ProcessRequest $request)
+    public function store(ProcessRequest $request): JsonResponse
     {
-        $process = Process::create($request->validated());
-        
+        $process = $this->service->create($request->validated());
+
         AuditLogService::log(
             'crear',
             "Se creó el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
             'Proceso'
         );
-        
+
         return response()->json([
             'message' => 'Proceso creado exitosamente.',
             'data'    => $process,
@@ -45,9 +47,9 @@ class ProcessController extends Controller
     /**
      * Mostrar un proceso específico.
      */
-    public function show($id)
+    public function show(int $id): JsonResponse
     {
-        $process = Process::findOrFail($id);
+        $process = $this->service->findById($id);
 
         return response()->json($process);
     }
@@ -55,21 +57,20 @@ class ProcessController extends Controller
     /**
      * Actualizar un proceso existente.
      */
-    public function update(ProcessRequest $request, $id)
+    public function update(ProcessRequest $request, int $id): JsonResponse
     {
-        $process = Process::findOrFail($id);
-        
-        $process->update($request->validated());
-        
+        $process = $this->service->findById($id);
+        $updated = $this->service->update($process, $request->validated());
+
         AuditLogService::log(
             'editar',
-            "Se actualizó el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
+            "Se actualizó el proceso ID {$updated->proceso_id} (Tipo: {$updated->tipo_proceso}).",
             'Proceso'
         );
-        
+
         return response()->json([
             'message' => 'Proceso actualizado exitosamente.',
-            'data'    => $process,
+            'data'    => $updated,
         ]);
     }
 
@@ -77,66 +78,70 @@ class ProcessController extends Controller
      * Activar/Desactivar un proceso.
      * PATCH /api/estructura/procesos/{id}/active
      */
-    public function setActive(Request $request, $id)
+    public function setActive(Request $request, int $id): JsonResponse
     {
-        $process = Process::findOrFail($id);
-        
+        $process = $this->service->findById($id);
+
         $validated = $request->validate([
             'active' => ['required', 'boolean'],
         ]);
-        
-        $newActiveState = $validated['active'];
 
-        if ($newActiveState) {
-            $existsActiveConflict = Process::where('ciclo_acreditacion_id', $process->ciclo_acreditacion_id)
-                ->where('tipo_proceso', $process->tipo_proceso)
-                ->where('activo', true)
-                ->where('proceso_id', '!=', $process->proceso_id)
-                ->exists();
-
-            if ($existsActiveConflict) {
-                return response()->json([
-                    'message' => 'No se puede activar el proceso porque ya existe otro proceso activo del mismo tipo para este ciclo.',
-                ], 422);
-            }
+        try {
+            $this->service->toggleActive($process, $validated['active']);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $process->activo = $newActiveState;
-        $process->save();
-        
-        $statusText = $newActiveState ? 'activado' : 'desactivado';
-        
+        $statusText = $process->activo ? 'activado' : 'desactivado';
+
         AuditLogService::log(
             'editar',
             "Se {$statusText} el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
             'Proceso'
         );
-        
+
         return response()->json([
             'message' => "Proceso {$statusText} exitosamente.",
             'active'  => $process->activo,
-        ], 200);
-    }
-
-    // =====================================================
-    // MÉTODO destroy() DESHABILITADO
-    // Los procesos NO se eliminan físicamente.
-    // Solo se activan/desactivan usando setActive()
-    // =====================================================
-    /**
-     * Eliminar un proceso.
-     * DESHABILITADO: Los procesos no se eliminan, solo se activan/desactivan.
-     */
-    /*
-    public function destroy($id)
-    {
-        $proceso = Process::findOrFail($id);
-        $proceso->delete();
-        
-        return response()->json([
-            'message' => 'Proceso eliminado exitosamente.'
         ]);
     }
-    */
+
+    /**
+     * Eliminar un proceso con confirmación por tipo (GitHub-style).
+     *
+     * Body: { "confirmacion": "Autoevaluación" }  (tipo_proceso exacto)
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $process = $this->service->findById($id);
+        $summary = $this->service->getDeleteSummary($process);
+
+        $confirmacion = $request->input('confirmacion', '');
+
+        if ($confirmacion !== $process->tipo_proceso) {
+            return response()->json([
+                'message'          => 'Confirmación incorrecta. Envíe el tipo exacto del proceso en el campo "confirmacion" para confirmar la eliminación.',
+                'tipo_proceso'     => $process->tipo_proceso,
+                'advertencia'      => 'Esta acción es irreversible y eliminará permanentemente el proceso y todos sus datos asociados.',
+                'datos_a_eliminar' => $summary,
+            ], 422);
+        }
+
+        $procesoId   = $process->proceso_id;
+        $tipoProceso = $process->tipo_proceso;
+
+        $this->service->delete($process);
+
+        AuditLogService::log(
+            'eliminar',
+            "Se eliminó el proceso ID {$procesoId} (Tipo: {$tipoProceso}).",
+            'Proceso'
+        );
+
+        return response()->json([
+            'message'          => "Proceso \"{$tipoProceso}\" eliminado exitosamente.",
+            'datos_eliminados' => $summary,
+        ]);
+    }
 }
 

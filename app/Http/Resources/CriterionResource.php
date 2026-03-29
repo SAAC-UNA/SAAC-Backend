@@ -39,6 +39,8 @@ class CriterionResource extends JsonResource
                     'activo'      => $s->activo,
                 ])->values()
             ),
+            'estado'        => $this->estado,
+            'activo'        => $this->activo ?? true, // Agregar campo activo
         ];
     }
 }

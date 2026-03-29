@@ -36,8 +36,8 @@ abstract class BaseCareer extends Model
             //  Modo libre (Tinker)
             if (!$user) return;
 
-            //  SuperUsuario → sin restricciones
-            if ($user->hasRole('SuperUsuario')) return;
+            //  Superusuario → sin restricciones
+            if ($user->hasRole('Superusuario')) return;
 
             //  Obtener todos los carrera_sede_id asociados al usuario
             $careerCampusIds = $user->careers()

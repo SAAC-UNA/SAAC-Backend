@@ -54,7 +54,7 @@ class EvidencesExport
             $sheet->setCellValue("A{$row}", $evidence->nomenclatura);
             $sheet->setCellValue("B{$row}", $evidence->descripcion);
             $sheet->setCellValue("C{$row}", $evidence->criterion->nomenclatura . ' - ' . $evidence->criterion->descripcion);
-            $sheet->setCellValue("D{$row}", $evidence->evidenceState->nombre ?? 'N/A');
+            $sheet->setCellValue("D{$row}", $evidence->estado ?? 'N/A');
             $sheet->setCellValue("E{$row}", $assignees ?: 'Sin asignar');
             $sheet->setCellValue("F{$row}", $evidence->created_at->format('d/m/Y H:i'));
             $row++;

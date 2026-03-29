@@ -201,13 +201,9 @@ return [
          */
 
         'store' => 'default',
-        'defaults' => [
-    'guard' => 'api',
-],
-
     ],
     'defaults' => [
-    'guard' => 'api',
-],
+        'guard' => 'api',
+    ],
 
 ];

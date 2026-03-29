@@ -19,22 +19,9 @@ class StructureModelSeeder extends Seeder
      */
     public function run(): void
     {
-        $exists = DB::table('MODELO_ESTRUCTURA')->where('tipo', 'tradicional')->exists();
-
-        if (!$exists) {
-            DB::table('MODELO_ESTRUCTURA')->insert([
-                'nombre'      => 'SINAES 2018 - Estructura Tradicional',
-                'tipo'        => 'tradicional',
-                'descripcion' => 'Modelo clásico SINAES: Dimensión > Componente > Criterio > Evidencia.',
-                'version'     => '2018',
-                'activo'      => true,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
-
-            $this->command->info('  ✔ Modelo tradicional SINAES 2018 creado.');
-        } else {
-            $this->command->info('  ℹ  Modelo tradicional ya existe — omitido.');
-        }
+        // El modelo tradicional SINAES 2018 se inserta directamente en la migración
+        // 007a_create_modelo_estructura_table.php con insertOrIgnore.
+        // No es necesario hacerlo aquí — corre solo con `php artisan migrate`.
+        $this->command->info('  ℹ  Modelo tradicional gestionado por la migración 007a — nada que hacer.');
     }
 }

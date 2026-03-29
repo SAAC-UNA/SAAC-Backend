@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Evidence;
 
 /**
  * FilterEvidenceRequest - Validación de filtros para HU-012
@@ -103,11 +104,11 @@ class FilterEvidenceRequest extends FormRequest
             ],
 
             // Filtro por Estado de Evidencia
-            // Ejemplo: { "estado_evidencia_id": 2 } busca evidencias "Aprobadas"
-            'estado_evidencia_id' => [
+            // Ejemplo: { "estado": "aprobado" } busca evidencias aprobadas
+            'estado' => [
                 'nullable',
-                'integer',
-                'exists:ESTADO_EVIDENCIA,estado_evidencia_id',
+                'string',
+                \Illuminate\Validation\Rule::in(Evidence::ESTADOS),
             ],
 
             // Filtro por Rol del responsable

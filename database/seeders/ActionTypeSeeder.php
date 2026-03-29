@@ -40,6 +40,10 @@ class ActionTypeSeeder extends Seeder
             // Acciones de notificaciones (HU-018)
             ['descripcion' => 'notificar'],
             ['descripcion' => 'notificar_fallido'],
+
+            // Acciones de retroalimentación de evidencias (HU-013)
+            // Se usa cuando un Encargado de Acreditación observa o valida una evidencia
+            ['descripcion' => 'retroalimentar'],
         ];
         // Recorre cada acción y la crea en la base de datos
         foreach ($actions as $action) {
