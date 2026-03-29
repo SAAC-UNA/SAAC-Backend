@@ -51,6 +51,14 @@ class EvidenceResource extends JsonResource
                     ->values()
                     ->toArray()
             ),
+            // Última carga de archivo
+            'ultima_carga'        => $this->whenLoaded('latestFile', fn() => $this->latestFile
+                ? [
+                    'fecha_subida' => optional($this->latestFile->fecha_subida)->toISOString(),
+                    'usuario_id'   => $this->latestFile->usuario_id,
+                ]
+                : null
+            ),
             // Contadores de recursos
             'archivos_count'      => $this->archivos_count ?? 0,
             'enlaces_count'       => $this->enlaces_count ?? 0,
