@@ -187,11 +187,10 @@ return [
             'compromisos_mejora.edit',
             'compromisos_mejora.delete',
             
-            // Ciclos
+            // Ciclos (el Administrador no puede eliminar, solo el Superusuario)
             'ciclos.view',
             'ciclos.create',
             'ciclos.edit',
-            'ciclos.delete',
             
             // Procesos (no se pueden eliminar, solo desactivar)
             'procesos.view',

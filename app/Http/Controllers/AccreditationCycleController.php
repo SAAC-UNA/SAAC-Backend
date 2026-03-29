@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AccreditationCycle;
 use App\Services\AccreditationCycleService;
+use App\Services\AuditLogService;
 use App\Http\Requests\AccreditationCycleRequest;
 use App\Http\Resources\AccreditationCycleResource;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 class AccreditationCycleController extends Controller
 {
@@ -86,11 +88,10 @@ class AccreditationCycleController extends Controller
 
     /**
      * DELETE /api/ciclos/{id}
-     * Los ciclos NO se eliminan físicamente.
-     * Solo se inactivan mediante PATCH con estado='inactivo'.
-     * La Policy siempre deniega esta acción (delete → false).
+     * Solo Superusuario. Requiere confirmación con el nombre exacto del ciclo.
+     * Body: { "confirmacion": "nombre exacto del ciclo" }
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $cycle = $this->service->findById($id);
 
@@ -100,8 +101,29 @@ class AccreditationCycleController extends Controller
 
         $this->authorize('delete', $cycle);
 
-        // Nunca se alcanza: la Policy bloquea el DELETE físico.
-        return response()->noContent();
+        $confirmacion = $request->input('confirmacion', '');
+
+        if ($confirmacion !== $cycle->nombre) {
+            return response()->json([
+                'message'       => 'Confirmación incorrecta. Envíe el nombre exacto del ciclo en el campo "confirmacion" para confirmar la eliminación.',
+                'ciclo_nombre'  => $cycle->nombre,
+                'advertencia'   => 'Esta acción es irreversible.',
+            ], 422);
+        }
+
+        try {
+            $this->service->delete($cycle);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        AuditLogService::log(
+            'eliminar',
+            "Se eliminó el ciclo de acreditación \"{$cycle->nombre}\" (ID: {$id}).",
+            'Ciclo Acreditación'
+        );
+
+        return response()->json(['message' => "Ciclo \"{$cycle->nombre}\" eliminado exitosamente."]);
     }
 
     /**

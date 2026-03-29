@@ -61,12 +61,12 @@ class AccreditationCyclePolicy
     }
 
     /**
-     * Los ciclos NO se pueden eliminar físicamente.
-     * Solo se pueden desactivar mediante update.
+     * Solo el Superusuario puede eliminar ciclos físicamente.
+     * Requiere permiso ciclos.delete y que el ciclo no tenga procesos asociados.
      */
     public function delete(User $user, AccreditationCycle $accreditationCycle): bool
     {
-        return false;
+        return $user->can('ciclos.delete');
     }
 
     /**
