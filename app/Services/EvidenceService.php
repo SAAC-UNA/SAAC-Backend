@@ -16,7 +16,7 @@ class EvidenceService
     private const CACHE_TTL = 300;
 
     /** Relaciones eager-loaded en la mayoría de queries */
-    private const WITH_BASE = ['criterion.component.dimension'];
+    private const WITH_BASE = ['criterion.component.dimension', 'elemento'];
 
     public function getAll()
     {
@@ -164,8 +164,9 @@ class EvidenceService
     {
         $perPage    = (int) ($filters['per_page'] ?? 15);
         $page       = (int) ($filters['page']     ?? 1);
-        $criterioId = $filters['criterio_id'] ?? null;
-        $estado     = $filters['estado']      ?? null;
+        $criterioId  = $filters['criterio_id']  ?? null;
+        $elementoId  = $filters['elemento_id']  ?? null;
+        $estado      = $filters['estado']       ?? null;
         $fechaDesde = $filters['fecha_desde'] ?? null;
         $fechaHasta = $filters['fecha_hasta'] ?? null;
         $sortBy     = $filters['sort_by']     ?? 'created_at';
@@ -201,6 +202,9 @@ class EvidenceService
 
         if ($criterioId) {
             $query->where('criterio_id', $criterioId);
+        }
+        if ($elementoId) {
+            $query->where('elemento_id', $elementoId);
         }
         if ($estado) {
             $query->where('estado', $estado);

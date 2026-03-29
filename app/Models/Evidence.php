@@ -17,7 +17,7 @@ class Evidence extends BaseCareer
     protected $primaryKey = 'evidencia_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['criterio_id', 'estado', 'descripcion', 'nomenclatura', 'activo'];
+    protected $fillable = ['criterio_id', 'elemento_id', 'estado', 'descripcion', 'nomenclatura', 'activo'];
 
     /** Valores válidos del enum estado */
     public const ESTADOS = ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'];
@@ -50,6 +50,16 @@ class Evidence extends BaseCareer
     public function criterion()
     {
         return $this->belongsTo(Criterion::class, 'criterio_id', 'criterio_id');
+    }
+
+    /**
+     * Relación: Una evidencia (flexible) pertenece a un elemento del árbol.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function elemento()
+    {
+        return $this->belongsTo(StructureElement::class, 'elemento_id', 'elemento_id');
     }
 
     /**

@@ -15,6 +15,7 @@ class EvidenceResource extends JsonResource
         return [
             'evidencia_id'        => $this->evidencia_id,
             'criterio_id'         => $this->criterio_id,
+            'elemento_id'         => $this->elemento_id,
             'estado'              => $this->estado,
             'descripcion'         => $this->descripcion,
             'nomenclatura'        => $this->nomenclatura,
@@ -33,6 +34,17 @@ class EvidenceResource extends JsonResource
                         'activo'       => true,
                     ]
                     : null),
+            // Elemento del modelo flexible — null en evidencias tradicionales
+            'elemento'            => $this->when(
+                $this->relationLoaded('elemento') && $this->elemento,
+                fn() => [
+                    'elemento_id'         => $this->elemento->elemento_id,
+                    'tipo'                => $this->elemento->tipo,
+                    'nomenclatura'        => $this->elemento->nomenclatura,
+                    'descripcion'         => $this->elemento->descripcion,
+                    'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+                ]
+            ),
             // El estado ya es el string del enum — no requiere relación adicional
             'responsables'        => $this->when(
                 $this->relationLoaded('assignments'),
