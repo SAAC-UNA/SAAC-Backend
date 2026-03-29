@@ -3,11 +3,10 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Redis;
 
 /**
  * Gestiona el ciclo completo de autenticación de sesiones:
- * credenciales LDAP, invalidación de tokens previos, sesión Redis y cookie.
+ * credenciales LDAP, invalidación de tokens previos y cookie.
  *
  * Extrae estas responsabilidades de AuthController (SRP).
  */
@@ -19,7 +18,7 @@ class AuthService
 
     /**
      * Intenta autenticar al usuario contra LDAP y, si tiene éxito,
-     * establece el token Sanctum y la sesión Redis.
+    * establece el token Sanctum y la cookie.
      *
      * @return array{success: bool, reason?: string, status?: int, user?: User, cookie?: \Symfony\Component\HttpFoundation\Cookie}
      */
@@ -57,20 +56,10 @@ class AuthService
 
         // SEGURIDAD: Invalidar todas las sesiones y tokens previos
         $user->tokens()->delete();
-        Redis::del("session:user:{$user->usuario_id}");
 
-        $token = $user->createToken('auth-token', ['*'], now()->addHours(24))->plainTextToken;
+        $sessionLifetimeMinutes = (int) config('session.lifetime', 120);
+        $token = $user->createToken('auth-token', ['*'], now()->addMinutes($sessionLifetimeMinutes))->plainTextToken;
         $user->load(['roles', 'permissions', 'careers']);
-
-        Redis::setex("session:user:{$user->usuario_id}", 1800, json_encode([
-            'usuario_id' => $user->usuario_id,
-            'cedula'     => substr($user->cedula, -4), // Solo últimos 4 dígitos por seguridad
-            'nombre'     => $user->nombre,
-            'email'      => $user->email,
-            'roles'      => $user->roles->pluck('name'),
-            'login_at'   => now()->toDateTimeString(),
-            'ip'         => request()->ip(),
-        ]));
 
         AuditLogService::log(
             'login',
@@ -82,7 +71,7 @@ class AuthService
         $cookie = cookie(
             name:     'auth_token',
             value:    $token,
-            minutes:  60 * 24 * 7,  // 7 días
+            minutes:  $sessionLifetimeMinutes,
             path:     '/',
             domain:   '',            // Vacío = solo el host actual
             secure:   false,         // true en producción con HTTPS
@@ -91,16 +80,15 @@ class AuthService
             sameSite: 'lax'
         );
 
-        return ['success' => true, 'user' => $user, 'cookie' => $cookie];
+        return ['success' => true, 'user' => $user, 'cookie' => $cookie, 'token' => $token];
     }
 
     /**
-     * Cierra la sesión del usuario: elimina Redis + token actual y registra en bitácora.
+     * Cierra la sesión del usuario: elimina token actual y registra en bitácora.
      */
     public function terminate(User $user): void
     {
-        Redis::del("session:user:{$user->usuario_id}");
-        $user->currentAccessToken()->delete();
+        optional($user->currentAccessToken())->delete();
         AuditLogService::log('logout', "Usuario {$user->nombre} cerró sesión", 'Autenticación');
     }
 }

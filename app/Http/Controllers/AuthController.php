@@ -7,7 +7,6 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 
 class AuthController extends Controller
 {
@@ -30,7 +29,13 @@ class AuthController extends Controller
                 }], $result['status']);
             }
 
-            return response()->json(['user' => new UserResource($result['user'])], 200)
+            $sessionLifetimeInSeconds = config('session.lifetime') * 60;
+
+            return response()->json([
+                'user' => new UserResource($result['user']), 
+                'token' => $result['token'],
+                'session_lifetime' => $sessionLifetimeInSeconds,
+            ], 200)
                 ->cookie($result['cookie']);
 
         } catch (\Exception $e) {
@@ -71,18 +76,10 @@ class AuthController extends Controller
         try {
             $user = $request->user();
 
-            // Verificar sesión en Redis
-            $sessionKey = "session:user:{$user->usuario_id}";
-            $sessionData = Redis::get($sessionKey);
-            
-            if (!$sessionData) {
-                return response()->json([
-                    'message' => 'Sesión expirada',
-                ], 401);
+            // Si no hay usuario en la solicitud, la sesión no es válida o ha expirado.
+            if (!$user) {
+                return response()->json(['message' => 'No autenticado'], 401);
             }
-
-            // Renovar TTL de la sesión (sliding expiration - 30 minutos más)
-            Redis::expire($sessionKey, 1800);
 
             // Cargar relaciones necesarias
             $user->load(['roles', 'permissions', 'careers']);
@@ -121,19 +118,6 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-
-            // Verificar sesión en Redis
-            $sessionKey = "session:user:{$user->usuario_id}";
-            $sessionData = Redis::get($sessionKey);
-            
-            if (!$sessionData) {
-                return response()->json([
-                    'message' => 'Sesión expirada',
-                ], 401);
-            }
-
-            // Renovar TTL de la sesión
-            Redis::expire($sessionKey, 1800);
 
             // Obtener roles del usuario
             $roles = $user->roles->pluck('name');

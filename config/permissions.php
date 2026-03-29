@@ -77,11 +77,15 @@ return [
         // Compromisos de Mejora
         'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
         
+
         // Modelos de Estructura SINAES (solo Superusuario puede crear/editar/eliminar)
         'modelos' => ['view', 'create', 'edit', 'delete'],
 
         // Ciclos de Acreditación (NO se pueden eliminar, solo desactivar)
-        'ciclos' => ['view', 'create', 'edit'],
+
+        // Ciclos de Acreditación
+        'ciclos' => ['view', 'create', 'edit', 'delete'],
+
         
         // Procesos de Acreditación
         'procesos' => ['view', 'create', 'edit', 'delete'],
@@ -187,10 +191,11 @@ return [
             'compromisos_mejora.edit',
             'compromisos_mejora.delete',
             
-            // Ciclos (no se pueden eliminar, solo desactivar)
+            // Ciclos
             'ciclos.view',
             'ciclos.create',
             'ciclos.edit',
+            'ciclos.delete',
             
             // Procesos (no se pueden eliminar, solo desactivar)
             'procesos.view',
@@ -334,11 +339,15 @@ return [
         'usuarios.edit' => 'Editar usuarios',
         'usuarios.delete' => 'Eliminar usuarios',
         
+        // Admin
+        'admin.super' => 'Acceso total al sistema',
+
         // Roles
         'roles.view' => 'Ver roles',
         'roles.create' => 'Crear roles',
         'roles.edit' => 'Editar roles',
         'roles.delete' => 'Eliminar roles',
+        'roles.assign' => 'Asignar roles',
         
         // Universidades
         'universidades.view' => 'Ver universidades',
@@ -444,6 +453,12 @@ return [
         
         // Notificaciones
         'notificaciones.view' => 'Ver notificaciones',
+
+        // Jerarquías
+        'jerarquias.view' => 'Ver jerarquías',
+        'jerarquias.create' => 'Crear jerarquías',
+        'jerarquias.edit' => 'Editar jerarquías',
+        'jerarquias.delete' => 'Eliminar jerarquías',
         
         // Bitácora
         'bitacora.view' => 'Ver bitácora del sistema',

@@ -31,17 +31,19 @@ class UserResource extends JsonResource
                 ];
             }),
             'direct_permissions' => $this->permissions->map(function ($permission) {
+                $descriptions = config('permissions.descriptions', []);
                 return [
                     'id'    => $permission->id,
                     'name'  => $permission->name,
-                    'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
+                    'label' => $descriptions[$permission->name] ?? $permission->name,
                 ];
             }),
             'all_permissions' => $this->getAllPermissions()->map(function ($permission) {
+                $descriptions = config('permissions.descriptions', []);
                 return [
                     'id'    => $permission->id,
                     'name'  => $permission->name,
-                    'label' => config('permissions.descriptions.' . $permission->name, $permission->name),
+                    'label' => $descriptions[$permission->name] ?? $permission->name,
                 ];
             }),
         ];

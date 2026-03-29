@@ -22,7 +22,6 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
-use App\Http\Controllers\EvidenceStateController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
@@ -33,6 +32,7 @@ use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AccreditationCycleController;
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -156,16 +156,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:evidencias.delete');
     Route::patch('estructura/evidencias/{id}/active', [EvidenceController::class, 'setActive'])
         ->middleware('permission:evidencias.edit');
-    
-    // ===== ESTADOS DE EVIDENCIA =====
-    Route::get('estructura/estados-evidencia', [EvidenceStateController::class, 'index']);
-    Route::get('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'show']);
-    Route::post('estructura/estados-evidencia', [EvidenceStateController::class, 'store'])
-        ->middleware('role:Superusuario');
-    Route::match(['put', 'patch'], 'estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'update'])
-        ->middleware('role:Superusuario');
-    Route::delete('estructura/estados-evidencia/{evidenceState}', [EvidenceStateController::class, 'destroy'])
-        ->middleware('role:Superusuario');
+    // HU-013: Retroalimentación de evidencias (observar / validar + comentario)
+    // POST porque no es idempotente: cada llamada crea un nuevo comentario en COMENTARIO
+    Route::post('estructura/evidencias/{id}/retroalimentacion', [EvidenceController::class, 'retroalimentar'])
+        ->middleware('permission:evidencias.edit');
     
     // ===== ESTÁNDARES =====
     Route::middleware(['permission:estandares.view'])->group(function () {
@@ -217,10 +211,33 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::middleware(['permission:procesos.view'])->group(function () {
         Route::get('estructura/procesos', [ProcessController::class, 'index']);
         Route::get('estructura/procesos/{id}', [ProcessController::class, 'show']);
-        Route::get('estructura/ciclos-acreditacion', function () {
-            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
-        });
     });
+
+    Route::middleware(['permission:ciclos.view'])->group(function () {
+        Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
+        Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
+       /* Route::get('estructura/ciclos-acreditacion', function () {
+            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+        });*/
+
+    });
+
+    // POST, PUT, DELETE - cada uno con su propio permiso
+     // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
+        Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
+        ->middleware('permission:ciclos.create');
+        Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])
+        ->middleware('permission:ciclos.edit');
+        Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
+        ->middleware('permission:ciclos.delete');
+
+    
+    Route::post('estructura/procesos', [ProcessController::class, 'store'])
+    ->middleware('permission:ciclos.create');
+    Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
+    ->middleware('permission:ciclos.edit');
+    Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
+    ->middleware('permission:ciclos.edit');
     
     Route::post('estructura/procesos', [ProcessController::class, 'store'])
         ->middleware('permission:procesos.create');
@@ -437,8 +454,8 @@ Route::prefix('bitacora')->middleware(['auth:sanctum', 'refresh.session', 'role:
 // ============================================
 if (App::environment('local')) {
     Route::prefix('dev')->group(function () {
-        Route::post('/users', [DevUserController::class, 'store']);       // POST /api/dev/users
-        Route::post('/comments', [DevCommentController::class, 'store']); // POST /api/dev/comments
+        Route::post('/users', [DevUserController::class, 'store'])->middleware('auth:sanctum');       // POST /api/dev/users
+        Route::post('/comments', [DevCommentController::class, 'store'])->middleware('auth:sanctum'); // POST /api/dev/comments
 
         // Autenticación temporal para pruebas de middleware
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
@@ -471,7 +488,7 @@ if (App::environment('local')) {
                     'line' => $e->getLine()
                 ], 500);
             }
-        });
+        })->middleware('auth:sanctum');
     });
 }
 

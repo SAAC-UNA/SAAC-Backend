@@ -48,8 +48,7 @@ class DatabaseSeeder extends Seeder
             ComponentSeeder::class,             // 9. Componentes (dependen de dimensiones)
             CriterionSeeder::class,             // 10. Criterios (dependen de componentes)
             StandardSeeder::class,              // 11. Estándares (dependen de criterios)
-            EvidenceStateSeeder::class,         // 12. Estados de evidencia
-            EvidenceSeeder::class,              // 13. Evidencias (dependen de criterios y estados)
+            EvidenceSeeder::class,              // 12. Evidencias (dependen de criterios)
 
             // === CICLOS Y PROCESOS ===
             AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
@@ -64,7 +63,7 @@ class DatabaseSeeder extends Seeder
             AprobacionCriteriosTestSeeder::class, // 19. Aprobaciones de criterios (para pruebas de endpoints)
 
             // === AUDITORÍA Y LOGS ===
-            // ActionTypeSeeder::class,          // 21. Tipos de acción
+            ActionTypeSeeder::class,          // 21. Tipos de acción (catálogo de TIPO_ACCION)
             // AuditLogSeeder::class,            // 22. Logs de auditoría
         ]);
 
