@@ -15,14 +15,23 @@ class AccreditationCycleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Los ciclos de prueba usan el modelo tradicional (SINAES 2018), insertado por StructureModelSeeder.
-        $primerModelo = DB::table('MODELO_ESTRUCTURA')->where('tipo', 'tradicional')->value('modelo_estructura_id');
+        // Los ciclos de prueba usan el modelo tradicional (SINAES 2018), insertado por migraciones/seeders.
+        $primerModelo = DB::table('MODELO_ESTRUCTURA')
+            ->where('tipo', 'tradicional')
+            ->value('modelo_estructura_id');
 
         if (!$primerModelo) {
             $this->command->warn('⚠️  AccreditationCycleSeeder omitido: no existe el modelo tradicional.');
             $this->command->warn('   Ejecutá primero: php artisan db:seed --class=StructureModelSeeder');
             return;
         }
+
+        // Limpieza total solicitada para regenerar ciclos/procesos con el esquema actual.
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        DB::table('PROCESO')->truncate();
+        DB::table('CICLO_ACREDITACION')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
         $carrerasSede = DB::table('CARRERA_SEDE')
             ->join('CARRERA', 'CARRERA_SEDE.carrera_id', '=', 'CARRERA.carrera_id')
             ->join('SEDE', 'CARRERA_SEDE.sede_id', '=', 'SEDE.sede_id')
@@ -35,23 +44,23 @@ class AccreditationCycleSeeder extends Seeder
         }
 
         $ciclos = [];
-        
-        // Crear ciclos de acreditación para cada carrera
+
+        // Crear ciclos por carrera/sede respetando AC-6: un solo ciclo activo por carrera+sede.
         foreach ($carrerasSede as $carreraSede) {
-            // Ciclo anterior 2024-2028 → completado (ya terminó)
+            // Ciclo histórico completado.
             $ciclos[] = [
                 'carrera_sede_id'      => $carreraSede->carrera_sede_id,
-                'nombre'               => 'Ciclo de Acreditación 2024-2028',
+                'nombre'               => 'Ciclo 2021-2025',
                 'modelo_estructura_id' => $primerModelo,
                 'estado'               => 'completado',
                 'created_at'           => now(),
                 'updated_at'           => now(),
             ];
 
-            // Ciclo actual 2025-2029 → activo (AC-6: solo uno activo por carrera+sede)
+            // Ciclo vigente activo.
             $ciclos[] = [
                 'carrera_sede_id'      => $carreraSede->carrera_sede_id,
-                'nombre'               => 'Ciclo de Acreditación 2025-2029',
+                'nombre'               => 'Ciclo 2026-2030',
                 'modelo_estructura_id' => $primerModelo,
                 'estado'               => 'activo',
                 'created_at'           => now(),
@@ -61,7 +70,8 @@ class AccreditationCycleSeeder extends Seeder
 
         DB::table('CICLO_ACREDITACION')->insert($ciclos);
 
+        $this->command->info("✅ Limpieza completa aplicada en PROCESO y CICLO_ACREDITACION");
         $this->command->info("✅ " . count($ciclos) . " ciclos de acreditación creados exitosamente");
-        $this->command->info("   ({$carrerasSede->count()} carreras × 2 ciclos cada una)");
+        $this->command->info("   ({$carrerasSede->count()} relaciones carrera-sede × 2 ciclos)");
     }
 }
