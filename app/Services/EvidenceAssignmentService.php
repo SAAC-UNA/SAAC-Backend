@@ -7,8 +7,10 @@ use App\Models\Evidence;
 use App\Models\Process;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\File;
 use App\Events\EvidenceAssigned;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class EvidenceAssignmentService
 {
@@ -22,7 +24,10 @@ class EvidenceAssignmentService
     private function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return EvidenceAssignment::with(self::WITH_BASE)
-            ->withExists('pendingExtensionRequests as has_pending_extension_request');
+            ->withExists([
+                'pendingExtensionRequests as has_pending_extension_request',
+                'filesByAssignee as has_uploaded_files',
+            ]);
     }
 
     /**
@@ -159,8 +164,24 @@ class EvidenceAssignmentService
      */
     public function updateAssignment(EvidenceAssignment $assignment, array $data): EvidenceAssignment
     {
+        $apiEstado = isset($data['estado']) ? EvidenceAssignment::apiStatusFromDb($data['estado']) : null;
+
+        if ($apiEstado === 'completado') {
+            $hasUploadedFiles = File::query()
+                ->where('evidencia_id', $assignment->evidencia_id)
+                ->where('usuario_id', $assignment->usuario_id)
+                ->where('proceso_id', $assignment->proceso_id)
+                ->exists();
+
+            if (!$hasUploadedFiles) {
+                throw ValidationException::withMessages([
+                    'estado' => 'Debe subir al menos un archivo o enlace antes de marcar la evidencia como completada.',
+                ]);
+            }
+        }
+
         $assignment->update(array_filter([
-            'estado'      => $data['estado']      ?? null,
+            'estado'      => EvidenceAssignment::dbStatusFromApi($data['estado'] ?? null),
             'fecha_limite'=> $data['fecha_limite'] ?? null,
             'comentario'  => $data['comentario']  ?? null,
         ], fn ($v) => $v !== null));
@@ -217,7 +238,10 @@ class EvidenceAssignmentService
     {
         return EvidenceAssignment::with(['evidence.criterion', 'user'])
             ->where('usuario_id', $usuarioId)
-            ->whereIn('estado', ['pendiente', 'en_progreso'])
+            ->whereIn('estado', [
+                EvidenceAssignment::ESTADO_PENDIENTE,
+                EvidenceAssignment::ESTADO_EN_PROGRESO,
+            ])
             ->where('fecha_limite', '<=', $limitDate)
             ->orderBy('fecha_limite', 'asc')
             ->get();

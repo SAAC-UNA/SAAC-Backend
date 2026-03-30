@@ -232,8 +232,8 @@ class FileService
     }
 
     /**
-     * Si la asignación del usuario para esta evidencia está en 'pendiente',
-     * la pasa a 'en_progreso'. El EvidenceAssignmentObserver propaga el cambio
+     * Si la asignación del usuario para esta evidencia está en 'Pendiente',
+     * la pasa a 'En Progreso'. El EvidenceAssignmentObserver propaga el cambio
      * hacia EVIDENCIA.estado y luego hacia CRITERIO.estado automáticamente.
      */
     private function marcarAsignacionEnProgreso(int $evidenciaId, int $usuarioId, int $procesoId): void
@@ -241,8 +241,7 @@ class FileService
         EvidenceAssignment::where('evidencia_id', $evidenciaId)
             ->where('usuario_id', $usuarioId)
             ->where('proceso_id', $procesoId)
-            ->where('estado', 'pendiente')
-            ->get()
-            ->each(fn($assignment) => $assignment->update(['estado' => 'en_progreso']));
+            ->where('estado', EvidenceAssignment::ESTADO_PENDIENTE)
+            ->update(['estado' => EvidenceAssignment::ESTADO_EN_PROGRESO]);
     }
 }

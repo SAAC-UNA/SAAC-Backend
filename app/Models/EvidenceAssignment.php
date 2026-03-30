@@ -4,10 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\File;
 
 class EvidenceAssignment extends Model
 {
     use HasFactory;
+
+    public const ESTADO_PENDIENTE = 'Pendiente';
+    public const ESTADO_EN_PROGRESO = 'En Progreso';
+    public const ESTADO_COMPLETADO = 'Completado';
+    public const ESTADO_VENCIDO = 'Vencido';
 
     // Nombre de la tabla en la base de datos
     protected $table = 'EVIDENCIA_ASIGNACION';
@@ -31,6 +37,36 @@ class EvidenceAssignment extends Model
         'fecha_asignacion' => 'datetime',
         'fecha_limite' => 'datetime'
     ];
+
+    /**
+     * Convierte estado API (snake_case) a estado persistido en BD (Title Case).
+     */
+    public static function dbStatusFromApi(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        return match (strtolower(trim($status))) {
+            'pendiente' => self::ESTADO_PENDIENTE,
+            'en_progreso' => self::ESTADO_EN_PROGRESO,
+            'completado' => self::ESTADO_COMPLETADO,
+            'vencido' => self::ESTADO_VENCIDO,
+            default => $status,
+        };
+    }
+
+    /**
+     * Convierte estado persistido en BD (Title Case) a estado API (snake_case).
+     */
+    public static function apiStatusFromDb(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        return strtolower(str_replace(' ', '_', trim($status)));
+    }
 
     /**
      * Relación: Una asignación pertenece a un proceso.
@@ -90,5 +126,16 @@ class EvidenceAssignment extends Model
     public function pendingExtensionRequests()
     {
         return $this->extensionRequests()->where('estado', ExtensionRequest::ESTADO_PENDIENTE);
+    }
+
+    /**
+     * Relación: archivos/enlaces subidos por el mismo usuario y proceso de la asignación.
+     * Se usa con withExists() para validar si puede marcarse como completada.
+     */
+    public function filesByAssignee()
+    {
+        return $this->hasMany(File::class, 'evidencia_id', 'evidencia_id')
+            ->whereColumn('ARCHIVO.usuario_id', 'EVIDENCIA_ASIGNACION.usuario_id')
+            ->whereColumn('ARCHIVO.proceso_id', 'EVIDENCIA_ASIGNACION.proceso_id');
     }
 }

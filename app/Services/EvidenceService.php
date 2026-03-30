@@ -198,7 +198,10 @@ class EvidenceService
             $query->withoutGlobalScope('byCareerCampus')
                   ->whereHas('assignments', fn ($q) =>
                       $q->where('usuario_id', $user->usuario_id)
-                        ->whereIn('estado', ['pendiente', 'en_progreso'])
+                        ->whereIn('estado', [
+                            EvidenceAssignment::ESTADO_PENDIENTE,
+                            EvidenceAssignment::ESTADO_EN_PROGRESO,
+                        ])
                   );
         }
 
@@ -239,15 +242,15 @@ class EvidenceService
     /**
      * Recalcula el estado de una evidencia a partir del estado de sus asignaciones.
      *
-     * Nota: EVIDENCIA_ASIGNACION.estado usa lowercase con guión bajo
-     * ('pendiente', 'en_progreso', 'completado', 'vencido').
+        * Nota: EVIDENCIA_ASIGNACION.estado se persiste en Title Case
+        * ('Pendiente', 'En Progreso', 'Completado', 'Vencido').
      *
      * Reglas (por orden de prioridad):
      *  1. Sin asignaciones                                           → 'Pendiente'
-     *  2. Todas las asignaciones 'completado'                        → 'Completado'
-     *  3. Alguna asignación 'vencido' (sin todas completadas)        → 'Vencido'
-     *  4. Alguna 'en_progreso' o 'completado' (mezcla, sin 2/3)     → 'En Proceso'
-     *  5. Todas 'pendiente'                                          → 'Pendiente'
+        *  2. Todas las asignaciones 'Completado'                        → 'Completado'
+        *  3. Alguna asignación 'Vencido' (sin todas completadas)        → 'Vencido'
+        *  4. Alguna 'En Progreso' o 'Completado' (mezcla, sin 2/3)     → 'En Proceso'
+        *  5. Todas 'Pendiente'                                          → 'Pendiente'
      *
      * No sobreescribe estados de retroalimentación (Observada, Validada, Aprobado,
      * Rechazado) — esos los gestiona exclusivamente el encargado (HU-013).
@@ -268,7 +271,8 @@ class EvidenceService
         if ($total === 0) {
             $nuevoEstado = 'Pendiente';
         } else {
-            $estados = $asignaciones->pluck('estado');
+            $estados = $asignaciones->pluck('estado')
+                ->map(fn ($estado) => EvidenceAssignment::apiStatusFromDb($estado));
 
             if ($estados->every(fn($e) => $e === 'completado')) {
                 $nuevoEstado = 'Completado';

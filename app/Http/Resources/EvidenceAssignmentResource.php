@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\EvidenceAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,7 +20,7 @@ class EvidenceAssignmentResource extends JsonResource
             'proceso_id' => $this->proceso_id,
             'evidencia_id' => $this->evidencia_id,
             'usuario_id' => $this->usuario_id,
-            'estado' => strtolower(str_replace(' ', '_', $this->estado)),
+            'estado' => EvidenceAssignment::apiStatusFromDb($this->estado),
             'fecha_asignacion' => optional($this->fecha_asignacion)->toISOString(),
             'fecha_limite' => optional($this->fecha_limite)->toISOString(),
             'comentario' => $this->comentario,
@@ -56,6 +57,8 @@ class EvidenceAssignmentResource extends JsonResource
             // HU-016: Indicar si tiene una solicitud de ampliación pendiente
             // El servicio carga este valor via withExists() — sin N+1
             'has_pending_extension_request' => (bool) $this->has_pending_extension_request,
+            // Indica si ya existe al menos un archivo/enlace subido por el responsable
+            'has_uploaded_files' => (bool) $this->has_uploaded_files,
         ];
     }
 }
