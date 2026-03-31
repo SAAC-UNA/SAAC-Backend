@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ElementAssignment;
 use App\Http\Requests\ElementAssignmentRequest;
+use App\Http\Requests\RetroalimentacionRequest;
 use App\Services\ElementAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -137,5 +138,64 @@ class ElementAssignmentController extends Controller
     public function byProcess(string $processId): JsonResponse
     {
         return response()->json(['data' => $this->service->getByProcess((int) $processId)], 200);
+    }
+
+    /**
+     * POST /api/elementos-asignaciones/{id}/retroalimentacion
+     * HU-013 equivalente para modelo flexible.
+     *
+     * Marca la asignación como 'Observada' (requiere corrección) o 'Validada' (aprobada).
+     * Solo roles autorizados: Encargado de Acreditación, Administrador, Superusuario.
+     */
+    public function retroalimentar(RetroalimentacionRequest $request, string $id): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->hasRole(['Encargado de Acreditación', 'Administrador', 'Superusuario'])) {
+            return response()->json(['message' => 'No autorizado para retroalimentar asignaciones de elemento.'], 403);
+        }
+
+        $assignment = $this->service->findById((int) $id);
+        if (!$assignment) {
+            return response()->json(['message' => 'Assignment not found.'], 404);
+        }
+
+        try {
+            $updated = $this->service->retroalimentar($assignment, $request->validated(), $user);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $updated], 200);
+    }
+
+    /**
+     * POST /api/elementos-asignaciones/{id}/solicitud-ampliacion
+     * HU-016 equivalente para modelo flexible.
+     *
+     * Permite al usuario asignado solicitar una ampliación de plazo.
+     */
+    public function storeExtension(Request $request, string $id): JsonResponse
+    {
+        $assignment = $this->service->findById((int) $id);
+        if (!$assignment) {
+            return response()->json(['message' => 'Assignment not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'motivo'         => ['required', 'string', 'min:10', 'max:1000'],
+            'fecha_sugerida' => ['required', 'date', 'after:today'],
+        ]);
+
+        try {
+            $solicitud = $this->service->solicitarAmpliacion(
+                $assignment,
+                $validated,
+                $request->user()->usuario_id
+            );
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $solicitud->load(['user'])], 201);
     }
 }

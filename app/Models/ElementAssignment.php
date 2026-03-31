@@ -27,6 +27,14 @@ class ElementAssignment extends Model
         'fecha_limite' => 'date',
     ];
 
+    // ===== ESTADO CONSTANTS =====
+    const ESTADO_PENDIENTE   = 'Pendiente';
+    const ESTADO_EN_PROGRESO = 'En Progreso';
+    const ESTADO_COMPLETADO  = 'Completado';
+    const ESTADO_VENCIDO     = 'Vencido';
+    const ESTADO_OBSERVADA   = 'Observada';  // retroalimentación: requiere corrección
+    const ESTADO_VALIDADA    = 'Validada';   // retroalimentación: aprobada
+
     // ===== RELATIONS =====
 
     /**
@@ -59,5 +67,21 @@ class ElementAssignment extends Model
     public function assignedBy()
     {
         return $this->belongsTo(User::class, 'asignado_por', 'usuario_id');
+    }
+
+    /**
+     * Comentarios de retroalimentación sobre esta asignación (polimórfico).
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable', 'commentable_type', 'commentable_id');
+    }
+
+    /**
+     * Solicitudes de ampliación de plazo para esta asignación (HU-016 flexible).
+     */
+    public function extensionRequests()
+    {
+        return $this->hasMany(ExtensionRequest::class, 'elemento_asignacion_id', 'elemento_asignacion_id');
     }
 }

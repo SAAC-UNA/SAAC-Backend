@@ -289,6 +289,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:asignaciones.create');
     Route::match(['put', 'patch'], 'elementos-asignaciones/{id}', [ElementAssignmentController::class, 'update'])
         ->middleware('permission:asignaciones.edit');
+    Route::post('elementos-asignaciones/{id}/retroalimentacion', [ElementAssignmentController::class, 'retroalimentar'])
+        ->middleware('permission:asignaciones.edit');
+    Route::post('elementos-asignaciones/{id}/solicitud-ampliacion', [ElementAssignmentController::class, 'storeExtension'])
+        ->middleware('permission:asignaciones.view');
     Route::delete('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'destroy'])
         ->middleware('permission:asignaciones.delete');
 });
