@@ -15,8 +15,14 @@ class StructureElementService
         $cacheKey = "elementos.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
         
         return Cache::remember($cacheKey, 300, function () use ($tipo, $modeloEstructuraId) {
-            $query = StructureElement::where('activo', true)
-                ->orderBy('elemento_id');
+            $query = StructureElement::orderBy('elemento_id');
+
+            // Al consultar por modelo específico (vista de gestión) se devuelven todos los
+            // elementos sin importar si están activos o no.
+            // Al consultar sin modelo (selectores/lookups) solo se devuelven activos.
+            if ($modeloEstructuraId === null) {
+                $query->where('activo', true);
+            }
 
             if ($tipo !== null) {
                 $query->where('tipo', $tipo);
@@ -53,7 +59,7 @@ class StructureElementService
             'activo'               => $data['activo'] ?? true,
         ]);
 
-        $this->clearCache($data['tipo'] ?? null);
+        $this->clearCache($data['tipo'] ?? null, $data['modelo_estructura_id'] ?? null);
 
         return $elemento;
     }
@@ -72,7 +78,7 @@ class StructureElementService
             'activo'       => $data['activo'] ?? $elemento->activo,
         ]);
 
-        $this->clearCache($elemento->tipo);
+        $this->clearCache($elemento->tipo, $elemento->modelo_estructura_id);
 
         return $elemento->fresh();
     }
@@ -83,8 +89,9 @@ class StructureElementService
     public function delete(StructureElement $elemento): void
     {
         $tipo = $elemento->tipo;
+        $modeloId = $elemento->modelo_estructura_id;
         $elemento->delete();
-        $this->clearCache($tipo);
+        $this->clearCache($tipo, $modeloId);
     }
 
     /**
@@ -97,7 +104,7 @@ class StructureElementService
     {
         $elemento->activo = $active;
         $elemento->saveQuietly();
-        $this->clearCache($elemento->tipo);
+        $this->clearCache($elemento->tipo, $elemento->modelo_estructura_id);
 
         foreach ($elemento->children as $child) {
             $this->setActiveWithCascade($child, $active);
@@ -123,13 +130,23 @@ class StructureElementService
     /**
      * Limpiar caché
      */
-    private function clearCache(?string $tipo = null): void
+    private function clearCache(?string $tipo = null, ?int $modeloEstructuraId = null): void
     {
         Cache::forget('elementos.all');
         Cache::forget('elemento.tree.all');
-        
+        // Llave sin modelo (tipo solamente)
+        Cache::forget("elementos.tipo.{$tipo}.modelo.");
+
         if ($tipo) {
             Cache::forget("elementos.tipo.{$tipo}");
+        }
+
+        // Llave con modelo específico
+        if ($modeloEstructuraId) {
+            Cache::forget("elementos.tipo..modelo.{$modeloEstructuraId}");
+            if ($tipo) {
+                Cache::forget("elementos.tipo.{$tipo}.modelo.{$modeloEstructuraId}");
+            }
         }
     }
 }
