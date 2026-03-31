@@ -165,7 +165,6 @@ class EvidenceService
         $perPage            = (int) ($filters['per_page'] ?? 15);
         $page               = (int) ($filters['page']     ?? 1);
         $criterioId         = $filters['criterio_id']            ?? null;
-        $elementoId         = $filters['elemento_id']            ?? null;
         $componenteId       = $filters['componente_id']          ?? null;
         $dimensionId        = $filters['dimension_id']           ?? null;
         $estandarId         = $filters['estandar_id']            ?? null;
@@ -227,9 +226,6 @@ class EvidenceService
             $query->whereHas('criterion.standards', fn ($q) =>
                 $q->where('estandar_id', $estandarId)
             );
-        }
-        if ($elementoId) {
-            $query->where('elemento_id', $elementoId);
         }
         if ($cicloId) {
             $query->whereHas('assignments.process', fn ($q) =>
