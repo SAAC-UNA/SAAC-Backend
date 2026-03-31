@@ -10,6 +10,7 @@ use App\Services\EvidenceAssignmentService;
 use App\Events\EvidenceAssignmentDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 
 class EvidenceAssignmentController extends Controller
 {
@@ -103,6 +104,12 @@ class EvidenceAssignmentController extends Controller
             );
 
             return EvidenceAssignmentResource::make($updatedAssignment)->response();
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Error de validación.',
+                'errors' => $e->errors(),
+            ], 422);
             
         } catch (\Exception $e) {
             return response()->json([

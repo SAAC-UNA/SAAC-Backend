@@ -22,19 +22,19 @@ class StructureModelRequest extends FormRequest
             // tipo  → NO editable: cambiar tradicional⇔elemento_flexible rompe la estructura asociada
             // activo → NO editable aquí: usar PATCH /active
             return [
-                'nombre'      => ['sometimes', 'string', 'max:100', 'regex:/^[A-Za-z\xC0-\xFF0-9 .\-]+$/',
+                'nombre'      => ['sometimes', 'string', 'max:100', 'regex:/^[A-Za-z\xC0-\xFF0-9 .\-]+$/u',
                                   Rule::unique('MODELO_ESTRUCTURA', 'nombre')->ignore($modeloId, 'modelo_estructura_id')],
-                'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],
-                'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z0-9.\-]+$/'],
+                'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
+                'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z\xC0-\xFF0-9.\-]+$/u'],
             ];
         }
 
         return [
-            'nombre'      => ['required', 'string', 'max:100', 'regex:/^[A-Za-z\xC0-\xFF0-9 .\-]+$/',
+            'nombre'      => ['required', 'string', 'max:100', 'regex:/^[A-Za-z\xC0-\xFF0-9 .\-]+$/u',
                               Rule::unique('MODELO_ESTRUCTURA', 'nombre')],
             'tipo'        => ['required', Rule::in(['elemento_flexible'])],
-            'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],
-            'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z0-9.\-]+$/'],
+            'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
+            'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z\xC0-\xFF0-9.\-]+$/u'],
             'activo'      => 'boolean',
         ];
     }

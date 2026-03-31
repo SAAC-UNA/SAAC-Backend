@@ -94,6 +94,18 @@ class Evidence extends BaseCareer
     }
 
     /**
+     * Relación: El último archivo subido (tipo=archivo) de la evidencia.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function latestFile()
+    {
+        return $this->hasOne(File::class, 'evidencia_id', 'evidencia_id')
+            ->where('tipo', 'archivo')
+            ->latest('fecha_subida');
+    }
+
+    /*
      * Relación polimórfica: Una evidencia puede tener muchos comentarios (HU-013).
      * Los comentarios se guardan en COMENTARIO con commentable_type = Evidence::class.
      *

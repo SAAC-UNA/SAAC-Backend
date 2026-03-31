@@ -15,9 +15,12 @@ class ProcessSeeder extends Seeder
      */
     public function run(): void
     {
-        // Obtener ciclos de acreditación activos (los del 2024-2028)
+        // Limpieza explícita para permitir re-ejecución de este seeder de forma aislada.
+        DB::table('PROCESO')->delete();
+
+        // Obtener todos los ciclos para generar procesos coherentes por estado.
         $ciclos = DB::table('CICLO_ACREDITACION')
-            ->where('nombre', 'LIKE', '%2024-2028%')
+            ->select('ciclo_acreditacion_id', 'estado')
             ->get();
 
         if ($ciclos->isEmpty()) {
@@ -27,23 +30,45 @@ class ProcessSeeder extends Seeder
 
         $procesos = [];
 
-        // Tipos de procesos según el sistema SAAC
-        // Cada ciclo tiene un proceso de Autoevaluación y uno de Compromiso de mejora
+        // Cada ciclo tiene dos procesos: Autoevaluación y Compromiso de mejora.
         foreach ($ciclos as $ciclo) {
-            // Proceso de Autoevaluación
+            $esActivo = $ciclo->estado === 'activo';
+
+            // Fechas de referencia por estado del ciclo.
+            $inicioAutoevaluacion = $esActivo
+                ? now()->startOfYear()->format('Y-m-d')
+                : now()->subYears(2)->startOfYear()->format('Y-m-d');
+
+            $finAutoevaluacion = $esActivo
+                ? now()->addMonths(8)->format('Y-m-d')
+                : now()->subYear()->endOfYear()->format('Y-m-d');
+
+            $inicioCompromiso = $esActivo
+                ? now()->addMonths(1)->format('Y-m-d')
+                : now()->subYear()->startOfYear()->format('Y-m-d');
+
+            $finCompromiso = $esActivo
+                ? now()->addYear()->format('Y-m-d')
+                : now()->subMonths(2)->format('Y-m-d');
+
             $procesos[] = [
                 'ciclo_acreditacion_id' => $ciclo->ciclo_acreditacion_id,
-                'tipo_proceso' => 'Autoevaluación',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tipo_proceso'          => 'Autoevaluación',
+                'fecha_inicio'          => $inicioAutoevaluacion,
+                'fecha_finalizacion'    => $finAutoevaluacion,
+                'activo'                => $esActivo,
+                'created_at'            => now(),
+                'updated_at'            => now(),
             ];
 
-            // Proceso de Compromiso de mejora
             $procesos[] = [
                 'ciclo_acreditacion_id' => $ciclo->ciclo_acreditacion_id,
-                'tipo_proceso' => 'Compromiso de mejora',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'tipo_proceso'          => 'Compromiso de mejora',
+                'fecha_inicio'          => $inicioCompromiso,
+                'fecha_finalizacion'    => $finCompromiso,
+                'activo'                => false,
+                'created_at'            => now(),
+                'updated_at'            => now(),
             ];
         }
 

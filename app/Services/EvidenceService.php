@@ -172,21 +172,22 @@ class EvidenceService
      */
     public function filterEvidences(array $filters, User $user): LengthAwarePaginator
     {
-        $perPage    = (int) ($filters['per_page'] ?? 15);
-        $page       = (int) ($filters['page']     ?? 1);
-        $criterioId         = $filters['criterio_id']         ?? null;
-        $elementoId         = $filters['elemento_id']         ?? null;
+        $perPage            = (int) ($filters['per_page'] ?? 15);
+        $page               = (int) ($filters['page']     ?? 1);
+        $criterioId         = $filters['criterio_id']            ?? null;
+        $elementoId         = $filters['elemento_id']            ?? null;
+        $componenteId       = $filters['componente_id']          ?? null;
+        $dimensionId        = $filters['dimension_id']           ?? null;
+        $estandarId         = $filters['estandar_id']            ?? null;
         // HU-012 (modelo flexible): filtros contextuales por ciclo y modelo.
-        // Permiten aislar evidencias de un ciclo o tipo de modelo específico sin
-        // necesitar saber de antemano qué criterio_id o elemento_id usar.
-        // La navegación es: EVIDENCIA → EVIDENCIA_ASIGNACION → PROCESO → CICLO/MODELO.
         $cicloId            = $filters['ciclo_acreditacion_id']  ?? null;
         $modeloEstructuraId = $filters['modelo_estructura_id']   ?? null;
-        $estado      = $filters['estado']       ?? null;
-        $fechaDesde = $filters['fecha_desde'] ?? null;
-        $fechaHasta = $filters['fecha_hasta'] ?? null;
-        $sortBy     = $filters['sort_by']     ?? 'created_at';
-        $sortOrder  = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
+        $estado             = $filters['estado']                 ?? null;
+        $estadoId           = $filters['estado_evidencia_id']    ?? null;
+        $fechaDesde         = $filters['fecha_desde']            ?? null;
+        $fechaHasta         = $filters['fecha_hasta']            ?? null;
+        $sortBy             = $filters['sort_by']                ?? 'created_at';
+        $sortOrder          = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
                         ? strtolower($filters['sort_order'])
                         : 'desc';
 
@@ -201,7 +202,7 @@ class EvidenceService
 
         $rolId = $filters['rol_id'] ?? null;
 
-        $query = Evidence::with([...self::WITH_BASE, 'assignments.user.roles'])
+        $query = Evidence::with([...self::WITH_BASE, 'criterion.standards', 'assignments.user.roles', 'latestFile'])
             ->withCount([
                 'files as archivos_count' => fn ($q) => $q->where('tipo', 'archivo'),
                 'files as enlaces_count'  => fn ($q) => $q->where('tipo', 'enlace'),
@@ -212,31 +213,46 @@ class EvidenceService
             $query->withoutGlobalScope('byCareerCampus')
                   ->whereHas('assignments', fn ($q) =>
                       $q->where('usuario_id', $user->usuario_id)
-                        ->whereIn('estado', ['pendiente', 'en_progreso'])
+                        ->whereIn('estado', [
+                            EvidenceAssignment::ESTADO_PENDIENTE,
+                            EvidenceAssignment::ESTADO_EN_PROGRESO,
+                        ])
                   );
         }
 
         if ($criterioId) {
             $query->where('criterio_id', $criterioId);
         }
+        if ($componenteId) {
+            $query->whereHas('criterion.component', fn ($q) =>
+                $q->where('componente_id', $componenteId)
+            );
+        }
+        if ($dimensionId) {
+            $query->whereHas('criterion.component.dimension', fn ($q) =>
+                $q->where('dimension_id', $dimensionId)
+            );
+        }
+        if ($estandarId) {
+            $query->whereHas('criterion.standards', fn ($q) =>
+                $q->where('estandar_id', $estandarId)
+            );
+        }
         if ($elementoId) {
             $query->where('elemento_id', $elementoId);
         }
         if ($cicloId) {
-            // Filtra evidencias que tengan al menos una asignación en el ciclo dado.
-            // Ruta: EVIDENCIA → EVIDENCIA_ASIGNACION.proceso_id → PROCESO.ciclo_acreditacion_id
             $query->whereHas('assignments.process', fn ($q) =>
                 $q->where('ciclo_acreditacion_id', $cicloId)
             );
         }
         if ($modeloEstructuraId) {
-            // Filtra evidencias cuyas asignaciones pertenecen a procesos del modelo dado.
-            // Ruta: EVIDENCIA → EVIDENCIA_ASIGNACION → PROCESO → CICLO_ACREDITACION.modelo_estructura_id
-            // Efecto: ?modelo_estructura_id=1 → solo evidencias tradicionales
-            //         ?modelo_estructura_id=2 → solo evidencias flexibles
             $query->whereHas('assignments.process.accreditationCycle', fn ($q) =>
                 $q->where('modelo_estructura_id', $modeloEstructuraId)
             );
+        }
+        if ($estadoId) {
+            $query->where('estado_evidencia_id', $estadoId);
         }
         if ($estado) {
             $query->where('estado', $estado);
@@ -257,15 +273,15 @@ class EvidenceService
     /**
      * Recalcula el estado de una evidencia a partir del estado de sus asignaciones.
      *
-     * Nota: EVIDENCIA_ASIGNACION.estado usa lowercase con guión bajo
-     * ('pendiente', 'en_progreso', 'completado', 'vencido').
+        * Nota: EVIDENCIA_ASIGNACION.estado se persiste en Title Case
+        * ('Pendiente', 'En Progreso', 'Completado', 'Vencido').
      *
      * Reglas (por orden de prioridad):
      *  1. Sin asignaciones                                           → 'Pendiente'
-     *  2. Todas las asignaciones 'completado'                        → 'Completado'
-     *  3. Alguna asignación 'vencido' (sin todas completadas)        → 'Vencido'
-     *  4. Alguna 'en_progreso' o 'completado' (mezcla, sin 2/3)     → 'En Proceso'
-     *  5. Todas 'pendiente'                                          → 'Pendiente'
+        *  2. Todas las asignaciones 'Completado'                        → 'Completado'
+        *  3. Alguna asignación 'Vencido' (sin todas completadas)        → 'Vencido'
+        *  4. Alguna 'En Progreso' o 'Completado' (mezcla, sin 2/3)     → 'En Proceso'
+        *  5. Todas 'Pendiente'                                          → 'Pendiente'
      *
      * No sobreescribe estados de retroalimentación (Observada, Validada, Aprobado,
      * Rechazado) — esos los gestiona exclusivamente el encargado (HU-013).
@@ -286,7 +302,8 @@ class EvidenceService
         if ($total === 0) {
             $nuevoEstado = 'Pendiente';
         } else {
-            $estados = $asignaciones->pluck('estado');
+            $estados = $asignaciones->pluck('estado')
+                ->map(fn ($estado) => EvidenceAssignment::apiStatusFromDb($estado));
 
             if ($estados->every(fn($e) => $e === 'completado')) {
                 $nuevoEstado = 'Completado';

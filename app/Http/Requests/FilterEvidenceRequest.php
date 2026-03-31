@@ -50,6 +50,30 @@ class FilterEvidenceRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Filtro por Dimensión
+            // Ejemplo: { "dimension_id": 1 } busca evidencias dentro de la dimensión "Gestión Curricular"
+            'dimension_id' => [
+                'nullable',
+                'integer',
+                'exists:DIMENSION,dimension_id',
+            ],
+
+            // Filtro por Componente
+            // Ejemplo: { "componente_id": 2 } busca evidencias del componente "Perfil de Egreso"
+            'componente_id' => [
+                'nullable',
+                'integer',
+                'exists:COMPONENTE,componente_id',
+            ],
+
+            // Filtro por Estándar
+            // Ejemplo: { "estandar_id": 5 } busca evidencias del criterio que tiene ese estándar
+            'estandar_id' => [
+                'nullable',
+                'integer',
+                'exists:ESTANDAR,estandar_id',
+            ],
+
             // Filtro por Criterio (modelo tradicional)
             // Ejemplo: { "criterio_id": 4 } busca evidencias del criterio "2.1 - Plan de estudios"
             'criterio_id' => [
@@ -160,6 +184,18 @@ class FilterEvidenceRequest extends FormRequest
     public function messages(): array
     {
         return [
+            // Mensajes para dimension_id
+            'dimension_id.integer' => 'La dimensión debe ser un número entero.',
+            'dimension_id.exists'  => 'La dimensión seleccionada no existe en el sistema.',
+
+            // Mensajes para componente_id
+            'componente_id.integer' => 'El componente debe ser un número entero.',
+            'componente_id.exists'  => 'El componente seleccionado no existe en el sistema.',
+
+            // Mensajes para estandar_id
+            'estandar_id.integer' => 'El estándar debe ser un número entero.',
+            'estandar_id.exists'  => 'El estándar seleccionado no existe en el sistema.',
+
             // Mensajes para criterio_id
             'criterio_id.integer' => 'El criterio debe ser un número entero.',
             'criterio_id.exists' => 'El criterio seleccionado no existe en el sistema.',
@@ -215,6 +251,9 @@ class FilterEvidenceRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'dimension_id'  => 'dimensión',
+            'componente_id' => 'componente',
+            'estandar_id'   => 'estándar',
             'criterio_id'   => 'criterio',
             'elemento_id'   => 'elemento',
             'responsable_id' => 'responsable',
