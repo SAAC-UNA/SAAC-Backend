@@ -16,7 +16,7 @@ class EvidenceService
     private const CACHE_TTL = 300;
 
     /** Relaciones eager-loaded en la mayoría de queries */
-    private const WITH_BASE = ['criterion.component.dimension', 'elemento'];
+    private const WITH_BASE = ['criterion.component.dimension'];
 
     public function getAll()
     {
@@ -32,14 +32,8 @@ class EvidenceService
 
     public function create(array $data): Evidence
     {
-        // HU-012 (escritura flexible) — Gap 3:
-        // ANTES: solo se guardaba criterio_id → las evidencias flexibles llegaban
-        //        con elemento_id en $data pero ese valor se descartaba silenciosamente.
-        // DESPUÉS: se guarda el ancla que venga (criterio_id XOR elemento_id).
-        //          La validación XOR ya garantizó que solo uno de los dos está presente.
         $evidence = Evidence::create([
-            'criterio_id'  => $data['criterio_id']  ?? null,
-            'elemento_id'  => $data['elemento_id']  ?? null,
+            'criterio_id'  => $data['criterio_id'],
             'estado'       => $data['estado']       ?? 'Pendiente',
             'descripcion'  => $data['descripcion'],
             'nomenclatura' => $data['nomenclatura'],
@@ -51,12 +45,8 @@ class EvidenceService
 
     public function update(Evidence $evidence, array $data): Evidence
     {
-        // HU-012 (escritura flexible) — Gap 3 (update):
-        // Si el request trae elemento_id, se persiste. Si no viene ('sometimes'),
-        // conserva el valor actual. Mismo comportamiento que criterio_id.
         $evidence->update([
             'criterio_id'  => array_key_exists('criterio_id', $data)  ? $data['criterio_id']  : $evidence->criterio_id,
-            'elemento_id'  => array_key_exists('elemento_id', $data)  ? $data['elemento_id']  : $evidence->elemento_id,
             'estado'       => $data['estado']       ?? $evidence->estado,
             'descripcion'  => $data['descripcion']  ?? $evidence->descripcion,
             'nomenclatura' => $data['nomenclatura'] ?? $evidence->nomenclatura,

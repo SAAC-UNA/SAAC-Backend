@@ -82,14 +82,6 @@ class FilterEvidenceRequest extends FormRequest
                 'exists:CRITERIO,criterio_id',
             ],
 
-            // Filtro por Elemento (modelo flexible)
-            // Ejemplo: { "elemento_id": 42 } busca evidencias de la pauta/nodo con id 42
-            'elemento_id' => [
-                'nullable',
-                'integer',
-                'exists:ELEMENTO,elemento_id',
-            ],
-
             // Filtro por Ciclo de Acreditación
             // HU-012 (modelo flexible): permite aislar evidencias de un ciclo específico,
             // evitando que se mezclen evidencias de ciclos distintos en los resultados.
@@ -100,12 +92,6 @@ class FilterEvidenceRequest extends FormRequest
                 'exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
             ],
 
-            // Filtro por Modelo de Estructura
-            // HU-012 (modelo flexible): permite filtrar solo evidencias tradicionales
-            // (criterio_id) o solo flexibles (elemento_id) de una sola vez, sin necesidad
-            // de saber qué criterio_id o elemento_id usar.
-            // Ejemplo: { "modelo_estructura_id": 1 } → solo evidencias del modelo SINAES 2018
-            //          { "modelo_estructura_id": 2 } → solo evidencias del modelo flexible
             'modelo_estructura_id' => [
                 'nullable',
                 'integer',

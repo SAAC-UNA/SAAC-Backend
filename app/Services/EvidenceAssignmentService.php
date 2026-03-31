@@ -77,23 +77,14 @@ class EvidenceAssignmentService
                 throw new \Exception('La evidencia especificada no existe.');
             }
 
-            // MODELO FLEXIBLE (HU-007): Verificar compatibilidad entre el modelo del ciclo
-            // y el tipo de anclaje de la evidencia. Se evita asignar evidencias del árbol
-            // equivocado, lo que dejaría la DB en estado inconsistente.
+            // MODELO FLEXIBLE (HU-007 / Arquitectura B): el flujo flexible es
+            // PROCESO → ELEMENTO → ELEMENTO_ASIGNACION → ARCHIVO(elemento_id).
+            // EVIDENCIA_ASIGNACION solo existe en el modelo tradicional.
             $tipoModelo = $proceso->accreditationCycle?->modeloEstructura?->tipo;
-            $esFlexible = $tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE;
-
-            if ($esFlexible && $evidencia->criterio_id !== null) {
+            if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
                 throw new \InvalidArgumentException(
-                    'El ciclo usa modelo elemento_flexible pero la evidencia está anclada a un criterio tradicional. '
-                    . 'Use una evidencia con elemento_id.'
-                );
-            }
-
-            if (!$esFlexible && $evidencia->elemento_id !== null) {
-                throw new \InvalidArgumentException(
-                    'El ciclo usa modelo tradicional pero la evidencia está anclada a un elemento flexible. '
-                    . 'Use una evidencia con criterio_id.'
+                    'El proceso pertenece a un ciclo con modelo flexible. '
+                    . 'Use la API de asignaciones de elementos (POST /api/elementos-asignaciones) en su lugar.'
                 );
             }
 
