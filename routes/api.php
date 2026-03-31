@@ -33,6 +33,7 @@ use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccreditationCycleController;
+use App\Http\Controllers\CareerCampusController;
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -216,6 +217,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::middleware(['permission:ciclos.view'])->group(function () {
         Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
         Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
+        Route::get('estructura/carrera-sede', [CareerCampusController::class, 'index']);
        /* Route::get('estructura/ciclos-acreditacion', function () {
             return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
         });*/

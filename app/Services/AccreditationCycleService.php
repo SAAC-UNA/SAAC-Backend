@@ -14,7 +14,7 @@ class AccreditationCycleService
     {
         $perPage = $filters['per_page'] ?? 15;
 
-        return AccreditationCycle::with('careerCampus', 'modeloEstructura')->paginate($perPage);
+        return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus', 'modeloEstructura')->paginate($perPage);
     }
 
     /**
@@ -22,7 +22,7 @@ class AccreditationCycleService
      */
     public function findById(int $id): ?AccreditationCycle
     {
-        return AccreditationCycle::with('careerCampus', 'modeloEstructura')->find($id);
+        return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus', 'modeloEstructura')->find($id);
     }
 
     /**
@@ -37,7 +37,7 @@ class AccreditationCycleService
             'estado'               => $data['estado'] ?? AccreditationCycle::STATUS_ACTIVE,
         ]);
 
-        return $cycle->load(['careerCampus', 'modeloEstructura']);
+        return $cycle->load(['careerCampus.career', 'careerCampus.campus', 'modeloEstructura']);
     }
 
     /**
@@ -54,7 +54,7 @@ class AccreditationCycleService
             'estado'               => $data['estado']               ?? $cycle->estado,
         ]);
 
-        return $cycle->fresh(['careerCampus', 'modeloEstructura']);
+        return $cycle->fresh(['careerCampus.career', 'careerCampus.campus', 'modeloEstructura']);
     }
 
     /**
