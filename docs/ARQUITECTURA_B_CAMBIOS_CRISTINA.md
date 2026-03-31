@@ -119,8 +119,54 @@ if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
 | HU-007 | CRUD de asignaciones de elementos (`ELEMENTO_ASIGNACION`) | ✅ Committed |
 | HU-008 | Subida de archivos con `elemento_id` (modelo flexible) | ✅ Committed |
 | HU-018 | Notificaciones al asignar elementos (`NotifyElementAssignment`) | ✅ Committed |
+| HU-013 | Retroalimentación equivalente en `ELEMENTO_ASIGNACION` (`Observada`/`Validada`) | ✅ Committed |
+| HU-016 | Solicitud de ampliación equivalente para `ELEMENTO_ASIGNACION` | ✅ Committed |
 
-### Archivos nuevos (HU-007/008/018)
+---
+
+## Extensión implementada hoy (equivalente flexible HU-013/HU-016)
+
+Se agregó soporte operativo para que el flujo flexible tenga capacidad equivalente a
+retroalimentación y ampliación de plazo, sin romper Arquitectura B.
+
+### Nuevos endpoints (modelo flexible)
+
+| Método | Ruta | Propósito |
+|---|---|---|
+| `POST` | `/api/elementos-asignaciones/{id}/retroalimentacion` | Marcar asignación como `Observada` o `Validada` con comentario |
+| `POST` | `/api/elementos-asignaciones/{id}/solicitud-ampliacion` | Crear solicitud de ampliación para asignación de elemento |
+
+### Cambios de base de datos (Migration 048)
+
+**Archivo**: `database/migrations/048_flexible_retroalimentacion_ampliacion.php`
+
+- `ELEMENTO_ASIGNACION.estado` amplía enum con: `Observada`, `Validada`
+- `SOLICITUD_AMPLIACION` agrega `elemento_asignacion_id` (nullable + FK)
+- `SOLICITUD_AMPLIACION.evidencia_asignacion_id` pasa a nullable para soportar XOR
+  entre flujo tradicional y flujo flexible
+
+### Cambios de código relevantes
+
+- `ElementAssignmentService::retroalimentar(...)`
+  - Actualiza estado (`Observada`/`Validada`)
+  - Crea comentario polimórfico (`Comment` sobre `ElementAssignment`)
+  - Registra bitácora
+  - Emite notificación al usuario asignado
+
+- `ElementAssignmentService::solicitarAmpliacion(...)`
+  - Valida ownership (solo usuario asignado)
+  - Evita duplicados pendientes
+  - Valida fecha sugerida (> fecha límite actual, máximo 30 días)
+  - Crea `SOLICITUD_AMPLIACION` usando `elemento_asignacion_id`
+
+- `ElementAssignmentController`
+  - Agrega métodos `retroalimentar()` y `storeExtension()`
+
+- `ExtensionRequest`
+  - Agrega `elemento_asignacion_id` a `$fillable`
+  - Agrega relación `elementAssignment()`
+
+### Archivos nuevos y migraciones (HU-007/008/013/016/018)
 
 | Archivo | Descripción |
 |---|---|
@@ -134,6 +180,7 @@ if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
 | `database/migrations/045_create_elemento_asignacion_table.php` | Tabla ELEMENTO_ASIGNACION |
 | `database/migrations/046_add_elemento_id_to_archivo_table.php` | `ARCHIVO.elemento_id` (Architecture B) |
 | `database/migrations/047_remove_elemento_id_from_evidencia_table.php` | Limpieza Architecture A |
+| `database/migrations/048_flexible_retroalimentacion_ampliacion.php` | Soporte HU-013/HU-016 en flujo flexible |
 
 ---
 
