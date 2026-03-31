@@ -276,3 +276,48 @@ Para que la retroalimentación tenga sentido en el modelo flexible, primero habr
 | 4 | Endpoint `POST /estructura/elementos/{id}/retroalimentacion` | El de HU-013 |
 
 La lógica de servicio de HU-013 (comentario polimórfico, bitácora, `NotificationService`) es **reutilizable** tal cual — `Comment::create()` usa relación polimórfica y puede apuntar a `StructureElement` igual que apunta a `Evidence`.
+
+---
+
+## 🔧 Adaptación al Modelo Flexible — Bug fix (sprint 2)
+
+### Problema detectado — `EvidenceObserver` lanzaba `TypeError` en PHP 8.1+
+
+Cuando `retroalimentar()` en `EvidenceService` llama `$evidence->update(['estado' => ...])`,
+el `EvidenceObserver` se dispara automáticamente (hook `updated`). El observer invocaba:
+
+```php
+$this->criterionService->recalcularEstado($evidence->criterio_id);
+```
+
+Para evidencias del modelo `elemento_flexible`, `criterio_id` es `null`. El método
+`recalcularEstado(int $criterioId)` tiene type-hint `int` sin nullable, por lo que:
+
+- **PHP 8.0**: coerce silencioso de `null` → `0` → `Criterion::find(0)` devuelve null → return silencioso (sin crash, pero comportamiento inesperado).
+- **PHP 8.1+**: lanza `TypeError: recalcularEstado(): Argument #1 ($criterioId) must be of type int, null given` → HTTP 500 al retroalimentar cualquier evidencia flexible.
+
+### Archivo modificado
+
+**`app/Observers/EvidenceObserver.php`**
+
+Se agregó un early-return en los tres métodos del observer antes de llamar al servicio:
+
+```php
+// MODELO FLEXIBLE (HU-013): Si la evidencia es flexible (elemento_id no nulo),
+// criterio_id es null y no aplica recalculo. Pasar null a int lanza TypeError
+// en PHP 8.1+, por lo que se omite el recalculo en ese caso.
+public function updated(Evidence $evidence): void
+{
+    if ($evidence->criterio_id === null) return;
+    $this->criterionService->recalcularEstado($evidence->criterio_id);
+}
+```
+
+Lo mismo se aplicó a `created()` y `deleted()`.
+
+### Comportamiento resultante
+
+| Tipo de evidencia | `criterio_id` | Recalcula estado criterio |
+|---|---|---|
+| Tradicional | entero (e.g. `3`) | ✅ Sí — comportamiento sin cambios |
+| Flexible | `null` | ✅ No — early-return, sin crash |

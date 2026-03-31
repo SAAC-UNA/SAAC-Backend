@@ -74,12 +74,28 @@ class FilterEvidenceRequest extends FormRequest
                 'exists:ESTANDAR,estandar_id',
             ],
 
-            // Filtro por Criterio
+            // Filtro por Criterio (modelo tradicional)
             // Ejemplo: { "criterio_id": 4 } busca evidencias del criterio "2.1 - Plan de estudios"
             'criterio_id' => [
-                'nullable',           // Opcional, puede no venir
-                'integer',            // Debe ser número entero
-                'exists:CRITERIO,criterio_id', // Debe existir en la tabla CRITERIO
+                'nullable',
+                'integer',
+                'exists:CRITERIO,criterio_id',
+            ],
+
+            // Filtro por Ciclo de Acreditación
+            // HU-012 (modelo flexible): permite aislar evidencias de un ciclo específico,
+            // evitando que se mezclen evidencias de ciclos distintos en los resultados.
+            // Ejemplo: { "ciclo_acreditacion_id": 2 } retorna solo evidencias del ciclo 2024-2028
+            'ciclo_acreditacion_id' => [
+                'nullable',
+                'integer',
+                'exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
+            ],
+
+            'modelo_estructura_id' => [
+                'nullable',
+                'integer',
+                'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
             ],
 
             // Filtro por Responsable (usuario asignado)
@@ -170,6 +186,18 @@ class FilterEvidenceRequest extends FormRequest
             'criterio_id.integer' => 'El criterio debe ser un número entero.',
             'criterio_id.exists' => 'El criterio seleccionado no existe en el sistema.',
 
+            // Mensajes para elemento_id
+            'elemento_id.integer' => 'El elemento debe ser un número entero.',
+            'elemento_id.exists'  => 'El elemento seleccionado no existe en el sistema.',
+
+            // Mensajes para ciclo_acreditacion_id
+            'ciclo_acreditacion_id.integer' => 'El ciclo de acreditación debe ser un número entero.',
+            'ciclo_acreditacion_id.exists'  => 'El ciclo de acreditación seleccionado no existe en el sistema.',
+
+            // Mensajes para modelo_estructura_id
+            'modelo_estructura_id.integer' => 'El modelo de estructura debe ser un número entero.',
+            'modelo_estructura_id.exists'  => 'El modelo de estructura seleccionado no existe en el sistema.',
+
             // Mensajes para responsable_id
             'responsable_id.integer' => 'El responsable debe ser un número entero.',
             'responsable_id.exists' => 'El responsable seleccionado no existe en el sistema.',
@@ -213,6 +241,7 @@ class FilterEvidenceRequest extends FormRequest
             'componente_id' => 'componente',
             'estandar_id'   => 'estándar',
             'criterio_id'   => 'criterio',
+            'elemento_id'   => 'elemento',
             'responsable_id' => 'responsable',
             'fecha_desde' => 'fecha inicial',
             'fecha_hasta' => 'fecha final',

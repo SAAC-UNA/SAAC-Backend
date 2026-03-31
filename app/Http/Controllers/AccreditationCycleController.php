@@ -70,6 +70,9 @@ class AccreditationCycleController extends Controller
      * PUT/PATCH /api/ciclos/{id}
      * AC-4: Bloquea edición si el ciclo no está activo (verificado en Policy)
      * AC-5: Requiere permiso ciclos.edit (verificado en Policy)
+     *
+     * HU-030 (modelo flexible): si se intenta cambiar modelo_estructura_id
+     * en un ciclo con procesos, el service lanza InvalidArgumentException → 422.
      */
     public function update(AccreditationCycleRequest $request, $id)
     {
@@ -81,7 +84,11 @@ class AccreditationCycleController extends Controller
 
         $this->authorize('update', $cycle);
 
-        $updated = $this->service->update($cycle, $request->validated());
+        try {
+            $updated = $this->service->update($cycle, $request->validated());
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return AccreditationCycleResource::make($updated)->response();
     }

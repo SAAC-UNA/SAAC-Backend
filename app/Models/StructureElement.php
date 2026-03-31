@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+// HU-012 (escritura flexible): se necesita Evidence para la relación hasMany
+use App\Models\Evidence;
+use App\Models\ElementAssignment;
 
 class StructureElement extends Model
 {
@@ -23,12 +26,15 @@ class StructureElement extends Model
         'categoria',
         'nomenclatura',
         'descripcion',
-        'activo'
+        'activo',
+        'estado',
+        'fecha_limite',
     ];
 
     // Casts
     protected $casts = [
-        'activo' => 'boolean',
+        'activo'       => 'boolean',
+        'fecha_limite' => 'date',
     ];
 
     // ===== RELACIONES =====
@@ -48,6 +54,42 @@ class StructureElement extends Model
     {
         return $this->hasMany(StructureElement::class, 'padre_id', 'elemento_id')
                     ->orderBy('elemento_id');
+    }
+
+    /**
+     * Relación inversa: Un elemento flexible puede tener muchas evidencias.
+     *
+     * HU-012 (escritura flexible) — Gap 1:
+     * Evidence.php ya tenía belongsTo(StructureElement) vía elemento_id,
+     * pero la inversa (hasMany desde ELEMENTO) nunca fue declarada.
+     * Sin esta relación no se puede hacer eager-load de evidencias al
+     * retornar un elemento, ni usar $elemento->evidencias()->create().
+     *
+     * Solo aplica a modelo_estructura tipo 'elemento_flexible'.
+     * En el modelo tradicional, las evidencias pertenecen a CRITERIO,
+     * y este getter devolvería una colección vacía (correcto — no rompe nada).
+     */
+    public function evidencias()
+    {
+        return $this->hasMany(Evidence::class, 'elemento_id', 'elemento_id');
+    }
+
+    /**
+     * Relation: An element has many user assignments (flexible model).
+     * HU-007
+     */
+    public function assignments()
+    {
+        return $this->hasMany(ElementAssignment::class, 'elemento_id', 'elemento_id');
+    }
+
+    /**
+     * Relation: An element has many direct files (flexible model).
+     * HU-008
+     */
+    public function files()
+    {
+        return $this->hasMany(File::class, 'elemento_id', 'elemento_id');
     }
 
     /**

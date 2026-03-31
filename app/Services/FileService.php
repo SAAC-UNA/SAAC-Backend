@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\File;
 use App\Models\EvidenceAssignment;
+use App\Models\ElementAssignment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,22 +27,25 @@ class FileService
 
     /**
      * Sube un archivo al almacenamiento y crea el registro en la base de datos.
+     * Soporta Modelo 1 (evidencia_id) y Modelo 2 flexible (elemento_id).
      */
     public function uploadFile(
         UploadedFile $file,
-        int $evidenciaId,
         int $usuarioId,
-        int $procesoId
+        int $procesoId,
+        ?int $evidenciaId = null,
+        ?int $elementoId = null
     ): File {
         $extension = $file->getClientOriginalExtension();
         $uuid      = (string) Str::uuid();
         $filename  = "{$uuid}.{$extension}";
 
-        return DB::transaction(function () use ($file, $extension, $uuid, $filename, $evidenciaId, $usuarioId, $procesoId) {
+        return DB::transaction(function () use ($file, $extension, $uuid, $filename, $evidenciaId, $elementoId, $usuarioId, $procesoId) {
             $path = Storage::disk($this->disk)->putFileAs('', $file, $filename);
 
             $archivo = File::create([
                 'evidencia_id'    => $evidenciaId,
+                'elemento_id'     => $elementoId,
                 'usuario_id'      => $usuarioId,
                 'proceso_id'      => $procesoId,
                 'fecha_subida'    => now(),
@@ -61,11 +65,16 @@ class FileService
                 'nombre_original' => $archivo->nombre_original,
                 'usuario_id'      => $usuarioId,
                 'evidencia_id'    => $evidenciaId,
+                'elemento_id'     => $elementoId,
                 'size_kb'         => round($file->getSize() / 1024, 2),
                 'disk_free_gb'    => round($diskFreeSpace / (1024 ** 3), 2),
             ]);
 
-            $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
+            if ($evidenciaId) {
+                $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
+            } elseif ($elementoId) {
+                $this->marcarElementoAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
+            }
 
             return $archivo;
         });
@@ -73,12 +82,14 @@ class FileService
 
     /**
      * Guarda un enlace/URL como evidencia en la base de datos.
+     * Soporta Modelo 1 (evidencia_id) y Modelo 2 flexible (elemento_id).
      */
     public function saveLink(
         string $url,
-        int $evidenciaId,
         int $usuarioId,
         int $procesoId,
+        ?int $evidenciaId = null,
+        ?int $elementoId = null,
         ?string $nombreDescriptivo = null
     ): File {
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
@@ -90,9 +101,10 @@ class FileService
             $nombreDescriptivo  = $parsedUrl['host'] ?? 'Enlace';
         }
 
-        return DB::transaction(function () use ($url, $evidenciaId, $usuarioId, $procesoId, $nombreDescriptivo) {
+        return DB::transaction(function () use ($url, $evidenciaId, $elementoId, $usuarioId, $procesoId, $nombreDescriptivo) {
             $enlace = File::create([
                 'evidencia_id'    => $evidenciaId,
+                'elemento_id'     => $elementoId,
                 'usuario_id'      => $usuarioId,
                 'proceso_id'      => $procesoId,
                 'fecha_subida'    => now(),
@@ -109,9 +121,14 @@ class FileService
                 'nombre_descriptivo'=> $nombreDescriptivo,
                 'usuario_id'        => $usuarioId,
                 'evidencia_id'      => $evidenciaId,
+                'elemento_id'       => $elementoId,
             ]);
 
-            $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
+            if ($evidenciaId) {
+                $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
+            } elseif ($elementoId) {
+                $this->marcarElementoAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
+            }
 
             return $enlace;
         });
@@ -243,5 +260,15 @@ class FileService
             ->where('proceso_id', $procesoId)
             ->where('estado', EvidenceAssignment::ESTADO_PENDIENTE)
             ->update(['estado' => EvidenceAssignment::ESTADO_EN_PROGRESO]);
+    }
+
+    private function marcarElementoAsignacionEnProgreso(int $elementoId, int $usuarioId, int $procesoId): void
+    {
+        ElementAssignment::where('elemento_id', $elementoId)
+            ->where('usuario_id', $usuarioId)
+            ->where('proceso_id', $procesoId)
+            ->where('estado', 'Pendiente')
+            ->get()
+            ->each(fn($assignment) => $assignment->update(['estado' => 'En Progreso']));
     }
 }

@@ -19,6 +19,7 @@ class File extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'evidencia_id',
+        'elemento_id',
         'usuario_id',
         'proceso_id',
         'fecha_subida',
@@ -48,6 +49,15 @@ class File extends Model
     public function evidence()
     {
         return $this->belongsTo(Evidence::class, 'evidencia_id', 'evidencia_id');
+    }
+
+    /**
+     * Relación: Un archivo puede pertenecer directamente a un elemento (modelo flexible).
+     * HU-008
+     */
+    public function elemento()
+    {
+        return $this->belongsTo(StructureElement::class, 'elemento_id', 'elemento_id');
     }
 
     /**

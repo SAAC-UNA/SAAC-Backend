@@ -39,7 +39,10 @@ class EvidenceAssignmentResource extends JsonResource
                     'evidencia_id'  => $this->evidencia_id,
                     'nomenclatura'  => $this->evidencia_nomenclatura ?? null,
                     'descripcion'   => $this->evidencia_descripcion  ?? null,
+                    // MODELO FLEXIBLE (HU-007): exponer ambos anchors para que el front
+                    // sepa si la evidencia es tradicional (criterio_id) o flexible (elemento_id)
                     'criterio_id'   => $this->criterio_id             ?? null,
+                    'elemento_id'   => $this->elemento_id             ?? null,
                     'criterion'     => null,
                 ],
             'usuario' => $this->relationLoaded('user') && $this->user
