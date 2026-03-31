@@ -44,12 +44,29 @@ class AccreditationCycleService
      * Actualizar un ciclo existente.
      * Solo actualiza los campos que vienen en $data; los demás conservan su valor actual.
      * La restricción AC-4 (solo editable si activo) se aplica en la Policy antes de llegar aquí.
+     *
+     * HU-030 (modelo flexible) — Protección de coherencia:
+     * Si se intenta cambiar modelo_estructura_id en un ciclo que ya tiene procesos,
+     * se lanza una excepción. El motivo: los procesos ya existentes tienen evidencias
+     * ancladas al modelo anterior (criterio_id o elemento_id). Cambiar el modelo
+     * dejaría esas evidencias en un estado inconsistente con el nuevo tipo de árbol.
      */
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
+        $nuevoModelo = $data['modelo_estructura_id'] ?? null;
+
+        if ($nuevoModelo && (int)$nuevoModelo !== (int)$cycle->modelo_estructura_id) {
+            if ($cycle->processes()->exists()) {
+                throw new \InvalidArgumentException(
+                    'No se puede cambiar el modelo de estructura de un ciclo que ya tiene procesos asociados. ' .
+                    'El ciclo contiene evidencias vinculadas al modelo actual y cambiar el tipo generaría inconsistencias.'
+                );
+            }
+        }
+
         $cycle->update([
             'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
-            'modelo_estructura_id' => $data['modelo_estructura_id'] ?? $cycle->modelo_estructura_id,
+            'modelo_estructura_id' => $nuevoModelo                  ?? $cycle->modelo_estructura_id,
             'nombre'               => $data['nombre']               ?? $cycle->nombre,
             'estado'               => $data['estado']               ?? $cycle->estado,
         ]);

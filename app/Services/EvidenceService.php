@@ -32,12 +32,18 @@ class EvidenceService
 
     public function create(array $data): Evidence
     {
+        // HU-012 (escritura flexible) — Gap 3:
+        // ANTES: solo se guardaba criterio_id → las evidencias flexibles llegaban
+        //        con elemento_id en $data pero ese valor se descartaba silenciosamente.
+        // DESPUÉS: se guarda el ancla que venga (criterio_id XOR elemento_id).
+        //          La validación XOR ya garantizó que solo uno de los dos está presente.
         $evidence = Evidence::create([
-            'criterio_id' => $data['criterio_id'],
-            'estado'      => $data['estado'] ?? 'Pendiente',
-            'descripcion' => $data['descripcion'],
+            'criterio_id'  => $data['criterio_id']  ?? null,
+            'elemento_id'  => $data['elemento_id']  ?? null,
+            'estado'       => $data['estado']       ?? 'Pendiente',
+            'descripcion'  => $data['descripcion'],
             'nomenclatura' => $data['nomenclatura'],
-            'activo'      => $data['activo'] ?? true,
+            'activo'       => $data['activo']       ?? true,
         ]);
         Cache::forget(self::CACHE_KEY);
         return $evidence->load(self::WITH_BASE);
@@ -45,8 +51,12 @@ class EvidenceService
 
     public function update(Evidence $evidence, array $data): Evidence
     {
+        // HU-012 (escritura flexible) — Gap 3 (update):
+        // Si el request trae elemento_id, se persiste. Si no viene ('sometimes'),
+        // conserva el valor actual. Mismo comportamiento que criterio_id.
         $evidence->update([
-            'criterio_id'  => $data['criterio_id']  ?? $evidence->criterio_id,
+            'criterio_id'  => array_key_exists('criterio_id', $data)  ? $data['criterio_id']  : $evidence->criterio_id,
+            'elemento_id'  => array_key_exists('elemento_id', $data)  ? $data['elemento_id']  : $evidence->elemento_id,
             'estado'       => $data['estado']       ?? $evidence->estado,
             'descripcion'  => $data['descripcion']  ?? $evidence->descripcion,
             'nomenclatura' => $data['nomenclatura'] ?? $evidence->nomenclatura,
@@ -164,8 +174,14 @@ class EvidenceService
     {
         $perPage    = (int) ($filters['per_page'] ?? 15);
         $page       = (int) ($filters['page']     ?? 1);
-        $criterioId  = $filters['criterio_id']  ?? null;
-        $elementoId  = $filters['elemento_id']  ?? null;
+        $criterioId         = $filters['criterio_id']         ?? null;
+        $elementoId         = $filters['elemento_id']         ?? null;
+        // HU-012 (modelo flexible): filtros contextuales por ciclo y modelo.
+        // Permiten aislar evidencias de un ciclo o tipo de modelo específico sin
+        // necesitar saber de antemano qué criterio_id o elemento_id usar.
+        // La navegación es: EVIDENCIA → EVIDENCIA_ASIGNACION → PROCESO → CICLO/MODELO.
+        $cicloId            = $filters['ciclo_acreditacion_id']  ?? null;
+        $modeloEstructuraId = $filters['modelo_estructura_id']   ?? null;
         $estado      = $filters['estado']       ?? null;
         $fechaDesde = $filters['fecha_desde'] ?? null;
         $fechaHasta = $filters['fecha_hasta'] ?? null;
@@ -205,6 +221,22 @@ class EvidenceService
         }
         if ($elementoId) {
             $query->where('elemento_id', $elementoId);
+        }
+        if ($cicloId) {
+            // Filtra evidencias que tengan al menos una asignación en el ciclo dado.
+            // Ruta: EVIDENCIA → EVIDENCIA_ASIGNACION.proceso_id → PROCESO.ciclo_acreditacion_id
+            $query->whereHas('assignments.process', fn ($q) =>
+                $q->where('ciclo_acreditacion_id', $cicloId)
+            );
+        }
+        if ($modeloEstructuraId) {
+            // Filtra evidencias cuyas asignaciones pertenecen a procesos del modelo dado.
+            // Ruta: EVIDENCIA → EVIDENCIA_ASIGNACION → PROCESO → CICLO_ACREDITACION.modelo_estructura_id
+            // Efecto: ?modelo_estructura_id=1 → solo evidencias tradicionales
+            //         ?modelo_estructura_id=2 → solo evidencias flexibles
+            $query->whereHas('assignments.process.accreditationCycle', fn ($q) =>
+                $q->where('modelo_estructura_id', $modeloEstructuraId)
+            );
         }
         if ($estado) {
             $query->where('estado', $estado);

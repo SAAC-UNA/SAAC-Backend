@@ -62,6 +62,14 @@ class StructureElementController extends Controller
 
     /**
      * POST /api/estructura/elementos
+     *
+     * HU-012 (escritura flexible) — Gap 6:
+     * ANTES: el response devolvía $item crudo (sin evidencias).
+     *        Si el cliente enviaba evidencias[], se creaban en la BD pero no
+     *        aparecían en la respuesta, forzando un segundo GET para confirmarlas.
+     * DESPUÉS: el service ya retorna $item->load('evidencias') (dentro de la
+     *          transacción), por lo que el response incluye el array 'evidencias'
+     *          directamente en el 201, confirmando atómicamente la creación.
      */
     public function store(StructureElementRequest $request)
     {
@@ -74,8 +82,9 @@ class StructureElementController extends Controller
         );
 
         return response()->json([
-            'message' => 'Elemento creado correctamente.',
-            'data' => $item
+            'message'   => 'Elemento creado correctamente.',
+            'data'      => $item,
+            'evidencias' => $item->evidencias,
         ], 201);
     }
 

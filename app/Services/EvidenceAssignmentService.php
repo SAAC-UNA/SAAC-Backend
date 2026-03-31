@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\EvidenceAssignment;
 use App\Models\Evidence;
 use App\Models\Process;
+use App\Models\StructureModel;
 use App\Models\User;
 use App\Models\Role;
 use App\Events\EvidenceAssigned;
@@ -61,11 +62,34 @@ class EvidenceAssignmentService
         DB::beginTransaction();
         try {
             // Verificar existencia con Eloquent (evita N+1 si se reutiliza)
-            if (!Process::find($procesoId)) {
+            $proceso = Process::with('accreditationCycle.modeloEstructura')->find($procesoId);
+            if (!$proceso) {
                 throw new \Exception('El proceso especificado no existe.');
             }
-            if (!Evidence::find($evidenciaId)) {
+
+            $evidencia = Evidence::find($evidenciaId);
+            if (!$evidencia) {
                 throw new \Exception('La evidencia especificada no existe.');
+            }
+
+            // MODELO FLEXIBLE (HU-007): Verificar compatibilidad entre el modelo del ciclo
+            // y el tipo de anclaje de la evidencia. Se evita asignar evidencias del árbol
+            // equivocado, lo que dejaría la DB en estado inconsistente.
+            $tipoModelo = $proceso->accreditationCycle?->modeloEstructura?->tipo;
+            $esFlexible = $tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE;
+
+            if ($esFlexible && $evidencia->criterio_id !== null) {
+                throw new \InvalidArgumentException(
+                    'El ciclo usa modelo elemento_flexible pero la evidencia está anclada a un criterio tradicional. '
+                    . 'Use una evidencia con elemento_id.'
+                );
+            }
+
+            if (!$esFlexible && $evidencia->elemento_id !== null) {
+                throw new \InvalidArgumentException(
+                    'El ciclo usa modelo tradicional pero la evidencia está anclada a un elemento flexible. '
+                    . 'Use una evidencia con criterio_id.'
+                );
             }
 
             // Asignar a usuarios directamente

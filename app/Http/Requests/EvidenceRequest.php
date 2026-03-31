@@ -35,16 +35,37 @@ class EvidenceRequest extends FormRequest
                 ->value('componente_id');
         }
 
+        // También necesitamos el elemento_id efectivo para unicidad de nomenclatura
+        // en evidencias flexibles (paralelo a criterio_id en el modelo tradicional).
+        $elementoId = $this->input('elemento_id', $current?->elemento_id);
+
         $rules = [
-            'criterio_id'         => [$isUpdate ? 'sometimes' : 'required','integer','exists:CRITERIO,criterio_id'],
-            'estado'              => [$isUpdate ? 'sometimes' : 'required', 'string', Rule::in(Evidence::ESTADOS)],
-            'descripcion'         => [
+            // ── HU-012 (escritura flexible) — Gap 2 ──────────────────────────────────
+            // ANTES: criterio_id era 'required' siempre → el POST de una evidencia
+            //        flexible (con elemento_id) devolvía 422 "El criterio es obligatorio".
+            //
+            // DESPUÉS: ambos son nullable individualmente. La regla XOR (exactamente
+            //          uno de los dos debe venir en CREATE) se valida en withValidator().
+            //          En UPDATE se mantiene 'sometimes' para no obligar a re-enviar el ancla.
+            // ─────────────────────────────────────────────────────────────────────────
+            'criterio_id' => [
+                $isUpdate ? 'sometimes' : 'nullable',
+                'integer',
+                'exists:CRITERIO,criterio_id',
+            ],
+            'elemento_id' => [
+                $isUpdate ? 'sometimes' : 'nullable',
+                'integer',
+                'exists:ELEMENTO,elemento_id',
+            ],
+            'estado'      => [$isUpdate ? 'sometimes' : 'required', 'string', Rule::in(Evidence::ESTADOS)],
+            'descripcion' => [
                 $isUpdate ? 'sometimes' : 'required',
                 'string',
                 'max:80',
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ .,\-:;]+$/',
             ],
-            'nomenclatura'        => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
+            'nomenclatura' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:20'],
         ];
 
         // Unicidad de "descripcion" (nombre) dentro del componente
@@ -66,7 +87,7 @@ class EvidenceRequest extends FormRequest
             $rules['descripcion'][] = $uniqueNombre;
         }
 
-        // Unicidad de "nomenclatura" dentro del mismo criterio (como ya tenías)
+        // Unicidad de nomenclatura dentro del mismo criterio (modelo tradicional)
         if (!is_null($criterioId)) {
             $uniqueNomen = Rule::unique($table, 'nomenclatura')
                 ->where(fn ($q) => $q->where('criterio_id', $criterioId));
@@ -78,33 +99,70 @@ class EvidenceRequest extends FormRequest
             $rules['nomenclatura'][] = $uniqueNomen;
         }
 
+        // HU-012 (escritura flexible): unicidad de nomenclatura dentro del mismo elemento
+        // (paralelo exacto a la unicidad por criterio del modelo tradicional).
+        if (!is_null($elementoId)) {
+            $uniqueNomenFlexible = Rule::unique($table, 'nomenclatura')
+                ->where(fn ($q) => $q->where('elemento_id', $elementoId));
+
+            if ($idParam) {
+                $uniqueNomenFlexible = $uniqueNomenFlexible->ignore($idParam, 'evidencia_id');
+            }
+
+            $rules['nomenclatura'][] = $uniqueNomenFlexible;
+        }
+
         return $rules;
     }
 
     public function messages(): array
     {
         return [
-            'criterio_id.required'         => 'El criterio es obligatorio.',
-            'criterio_id.exists'           => 'El criterio no existe.',
-            'estado.required' => 'El estado es obligatorio.',
-            'estado.in'       => 'El estado indicado no es válido.',
-            'descripcion.required'         => 'La descripción es obligatoria.',
-            'descripcion.regex'            => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
-            'descripcion.unique'           => 'Ya existe una evidencia con ese nombre en este componente.',
-            'nomenclatura.required'        => 'La nomenclatura es obligatoria.',
-            'nomenclatura.unique'          => 'Ya existe una evidencia con esa nomenclatura en este criterio.',
+            'criterio_id.exists'    => 'El criterio seleccionado no existe.',
+            'elemento_id.exists'    => 'El elemento seleccionado no existe.',
+            'estado.required'       => 'El estado es obligatorio.',
+            'estado.in'             => 'El estado indicado no es válido.',
+            'descripcion.required'  => 'La descripción es obligatoria.',
+            'descripcion.regex'     => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
+            'descripcion.unique'    => 'Ya existe una evidencia con ese nombre en este componente.',
+            'nomenclatura.required' => 'La nomenclatura es obligatoria.',
+            'nomenclatura.unique'   => 'Ya existe una evidencia con esa nomenclatura en este criterio/elemento.',
         ];
     }
 
     public function withValidator($validator)
     {
-        if (in_array($this->method(), ['PUT','PATCH'])) {
-            $validator->after(function ($v) {
-                if (!$this->hasAny(['criterio_id', 'estado', 'descripcion', 'nomenclatura'])) {
+        $isUpdate = in_array($this->method(), ['PUT', 'PATCH']);
+
+        $validator->after(function ($v) use ($isUpdate) {
+            $tieneCriterio = !is_null($this->input('criterio_id'));
+            $tieneElemento = !is_null($this->input('elemento_id'));
+
+            if (!$isUpdate) {
+                // HU-012 (escritura flexible) — regla XOR en CREATE:
+                // Debe venir criterio_id (mod. tradicional) O elemento_id (mod. flexible),
+                // pero nunca los dos a la vez ni ninguno de los dos.
+                if ($tieneCriterio && $tieneElemento) {
+                    $v->errors()->add('criterio_id', 'Una evidencia no puede pertenecer a un criterio y a un elemento al mismo tiempo.');
+                    $v->errors()->add('elemento_id', 'Una evidencia no puede pertenecer a un criterio y a un elemento al mismo tiempo.');
+                }
+                if (!$tieneCriterio && !$tieneElemento) {
+                    $v->errors()->add('criterio_id', 'Debes indicar criterio_id (modelo tradicional) o elemento_id (modelo flexible).');
+                }
+            }
+
+            if ($isUpdate) {
+                // En UPDATE: detectar si el usuario intenta cambiar el "ancla" de tipo
+                // (de criterio → elemento o viceversa), lo que rompería la consistencia.
+                if ($tieneCriterio && $tieneElemento) {
+                    $v->errors()->add('criterio_id', 'No puedes cambiar una evidencia de criterio a elemento al mismo tiempo.');
+                }
+
+                if (!$this->hasAny(['criterio_id', 'elemento_id', 'estado', 'descripcion', 'nomenclatura'])) {
                     $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
                 }
-            });
-        }
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator)

@@ -66,6 +66,28 @@ class FilterEvidenceRequest extends FormRequest
                 'exists:ELEMENTO,elemento_id',
             ],
 
+            // Filtro por Ciclo de Acreditación
+            // HU-012 (modelo flexible): permite aislar evidencias de un ciclo específico,
+            // evitando que se mezclen evidencias de ciclos distintos en los resultados.
+            // Ejemplo: { "ciclo_acreditacion_id": 2 } retorna solo evidencias del ciclo 2024-2028
+            'ciclo_acreditacion_id' => [
+                'nullable',
+                'integer',
+                'exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
+            ],
+
+            // Filtro por Modelo de Estructura
+            // HU-012 (modelo flexible): permite filtrar solo evidencias tradicionales
+            // (criterio_id) o solo flexibles (elemento_id) de una sola vez, sin necesidad
+            // de saber qué criterio_id o elemento_id usar.
+            // Ejemplo: { "modelo_estructura_id": 1 } → solo evidencias del modelo SINAES 2018
+            //          { "modelo_estructura_id": 2 } → solo evidencias del modelo flexible
+            'modelo_estructura_id' => [
+                'nullable',
+                'integer',
+                'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
+            ],
+
             // Filtro por Responsable (usuario asignado)
             // Ejemplo: { "responsable_id": 5 } busca evidencias asignadas a Ana García
             'responsable_id' => [
@@ -145,6 +167,14 @@ class FilterEvidenceRequest extends FormRequest
             // Mensajes para elemento_id
             'elemento_id.integer' => 'El elemento debe ser un número entero.',
             'elemento_id.exists'  => 'El elemento seleccionado no existe en el sistema.',
+
+            // Mensajes para ciclo_acreditacion_id
+            'ciclo_acreditacion_id.integer' => 'El ciclo de acreditación debe ser un número entero.',
+            'ciclo_acreditacion_id.exists'  => 'El ciclo de acreditación seleccionado no existe en el sistema.',
+
+            // Mensajes para modelo_estructura_id
+            'modelo_estructura_id.integer' => 'El modelo de estructura debe ser un número entero.',
+            'modelo_estructura_id.exists'  => 'El modelo de estructura seleccionado no existe en el sistema.',
 
             // Mensajes para responsable_id
             'responsable_id.integer' => 'El responsable debe ser un número entero.',
