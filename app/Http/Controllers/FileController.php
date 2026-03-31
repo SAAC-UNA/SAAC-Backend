@@ -28,18 +28,20 @@ class FileController extends Controller
     /**
      * Listar archivos de una evidencia específica.
      * GET /api/archivos?evidencia_id={id}
+     * GET /api/archivos?elemento_id={id}   (Modelo 2 flexible)
      * GET /api/archivos?proceso_id={id}
      */
     public function index(Request $request): JsonResponse
     {
         $request->validate([
             'evidencia_id' => 'sometimes|integer|exists:EVIDENCIA,evidencia_id',
-            'proceso_id' => 'sometimes|integer|exists:PROCESO,proceso_id',
+            'elemento_id'  => 'sometimes|integer|exists:ELEMENTO,elemento_id',
+            'proceso_id'   => 'sometimes|integer|exists:PROCESO,proceso_id',
         ]);
 
         $query = File::query()->with(['evidence', 'user', 'process']);
 
-        // Filtrar por evidencia si se proporciona
+        // Filtrar por evidencia si se proporciona (Modelo 1)
         if ($request->has('evidencia_id')) {
             $evidenciaId = $request->input('evidencia_id');
             
@@ -47,6 +49,11 @@ class FileController extends Controller
             Gate::authorize('viewAny', [File::class, $evidenciaId]);
             
             $query->where('evidencia_id', $evidenciaId);
+        }
+
+        // Filtrar por elemento si se proporciona (Modelo 2 flexible)
+        if ($request->has('elemento_id')) {
+            $query->where('elemento_id', $request->input('elemento_id'));
         }
 
         // Filtrar por proceso si se proporciona
@@ -91,6 +98,9 @@ class FileController extends Controller
         $archivos = [];
         $errores = [];
         
+        $evidenciaId = $validated['evidencia_id'] ?? null;
+        $elementoId  = $validated['elemento_id'] ?? null;
+
         // Procesar según el tipo
         if ($validated['tipo'] === 'archivo') {
             // Procesar archivos físicos
@@ -98,9 +108,10 @@ class FileController extends Controller
                 try {
                     $archivoGuardado = $this->fileService->uploadFile(
                         file: $archivo,
-                        evidenciaId: $validated['evidencia_id'],
                         usuarioId: $usuarioId,
-                        procesoId: $validated['proceso_id']
+                        procesoId: $validated['proceso_id'],
+                        evidenciaId: $evidenciaId,
+                        elementoId: $elementoId
                     );
                     
                     $archivoGuardado->load(['evidence', 'user', 'process']);
@@ -124,9 +135,10 @@ class FileController extends Controller
                     
                     $enlaceGuardado = $this->fileService->saveLink(
                         url: $url,
-                        evidenciaId: $validated['evidencia_id'],
                         usuarioId: $usuarioId,
                         procesoId: $validated['proceso_id'],
+                        evidenciaId: $evidenciaId,
+                        elementoId: $elementoId,
                         nombreDescriptivo: $nombreDescriptivo
                     );
                     
@@ -151,7 +163,7 @@ class FileController extends Controller
                     'size_kb' => round($resource->size / 1024, 2),
                 ], $archivos);
                 
-                event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+                event(new MultipleFilesUploaded($filesData, $usuarioId, $evidenciaId, $validated['proceso_id']));
             }
             
             return response()->json([
@@ -170,7 +182,7 @@ class FileController extends Controller
                 'size_kb' => round($resource->size / 1024, 2),
             ], $archivos);
             
-            event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+            event(new MultipleFilesUploaded($filesData, $usuarioId, $evidenciaId, $validated['proceso_id']));
         }
 
         return response()->json([

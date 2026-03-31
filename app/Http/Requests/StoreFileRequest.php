@@ -17,8 +17,13 @@ class StoreFileRequest extends FormRequest
         if (!auth()->check()) {
             return false;
         }
-        
-        // Autorizar si el usuario puede subir archivos a esta evidencia
+
+        // Modelo 2 (flexible): elemento_id directo, no hay FilePolicy específica aún
+        if ($this->input('elemento_id')) {
+            return true;
+        }
+
+        // Modelo 1 (tradicional): autorizar según política de evidencia
         return Gate::allows('upload', [
             \App\Models\File::class,
             $this->input('evidencia_id')
@@ -70,10 +75,19 @@ class StoreFileRequest extends FormRequest
             ],
             
             // Común para ambos tipos
+            // Modelo 1 (tradicional): evidencia_id requerido si no viene elemento_id
             'evidencia_id' => [
-                'required',
+                'required_without:elemento_id',
+                'nullable',
                 'integer',
                 'exists:EVIDENCIA,evidencia_id',
+            ],
+            // Modelo 2 (flexible): elemento_id requerido si no viene evidencia_id
+            'elemento_id' => [
+                'required_without:evidencia_id',
+                'nullable',
+                'integer',
+                'exists:ELEMENTO,elemento_id',
             ],
             'proceso_id' => [
                 'required',
@@ -81,6 +95,21 @@ class StoreFileRequest extends FormRequest
                 'exists:PROCESO,proceso_id',
             ],
         ];
+    }
+
+    /**
+     * Asegura que se proporcione exactamente uno de evidencia_id o elemento_id.
+     */
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function ($v) {
+            $hasEvidencia = !empty($this->input('evidencia_id'));
+            $hasElemento  = !empty($this->input('elemento_id'));
+
+            if ($hasEvidencia && $hasElemento) {
+                $v->errors()->add('evidencia_id', 'No puede proporcionar evidencia_id y elemento_id al mismo tiempo.');
+            }
+        });
     }
 
     /**
@@ -113,10 +142,14 @@ class StoreFileRequest extends FormRequest
             'enlaces_nombres.*.max' => 'Uno o más nombres de enlace son demasiado largos (máx. 255 caracteres).',
             
             // Común
-            'evidencia_id.required' => 'Debe especificar la evidencia asociada.',
+            'evidencia_id.required_without' => 'Debe especificar la evidencia o el elemento asociado.',
             'evidencia_id.integer' => 'El ID de evidencia debe ser un número entero.',
             'evidencia_id.exists' => 'La evidencia especificada no existe.',
-            
+
+            'elemento_id.required_without' => 'Debe especificar el elemento o la evidencia asociada.',
+            'elemento_id.integer' => 'El ID de elemento debe ser un número entero.',
+            'elemento_id.exists' => 'El elemento especificado no existe.',
+
             'proceso_id.required' => 'Debe especificar el proceso asociado.',
             'proceso_id.integer' => 'El ID de proceso debe ser un número entero.',
             'proceso_id.exists' => 'El proceso especificado no existe.',
@@ -131,9 +164,10 @@ class StoreFileRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'archivo' => 'archivo',
+            'archivo'      => 'archivo',
             'evidencia_id' => 'evidencia',
-            'proceso_id' => 'proceso',
+            'elemento_id'  => 'elemento',
+            'proceso_id'   => 'proceso',
         ];
     }
 }

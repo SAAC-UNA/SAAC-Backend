@@ -33,6 +33,7 @@ use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccreditationCycleController;
+use App\Http\Controllers\ElementAssignmentController;
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -269,6 +270,26 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::match(['put', 'patch'], 'evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'update'])
         ->middleware('permission:asignaciones.edit');
     Route::delete('evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'destroy'])
+        ->middleware('permission:asignaciones.delete');
+});
+
+// ============================================
+// Element Assignments (HU-007 flexible model)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::middleware(['permission:asignaciones.view'])->group(function () {
+        Route::get('elementos-asignaciones', [ElementAssignmentController::class, 'index']);
+        Route::get('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'show']);
+        Route::get('elementos/{elementoId}/asignaciones', [ElementAssignmentController::class, 'byElement']);
+        Route::get('procesos/{procesoId}/elementos-asignaciones', [ElementAssignmentController::class, 'byProcess']);
+        Route::get('usuarios/{usuarioId}/elementos-asignados', [ElementAssignmentController::class, 'byUser']);
+    });
+
+    Route::post('elementos-asignaciones', [ElementAssignmentController::class, 'store'])
+        ->middleware('permission:asignaciones.create');
+    Route::match(['put', 'patch'], 'elementos-asignaciones/{id}', [ElementAssignmentController::class, 'update'])
+        ->middleware('permission:asignaciones.edit');
+    Route::delete('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'destroy'])
         ->middleware('permission:asignaciones.delete');
 });
 
