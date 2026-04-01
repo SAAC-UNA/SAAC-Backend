@@ -140,7 +140,9 @@ abstract class AbstractFileService implements FileStorageContract
         if (!$this->fileExists($archivo)) {
             return null;
         }
-        return Storage::disk($this->disk)->mimeType($archivo->path);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk($this->disk);
+        return $disk->mimeType($archivo->path);
     }
 
     // -----------------------------------------------------------------------

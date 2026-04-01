@@ -179,6 +179,9 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
     Route::middleware(['permission:elemento.view'])->group(function () {
         Route::get('estructura/elementos', [StructureElementController::class, 'index']);
+        Route::get('estructura/elementos/filter', [StructureElementController::class, 'filter']);
+        Route::get('estructura/elementos/export/excel', [StructureElementController::class, 'exportExcel']);
+        Route::get('estructura/elementos/export/pdf', [StructureElementController::class, 'exportPDF']);
         // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
         Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
     });

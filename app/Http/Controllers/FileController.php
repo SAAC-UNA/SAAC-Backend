@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -86,7 +87,7 @@ class FileController extends Controller
         $validated = $request->validated();
 
         // Obtener el usuario autenticado
-        $usuarioId = auth()->id();
+        $usuarioId = Auth::id();
         
         if (!$usuarioId) {
             return response()->json([
@@ -357,7 +358,7 @@ class FileController extends Controller
         } catch (\Exception $e) {
             Log::error('Error descargando archivo', [
                 'archivo_id' => $archivo->archivo_id,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
 
