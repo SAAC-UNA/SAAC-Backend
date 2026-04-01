@@ -21,7 +21,7 @@
  * USO:
  * - Seeders: Crear permisos y asignarlos a roles
  * - Policies: Verificar permisos granulares
- * - Frontend: Mostrar/ocultar elementos según permisos del usuario
+ * - Frontend: Mostrar/ocultar Elements según permisos del usuario
  * - Middleware: Proteger rutas con permisos específicos
  */
 
@@ -56,7 +56,7 @@ return [
         'criterios' => ['view', 'create', 'edit', 'delete'],
         'estandares' => ['view', 'create', 'edit', 'delete'],
         
-        // Elementos - Jerarquía Flexible (Modelo 2026)
+        // Elements - Jerarquía Flexible (Modelo 2026)
         'elemento' => ['view', 'create', 'edit', 'delete'],
         
         // Evidencias (HU-012)
@@ -69,7 +69,7 @@ return [
         'archivos' => ['view', 'upload', 'download', 'delete', 'make_public'],
         
         // Solicitudes de Ampliación (HU-016)
-        'solicitudes_ampliacion' => ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
+        'solicitudes_ampliacion' => ['view', 'create', 'approve', 'reject', 'cancel'],
         
         // Aprobación de Criterios (HU-010)
         'aprobaciones' => ['view', 'approve', 'reject'],
@@ -140,7 +140,7 @@ return [
             'criterios.view',
             'estandares.view',
             
-            // Elementos (gestión completa - igual que dimensiones)
+            // Elements (gestión completa - igual que dimensiones)
             'elemento.view',
             'elemento.create',
             'elemento.edit',
@@ -225,7 +225,7 @@ return [
             'criterios.view',
             'estandares.view',
             
-            // Elementos (solo lectura)
+            // Elements (solo lectura)
             'elemento.view',
 
             // Modelos de Estructura (solo lectura)
@@ -286,7 +286,7 @@ return [
             'componentes.view',
             'criterios.view',
             
-            // Elementos (solo lectura)
+            // Elements (solo lectura)
             'elemento.view',
             
             // Evidencias (ver y gestionar las asignadas)
@@ -302,9 +302,11 @@ return [
             'archivos.download',
             'archivos.delete', // Solo los propios
             
-            // Solicitudes (crear y ver propias)
+            // Solicitudes (crear, ver, editar, eliminar y cancelar propias)
             'solicitudes_ampliacion.view',
             'solicitudes_ampliacion.create',
+
+            'solicitudes_ampliacion.cancel',
             
             // Compromisos (ver los asignados)
             'compromisos_mejora.view',
@@ -386,11 +388,11 @@ return [
         'estandares.edit' => 'Editar estándares',
         'estandares.delete' => 'Eliminar estándares',
         
-        // Elementos
-        'elemento.view' => 'Ver elementos de estructura',
-        'elemento.create' => 'Crear elementos de estructura',
-        'elemento.edit' => 'Editar elementos de estructura',
-        'elemento.delete' => 'Eliminar elementos de estructura',
+        // Elements
+        'elemento.view' => 'Ver Elements de estructura',
+        'elemento.create' => 'Crear Elements de estructura',
+        'elemento.edit' => 'Editar Elements de estructura',
+        'elemento.delete' => 'Eliminar Elements de estructura',
         
         // Evidencias
         'evidencias.view' => 'Ver evidencias',
@@ -419,6 +421,7 @@ return [
         'solicitudes_ampliacion.delete' => 'Eliminar solicitudes de ampliación',
         'solicitudes_ampliacion.approve' => 'Aprobar solicitudes de ampliación',
         'solicitudes_ampliacion.reject' => 'Rechazar solicitudes de ampliación',
+        'solicitudes_ampliacion.cancel' => 'Cancelar solicitudes de ampliación propias',
         
         // Aprobaciones de criterios
         'aprobaciones.view' => 'Ver aprobaciones de criterios',

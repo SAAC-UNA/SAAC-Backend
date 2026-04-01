@@ -141,9 +141,11 @@ class ExtensionTimeRequestController extends Controller
             $extensionRequest = $this->service->createRequest($request->validated(), $userId);
 
             // Registro en bitácora
+            $tipoAsignacion = "evidencia asignación {$extensionRequest->evidencia_asignacion_id}";
+
             AuditLogService::log(
                 'crear',
-                "Solicitud de ampliación creada (ID: {$extensionRequest->solicitud_ampliacion_id}) para evidencia {$extensionRequest->evidencia_asignacion_id}",
+                "Solicitud de ampliación creada (ID: {$extensionRequest->solicitud_ampliacion_id}) para {$tipoAsignacion}",
                 'Solicitudes Ampliación'
             );
 
@@ -308,6 +310,60 @@ class ExtensionTimeRequestController extends Controller
     }
 
     /**
+     * Cancela una solicitud de ampliación pendiente (cambia estado a 'cancelada').
+     *
+     * AUTORIZACIÓN:
+     * - Solo el creador puede cancelar su solicitud (o admin)
+     * - Solo solicitudes en estado PENDIENTE
+     *
+     * @param string $id
+     * @return JsonResponse
+     */
+    public function cancel(string $id): JsonResponse
+    {
+        try {
+            $extensionRequest = ExtensionRequest::find((int)$id);
+
+            if (!$extensionRequest) {
+                return response()->json(['message' => 'Solicitud no encontrada.'], 404);
+            }
+
+            $this->authorize('cancel', $extensionRequest);
+
+            $updated = $this->service->cancelRequest((int)$id, Auth::id());
+
+            AuditLogService::log(
+                'cancelar',
+                "Solicitud de ampliación cancelada (ID: {$id})",
+                'Solicitudes Ampliación'
+            );
+
+            return response()->json([
+                'message' => 'Solicitud cancelada exitosamente.'
+            ], 200);
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $exception) {
+            Log::warning('Intento de cancelación no autorizada', [
+                'solicitud_id' => $id,
+                'usuario_id'   => Auth::id()
+            ]);
+            return response()->json(['message' => 'No autorizado'], 403);
+        } catch (\Illuminate\Validation\ValidationException $validationException) {
+            return response()->json([
+                'message' => 'No se puede cancelar la solicitud.',
+                'errors'  => $validationException->errors()
+            ], 422);
+        } catch (\Exception $exception) {
+            Log::error('Error al cancelar solicitud', [
+                'solicitud_id' => $id,
+                'usuario_id'   => Auth::id(),
+                'error'        => $exception->getMessage()
+            ]);
+            return response()->json(['message' => 'Error al cancelar la solicitud'], 500);
+        }
+    }
+
+    /**
      * Obtiene evidencias asignadas al profesor que están próximas a vencer.
      *
      * AUTORIZACIÓN:
@@ -320,7 +376,6 @@ class ExtensionTimeRequestController extends Controller
     public function upcomingEvidences(): JsonResponse
     {
         try {
-            // PL-10: Usuario autenticado
             $userId = Auth::id();
 
             if (!$userId) {
@@ -345,4 +400,5 @@ class ExtensionTimeRequestController extends Controller
             return response()->json(['message' => 'Error al obtener evidencias'], 500);
         }
     }
+
 }

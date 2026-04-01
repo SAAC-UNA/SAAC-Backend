@@ -62,6 +62,12 @@ class DatabaseSeeder extends Seeder
             // === APROBACIONES DE CRITERIOS (DATOS DE PRUEBA) ===
             AprobacionCriteriosTestSeeder::class, // 19. Aprobaciones de criterios (para pruebas de endpoints)
 
+            // === APROBACIONES DE ELEMENTOS - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
+            ApprovalElementsTestSeeder::class, // 20. Aprobaciones de elementos (HU-010 modelo flexible)
+
+            // === COMPROMISOS DE MEJORA - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
+            CommitmentElementsTestSeeder::class, // 21. Compromisos de mejora elementos (HU-010 modelo flexible)
+
             // === AUDITORÍA Y LOGS ===
             ActionTypeSeeder::class,          // 21. Tipos de acción (catálogo de TIPO_ACCION)
             // AuditLogSeeder::class,            // 22. Logs de auditoría

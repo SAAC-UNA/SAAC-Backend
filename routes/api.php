@@ -22,6 +22,7 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
+use App\Http\Controllers\ElementExtensionTimeRequestController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
@@ -29,7 +30,9 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
+use App\Http\Controllers\ElementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
+use App\Http\Controllers\ElementApprovalController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccreditationCycleController;
@@ -323,7 +326,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
     ->group(function () {
         Route::get('/', [ExtensionTimeRequestController::class, 'index']);
 
-        // GET: Evidencias próximas a vencer (para sugerir en formulario)
+        // GET: Evidencias próximas a vencer (modelo tradicional)
         Route::get('/evidencias/proximas-vencer', [ExtensionTimeRequestController::class, 'upcomingEvidences']);
 
         // GET: Ver detalle de solicitud (autorización con Policy)
@@ -338,6 +341,26 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
 
         // DELETE: Eliminar solicitud pendiente
         Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
+
+        // PATCH: Cancelar solicitud (cambia estado a 'cancelada', no borra)
+        Route::patch('/{id}/cancelar', [ExtensionTimeRequestController::class, 'cancel']);
+    });
+
+// ============================================
+// Solicitudes de Ampliación — Modelo Flexible / Elemento (RF-15)
+// Archivos dedicados: ElementExtensionTimeRequestController
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
+    ->prefix('solicitudes-ampliacion-elemento')
+    ->group(function () {
+        Route::get('/', [ElementExtensionTimeRequestController::class, 'index']);
+        Route::get('/proximas-vencer', [ElementExtensionTimeRequestController::class, 'upcomingElements']);
+        Route::get('/{id}', [ElementExtensionTimeRequestController::class, 'show']);
+        Route::post('/', [ElementExtensionTimeRequestController::class, 'store'])
+            ->middleware('throttle:10,1');
+        Route::put('/{id}', [ElementExtensionTimeRequestController::class, 'update']);
+        Route::delete('/{id}', [ElementExtensionTimeRequestController::class, 'destroy']);
+        Route::patch('/{id}/cancelar', [ElementExtensionTimeRequestController::class, 'cancel']);
     });
 
 // ============================================
@@ -348,6 +371,16 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
     Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
     Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
     Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+});
+
+// ============================================================
+// Aprobación de Elementos por Bloques (HU-010 modelo flexible)
+// ============================================================
+Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
+    Route::get('aprobaciones-elementos', [ElementApprovalController::class, 'listApprovals']);
+    Route::get('aprobaciones-elementos/{aprobacionId}', [ElementApprovalController::class, 'showApproval']);
+    Route::post('elementos/{elementoId}/aprobar', [ElementApprovalController::class, 'approveElemento'])->middleware('throttle:10,1');
+    Route::post('elementos/{elementoId}/rechazar', [ElementApprovalController::class, 'rejectElemento'])->middleware('throttle:10,1');
 });
 
 // ============================================
@@ -460,7 +493,24 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-de-m
 });
 
 // ============================================
-// Notificaciones (HU-018)
+// Compromisos de Mejora — Modelo Flexible (ELEMENTO)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-elementos')->group(function () {
+    Route::middleware(['permission:compromisos_mejora.view'])->group(function () {
+        Route::get('/', [ElementCommitmentController::class, 'listCommitments']);
+        Route::get('/usuario/{usuarioId}', [ElementCommitmentController::class, 'getByUser']);
+        Route::get('/elemento/{elementoId}', [ElementCommitmentController::class, 'getByElemento']);
+        Route::get('/{id}', [ElementCommitmentController::class, 'showCommitment']);
+    });
+
+    Route::post('/', [ElementCommitmentController::class, 'createCommitment'])
+        ->middleware('permission:compromisos_mejora.create');
+    Route::put('/{id}', [ElementCommitmentController::class, 'updateCommitment'])
+        ->middleware('permission:compromisos_mejora.edit');
+    Route::patch('/{id}/active', [ElementCommitmentController::class, 'setActive'])
+        ->middleware('permission:compromisos_mejora.edit');
+});
+
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('notificaciones')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);

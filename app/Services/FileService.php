@@ -73,7 +73,7 @@ class FileService
             if ($evidenciaId) {
                 $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
             } elseif ($elementoId) {
-                $this->marcarElementoAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
+                $this->marcarElementAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
             }
 
             return $archivo;
@@ -127,7 +127,7 @@ class FileService
             if ($evidenciaId) {
                 $this->marcarAsignacionEnProgreso($evidenciaId, $usuarioId, $procesoId);
             } elseif ($elementoId) {
-                $this->marcarElementoAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
+                $this->marcarElementAsignacionEnProgreso($elementoId, $usuarioId, $procesoId);
             }
 
             return $enlace;
@@ -262,7 +262,7 @@ class FileService
             ->update(['estado' => EvidenceAssignment::ESTADO_EN_PROGRESO]);
     }
 
-    private function marcarElementoAsignacionEnProgreso(int $elementoId, int $usuarioId, int $procesoId): void
+    private function marcarElementAsignacionEnProgreso(int $elementoId, int $usuarioId, int $procesoId): void
     {
         ElementAssignment::where('elemento_id', $elementoId)
             ->where('usuario_id', $usuarioId)

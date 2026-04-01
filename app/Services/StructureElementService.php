@@ -10,17 +10,17 @@ use Illuminate\Support\Facades\DB;
 class StructureElementService
 {
     /**
-     * Obtener todos los elementos, opcionalmente filtrados por tipo y/o modelo
+     * Obtener todos los Elements, opcionalmente filtrados por tipo y/o modelo
      */
     public function getAll(?string $tipo = null, ?int $modeloEstructuraId = null)
     {
-        $cacheKey = "elementos.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
+        $cacheKey = "Elements.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
         
         return Cache::remember($cacheKey, 300, function () use ($tipo, $modeloEstructuraId) {
             $query = StructureElement::orderBy('elemento_id');
 
             // Al consultar por modelo específico (vista de gestión) se devuelven todos los
-            // elementos sin importar si están activos o no.
+            // Elements sin importar si están activos o no.
             // Al consultar sin modelo (selectores/lookups) solo se devuelven activos.
             if ($modeloEstructuraId === null) {
                 $query->where('activo', true);
@@ -43,9 +43,9 @@ class StructureElementService
      *
      * HU-012 (escritura flexible) — Gap 5a:
      * ANTES: retornaba el ELEMENTO crudo sin relaciones.
-     * DESPUÉS: carga 'evidencias' en eager-load para que GET /elementos/{id}
+     * DESPUÉS: carga 'evidencias' en eager-load para que GET /Elements/{id}
      *          muestre los documentos requeridos asociados al nodo.
-     *          En elementos del modelo tradicional la colección llega vacía
+     *          En Elements del modelo tradicional la colección llega vacía
      *          (correcto — sus evidencias pertenecen a CRITERIO, no a ELEMENTO).
      */
     public function findById(int $id): ?StructureElement
@@ -62,7 +62,7 @@ class StructureElementService
      *          todo se ejecuta en una transacción SQL atómica:
      *            1. INSERT en ELEMENTO
      *            2. INSERT en EVIDENCIA (una por cada item de evidencias[])
-     *          Si cualquier INSERT falla, rollback completo — no quedan elementos
+     *          Si cualquier INSERT falla, rollback completo — no quedan Elements
      *          huérfanos ni evidencias sin elemento.
      *
      * La transacción no cambia el comportamiento para el modelo tradicional
@@ -158,20 +158,20 @@ class StructureElementService
      */
     private function clearCache(?string $tipo = null, ?int $modeloEstructuraId = null): void
     {
-        Cache::forget('elementos.all');
+        Cache::forget('Elements.all');
         Cache::forget('elemento.tree.all');
         // Llave sin modelo (tipo solamente)
-        Cache::forget("elementos.tipo.{$tipo}.modelo.");
+        Cache::forget("Elements.tipo.{$tipo}.modelo.");
 
         if ($tipo) {
-            Cache::forget("elementos.tipo.{$tipo}");
+            Cache::forget("Elements.tipo.{$tipo}");
         }
 
         // Llave con modelo específico
         if ($modeloEstructuraId) {
-            Cache::forget("elementos.tipo..modelo.{$modeloEstructuraId}");
+            Cache::forget("Elements.tipo..modelo.{$modeloEstructuraId}");
             if ($tipo) {
-                Cache::forget("elementos.tipo.{$tipo}.modelo.{$modeloEstructuraId}");
+                Cache::forget("Elements.tipo.{$tipo}.modelo.{$modeloEstructuraId}");
             }
         }
     }

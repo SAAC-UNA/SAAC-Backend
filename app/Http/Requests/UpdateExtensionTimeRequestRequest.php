@@ -45,7 +45,7 @@ class UpdateExtensionTimeRequestRequest extends FormRequest
                 'after:today'
             ],
 
-            // CRÍTICO: NO permitir cambiar la evidencia_asignacion_id
+            // CRÍTICO: NO permitir cambiar el ID de asignación una vez creada la solicitud
             'evidencia_asignacion_id' => 'prohibited',
         ];
     }

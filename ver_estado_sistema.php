@@ -37,7 +37,7 @@ echo "\n";
 // ==================================================
 // 2. JERARQUÍA CREADA
 // ==================================================
-echo "🌳 2. ESTRUCTURA JERARQUICA (10 elementos)\n";
+echo "🌳 2. ESTRUCTURA JERARQUICA (10 Elements)\n";
 echo str_repeat("=", 70) . "\n\n";
 
 $jerarquias = DB::table('JERARQUIA')->orderBy('jerarquia_id')->get();
@@ -139,13 +139,13 @@ echo "║                         RESUMEN                                ║\n";
 echo "╚════════════════════════════════════════════════════════════════╝\n\n";
 
 echo "✅ Modelos de estructura: " . count($modelos) . "\n";
-echo "✅ Elementos de jerarquía: " . count($jerarquias) . "\n";
+echo "✅ Elements de jerarquía: " . count($jerarquias) . "\n";
 echo "✅ Procesos totales: " . DB::table('PROCESO')->count() . "\n";
 echo "✅ Dimensiones tradicionales: " . DB::table('DIMENSION')->count() . "\n\n";
 
 echo "🎯 CONCLUSIÓN:\n";
 echo "   - Tu sistema tiene 2 modelos disponibles\n";
-echo "   - La jerarquía flexible tiene 10 elementos de ejemplo\n";
+echo "   - La jerarquía flexible tiene 10 Elements de ejemplo\n";
 echo "   - Las dimensiones tradicionales ya existen\n";
 echo "   - Cuando creas un proceso, eliges modelo 1 o 2\n";
 echo "   - El frontend detecta automáticamente qué UI mostrar\n\n";

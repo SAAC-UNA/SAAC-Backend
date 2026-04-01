@@ -15,7 +15,7 @@ foreach ($modelos as $m) {
 
 echo "\n=== PRUEBA 2: Ver Jerarquía Completa ===\n\n";
 $jerarquia = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?)', [null]);
-echo "Total elementos: " . count($jerarquia) . "\n\n";
+echo "Total Elements: " . count($jerarquia) . "\n\n";
 foreach ($jerarquia as $j) {
     $indent = str_repeat('  ', $j->nivel);
     if ($j->tipo === 'dimension') {

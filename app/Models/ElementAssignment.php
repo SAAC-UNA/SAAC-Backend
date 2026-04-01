@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\ElementAssignmentObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,6 +27,11 @@ class ElementAssignment extends Model
     protected $casts = [
         'fecha_limite' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        static::observe(ElementAssignmentObserver::class);
+    }
 
     // ===== ESTADO CONSTANTS =====
     const ESTADO_PENDIENTE   = 'Pendiente';

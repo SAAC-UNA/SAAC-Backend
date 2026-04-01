@@ -71,7 +71,7 @@ class StructureModelService
      * - Validar que no haya procesos activos antes de desactivar
      * - Desactivar en cascada la estructura asociada:
      *   * Si esTradicional(): DIMENSION → COMPONENTE → CRITERIO → ESTANDAR
-     *   * Si esElementoFlexible(): ELEMENTO (WHERE modelo_estructura_id)
+     *   * Si esElementFlexible(): ELEMENTO (WHERE modelo_estructura_id)
      * - NO desactivar EVIDENCIA (las evidencias deben permanecer activas)
      * 
      * Referencia código pendiente:
@@ -86,7 +86,7 @@ class StructureModelService
      *         DB::table('COMPONENTE')->update(['activo' => false]);
      *         DB::table('CRITERIO')->update(['activo' => false]);
      *         DB::table('ESTANDAR')->update(['activo' => false]);
-     *     } elseif ($model->esElementoFlexible()) {
+     *     } elseif ($model->esElementFlexible()) {
      *         DB::table('ELEMENTO')->where('modelo_estructura_id', $model->modelo_estructura_id)->update(['activo' => false]);
      *     }
      * }
@@ -124,13 +124,13 @@ class StructureModelService
             'solicitudes_ampliacion' => $asignacionIds->isNotEmpty() ? DB::table('SOLICITUD_AMPLIACION')->whereIn('evidencia_asignacion_id', $asignacionIds)->count() : 0,
             'aprobaciones'           => $procesoIds->isNotEmpty() ? DB::table('APROBACION_CRITERIO')->whereIn('proceso_id', $procesoIds)->count() : 0,
             'archivos'               => $procesoIds->isNotEmpty() ? DB::table('ARCHIVO')->whereIn('proceso_id', $procesoIds)->count() : 0,
-            'elementos'              => $model->esElementoFlexible() ? StructureElement::where('modelo_estructura_id', $model->modelo_estructura_id)->count() : 0,
+            'Elements'              => $model->esElementFlexible() ? StructureElement::where('modelo_estructura_id', $model->modelo_estructura_id)->count() : 0,
         ];
     }
 
     /**
      * Eliminar el modelo y todo lo que depende de él en cascada:
-     * ciclos → procesos (archivos físicos + solicitudes manualmente) → elementos → modelo.
+     * ciclos → procesos (archivos físicos + solicitudes manualmente) → Elements → modelo.
      *
      * @return array Resumen de registros eliminados
      */
@@ -174,8 +174,8 @@ class StructureModelService
                 AccreditationCycle::whereIn('ciclo_acreditacion_id', $cicloIds)->delete();
             }
 
-            // 5. Borrar elementos (nullify padre_id para FK auto-referenciada)
-            if ($model->esElementoFlexible()) {
+            // 5. Borrar Elements (nullify padre_id para FK auto-referenciada)
+            if ($model->esElementFlexible()) {
                 DB::table('ELEMENTO')
                     ->where('modelo_estructura_id', $model->modelo_estructura_id)
                     ->update(['padre_id' => null]);

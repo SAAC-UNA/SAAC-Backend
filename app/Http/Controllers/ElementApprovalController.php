@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ElementApprovalRequest;
+use App\Services\ElementApprovalService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Auth\Access\AuthorizationException;
+use Exception;
+
+/**
+ * Controlador de aprobaciones de Elements � modelo flexible (HU-010).
+ * Solo maneja HTTP: delega toda la l�gica a ElementApprovalService.
+ */
+class ElementApprovalController extends Controller
+{
+    use AuthorizesRequests;
+
+    private ElementApprovalService $approvalService;
+
+    public function __construct(ElementApprovalService $approvalService)
+    {
+        $this->approvalService = $approvalService;
+    }
+
+    public function listApprovals(): JsonResponse
+    {
+        $this->authorize('viewAny', \App\Models\ElementApproval::class);
+
+        try {
+            $approvals = $this->approvalService->listApprovals();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $approvals,
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las aprobaciones.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function showApproval(int $aprobacionId): JsonResponse
+    {
+        try {
+            $approval = $this->approvalService->getApproval($aprobacionId);
+
+            if (!$approval) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aprobacion no encontrada.',
+                ], 404);
+            }
+
+            $this->authorize('view', $approval);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $approval,
+            ], 200);
+
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta accion.',
+            ], 403);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener la aprobacion.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function approveElemento(ElementApprovalRequest $request, int $elementoId): JsonResponse
+    {
+        try {
+            $this->authorize('approve', \App\Models\ElementApproval::class);
+
+            $approval = $this->approvalService->approveElemento(
+                $elementoId,
+                $request->proceso_id,
+                $request->comentario
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Elemento aprobado exitosamente.',
+                'data'    => $approval,
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta accion.',
+            ], 403);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function rejectElemento(ElementApprovalRequest $request, int $elementoId): JsonResponse
+    {
+        try {
+            $this->authorize('reject', \App\Models\ElementApproval::class);
+
+            $approval = $this->approvalService->rejectElemento(
+                $elementoId,
+                $request->proceso_id,
+                $request->comentario,
+                $request->fecha_limite
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Elemento rechazado exitosamente.',
+                'data'    => $approval,
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta accion.',
+            ], 403);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+}

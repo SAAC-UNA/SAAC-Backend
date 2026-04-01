@@ -5,12 +5,12 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 
-class ElementoPermissionsSeeder extends Seeder
+class ElementPermissionsSeeder extends Seeder
 {
     /**
      * Seed para agregar los permisos de ELEMENTO
      * 
-     * Ejecutar con: php artisan db:seed --class=ElementoPermissionsSeeder
+     * Ejecutar con: php artisan db:seed --class=ElementPermissionsSeeder
      */
     public function run(): void
     {

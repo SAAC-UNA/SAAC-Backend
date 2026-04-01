@@ -50,7 +50,7 @@ class StructureModel extends Model
     /**
      * Verificar si es modelo de jerarquía flexible
      */
-    public function esElementoFlexible(): bool
+    public function esElementFlexible(): bool
     {
         return $this->tipo === self::TIPO_ELEMENTO_FLEXIBLE;
     }
