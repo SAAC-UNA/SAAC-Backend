@@ -24,6 +24,7 @@ class ExtensionRequestResource extends JsonResource
             // Datos principales de la solicitud
             'solicitud_ampliacion_id' => $this->solicitud_ampliacion_id,
             'evidencia_asignacion_id' => $this->evidencia_asignacion_id,
+            'elemento_asignacion_id'  => $this->elemento_asignacion_id,
             'usuario_id' => $this->usuario_id,
             'motivo' => $this->motivo,
             'fecha_sugerida' => optional($this->fecha_sugerida)->toISOString(),
@@ -46,7 +47,15 @@ class ExtensionRequestResource extends JsonResource
                     'descripcion' => $this->evidenceAssignment->evidence->descripcion,
                 ] : null),
             ],
-            
+
+            // Asignación de elemento (modelo flexible, cuando está cargada)
+            'elemento_asignacion' => $this->whenLoaded('elementAssignment', fn() => $this->elementAssignment ? [
+                'elemento_asignacion_id' => $this->elementAssignment->elemento_asignacion_id,
+                'elemento_id'            => $this->elementAssignment->elemento_id,
+                'estado'                 => $this->elementAssignment->estado,
+                'fecha_limite'           => optional($this->elementAssignment->fecha_limite)->toISOString(),
+            ] : null),
+
             // Usuario solicitante (cuando está cargado)
             'usuario' => [
                 'usuario_id' => $this->whenLoaded('user', $this->user?->usuario_id),

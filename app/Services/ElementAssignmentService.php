@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ElementAssignment;
 use App\Models\ExtensionRequest;
 use App\Models\StructureElement;
+use App\Models\StructureModel;
 use App\Models\Process;
 use App\Models\User;
 use App\Models\Comment;
@@ -64,6 +65,18 @@ class ElementAssignmentService
             $process = Process::find($processId);
             if (!$process) {
                 throw new \Exception('The specified process does not exist.');
+            }
+
+            // Guard Arquitectura B: solo se puede asignar elementos en ciclos de modelo flexible
+            $tipoModelo = optional(
+                optional($process->accreditationCycle)->modeloEstructura
+            )->tipo;
+
+            if ($tipoModelo === StructureModel::TIPO_TRADICIONAL) {
+                throw new \InvalidArgumentException(
+                    'El proceso pertenece a un ciclo con modelo tradicional. ' .
+                    'Las asignaciones de elemento solo aplican al modelo flexible.'
+                );
             }
 
             $element = StructureElement::find($elementId);

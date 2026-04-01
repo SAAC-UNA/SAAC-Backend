@@ -16,7 +16,7 @@ use Carbon\Carbon;
  */
 class ExtensionRequestService
 {
-    private const WITH_BASE = ['evidenceAssignment.evidence', 'user', 'resolutor'];
+    private const WITH_BASE = ['evidenceAssignment.evidence', 'elementAssignment', 'user', 'resolutor'];
 
     /**
      * Obtener todas las solicitudes con filtros y paginacion.
@@ -133,7 +133,7 @@ class ExtensionRequestService
     public function approve(int $solicitudId, int $resolutorId, ?string $justificacion = null): ExtensionRequest
     {
         return DB::transaction(function () use ($solicitudId, $resolutorId, $justificacion) {
-            $solicitud = ExtensionRequest::with('evidenceAssignment')->find($solicitudId);
+            $solicitud = ExtensionRequest::with(['evidenceAssignment', 'elementAssignment'])->find($solicitudId);
             if (!$solicitud) {
                 throw new \Exception('La solicitud no existe.');
             }
@@ -149,9 +149,13 @@ class ExtensionRequestService
                 'fecha_resolucion'     => now(),
             ]);
 
-            // Actualizar fecha_limite en la asignacion con la fecha sugerida
+            // Actualizar fecha_limite en la asignacion correspondiente (patron XOR)
             if ($solicitud->evidenceAssignment) {
                 $solicitud->evidenceAssignment->update([
+                    'fecha_limite' => $solicitud->fecha_sugerida,
+                ]);
+            } elseif ($solicitud->elementAssignment) {
+                $solicitud->elementAssignment->update([
                     'fecha_limite' => $solicitud->fecha_sugerida,
                 ]);
             }
