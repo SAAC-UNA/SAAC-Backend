@@ -39,7 +39,8 @@ class CriterionApprovalController extends Controller
         $this->authorize('viewAny', \App\Models\CriterionApproval::class);
 
         try {
-            $approvals = $this->approvalService->listApprovals();
+            $estado    = request()->query('estado');
+            $approvals = $this->approvalService->listApprovals($estado);
 
             return response()->json([
                 'success' => true,
@@ -125,7 +126,7 @@ class CriterionApprovalController extends Controller
 
             $usuarioId = Auth::id();
 
-            $approval = $this->approvalService->approveCriterion(
+            $result = $this->approvalService->approveCriterion(
                 $criterioId,
                 $request->proceso_id,
                 $usuarioId,
@@ -133,7 +134,7 @@ class CriterionApprovalController extends Controller
             );
 
             // Disparar evento para notificaciones
-            event(new CriterionApproved($approval));
+            event(new CriterionApproved($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'aprobar',
@@ -144,7 +145,10 @@ class CriterionApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio aprobado exitosamente.',
-                'data' => $approval
+                'data' => [
+                    'raiz'      => $result['raiz'],
+                    'evidencias' => $result['evidencias'],
+                ],
             ], 201);
 
         } catch (AuthorizationException $exception) {
@@ -194,7 +198,7 @@ class CriterionApprovalController extends Controller
 
             $usuarioId = Auth::id();
 
-            $approval = $this->approvalService->rejectCriterion(
+            $result = $this->approvalService->rejectCriterion(
                 $criterioId,
                 $request->proceso_id,
                 $usuarioId,
@@ -202,7 +206,7 @@ class CriterionApprovalController extends Controller
             );
 
             // Disparar evento para notificaciones
-            event(new CriterionRejected($approval));
+            event(new CriterionRejected($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'rechazar',
@@ -213,7 +217,10 @@ class CriterionApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio rechazado exitosamente.',
-                'data' => $approval
+                'data' => [
+                    'raiz'      => $result['raiz'],
+                    'evidencias' => $result['evidencias'],
+                ],
             ], 201);
 
         } catch (AuthorizationException $exception) {

@@ -28,7 +28,7 @@ class ElementApprovalService
      * Si el usuario es Profesor, muestra todas las de su proceso
      * (filtro por ELEMENTO_ASIGNACION pendiente HU-009).
      */
-    public function listApprovals()
+    public function listApprovals(?string $estado = null)
     {
         $query = ElementApproval::with(['elemento', 'process', 'user']);
 
@@ -36,8 +36,14 @@ class ElementApprovalService
         $user = Auth::user();
 
         if ($user && $user->hasRole('Profesor')) {
-            // TODO HU-009: filtrar solo Elements donde el profesor tiene asignación:
-            // $query->whereHas('elemento.asignaciones', fn($q) => $q->where('usuario_id', $user->usuario_id));
+            $query->whereHas(
+                'elemento.assignments',
+                fn($q) => $q->where('usuario_id', $user->usuario_id)
+            );
+        }
+
+        if ($estado !== null) {
+            $query->where('estado', $estado);
         }
 
         return $query->get();
@@ -48,7 +54,17 @@ class ElementApprovalService
      */
     public function getApproval(int $aprobacionId): ?ElementApproval
     {
-        return ElementApproval::with(['elemento', 'process', 'user'])->find($aprobacionId);
+        $approval = ElementApproval::with(['elemento', 'process', 'user'])->find($aprobacionId);
+
+        if ($approval) {
+            $childIds = $approval->elemento->children->pluck('elemento_id');
+            $approval->hijos = ElementApproval::with(['elemento'])
+                ->whereIn('elemento_id', $childIds)
+                ->where('proceso_id', $approval->proceso_id)
+                ->get();
+        }
+
+        return $approval;
     }
 
     /**
@@ -96,7 +112,7 @@ class ElementApprovalService
         int $elementoId,
         int $procesoId,
         ?string $comentario = null
-    ): ElementApproval {
+    ): array {
         $elemento = StructureElement::find($elementoId);
         if (!$elemento) {
             throw new \InvalidArgumentException('El elemento especificado no existe.');
@@ -109,31 +125,35 @@ class ElementApprovalService
 
         $usuarioId  = Auth::id();
         $allIds     = $this->collectDescendantIds($elementoId);
-        $totalNodos = count($allIds);
 
-        $rootApproval = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario) {
-            $root = null;
+        $result = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario) {
+            $root     = null;
+            $cascada  = [];
             foreach ($allIds as $id) {
                 $approval = ElementApproval::updateOrCreate(
                     ['elemento_id' => $id, 'proceso_id' => $procesoId],
                     ['usuario_id' => $usuarioId, 'estado' => 'aprobado', 'comentario' => $comentario]
-                );
+                )->load(['elemento', 'process', 'user']);
+
                 if ($id === $elementoId) {
                     $root = $approval;
+                } else {
+                    $cascada[] = $approval;
                 }
             }
-            return $root->load(['elemento', 'process', 'user']);
+            return ['raiz' => $root, 'cascada' => $cascada];
         });
 
-        event(new ElementApproved($rootApproval));
-        $desc = $totalNodos > 1 ? " (+ {$totalNodos} nodos en cascada)" : '';
+        event(new ElementApproved($result['raiz']));
+        $total = count($allIds);
+        $desc  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
             'aprobar',
             "Elemento aprobado: {$elemento->nomenclatura} (ID: {$elementoId}){$desc}",
             'Aprobación Elements'
         );
 
-        return $rootApproval;
+        return $result;
     }
 
     /**
@@ -151,7 +171,7 @@ class ElementApprovalService
         int $procesoId,
         ?string $comentario = null,
         ?string $fechaLimite = null
-    ): ElementApproval {
+    ): array {
         $elemento = StructureElement::find($elementoId);
         if (!$elemento) {
             throw new \InvalidArgumentException('El elemento especificado no existe.');
@@ -164,39 +184,40 @@ class ElementApprovalService
 
         $usuarioId  = Auth::id();
         $allIds     = $this->collectDescendantIds($elementoId);
-        $totalNodos = count($allIds);
 
-        $rootApproval = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario, $fechaLimite) {
-            $root = null;
+        $result = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario, $fechaLimite) {
+            $root    = null;
+            $cascada = [];
             foreach ($allIds as $id) {
                 $approval = ElementApproval::updateOrCreate(
                     ['elemento_id' => $id, 'proceso_id' => $procesoId],
                     ['usuario_id' => $usuarioId, 'estado' => 'rechazado', 'comentario' => $comentario]
-                );
+                )->load(['elemento', 'process', 'user']);
+
                 if ($id === $elementoId) {
                     $root = $approval;
+                } else {
+                    $cascada[] = $approval;
                 }
             }
 
-            // TODO HU-009: cuando exista ElementAssignment, actualizar todas las asignaciones:
-            // $data = ['estado' => 'Rechazado'];
-            // if ($comentario)  $data['comentario']   = $comentario;
-            // if ($fechaLimite) $data['fecha_limite']  = $fechaLimite;
+            // TODO HU-009: actualizar ELEMENTO_ASIGNACION a estado Rechazado:
             // ElementAssignment::whereIn('elemento_id', $allIds)
             //     ->where('proceso_id', $procesoId)
-            //     ->update($data);
+            //     ->update(['estado' => 'Rechazado', 'comentario' => $comentario, 'fecha_limite' => $fechaLimite]);
 
-            return $root->load(['elemento', 'process', 'user']);
+            return ['raiz' => $root, 'cascada' => $cascada];
         });
 
-        event(new ElementRejected($rootApproval));
-        $desc = $totalNodos > 1 ? " (+ {$totalNodos} nodos en cascada)" : '';
+        event(new ElementRejected($result['raiz']));
+        $total = count($allIds);
+        $desc  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
             'rechazar',
             "Elemento rechazado: {$elemento->nomenclatura} (ID: {$elementoId}){$desc}",
             'Aprobación Elements'
         );
 
-        return $rootApproval;
+        return $result;
     }
 }

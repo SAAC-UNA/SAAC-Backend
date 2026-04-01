@@ -29,7 +29,8 @@ class ElementApprovalController extends Controller
         $this->authorize('viewAny', \App\Models\ElementApproval::class);
 
         try {
-            $approvals = $this->approvalService->listApprovals();
+            $estado    = request()->query('estado');
+            $approvals = $this->approvalService->listApprovals($estado);
 
             return response()->json([
                 'success' => true,
@@ -83,7 +84,7 @@ class ElementApprovalController extends Controller
         try {
             $this->authorize('approve', \App\Models\ElementApproval::class);
 
-            $approval = $this->approvalService->approveElemento(
+            $result = $this->approvalService->approveElemento(
                 $elementoId,
                 $request->proceso_id,
                 $request->comentario
@@ -92,7 +93,10 @@ class ElementApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Elemento aprobado exitosamente.',
-                'data'    => $approval,
+                'data'    => [
+                    'raiz'    => $result['raiz'],
+                    'cascada' => $result['cascada'],
+                ],
             ], 201);
 
         } catch (\InvalidArgumentException $e) {
@@ -118,7 +122,7 @@ class ElementApprovalController extends Controller
         try {
             $this->authorize('reject', \App\Models\ElementApproval::class);
 
-            $approval = $this->approvalService->rejectElemento(
+            $result = $this->approvalService->rejectElemento(
                 $elementoId,
                 $request->proceso_id,
                 $request->comentario,
@@ -128,7 +132,10 @@ class ElementApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Elemento rechazado exitosamente.',
-                'data'    => $approval,
+                'data'    => [
+                    'raiz'    => $result['raiz'],
+                    'cascada' => $result['cascada'],
+                ],
             ], 201);
 
         } catch (\InvalidArgumentException $e) {

@@ -19,7 +19,7 @@ class CriterionApprovalService
      * Listar aprobaciones de criterios.
      * Si el usuario es Profesor, filtra solo criterios con evidencias asignadas a el.
      */
-    public function listApprovals()
+    public function listApprovals(?string $estado = null)
     {
         $query = CriterionApproval::with(['criterion', 'process', 'user']);
 
@@ -33,6 +33,10 @@ class CriterionApprovalService
             );
         }
 
+        if ($estado !== null) {
+            $query->where('estado', $estado);
+        }
+
         return $query->get();
     }
 
@@ -41,7 +45,7 @@ class CriterionApprovalService
      */
     public function getApproval(int $approvalId): ?CriterionApproval
     {
-        return CriterionApproval::with(['criterion', 'process', 'user'])->find($approvalId);
+        return CriterionApproval::with(['criterion', 'process', 'user', 'evidenceApprovals.evidence'])->find($approvalId);
     }
 
     /**
@@ -62,27 +66,31 @@ class CriterionApprovalService
         int $procesoId,
         int $usuarioId,
         ?string $comentario = null
-    ): CriterionApproval {
+    ): array {
         return DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario) {
             $approval = CriterionApproval::updateOrCreate(
                 ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
                 ['usuario_id'  => $usuarioId, 'estado' => 'aprobado', 'comentario' => $comentario]
             );
 
+            $evidencias = [];
             Evidence::where('criterio_id', $criterioId)->active()->each(
-                function ($evidencia) use ($procesoId, $approval, $usuarioId) {
-                    EvidenceApproval::updateOrCreate(
+                function ($evidencia) use ($procesoId, $approval, $usuarioId, &$evidencias) {
+                    $evidencias[] = EvidenceApproval::updateOrCreate(
                         ['evidencia_id' => $evidencia->evidencia_id, 'proceso_id' => $procesoId],
                         [
                             'criterio_aprobacion_id' => $approval->aprobacion_criterio_id,
                             'usuario_id'             => $usuarioId,
                             'estado'                 => 'aprobado',
                         ]
-                    );
+                    )->load(['evidence']);
                 }
             );
 
-            return $approval->load(['criterion', 'process', 'user']);
+            return [
+                'raiz'      => $approval->load(['criterion', 'process', 'user']),
+                'evidencias' => $evidencias,
+            ];
         });
     }
 
@@ -94,27 +102,31 @@ class CriterionApprovalService
         int $procesoId,
         int $usuarioId,
         ?string $comentario = null
-    ): CriterionApproval {
+    ): array {
         return DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario) {
             $approval = CriterionApproval::updateOrCreate(
                 ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
                 ['usuario_id'  => $usuarioId, 'estado' => 'rechazado', 'comentario' => $comentario]
             );
 
+            $evidencias = [];
             Evidence::where('criterio_id', $criterioId)->active()->each(
-                function ($evidencia) use ($procesoId, $approval, $usuarioId) {
-                    EvidenceApproval::updateOrCreate(
+                function ($evidencia) use ($procesoId, $approval, $usuarioId, &$evidencias) {
+                    $evidencias[] = EvidenceApproval::updateOrCreate(
                         ['evidencia_id' => $evidencia->evidencia_id, 'proceso_id' => $procesoId],
                         [
                             'criterio_aprobacion_id' => $approval->aprobacion_criterio_id,
                             'usuario_id'             => $usuarioId,
                             'estado'                 => 'rechazado',
                         ]
-                    );
+                    )->load(['evidence']);
                 }
             );
 
-            return $approval->load(['criterion', 'process', 'user']);
+            return [
+                'raiz'      => $approval->load(['criterion', 'process', 'user']),
+                'evidencias' => $evidencias,
+            ];
         });
     }
 }
