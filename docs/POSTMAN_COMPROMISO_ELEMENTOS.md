@@ -1,4 +1,273 @@
-# POSTMAN — Compromiso de Mejora Flexible (Modelo Elemento)
+# POSTMAN — Compromiso de Mejora: Flexible vs Tradicional
+
+> Comparación lado a lado para probar ambos modelos en Postman.
+> **Flexible** → `/api/compromisos-elementos`
+> **Tradicional** → `/api/compromisos-de-mejora`
+
+---
+
+## Base URL
+```
+http://localhost:8000/api
+```
+
+## Autenticación
+**POST** `/api/auth/login`
+```json
+{
+  "cedula": "",
+  "password": "password123"
+}
+```
+Copia el `token` y úsalo en todos los requests como:
+`Authorization: Bearer {token}`
+
+---
+
+## IDs de referencia (post-seeder)
+
+| Variable              | Flexible               | Tradicional           |
+|-----------------------|------------------------|-----------------------|
+| proceso_id            | 1                      | 1                     |
+| elemento_id (raíz)    | 15 (TEST-F1.1)         | —                     |
+| usuario_id (profesor) | 3 (Marisol)            | 3 (Marisol)           |
+
+---
+
+---
+
+# 1. CREAR
+
+## Flexible — POST `/api/compromisos-elementos`
+
+```json
+{
+  "proceso_id": 1,
+  "elemento_id": 15,
+  "descripcion": "Mejorar documentación del elemento TEST-F1.1",
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-06-30",
+  "estado": "Pendiente",
+  "elementos_asignar": [
+    {
+      "elemento_id": 15,
+      "usuarios": [3],
+      "fecha_limite": "2026-05-15",
+      "comentario": "Asignación desde compromiso flexible"
+    }
+  ]
+}
+```
+
+> `elementos_asignar` es opcional. Sin él, se crea el compromiso sin asignaciones.
+> **Las asignaciones se crean aquí** — no existían antes en `ELEMENTO_ASIGNACION`.
+
+---
+
+## Tradicional — POST `/api/compromisos-de-mejora`
+
+```json
+{
+  "proceso_id": 1,
+  "descripcion": "Mejorar documentación de procesos académicos",
+  "fecha_inicio": "2026-04-01",
+  "fecha_fin": "2026-06-30",
+  "selecciones": [
+    {
+      "entidad_tipo": "CRITERIO",
+      "entidad_id": 1
+    }
+  ],
+  "evidencias_asignar": [
+    {
+      "evidencia_id": 1,
+      "usuarios": [3],
+      "fecha_limite": "2026-05-15",
+      "comentario": "Asignación desde compromiso tradicional"
+    }
+  ]
+}
+```
+
+> `selecciones` define el árbol (por CRITERIO, COMPONENTE o DIMENSION).
+> `proceso_id` es requerido — debe existir previamente en `PROCESO`.
+
+---
+
+---
+
+# 2. EDITAR
+
+## Flexible — PUT `/api/compromisos-elementos/{id}`
+
+```json
+{
+  "descripcion": "Descripción actualizada flexible",
+  "fecha_fin": "2026-07-31",
+  "estado": "En Progreso",
+  "elementos_asignar": [
+    {
+      "elemento_id": 15,
+      "usuarios": [3, 4],
+      "fecha_limite": "2026-06-01",
+      "comentario": "Asignación actualizada"
+    }
+  ]
+}
+```
+
+> `elementos_asignar` en UPDATE **reemplaza** todas las asignaciones del pivot.
+> Todos los campos son opcionales (PUT parcial).
+
+---
+
+## Tradicional — PUT `/api/compromisos-de-mejora/{id}`
+
+```json
+{
+  "descripcion": "Descripción actualizada tradicional",
+  "fecha_fin": "2026-07-31",
+  "estado": "En Progreso",
+  "selecciones": [
+    {
+      "entidad_tipo": "CRITERIO",
+      "entidad_id": 1
+    }
+  ],
+  "evidencias_asignar": [
+    {
+      "evidencia_id": 1,
+      "usuarios": [3],
+      "fecha_limite": "2026-06-01"
+    }
+  ]
+}
+```
+
+---
+
+---
+
+# 3. LISTAR
+
+## Flexible — GET `/api/compromisos-elementos`
+
+```
+GET /api/compromisos-elementos
+GET /api/compromisos-elementos?estado=Pendiente
+GET /api/compromisos-elementos?proceso_id=1
+GET /api/compromisos-elementos?elemento_id=15
+GET /api/compromisos-elementos?usuario_id=3
+GET /api/compromisos-elementos?search=documentación
+GET /api/compromisos-elementos?per_page=5
+```
+
+---
+
+## Tradicional — GET `/api/compromisos-de-mejora`
+
+```
+GET /api/compromisos-de-mejora
+GET /api/compromisos-de-mejora?estado=Pendiente
+GET /api/compromisos-de-mejora?proceso_id=1
+GET /api/compromisos-de-mejora?usuario_id=3
+GET /api/compromisos-de-mejora?search=documentación
+```
+
+---
+
+---
+
+# 4. OBTENER POR ID
+
+## Flexible — GET `/api/compromisos-elementos/{id}`
+
+```
+GET /api/compromisos-elementos/1
+```
+
+---
+
+## Tradicional — GET `/api/compromisos-de-mejora/{id}`
+
+```
+GET /api/compromisos-de-mejora/1
+```
+
+---
+
+---
+
+# 5. LISTAR POR USUARIO
+
+## Flexible — GET `/api/compromisos-elementos/usuario/{usuarioId}`
+
+```
+GET /api/compromisos-elementos/usuario/3
+```
+
+---
+
+## Tradicional — GET `/api/compromisos-de-mejora/usuario/{usuarioId}`
+
+```
+GET /api/compromisos-de-mejora/usuario/3
+```
+
+---
+
+---
+
+# 6. LISTAR POR ELEMENTO / EVIDENCIA
+
+## Flexible — GET `/api/compromisos-elementos/elemento/{elementoId}`
+
+```
+GET /api/compromisos-elementos/elemento/15
+```
+
+---
+
+## Tradicional — GET `/api/compromisos-de-mejora/evidencia/{evidenciaId}`
+
+```
+GET /api/compromisos-de-mejora/evidencia/1
+```
+
+---
+
+---
+
+# 7. ACTIVAR / DESACTIVAR
+
+## Flexible — PATCH `/api/compromisos-elementos/{id}/active`
+
+```json
+{ "activo": false }
+```
+
+---
+
+## Tradicional — PATCH `/api/compromisos-de-mejora/{id}/active`
+
+```json
+{ "activo": false }
+```
+
+---
+
+---
+
+## Diferencias clave
+
+| Aspecto                        | Flexible                              | Tradicional                          |
+|-------------------------------|---------------------------------------|--------------------------------------|
+| Prefijo ruta                  | `/compromisos-elementos`              | `/compromisos-de-mejora`             |
+| Proceso                       | `proceso_id` (ya existe, se envía)    | `proceso_id` (ya existe, se envía)   |
+| Árbol de contenido            | `elemento_id` (raíz del árbol ELEMENTO) | `selecciones[]` (CRITERIO/COMPONENTE/DIMENSION) |
+| Asignaciones                  | `elementos_asignar[]` → crea `ELEMENTO_ASIGNACION` | `evidencias_asignar[]` → crea `EVIDENCIA_ASIGNACION` |
+| Filtro especial               | `?elemento_id=`                       | `?evidencia_id=` (vía ruta dedicada) |
+
 
 > **Módulo:** `compromisos-elementos` 
 > **Principio clave:** Al crear un compromiso con un `elemento_id`, el sistema recorre el árbol

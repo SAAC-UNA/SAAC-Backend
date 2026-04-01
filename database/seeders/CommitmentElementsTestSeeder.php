@@ -77,9 +77,13 @@ class CommitmentElementsTestSeeder extends Seeder
         echo "✓ Encargado: {$encargado->nombre} (ID: {$encargado->usuario_id})\n";
         echo "✓ Profesor:  {$profesor->nombre} (ID: {$profesor->usuario_id})\n\n";
 
-        // ── 4. OBTENER PROCESO ───────────────────────────────────────────────
-        $proceso = Process::first();
-        echo "✓ Proceso ID: {$proceso->proceso_id}\n\n";
+        // ── 4. OBTENER PROCESO (debe ser tipo 'Compromiso de mejora') ──────────
+        $proceso = Process::where('tipo_proceso', 'Compromiso de mejora')->first();
+        if (!$proceso) {
+            echo "❌ ERROR: No hay procesos de tipo 'Compromiso de mejora'.\n";
+            return;
+        }
+        echo "✓ Proceso ID: {$proceso->proceso_id} (tipo: {$proceso->tipo_proceso})\n\n";
 
         // ── 5. OBTENER ASIGNACIONES DEL ÁRBOL TEST ───────────────────────────
         $asignF1   = ElementAssignment::where('elemento_id', $fuente1->elemento_id)

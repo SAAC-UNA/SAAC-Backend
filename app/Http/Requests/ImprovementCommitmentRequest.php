@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class ImprovementCommitmentRequest extends FormRequest
 {
@@ -23,15 +24,20 @@ class ImprovementCommitmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ciclo_acreditacion_id' => [
-                'required_without:proceso_id',
-                'integer',
-                'exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
-            ],
             'proceso_id' => [
-                'required_without:ciclo_acreditacion_id',
+                'required',
                 'integer',
                 'exists:PROCESO,proceso_id',
+                function ($attribute, $value, $fail) {
+                    $proceso = DB::table('PROCESO')->where('proceso_id', $value)->first();
+                    if (!$proceso) return;
+                    if ($proceso->tipo_proceso !== 'Compromiso de mejora') {
+                        $fail('El proceso debe ser de tipo "Compromiso de mejora".');
+                    }
+                    if (!$proceso->activo) {
+                        $fail('El proceso debe estar activo.');
+                    }
+                },
             ],
             'selecciones' => [
                 'required',
@@ -124,9 +130,7 @@ class ImprovementCommitmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'ciclo_acreditacion_id.required_without' => 'El ciclo de acreditación es obligatorio si no se proporciona el proceso.',
-            'ciclo_acreditacion_id.exists' => 'El ciclo de acreditación no existe.',
-            'proceso_id.required_without' => 'El proceso es obligatorio si no se proporciona el ciclo de acreditación.',
+            'proceso_id.required' => 'El proceso es obligatorio.',
             'proceso_id.exists' => 'El proceso no existe.',
             'entidad_tipo.required' => 'El tipo de entidad es obligatorio.',
             'entidad_tipo.in' => 'El tipo de entidad debe ser ESTANDAR, DIMENSION, COMPONENTE, CRITERIO o EVIDENCIA.',

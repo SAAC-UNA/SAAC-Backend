@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Validación para crear un Compromiso de Mejora (modelo flexible).
@@ -24,6 +25,16 @@ class ElementCommitmentRequest extends FormRequest
                 'required',
                 'integer',
                 'exists:PROCESO,proceso_id',
+                function ($attribute, $value, $fail) {
+                    $proceso = DB::table('PROCESO')->where('proceso_id', $value)->first();
+                    if (!$proceso) return;
+                    if ($proceso->tipo_proceso !== 'Compromiso de mejora') {
+                        $fail('El proceso debe ser de tipo "Compromiso de mejora".');
+                    }
+                    if (!$proceso->activo) {
+                        $fail('El proceso debe estar activo.');
+                    }
+                },
             ],
 
             // Elemento raíz a vincular (la cascada resuelve el resto del árbol)

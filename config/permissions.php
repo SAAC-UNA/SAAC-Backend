@@ -75,7 +75,7 @@ return [
         'aprobaciones' => ['view', 'approve', 'reject'],
         
         // Compromisos de Mejora
-        'compromisos_mejora' => ['view', 'create', 'edit', 'delete'],
+        'compromisos_mejora' => ['view', 'create', 'edit'],
         
         // Modelos de Estructura SINAES (solo Superusuario puede crear/editar/eliminar)
         'modelos' => ['view', 'create', 'edit', 'delete'],
@@ -185,7 +185,6 @@ return [
             'compromisos_mejora.view',
             'compromisos_mejora.create',
             'compromisos_mejora.edit',
-            'compromisos_mejora.delete',
             
             // Ciclos (el Administrador no puede eliminar, solo el Superusuario)
             'ciclos.view',

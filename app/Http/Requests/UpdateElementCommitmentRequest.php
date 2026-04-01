@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Validación para actualizar un Compromiso de Mejora (modelo flexible).
@@ -24,6 +25,12 @@ class UpdateElementCommitmentRequest extends FormRequest
                 'sometimes',
                 'integer',
                 'exists:PROCESO,proceso_id',
+                function ($attribute, $value, $fail) {
+                    $tipo = DB::table('PROCESO')->where('proceso_id', $value)->value('tipo_proceso');
+                    if ($tipo !== 'Compromiso de mejora') {
+                        $fail('El proceso debe ser de tipo "Compromiso de mejora".');
+                    }
+                },
             ],
 
             // Cambiar el elemento raíz del compromiso (re-calcula descend. automáticamente)

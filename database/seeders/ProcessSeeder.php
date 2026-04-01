@@ -66,7 +66,7 @@ class ProcessSeeder extends Seeder
                 'tipo_proceso'          => 'Compromiso de mejora',
                 'fecha_inicio'          => $inicioCompromiso,
                 'fecha_finalizacion'    => $finCompromiso,
-                'activo'                => false,
+                'activo'                => $esActivo,
                 'created_at'            => now(),
                 'updated_at'            => now(),
             ];

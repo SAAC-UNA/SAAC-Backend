@@ -38,7 +38,7 @@ class ElementCommitmentService
         $elementoId = $filters['elemento_id'] ?? null;
         $usuarioId  = $filters['usuario_id'] ?? null;
 
-        return ElementCommitment::with(['process', 'assignedElements.elemento'])
+        return ElementCommitment::with(['process', 'assignedElements.element'])
             ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
             ->when($estado, fn($q) => $q->where('estado', $estado))
             ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
@@ -62,7 +62,7 @@ class ElementCommitmentService
     {
         return ElementCommitment::with([
             'process',
-            'assignedElements.elemento',
+            'assignedElements.element',
         ])->find($id);
     }
 
@@ -81,7 +81,7 @@ class ElementCommitmentService
     {
         $allIds = $this->collectDescendantIds($elementoId);
 
-        return ElementCommitment::with(['process', 'assignedElements.elemento'])
+        return ElementCommitment::with(['process', 'assignedElements.element'])
             ->whereHas('assignedElements', fn($q) =>
                 $q->whereIn('ELEMENTO_ASIGNACION.elemento_id', $allIds)
             )
