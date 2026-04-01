@@ -26,30 +26,27 @@ Esto permite hacer pruebas sin enviar correos a usuarios reales.
 
 ### Código Modificado
 
-**Archivo:** `app/Services/ExtensionRequestService.php`  
-**Líneas:** ~225-238
+**Archivo:** `app/Services/TradicionalExtensionRequestService.php` y `app/Services/FlexibleExtensionRequestService.php`
+
+Ambos servicios usan el mismo patrón:
 
 ```php
-// ========== HU-16: NOTIFICACIÓN - INICIO ==========
-// PRUEBA TEMPORAL: Enviar correo directamente al usuario Ana
-try {
-    // Buscar usuario Ana por email
-    $testUser = User::where('email', 'ana.zuniga.cardenas@est.una.ac.cr')->first();
-    
-    if ($testUser) {
-        Notification::send([$testUser], new ExtensionRequestCreated($extensionRequest));
-        Log::info("Notificación de prueba enviada a: {$testUser->email}");
-    } else {
-        Log::warning('Usuario de prueba no encontrado');
-    }
-} catch (\Exception $notificationException) {
-    Log::warning('No se pudo enviar notificación de solicitud de ampliación', [
-        'solicitud_id' => $extensionRequest->solicitud_ampliacion_id,
-        'error' => $notificationException->getMessage()
-    ]);
+// Buscar encargados de acreditación de la carrera del proceso
+$managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))
+    ->when($careerId, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('carrera_id', $careerId)))
+    ->get();
+
+// Fallback: si no hay encargados para esa carrera, se notifica a todos
+if ($managers->isEmpty() && $careerId) {
+    $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))->get();
 }
-// ========== HU-16: NOTIFICACIÓN - FIN ==========
+
+if ($managers->count() > 0) {
+    Notification::send($managers, new ExtensionRequestCreated($solicitud->load('user')));
+}
 ```
+
+> **Nota:** Ya no existe `app/Services/ExtensionRequestService.php`. Fue eliminado en la refactorización SOLID del 31 de marzo, 2026.
 
 ---
 

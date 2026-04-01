@@ -23,8 +23,8 @@ class ExtensionRequestResource extends JsonResource
         return [
             // Datos principales de la solicitud
             'solicitud_ampliacion_id' => $this->solicitud_ampliacion_id,
-            'evidencia_asignacion_id' => $this->evidencia_asignacion_id,
-            'elemento_asignacion_id'  => $this->elemento_asignacion_id,
+            'evidencia_asignacion_id' => $this->when($this->evidencia_asignacion_id !== null, $this->evidencia_asignacion_id),
+            'elemento_asignacion_id'  => $this->when($this->elemento_asignacion_id !== null, $this->elemento_asignacion_id),
             'usuario_id' => $this->usuario_id,
             'motivo' => $this->motivo,
             'fecha_sugerida' => optional($this->fecha_sugerida)->toISOString(),
@@ -35,26 +35,32 @@ class ExtensionRequestResource extends JsonResource
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             
-            // Relación con la asignación de evidencia (cuando está cargada)
-            'evidencia_asignacion' => [
-                'evidencia_asignacion_id' => $this->whenLoaded('evidenceAssignment', $this->evidenceAssignment?->evidencia_asignacion_id),
-                'evidencia_id' => $this->whenLoaded('evidenceAssignment', $this->evidenceAssignment?->evidencia_id),
-                'estado' => $this->whenLoaded('evidenceAssignment', $this->evidenceAssignment?->estado),
-                'fecha_limite' => $this->whenLoaded('evidenceAssignment', optional($this->evidenceAssignment?->fecha_limite)->toISOString()),
-                'evidencia' => $this->whenLoaded('evidenceAssignment', fn() => $this->evidenceAssignment?->evidence ? [
-                    'evidencia_id' => $this->evidenceAssignment->evidence->evidencia_id,
-                    'nomenclatura' => $this->evidenceAssignment->evidence->nomenclatura,
-                    'descripcion' => $this->evidenceAssignment->evidence->descripcion,
-                ] : null),
-            ],
+            // Relación con la asignación de evidencia (solo cuando la solicitud es de tipo tradicional)
+            'evidencia_asignacion' => $this->when(
+                $this->evidencia_asignacion_id !== null,
+                fn() => $this->whenLoaded('evidenceAssignment', fn() => $this->evidenceAssignment ? [
+                    'evidencia_asignacion_id' => $this->evidenceAssignment->evidencia_asignacion_id,
+                    'evidencia_id'            => $this->evidenceAssignment->evidencia_id,
+                    'estado'                  => $this->evidenceAssignment->estado,
+                    'fecha_limite'            => optional($this->evidenceAssignment->fecha_limite)->toISOString(),
+                    'evidencia'               => $this->evidenceAssignment->evidence ? [
+                        'evidencia_id' => $this->evidenceAssignment->evidence->evidencia_id,
+                        'nomenclatura' => $this->evidenceAssignment->evidence->nomenclatura,
+                        'descripcion'  => $this->evidenceAssignment->evidence->descripcion,
+                    ] : null,
+                ] : null)
+            ),
 
-            // Asignación de elemento (modelo flexible, cuando está cargada)
-            'elemento_asignacion' => $this->whenLoaded('elementAssignment', fn() => $this->elementAssignment ? [
-                'elemento_asignacion_id' => $this->elementAssignment->elemento_asignacion_id,
-                'elemento_id'            => $this->elementAssignment->elemento_id,
-                'estado'                 => $this->elementAssignment->estado,
-                'fecha_limite'           => optional($this->elementAssignment->fecha_limite)->toISOString(),
-            ] : null),
+            // Asignación de elemento (solo cuando la solicitud es de tipo flexible)
+            'elemento_asignacion' => $this->when(
+                $this->elemento_asignacion_id !== null,
+                fn() => $this->whenLoaded('elementAssignment', fn() => $this->elementAssignment ? [
+                    'elemento_asignacion_id' => $this->elementAssignment->elemento_asignacion_id,
+                    'elemento_id'            => $this->elementAssignment->elemento_id,
+                    'estado'                 => $this->elementAssignment->estado,
+                    'fecha_limite'           => optional($this->elementAssignment->fecha_limite)->toISOString(),
+                ] : null)
+            ),
 
             // Usuario solicitante (cuando está cargado)
             'usuario' => [
