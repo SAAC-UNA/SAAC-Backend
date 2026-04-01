@@ -117,10 +117,94 @@ if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
 | HU | Descripción | Estado |
 |---|---|---|
 | HU-007 | CRUD de asignaciones de elementos (`ELEMENTO_ASIGNACION`) | ✅ Committed |
-| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) | ✅ Committed |
-| HU-018 | Notificaciones al asignar elementos (`NotifyElementAssignment`) | ✅ Committed |
+| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) + fix FileResource | ✅ Committed |
+| HU-012 | Filtrado avanzado y exportación de elementos (Excel/PDF) | ✅ Committed |
 | HU-013 | Retroalimentación equivalente en `ELEMENTO_ASIGNACION` (`Observada`/`Validada`) | ✅ Committed |
-| HU-016 | Solicitud de ampliación equivalente para `ELEMENTO_ASIGNACION` | ✅ Committed |
+| HU-016 | Solicitud de ampliación — refactorizado a patrón Strategy (tradicional + flexible) | ✅ Committed |
+| HU-018 | Notificaciones al asignar elementos (`NotifyElementAssignment`) | ✅ Committed |
+| HU-023 | Enlace público para archivos sin autenticación (SINAES) | ✅ Committed |
+| HU-030 | Ciclos de acreditación — CRUD + reactivar (sin cambios en esta rama) | ✅ Pre-existente |
+
+---
+
+## HU-012 — Filtrado avanzado y exportación de elementos
+
+Implementa búsqueda y exportación sobre `ELEMENTO` para el modelo flexible,
+equivalente al filtrado que ya existía para evidencias en el modelo tradicional.
+
+### Nuevos archivos
+
+| Archivo | Descripción |
+|---|---|
+| `app/Services/FilterElementService.php` | Filtros: búsqueda full-text, estado, responsable, categoría, fecha, paginación |
+| `app/Services/TradicionalEvidenceFilterService.php` | Equivalente para evidencias del modelo tradicional |
+| `app/Services/TradicionalEvidenceService.php` | Servicios CRUD de evidencias modelo tradicional |
+| `app/Http/Requests/FilterElementRequest.php` | Validación de parámetros de filtro |
+| `app/Exports/ElementsExport.php` | Exportación Excel vía Maatwebsite |
+| `resources/views/exports/elements.blade.php` | Vista PDF de exportación |
+| `database/migrations/2026_03_31_add_fulltext_index_to_elemento_table.php` | Índice FULLTEXT en `ELEMENTO.nombre` y `ELEMENTO.descripcion` |
+
+### Nuevos endpoints
+
+| Método | Ruta | Propósito |
+|---|---|---|
+| `GET` | `/api/estructura/elementos/filter` | Filtrado avanzado con paginación |
+| `GET` | `/api/estructura/elementos/export/excel` | Exportar resultados a Excel |
+| `GET` | `/api/estructura/elementos/export/pdf` | Exportar resultados a PDF |
+
+---
+
+## HU-016 — Refactor a patrón Strategy
+
+La implementación original usaba un único `ExtensionRequestService` que mezclaba
+lógica tradicional y flexible. Se refactorizó a patrón Strategy:
+
+```
+ExtensionRequestContract (interfaz)
+├── AbstractExtensionRequestService  (lógica compartida)
+│   ├── TradicionalExtensionRequestService  (evidencia_asignacion_id)
+│   └── FlexibleExtensionRequestService     (elemento_asignacion_id)
+```
+
+- `ExtensionRequestController` resuelve la estrategia según el tipo de proceso
+- `ExtensionRequestService.php` eliminado (reemplazado por los dos anteriores)
+- Registrados como singletons en `AppServiceProvider`
+
+---
+
+## HU-023 — Enlace público sin autenticación
+
+Permite compartir archivos con evaluadores externos (SINAES) sin necesidad de login.
+
+### Endpoints
+
+| Método | Ruta | Auth | Propósito |
+|---|---|---|---|
+| `POST` | `/api/archivos/{id}/make-public` | ✅ Bearer | Genera token UUID y URL pública con expiración |
+| `POST` | `/api/archivos/{id}/revoke-public` | ✅ Bearer | Revoca el token (limpia `token_publico`, `is_publico=false`) |
+| `POST` | `/api/archivos/bulk-make-public` | ✅ Bearer | Hace públicos varios archivos en una llamada |
+| `GET` | `/api/p/{token}` | ❌ Sin auth | Descarga el archivo o redirige al enlace |
+
+### Fix aplicado — `FileResource.php`
+
+`$this->evidence` es `null` cuando el archivo pertenece a `elemento_id` (modelo flexible).
+`relationLoaded()` devuelve `true` incluso cuando la relación carga `null`,
+causando `Attempt to read property "evidencia_id" on null`.
+
+```php
+// ANTES (crasheaba con modelo flexible):
+'evidencia' => $this->when(
+    $this->relationLoaded('evidence'),
+    fn() => ['evidencia_id' => $this->evidence->evidencia_id, ...]
+),
+
+// DESPUÉS (correcto):
+'elemento_id' => $this->elemento_id,   // campo nuevo expuesto
+'evidencia' => $this->when(
+    $this->relationLoaded('evidence') && $this->evidence !== null,
+    fn() => ['evidencia_id' => $this->evidence->evidencia_id, ...]
+),
+```
 
 ---
 
@@ -166,7 +250,7 @@ retroalimentación y ampliación de plazo, sin romper Arquitectura B.
   - Agrega `elemento_asignacion_id` a `$fillable`
   - Agrega relación `elementAssignment()`
 
-### Archivos nuevos y migraciones (HU-007/008/013/016/018)
+### Archivos nuevos y migraciones (HU-007/008/013/016/018/023)
 
 | Archivo | Descripción |
 |---|---|
@@ -176,6 +260,11 @@ retroalimentación y ampliación de plazo, sin romper Arquitectura B.
 | `app/Services/ElementAssignmentService.php` | Lógica de negocio de asignaciones |
 | `app/Http/Requests/ElementAssignmentRequest.php` | Validación de requests |
 | `app/Http/Controllers/ElementAssignmentController.php` | 7 endpoints REST |
+| `app/Services/AbstractFileService.php` | Operaciones model-agnostic (makePublic, revokePublic, delete, download) |
+| `app/Contracts/ExtensionRequestContract.php` | Interfaz Strategy para ampliaciones |
+| `app/Services/AbstractExtensionRequestService.php` | Lógica compartida de ampliaciones |
+| `app/Services/TradicionalExtensionRequestService.php` | Ampliaciones modelo tradicional |
+| `app/Services/FlexibleExtensionRequestService.php` | Ampliaciones modelo flexible |
 | `database/migrations/044_add_estado_fecha_limite_to_elemento_table.php` | Estado y fecha límite en ELEMENTO |
 | `database/migrations/045_create_elemento_asignacion_table.php` | Tabla ELEMENTO_ASIGNACION |
 | `database/migrations/046_add_elemento_id_to_archivo_table.php` | `ARCHIVO.elemento_id` (Architecture B) |
