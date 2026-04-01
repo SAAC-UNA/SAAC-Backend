@@ -290,3 +290,89 @@ Se resolvieron 2 conflictos al mergear `origin/development`:
    (`dimension_id`, `componente_id`, `estandar_id`) con los de la rama
    (`ciclo_acreditacion_id`, `modelo_estructura_id`)
 2. **`EvidenceService.php`**: se fusionaron ambos conjuntos de variables y bloques de filtrado
+
+---
+
+## Separación de servicios — garantía de Arquitectura B
+
+Resumen de aislamiento verificado al 2026-04-01:
+
+| Servicio | Solo toca | Nunca toca |
+|---|---|---|
+| `EvidenceAssignmentService` | `EVIDENCIA_ASIGNACION` | `ELEMENTO_ASIGNACION` |
+| `ElementAssignmentService` | `ELEMENTO_ASIGNACION` | `EVIDENCIA_ASIGNACION` |
+| `TradicionalFileService` | `ARCHIVO(evidencia_id)` | `elemento_id` |
+| `FlexibleFileService` | `ARCHIVO(elemento_id)` | `evidencia_id` |
+| `TradicionalExtensionRequestService` | `SOLICITUD_AMPLIACION(evidencia_asignacion_id)` | `elemento_asignacion_id` |
+| `FlexibleExtensionRequestService` | `SOLICITUD_AMPLIACION(elemento_asignacion_id)` | `evidencia_asignacion_id` |
+| `TradicionalEvidenceFilterService` | `EVIDENCIA`, `EVIDENCIA_ASIGNACION` | tablas flexibles |
+| `FilterElementService` | `ELEMENTO`, `ELEMENTO_ASIGNACION` | tablas tradicionales |
+
+`EvidenceAssignmentService` lanza `InvalidArgumentException` si detecta que el proceso
+es de modelo flexible, redirigiendo al usuario a `/api/elementos-asignaciones`.
+
+---
+
+## Estado de pruebas Postman al 2026-04-01
+
+### ✅ HU-008 + HU-023 — Completadas (10/10)
+
+| Punto | Endpoint | Estado |
+|---|---|---|
+| 1 | `GET /archivos?elemento_id=1` | ✅ |
+| 2 | `POST /archivos` (form-data, archivo físico, flexible) | ✅ |
+| 3 | `POST /archivos` (JSON, enlace URL) | ✅ |
+| 4 | `GET /archivos/{id}` | ✅ |
+| 5 | `POST /archivos/{id}/make-public` | ✅ |
+| 6 | `GET /p/{token}` sin Authorization | ✅ |
+| 7 | `POST /archivos/bulk-make-public` | ✅ |
+| 8 | `POST /archivos/{id}/revoke-public` | ✅ |
+| 9 | `GET /archivos/{id}/download` | ✅ |
+| 10 | `DELETE /archivos/{id}` | ✅ |
+
+### ⏳ Pendiente probar — HU-007 Asignaciones de elementos
+
+```
+POST   http://localhost:8000/api/elementos-asignaciones
+       Body: { "elemento_id": 1, "usuario_id": 1, "proceso_id": 1, "fecha_limite": "2027-06-30" }
+
+GET    http://localhost:8000/api/elementos-asignaciones?elemento_id=1
+GET    http://localhost:8000/api/elementos-asignaciones/{id}
+PATCH  http://localhost:8000/api/elementos-asignaciones/{id}
+       Body: { "fecha_limite": "2027-09-30" }
+DELETE http://localhost:8000/api/elementos-asignaciones/{id}
+```
+
+### ⏳ Pendiente probar — HU-013 Retroalimentación elementos
+
+```
+POST   http://localhost:8000/api/elementos-asignaciones/{id}/retroalimentacion
+       Body (JSON):
+       {
+           "estado": "Observada",
+           "comentario": "Falta firma del documento"
+       }
+
+       // O para validar:
+       {
+           "estado": "Validada",
+           "comentario": "Documento correcto y completo"
+       }
+```
+- `estado` acepta: `"Observada"` o `"Validada"`
+- Solo puede hacerlo el coordinador/admin (no el mismo usuario asignado)
+- Respuesta esperada: `200` con el estado actualizado y comentario guardado
+
+### ⏳ Pendiente probar — HU-016 Ampliación desde elemento (flexible)
+
+```
+POST   http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacion
+       Body (JSON):
+       {
+           "fecha_sugerida": "2027-09-30",
+           "justificacion": "Se requiere más tiempo para recopilar documentos"
+       }
+```
+- Solo puede hacerlo el usuario asignado a ese elemento
+- `fecha_sugerida` debe ser mayor a la `fecha_limite` actual y no más de 30 días
+- Respuesta esperada: `201` con la solicitud creada
