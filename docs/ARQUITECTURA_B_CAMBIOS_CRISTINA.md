@@ -363,7 +363,7 @@ POST   http://localhost:8000/api/elementos-asignaciones/{id}/retroalimentacion
 - Solo puede hacerlo el coordinador/admin (no el mismo usuario asignado)
 - Respuesta esperada: `200` con el estado actualizado y comentario guardado
 
-### ⏳ Pendiente probar — HU-016 Ampliación desde elemento (flexible)
+### ✅ HU-016 — Ampliación desde elemento (flexible) — Probada
 
 ```
 POST   http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacion
@@ -375,4 +375,4 @@ POST   http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacio
 ```
 - Solo puede hacerlo el usuario asignado a ese elemento
 - `fecha_sugerida` debe ser mayor a la `fecha_limite` actual y no más de 30 días
-- Respuesta esperada: `201` con la solicitud creada
+- Respuesta: `201` con la solicitud creada ✅
