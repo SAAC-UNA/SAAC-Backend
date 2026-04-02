@@ -20,6 +20,33 @@ use Illuminate\Support\Facades\Notification;
 class FlexibleExtensionRequestService extends AbstractExtensionRequestService
 {
     /**
+     * Obtener solicitudes de ampliación del modelo flexible (solo elemento_asignacion_id).
+     *
+     * Sobrescribe el método base para acotar la consulta exclusivamente a registros
+     * del modelo flexible, excluyendo las solicitudes tradicionales de la vista.
+     */
+    public function getAll(array $filters = []): mixed
+    {
+        $filters['_scope'] = 'flexible';
+        $perPage    = min($filters['per_page'] ?? 15, 100);
+        $estado     = $filters['estado']    ?? null;
+        $usuarioId  = $filters['usuario_id'] ?? null;
+        $asigId     = $filters['elemento_asignacion_id'] ?? null;
+        $fechaDesde = $filters['fecha_desde'] ?? null;
+        $fechaHasta = $filters['fecha_hasta'] ?? null;
+
+        return \App\Models\ExtensionRequest::with(static::WITH_BASE)
+            ->whereNotNull('elemento_asignacion_id')
+            ->when($estado,     fn($q) => $q->where('estado', $estado))
+            ->when($usuarioId,  fn($q) => $q->where('usuario_id', $usuarioId))
+            ->when($asigId,     fn($q) => $q->where('elemento_asignacion_id', $asigId))
+            ->when($fechaDesde, fn($q) => $q->where('created_at', '>=', $fechaDesde))
+            ->when($fechaHasta, fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
      * Crear una nueva solicitud de ampliación para el modelo flexible.
      *
      * Valida que el usuario sea el dueño de la asignación, que no haya

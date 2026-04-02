@@ -29,32 +29,25 @@ class FileController extends Controller
     /**
      * Listar archivos de una evidencia específica.
      * GET /api/archivos?evidencia_id={id}
-     * GET /api/archivos?elemento_id={id}   (Modelo 2 flexible)
      * GET /api/archivos?proceso_id={id}
      */
     public function index(Request $request): JsonResponse
     {
         $request->validate([
             'evidencia_id' => 'sometimes|integer|exists:EVIDENCIA,evidencia_id',
-            'elemento_id'  => 'sometimes|integer|exists:ELEMENTO,elemento_id',
             'proceso_id'   => 'sometimes|integer|exists:PROCESO,proceso_id',
         ]);
 
         $query = File::query()->with(['evidence', 'user', 'process']);
 
-        // Filtrar por evidencia si se proporciona (Modelo 1)
+        // Filtrar por evidencia si se proporciona
         if ($request->has('evidencia_id')) {
             $evidenciaId = $request->input('evidencia_id');
-            
+
             // Verificar autorización para ver archivos de esta evidencia
             Gate::authorize('viewAny', [File::class, $evidenciaId]);
-            
-            $query->where('evidencia_id', $evidenciaId);
-        }
 
-        // Filtrar por elemento si se proporciona (Modelo 2 flexible)
-        if ($request->has('elemento_id')) {
-            $query->where('elemento_id', $request->input('elemento_id'));
+            $query->where('evidencia_id', $evidenciaId);
         }
 
         // Filtrar por proceso si se proporciona
@@ -98,13 +91,12 @@ class FileController extends Controller
 
         $archivos = [];
         $errores = [];
-        
-        $evidenciaId = $validated['evidencia_id'] ?? null;
-        $elementoId  = $validated['elemento_id'] ?? null;
 
-        // Resuelve la estrategia correcta (TradicionalFileService o FlexibleFileService)
+        $evidenciaId = $validated['evidencia_id'];
+
+        // Delega siempre al servicio tradicional
         try {
-            $service = $this->factory->make($evidenciaId, $elementoId);
+            $service = $this->factory->make($evidenciaId, null);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -118,7 +110,7 @@ class FileController extends Controller
                         file: $archivo,
                         usuarioId: $usuarioId,
                         procesoId: $validated['proceso_id'],
-                        referenciaId: $evidenciaId ?? $elementoId
+                        referenciaId: $evidenciaId
                     );
 
                     $archivoGuardado->load(['evidence', 'user', 'process']);
@@ -144,7 +136,7 @@ class FileController extends Controller
                         url: $url,
                         usuarioId: $usuarioId,
                         procesoId: $validated['proceso_id'],
-                        referenciaId: $evidenciaId ?? $elementoId,
+                        referenciaId: $evidenciaId,
                         nombreDescriptivo: $nombreDescriptivo
                     );
 

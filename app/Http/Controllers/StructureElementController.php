@@ -100,9 +100,8 @@ class StructureElementController extends Controller
         );
 
         return response()->json([
-            'message'   => 'Elemento creado correctamente.',
-            'data'      => $item,
-            'evidencias' => $item->evidencias,
+            'message' => 'Elemento creado correctamente.',
+            'data'    => $item,
         ], 201);
     }
 

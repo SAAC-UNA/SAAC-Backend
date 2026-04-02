@@ -84,6 +84,15 @@ class ElementAssignmentService
                 throw new \Exception('The specified element does not exist.');
             }
 
+            // Guard Estrategia 3: el modelo define qué tipos de nodo pueden recibir asignaciones
+            $tiposAsignables = optional($element->modeloEstructura)->tipos_asignables;
+            if (!empty($tiposAsignables) && !in_array($element->tipo, $tiposAsignables)) {
+                throw new \InvalidArgumentException(
+                    "El elemento de tipo '{$element->tipo}' no acepta asignaciones en este modelo. " .
+                    'Tipos permitidos: ' . implode(', ', $tiposAsignables) . '.'
+                );
+            }
+
             foreach ($users as $userId) {
                 $assignment = $this->createAssignment(
                     $processId, $elementId, $userId,

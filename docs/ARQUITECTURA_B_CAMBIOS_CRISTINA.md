@@ -117,10 +117,10 @@ if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
 | HU | Descripción | Estado |
 |---|---|---|
 | HU-007 | CRUD de asignaciones de elementos (`ELEMENTO_ASIGNACION`) | ✅ Committed |
-| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) + fix FileResource | ✅ Committed |
-| HU-012 | Filtrado avanzado y exportación de elementos (Excel/PDF) | ✅ Committed |
+| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) + fix FileResource | ✅ Committed || HU-008b | SOLID completo capa HTTP para archivos de elemento (controller/resource/request propios) | ✅ Implementado || HU-012 | Filtrado avanzado y exportación de elementos (Excel/PDF) | ✅ Committed |
 | HU-013 | Retroalimentación equivalente en `ELEMENTO_ASIGNACION` (`Observada`/`Validada`) | ✅ Committed |
 | HU-016 | Solicitud de ampliación — refactorizado a patrón Strategy (tradicional + flexible) | ✅ Committed |
+| HU-016b | SOLID completo capa HTTP para ampliaciones de elemento (controller/request propios) | ✅ Implementado |
 | HU-018 | Notificaciones al asignar elementos (`NotifyElementAssignment`) | ✅ Committed |
 | HU-023 | Enlace público para archivos sin autenticación (SINAES) | ✅ Committed |
 | HU-030 | Ciclos de acreditación — CRUD + reactivar (sin cambios en esta rama) | ✅ Pre-existente |
@@ -265,6 +265,11 @@ retroalimentación y ampliación de plazo, sin romper Arquitectura B.
 | `app/Services/AbstractExtensionRequestService.php` | Lógica compartida de ampliaciones |
 | `app/Services/TradicionalExtensionRequestService.php` | Ampliaciones modelo tradicional |
 | `app/Services/FlexibleExtensionRequestService.php` | Ampliaciones modelo flexible |
+| `app/Http/Requests/StoreElementFileRequest.php` | Request exclusiva archivos de elemento (SOLID) |
+| `app/Http/Resources/ElementFileResource.php` | Resource exclusiva archivos de elemento con metadatos HU-008 |
+| `app/Http/Controllers/ElementFileController.php` | Controller exclusivo archivos de elemento (SOLID) |
+| `app/Http/Requests/StoreFlexibleExtensionRequestRequest.php` | Request exclusiva ampliaciones flexible — valida `elemento_asignacion_id` (SOLID) |
+| `app/Http/Controllers/FlexibleExtensionRequestController.php` | Controller exclusivo ampliaciones flexible — inyecta `FlexibleExtensionRequestService` (SOLID) |
 | `database/migrations/044_add_estado_fecha_limite_to_elemento_table.php` | Estado y fecha límite en ELEMENTO |
 | `database/migrations/045_create_elemento_asignacion_table.php` | Tabla ELEMENTO_ASIGNACION |
 | `database/migrations/046_add_elemento_id_to_archivo_table.php` | `ARCHIVO.elemento_id` (Architecture B) |
@@ -313,10 +318,52 @@ es de modelo flexible, redirigiendo al usuario a `/api/elementos-asignaciones`.
 
 ---
 
-## Estado de pruebas Postman al 2026-04-01
+## HU-008b — SOLID completo capa HTTP para archivos de elemento
 
-### ✅ HU-008 + HU-023 — Completadas (10/10)
+El refactor SOLID del 2026-03-31 separó únicamente la capa de servicios
+(`FlexibleFileService` / `TradicionalFileService`). La capa HTTP (controller, resource,
+request) seguía siendo compartida en `FileController` / `FileResource` / `StoreFileRequest`.
 
+Se completó SOLID creando la capa HTTP exclusiva para el modelo flexible:
+
+### Nuevos archivos
+
+| Archivo | Descripción |
+|---|---|
+| `app/Http/Requests/StoreElementFileRequest.php` | Valida solo `elemento_id` + `proceso_id`. Sin `evidencia_id`, sin Gate por evidencia. Usa `$this->user()` para authorize. |
+| `app/Http/Resources/ElementFileResource.php` | Expone `elemento.descripcion`, `autor.nombre` + `autor.rol` (snapshot del rol del usuario al subir), `fecha_subida`. No expone `usuario_id` suelto ni campos de evidencia. |
+| `app/Http/Controllers/ElementFileController.php` | Inyecta `FlexibleFileService` directamente (sin Factory). Eager-load `['elemento', 'user.roles', 'process']`. |
+
+### Nuevos endpoints bajo `/api/elementos-archivos`
+
+| Método | Ruta | Permiso | Propósito |
+|---|---|---|---|
+| `GET` | `/api/elementos-archivos?elemento_id={id}` | `archivos.view` | Listar archivos de un elemento con metadatos completos |
+| `POST` | `/api/elementos-archivos` | `archivos.upload` | Subir archivo/enlace — registra autor+rol+timestamp automáticamente |
+| `GET` | `/api/elementos-archivos/{archivo}` | `archivos.view` | Ver metadatos: descripción del elemento, autor, rol, sello de tiempo |
+| `DELETE` | `/api/elementos-archivos/{archivo}` | `archivos.delete` | Eliminar archivo |
+| `GET` | `/api/elementos-archivos/{archivo}/download` | `archivos.download` | Descargar archivo o redirigir a enlace |
+| `POST` | `/api/elementos-archivos/{archivo}/make-public` | `archivos.make_public` | Generar enlace público con expiración |
+| `POST` | `/api/elementos-archivos/{archivo}/revoke-public` | `archivos.make_public` | Revocar acceso público |
+
+### HUs cubiertas por ElementFileResource (sin migración adicional)
+
+| HU | Campo que la cubre | Fuente |
+|---|---|---|
+| Registro de autor automático (nombre + rol) | `autor.nombre` + `autor.rol` | `USUARIO` + Spatie `getRoleNames()` |
+| Sello de tiempo | `fecha_subida` | Ya existía en `ARCHIVO` |
+| Descripción del elemento | `elemento.descripcion` | Ya existía en `ELEMENTO` — ahora se expone en respuesta |
+| Visualización inmediata de metadatos | Respuesta completa en el mismo `201` de la subida | `ElementFileResource` |
+
+### Diferencias clave respecto a FileController/FileResource (modelo tradicional)
+
+| Aspecto | Tradicional (`FileController`) | Flexible (`ElementFileController`) |
+|---|---|---|
+| Request | `StoreFileRequest` (acepta ambos modelos) | `StoreElementFileRequest` (solo `elemento_id`) |
+| Resource | `FileResource` (muestra evidencia, usuario_id suelto) | `ElementFileResource` (muestra elemento+descripción, autor sin id suelto) |
+| Service | Resuelve vía `FileStorageFactory` | Inyecta `FlexibleFileService` directo |
+| Eager load | `['evidence', 'user', 'process']` | `['elemento', 'user.roles', 'process']` |
+| Autorización | Gate por evidencia en `authorize()` | Solo `$this->user() !== null` |
 | Punto | Endpoint | Estado |
 |---|---|---|
 | 1 | `GET /archivos?elemento_id=1` | ✅ |
@@ -376,3 +423,156 @@ POST   http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacio
 - Solo puede hacerlo el usuario asignado a ese elemento
 - `fecha_sugerida` debe ser mayor a la `fecha_limite` actual y no más de 30 días
 - Respuesta: `201` con la solicitud creada ✅
+
+---
+
+## HU-016b — SOLID completo capa HTTP para ampliaciones de elemento
+
+### Diagnóstico previo
+
+`ExtensionRequestController` sólo inyectaba `TradicionalExtensionRequestService` y
+`StoreExtensionRequestRequest` validaba `evidencia_asignacion_id`. El service flexible
+(`FlexibleExtensionRequestService`) existía pero no tenía endpoints propios — mismo problema
+que `ElementFileController` resolvió para HU-008b.
+
+### Cambios realizados
+
+| Archivo | Cambio |
+|---|---|
+| `app/Http/Requests/StoreFlexibleExtensionRequestRequest.php` | **Creado** — valida `elemento_asignacion_id` + `motivo` + `fecha_sugerida` |
+| `app/Http/Controllers/FlexibleExtensionRequestController.php` | **Creado** — 7 endpoints, inyecta `FlexibleExtensionRequestService` directamente |
+| `app/Services/FlexibleExtensionRequestService.php` | **Modificado** — override de `getAll()` con `whereNotNull('elemento_asignacion_id')` para aislar solicitudes flexible |
+| `routes/api.php` | **Modificado** — import + 7 rutas bajo `/api/elemento-solicitudes-ampliacion` |
+
+### Reutilizado sin cambios
+
+- `ExtensionRequestResource` → ya manejaba ambos modelos con `when($this->elemento_asignacion_id !== null, …)`
+- `ReviewExtensionRequestRequest` → modelo-agnóstico (aprobar/rechazar no depende del modelo)
+- Eventos `ExtensionRequestCreated`, `ExtensionRequestApproved`, `ExtensionRequestRejected`
+
+### Endpoints registrados
+
+```
+GET    /api/elemento-solicitudes-ampliacion              → index (encargados)
+GET    /api/elemento-solicitudes-ampliacion/pendientes   → pending (encargados)
+GET    /api/elemento-solicitudes-ampliacion/mis-solicitudes → mySolicitudes
+GET    /api/elemento-solicitudes-ampliacion/{id}         → show
+POST   /api/elemento-solicitudes-ampliacion              → store (throttle 10/min)
+POST   /api/elemento-solicitudes-ampliacion/{id}/aprobar → approve
+POST   /api/elemento-solicitudes-ampliacion/{id}/rechazar → reject
+```
+
+### Cómo probar
+
+```http
+POST   http://localhost:8000/api/elemento-solicitudes-ampliacion
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "elemento_asignacion_id": 1,
+    "motivo": "Se requiere más tiempo para recopilar la documentación necesaria",
+    "fecha_sugerida": "2027-06-30"
+}
+```
+- Respuesta esperada: `201` con la solicitud creada y relación `elemento_asignacion` cargada ✅
+- La solicitud solo aparece en `/elemento-solicitudes-ampliacion`, no en `/solicitudes-ampliacion` (aislamiento SOLID) ✅
+
+---
+
+## Estrategia 3 — Restricción de nivel de asignación (`tipos_asignables`)
+
+### Problema
+
+Sin restricción, el sistema permitía asignar responsables y subir archivos a **cualquier
+nodo del árbol ELEMENTO**, independientemente de su nivel jerárquico. El resultado era
+que un nodo estructural (p.ej. `"dimension"`) podía recibir archivos igual que un nodo
+hoja (p.ej. `"fuente"`), generando asignaciones dispersas y datos sin coherencia:
+
+```
+Dimensión "Gestión Académica"   ← cualquiera podía subir archivo ❌
+  └── Pauta "Calidad Docente"   ← cualquiera podía subir archivo ❌
+        └── Fuente "Evidencia1" ← el único que DEBERÍA tener archivo ✅
+```
+
+### Decisión arquitectónica
+
+Se adoptó la **Estrategia 3 — tipos asignables por modelo**:
+
+> El modelo de estructura define, una sola vez al crearse, qué tipos de nodo pueden
+> recibir asignaciones y archivos. El árbol puede crecer libremente sin afectar la regla.
+
+Se descartaron:
+- **Estrategia 1 (topología/hoja)** — retroactiva: añadir un hijo a un nodo lo hace dejar de ser asignable sin intención
+- **Estrategia 2 (flag por nodo)** — carga operativa alta: 80+ nodos por modelo, configuración manual en cada ciclo
+- **Estrategia 4 (hardcodeado)** — contradice el modelo flexible; acoplado al vocabulario SINAES actual
+
+### Cambios implementados (2026-04-01)
+
+#### Migración `049_add_tipos_asignables_to_modelo_estructura_table.php`
+
+- Agrega columna `tipos_asignables JSON NULL` a `MODELO_ESTRUCTURA`
+- `NULL` = sin restricción — **retrocompatible** con modelos ya existentes
+
+#### `app/Models/StructureModel.php`
+
+- `'tipos_asignables'` agregado a `$fillable`
+- Cast `'tipos_asignables' => 'array'` — Eloquent serializa/deserializa JSON automáticamente
+
+#### `app/Models/StructureElement.php`
+
+- Nueva relación `modeloEstructura()` — `belongsTo(StructureModel)` vía `modelo_estructura_id`
+- Permite navegar desde un elemento hacia su modelo para leer `tipos_asignables`
+- Import `use App\Models\StructureModel;` agregado
+
+#### `app/Services/ElementAssignmentService.php` — guard en `assignElement()`
+
+Después de confirmar que el elemento existe, se evalúa:
+
+```php
+$tiposAsignables = optional($element->modeloEstructura)->tipos_asignables;
+if (!empty($tiposAsignables) && !in_array($element->tipo, $tiposAsignables)) {
+    throw new \InvalidArgumentException(
+        "El elemento de tipo '{$element->tipo}' no acepta asignaciones en este modelo. " .
+        'Tipos permitidos: ' . implode(', ', $tiposAsignables) . '.'
+    );
+}
+```
+
+- Si `tipos_asignables` es `null` o `[]` → no hay restricción (retrocompat)
+- Si el `$element->tipo` no está en la lista → lanza `InvalidArgumentException` con mensaje descriptivo
+
+#### `app/Services/FlexibleFileService.php` — guard en `uploadFile()` y `saveLink()`
+
+Nuevo método privado `validarTipoAsignable(int $elementoId)` que aplica la misma lógica:
+
+```php
+private function validarTipoAsignable(int $elementoId): void
+{
+    $elemento = StructureElement::find($elementoId);
+    $tiposAsignables = optional($elemento->modeloEstructura)->tipos_asignables;
+    if (!empty($tiposAsignables) && !in_array($elemento->tipo, $tiposAsignables)) {
+        throw new \InvalidArgumentException(
+            "El elemento de tipo '{$elemento->tipo}' no acepta archivos en este modelo. " .
+            'Tipos permitidos: ' . implode(', ', $tiposAsignables) . '.'
+        );
+    }
+}
+```
+
+Llamado al inicio de `uploadFile()` y `saveLink()` — antes de tocar Storage o BD.
+
+### Flujo de uso
+
+1. Admin crea modelo flexible con `tipos_asignables: ["fuente"]`
+2. Árbol: `Dimension > Pauta > Fuente`
+3. Intentar asignar/subir a `"Dimension"` o `"Pauta"` → **422** con mensaje claro
+4. Solo `"Fuente"` pasa el guard → ✅
+
+### Actualización tabla de aislamiento (Arquitectura B)
+
+| Servicio | Guard adicional |
+|---|---|
+| `ElementAssignmentService::assignElement()` | Verifica `tipos_asignables` del modelo antes de crear asignación |
+| `FlexibleFileService::uploadFile()` | Verifica `tipos_asignables` del modelo antes de guardar en Storage |
+| `FlexibleFileService::saveLink()` | Verifica `tipos_asignables` del modelo antes de guardar enlace |

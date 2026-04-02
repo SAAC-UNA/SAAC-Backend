@@ -42,6 +42,7 @@ class TradicionalEvidenceFilterService
         $fechaDesde         = $filters['fecha_desde']           ?? null;
         $fechaHasta         = $filters['fecha_hasta']           ?? null;
         $rolId              = $filters['rol_id']                ?? null;
+        $responsableId      = $filters['responsable_id']        ?? null;
 
         $sortBy    = $filters['sort_by'] ?? 'created_at';
         $sortOrder = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
@@ -122,6 +123,9 @@ class TradicionalEvidenceFilterService
         }
         if ($rolId) {
             $query->whereHas('assignments.user.roles', fn ($q) => $q->where('id', $rolId));
+        }
+        if ($responsableId) {
+            $query->whereHas('assignments', fn ($q) => $q->where('usuario_id', $responsableId));
         }
 
         return $query->orderBy($sortColumn, $sortOrder)->paginate($perPage, ['*'], 'page', $page);

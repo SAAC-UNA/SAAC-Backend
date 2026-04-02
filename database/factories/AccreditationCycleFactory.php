@@ -25,8 +25,9 @@ class AccreditationCycleFactory extends Factory
              * Esto garantiza la integridad referencial de la relación
              * `carrera_sede_id`.
              */
-            'carrera_sede_id' => \App\Models\CareerCampus::factory(),
-            'nombre' => $this->faker->words(2, true),
+            'carrera_sede_id'      => \App\Models\CareerCampus::factory(),
+            'modelo_estructura_id' => \App\Models\StructureModel::factory(),
+            'nombre'               => $this->faker->words(2, true),
         ];
     }
 }

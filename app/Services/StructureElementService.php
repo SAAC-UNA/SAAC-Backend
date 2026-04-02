@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Evidence;
 use App\Models\StructureElement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -75,24 +74,9 @@ class StructureElementService
                 'activo'               => $data['activo'] ?? true,
             ]);
 
-            // Crear evidencias embebidas si vienen (Opción 2 del modelo flexible).
-            // evidencias[] es opcional: si no viene o viene vacío, no se crea ninguna.
-            $evidencias = $data['evidencias'] ?? [];
-            foreach ($evidencias as $evData) {
-                Evidence::create([
-                    'elemento_id'  => $elemento->elemento_id,
-                    'criterio_id'  => null,   // Siempre null en modelo flexible
-                    'estado'       => 'Pendiente',
-                    'nomenclatura' => $evData['nomenclatura'],
-                    'descripcion'  => $evData['descripcion'] ?? null,
-                    'activo'       => true,
-                ]);
-            }
-
             $this->clearCache($data['tipo'] ?? null);
 
-            // Retornar elemento con evidencias ya cargadas para el response del controller
-            return $elemento->load('evidencias');
+            return $elemento;
         });
     }
 

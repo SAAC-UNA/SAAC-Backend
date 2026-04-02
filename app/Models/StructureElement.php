@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-// HU-012 (escritura flexible): se necesita Evidence para la relación hasMany
-use App\Models\Evidence;
 use App\Models\ElementAssignment;
+use App\Models\StructureModel;
 
 class StructureElement extends Model
 {
@@ -57,24 +56,6 @@ class StructureElement extends Model
     }
 
     /**
-     * Relación inversa: Un elemento flexible puede tener muchas evidencias.
-     *
-     * HU-012 (escritura flexible) — Gap 1:
-     * Evidence.php ya tenía belongsTo(StructureElement) vía elemento_id,
-     * pero la inversa (hasMany desde ELEMENTO) nunca fue declarada.
-     * Sin esta relación no se puede hacer eager-load de evidencias al
-     * retornar un elemento, ni usar $elemento->evidencias()->create().
-     *
-     * Solo aplica a modelo_estructura tipo 'elemento_flexible'.
-     * En el modelo tradicional, las evidencias pertenecen a CRITERIO,
-     * y este getter devolvería una colección vacía (correcto — no rompe nada).
-     */
-    public function evidencias()
-    {
-        return $this->hasMany(Evidence::class, 'elemento_id', 'elemento_id');
-    }
-
-    /**
      * Relation: An element has many user assignments (flexible model).
      * HU-007
      */
@@ -90,6 +71,15 @@ class StructureElement extends Model
     public function files()
     {
         return $this->hasMany(File::class, 'elemento_id', 'elemento_id');
+    }
+
+    /**
+     * Relación: El modelo de estructura al que pertenece este elemento.
+     * Necesaria para verificar tipos_asignables (Estrategia 3).
+     */
+    public function modeloEstructura()
+    {
+        return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
 
     /**

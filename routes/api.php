@@ -31,6 +31,8 @@ use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\ElementFileController;
+use App\Http\Controllers\FlexibleExtensionRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccreditationCycleController;
 use App\Http\Controllers\ElementAssignmentController;
@@ -374,6 +376,40 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->grou
 
 // Acceso público mediante token (SIN autenticación - para SINAES/informes)
 Route::get('/p/{token}', [FileController::class, 'publicAccess']);
+
+// ============================================
+// Solicitudes de Ampliación - Modelo Flexible (HU-016b)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elemento-solicitudes-ampliacion')->group(function () {
+    Route::get('/', [FlexibleExtensionRequestController::class, 'index']);
+    Route::get('/pendientes', [FlexibleExtensionRequestController::class, 'pending']);
+    Route::get('/mis-solicitudes', [FlexibleExtensionRequestController::class, 'mySolicitudes']);
+    Route::get('/{id}', [FlexibleExtensionRequestController::class, 'show']);
+    Route::post('/', [FlexibleExtensionRequestController::class, 'store'])
+        ->middleware('throttle:10,1');
+    Route::post('/{id}/aprobar', [FlexibleExtensionRequestController::class, 'approve']);
+    Route::post('/{id}/rechazar', [FlexibleExtensionRequestController::class, 'reject']);
+});
+
+// ============================================
+// Archivos de Elementos (HU-008 modelo flexible)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elementos-archivos')->group(function () {
+    Route::get('/', [ElementFileController::class, 'index'])
+        ->middleware('permission:archivos.view');
+    Route::post('/', [ElementFileController::class, 'store'])
+        ->middleware(['throttle:10,1', 'permission:archivos.upload']);
+    Route::get('/{archivo}', [ElementFileController::class, 'show'])
+        ->middleware('permission:archivos.view');
+    Route::delete('/{archivo}', [ElementFileController::class, 'destroy'])
+        ->middleware('permission:archivos.delete');
+    Route::get('/{archivo}/download', [ElementFileController::class, 'download'])
+        ->middleware('permission:archivos.download');
+    Route::post('/{archivo}/make-public', [ElementFileController::class, 'makePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/{archivo}/revoke-public', [ElementFileController::class, 'revokePublic'])
+        ->middleware('permission:archivos.make_public');
+});
 
 // ============================================
 // Rutas de Gestión de Usuarios (HU-002)

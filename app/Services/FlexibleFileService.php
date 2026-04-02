@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ElementAssignment;
 use App\Models\File;
+use App\Models\StructureElement;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +29,8 @@ class FlexibleFileService extends AbstractFileService
         int $procesoId,
         int $referenciaId
     ): File {
+        $this->validarTipoAsignable($referenciaId);
+
         $extension = $file->getClientOriginalExtension();
         $uuid      = (string) Str::uuid();
         $filename  = "{$uuid}.{$extension}";
@@ -75,6 +78,8 @@ class FlexibleFileService extends AbstractFileService
         int $referenciaId,
         ?string $nombreDescriptivo = null
     ): File {
+        $this->validarTipoAsignable($referenciaId);
+
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             throw new \InvalidArgumentException('URL invalida: ' . $url);
         }
@@ -124,5 +129,25 @@ class FlexibleFileService extends AbstractFileService
             ->where('estado', 'Pendiente')
             ->get()
             ->each(fn($assignment) => $assignment->update(['estado' => 'En Progreso']));
+    }
+
+    /**
+     * Guard Estrategia 3: el modelo define qué tipos de nodo pueden recibir archivos.
+     * Si tipos_asignables está vacío/null no se restringe (retrocompatibilidad).
+     */
+    private function validarTipoAsignable(int $elementoId): void
+    {
+        $elemento = StructureElement::find($elementoId);
+        if (!$elemento) {
+            throw new \InvalidArgumentException("El elemento {$elementoId} no existe.");
+        }
+
+        $tiposAsignables = optional($elemento->modeloEstructura)->tipos_asignables;
+        if (!empty($tiposAsignables) && !in_array($elemento->tipo, $tiposAsignables)) {
+            throw new \InvalidArgumentException(
+                "El elemento de tipo '{$elemento->tipo}' no acepta archivos en este modelo. " .
+                'Tipos permitidos: ' . implode(', ', $tiposAsignables) . '.'
+            );
+        }
     }
 }

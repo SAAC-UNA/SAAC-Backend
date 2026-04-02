@@ -37,6 +37,8 @@ class FilterElementService
         $fechaLimiteHasta   = $filters['fecha_limite_hasta']   ?? null;
         $cicloId            = $filters['ciclo_acreditacion_id'] ?? null;
         $rolId              = $filters['rol_id']               ?? null;
+        $responsableId      = $filters['responsable_id']       ?? null;
+        $elementoRaizId     = $filters['elemento_raiz_id']     ?? null;
         $busqueda           = $filters['busqueda']             ?? null;
 
         $sortBy    = $filters['sort_by'] ?? 'elemento_id';
@@ -84,6 +86,12 @@ class FilterElementService
         if ($padreId !== null) {
             $query->where('padre_id', $padreId);
         }
+        // Filtro jerárquico recursivo: devuelve el nodo raíz y TODOS sus descendientes
+        // sin importar la profundidad del árbol (Dimensión → Pauta → Fuente → ...).
+        if ($elementoRaizId !== null) {
+            $descendantIds = $this->getAllDescendantIds((int) $elementoRaizId);
+            $query->whereIn('elemento_id', $descendantIds);
+        }
         if ($fechaLimiteDesde !== null) {
             $query->where('fecha_limite', '>=', $fechaLimiteDesde);
         }
@@ -98,6 +106,11 @@ class FilterElementService
         if ($rolId !== null) {
             $query->whereHas('assignments.user.roles', fn ($q) =>
                 $q->where('id', $rolId)
+            );
+        }
+        if ($responsableId !== null) {
+            $query->whereHas('assignments', fn ($q) =>
+                $q->where('usuario_id', $responsableId)
             );
         }
         if ($busqueda !== null) {
@@ -120,5 +133,36 @@ class FilterElementService
         });
 
         return $paginator;
+    }
+
+    /**
+     * Recolecta recursivamente todos los IDs de descendientes de un nodo,
+     * incluyendo el propio nodo raíz.
+     *
+     * Algoritmo BFS Level-by-level para evitar recursión profunda en PHP.
+     * Ejemplo: elemento_raiz_id=5 (Dimensión)
+     *   → IDs de Pautas (hijos directos)
+     *   → IDs de Fuentes (hijos de Pautas)
+     *   → IDs de cualquier nivel más profundo
+     */
+    private function getAllDescendantIds(int $elementoRaizId): array
+    {
+        $allIds   = [$elementoRaizId];
+        $frontier = [$elementoRaizId];
+
+        while (!empty($frontier)) {
+            $childIds = StructureElement::whereIn('padre_id', $frontier)
+                ->pluck('elemento_id')
+                ->all();
+
+            if (empty($childIds)) {
+                break;
+            }
+
+            $allIds   = array_merge($allIds, $childIds);
+            $frontier = $childIds;
+        }
+
+        return $allIds;
     }
 }
