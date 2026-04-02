@@ -13,7 +13,7 @@ class StoreFileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        if (!auth()->check()) {
+        if ($this->user() === null) {
             return false;
         }
 
