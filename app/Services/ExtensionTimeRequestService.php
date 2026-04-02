@@ -137,13 +137,14 @@ class ExtensionTimeRequestService
             }
 
             // 8. Crear la solicitud
-            return ExtensionRequest::create([
+            $nueva = ExtensionRequest::create([
                 $asignacionKey   => $asignacionId,
                 'usuario_id'     => $userId,
                 'motivo'         => $data['motivo'],
                 'fecha_sugerida' => $data['fecha_sugerida'],
                 'estado'         => ExtensionRequest::ESTADO_PENDIENTE,
             ]);
+            return $nueva->load(self::WITH_BASE);
         });
     }
 

@@ -45,7 +45,7 @@ class ElementExtensionTimeRequestService
     /**
      * Obtener una solicitud de elemento específica por ID.
      */
-    public function getById(int $requestId): ?ExtensionRequest
+    public function getById(int $requestId): ?ElementExtensionRequest
     {
         return ElementExtensionRequest::with(self::WITH_BASE)
             ->find($requestId);
@@ -54,7 +54,7 @@ class ElementExtensionTimeRequestService
     /**
      * Crear solicitud de ampliación para una asignación de elemento.
      */
-    public function createRequest(array $data, int $userId): ExtensionRequest
+    public function createRequest(array $data, int $userId): ElementExtensionRequest
     {
         return DB::transaction(function () use ($data, $userId) {
             $asignacionId = $data['elemento_asignacion_id'];
@@ -86,7 +86,7 @@ class ElementExtensionTimeRequestService
                 ]);
             }
 
-            $tienePendiente = ElementElementExtensionRequest::where('elemento_asignacion_id', $asignacionId)
+            $tienePendiente = ElementExtensionRequest::where('elemento_asignacion_id', $asignacionId)
                 ->where('estado', ElementExtensionRequest::ESTADO_PENDIENTE)
                 ->exists();
             if ($tienePendiente) {
@@ -123,7 +123,7 @@ class ElementExtensionTimeRequestService
     /**
      * Actualizar una solicitud de elemento pendiente.
      */
-    public function updateRequest(int $requestId, array $data, int $userId): ExtensionRequest
+    public function updateRequest(int $requestId, array $data, int $userId): ElementExtensionRequest
     {
         return DB::transaction(function () use ($requestId, $data, $userId) {
             $solicitud = ElementExtensionRequest::with('elementAssignment')
@@ -190,7 +190,7 @@ class ElementExtensionTimeRequestService
     /**
      * Cancelar una solicitud de elemento pendiente (cambia estado a 'cancelada').
      */
-    public function cancelRequest(int $requestId, int $userId): ExtensionRequest
+    public function cancelRequest(int $requestId, int $userId): ElementExtensionRequest
     {
         return DB::transaction(function () use ($requestId, $userId) {
             $solicitud = ElementExtensionRequest::find($requestId);
