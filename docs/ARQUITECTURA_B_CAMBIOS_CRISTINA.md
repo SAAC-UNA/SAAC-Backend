@@ -116,13 +116,15 @@ if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
 
 | HU | Descripción | Estado |
 |---|---|---|
-| HU-007 | CRUD de asignaciones de elementos (`ELEMENTO_ASIGNACION`) | ✅ Committed |
-| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) + fix FileResource | ✅ Committed || HU-008b | SOLID completo capa HTTP para archivos de elemento (controller/resource/request propios) | ✅ Implementado || HU-012 | Filtrado avanzado y exportación de elementos (Excel/PDF) | ✅ Committed |
-| HU-013 | Retroalimentación equivalente en `ELEMENTO_ASIGNACION` (`Observada`/`Validada`) | ✅ Committed |
+| HU-007 | CRUD de asignaciones de elementos (`ELEMENTO_ASIGNACION`) | ✅ Committed + Testeado Postman |
+| HU-008 | Subida de archivos con `elemento_id` (modelo flexible) + fix FileResource | ✅ Committed + Testeado Postman |
+| HU-008b | SOLID completo capa HTTP para archivos de elemento (controller/resource/request propios) | ✅ Committed + Testeado Postman |
+| HU-012 | Filtrado avanzado y exportación de elementos (Excel/PDF) | ✅ Committed |
+| HU-013 | Retroalimentación equivalente en `ELEMENTO_ASIGNACION` (`Observada`/`Validada`) | ✅ Committed + Testeado Postman |
 | HU-016 | Solicitud de ampliación — refactorizado a patrón Strategy (tradicional + flexible) | ✅ Committed |
-| HU-016b | SOLID completo capa HTTP para ampliaciones de elemento (controller/request propios) | ✅ Implementado |
+| HU-016b | SOLID completo capa HTTP para ampliaciones de elemento (controller/request propios) | ✅ Committed + Testeado Postman |
 | HU-018 | Notificaciones al asignar elementos (`NotifyElementAssignment`) | ✅ Committed |
-| HU-023 | Enlace público para archivos sin autenticación (SINAES) | ✅ Committed |
+| HU-023 | Enlace público para archivos sin autenticación (SINAES) | ✅ Committed + Testeado Postman |
 | HU-030 | Ciclos de acreditación — CRUD + reactivar (sin cambios en esta rama) | ✅ Pre-existente |
 
 ---
@@ -366,63 +368,69 @@ Se completó SOLID creando la capa HTTP exclusiva para el modelo flexible:
 | Autorización | Gate por evidencia en `authorize()` | Solo `$this->user() !== null` |
 | Punto | Endpoint | Estado |
 |---|---|---|
-| 1 | `GET /archivos?elemento_id=1` | ✅ |
-| 2 | `POST /archivos` (form-data, archivo físico, flexible) | ✅ |
-| 3 | `POST /archivos` (JSON, enlace URL) | ✅ |
-| 4 | `GET /archivos/{id}` | ✅ |
-| 5 | `POST /archivos/{id}/make-public` | ✅ |
-| 6 | `GET /p/{token}` sin Authorization | ✅ |
-| 7 | `POST /archivos/bulk-make-public` | ✅ |
-| 8 | `POST /archivos/{id}/revoke-public` | ✅ |
-| 9 | `GET /archivos/{id}/download` | ✅ |
-| 10 | `DELETE /archivos/{id}` | ✅ |
+| 1 | `GET /api/elementos-archivos?elemento_id=19` | ✅ Probado |
+| 2 | `POST /api/elementos-archivos` (JSON, enlace URL) | ✅ Probado |
+| 3 | `GET /api/elementos-archivos/{id}` | ✅ Probado |
+| 4 | `GET /api/elementos-archivos/{id}/download` | ✅ Probado |
+| 5 | `POST /api/elementos-archivos/{id}/make-public` | ✅ Probado |
+| 6 | `POST /api/elementos-archivos/{id}/revoke-public` | ✅ Probado |
+| 7 | `GET /api/p/{token}` sin Authorization | ✅ Probado |
 
-### ⏳ Pendiente probar — HU-007 Asignaciones de elementos
+### ✅ HU-007 — Asignaciones de elementos — Probada (2026-04-01)
 
 ```
 POST   http://localhost:8000/api/elementos-asignaciones
-       Body: { "elemento_id": 1, "usuario_id": 1, "proceso_id": 1, "fecha_limite": "2027-06-30" }
+       Body: { "elemento_id": 19, "usuario_id": 56, "proceso_id": 33, "fecha_limite": "2026-12-31" }
+       → 201 con asignacion_id: 18
 
-GET    http://localhost:8000/api/elementos-asignaciones?elemento_id=1
-GET    http://localhost:8000/api/elementos-asignaciones/{id}
-PATCH  http://localhost:8000/api/elementos-asignaciones/{id}
-       Body: { "fecha_limite": "2027-09-30" }
-DELETE http://localhost:8000/api/elementos-asignaciones/{id}
+GET    http://localhost:8000/api/elementos-asignaciones?elemento_id=19   → 200 lista paginada
+GET    http://localhost:8000/api/elementos-asignaciones/18               → 200 detalle
+PATCH  http://localhost:8000/api/elementos-asignaciones/18
+       Body: { "estado": "En Progreso" }                               → 200 actualizado
+DELETE http://localhost:8000/api/elementos-asignaciones/{id}             → 204
 ```
 
-### ⏳ Pendiente probar — HU-013 Retroalimentación elementos
+### ✅ HU-013 — Retroalimentación de elementos — Probada (2026-04-01)
 
 ```
-POST   http://localhost:8000/api/elementos-asignaciones/{id}/retroalimentacion
+POST   http://localhost:8000/api/elementos-asignaciones/18/retroalimentacion
        Body (JSON):
-       {
-           "estado": "Observada",
-           "comentario": "Falta firma del documento"
-       }
-
-       // O para validar:
        {
            "estado": "Validada",
            "comentario": "Documento correcto y completo"
        }
+       → 200 con estado actualizado
 ```
 - `estado` acepta: `"Observada"` o `"Validada"`
-- Solo puede hacerlo el coordinador/admin (no el mismo usuario asignado)
-- Respuesta esperada: `200` con el estado actualizado y comentario guardado
+- Requiere que la asignación NO esté en estado `Pendiente` (hacer PATCH a `En Progreso` primero)
+- Solo puede hacerlo Encargado/Admin/Superusuario (no el usuario asignado)
 
-### ✅ HU-016 — Ampliación desde elemento (flexible) — Probada
+### ✅ HU-016 — Ampliación desde elemento (flexible) — Probada (2026-04-01)
 
 ```
-POST   http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacion
+POST   http://localhost:8000/api/elemento-solicitudes-ampliacion
        Body (JSON):
        {
-           "fecha_sugerida": "2027-09-30",
-           "justificacion": "Se requiere más tiempo para recopilar documentos"
+           "elemento_asignacion_id": 18,
+           "motivo": "Se requiere más tiempo para recopilar documentos",
+           "fecha_sugerida": "2027-09-30"
        }
+       → 201 solicitud_id: 32
+
+GET    http://localhost:8000/api/elemento-solicitudes-ampliacion          → 200 lista paginada
+GET    http://localhost:8000/api/elemento-solicitudes-ampliacion/pendientes → 200
+GET    http://localhost:8000/api/elemento-solicitudes-ampliacion/mis-solicitudes → 200
+GET    http://localhost:8000/api/elemento-solicitudes-ampliacion/32       → 200 detalle
+
+POST   http://localhost:8000/api/elemento-solicitudes-ampliacion/32/aprobar
+       Body: { "comentario_resolutor": "Aprobado" }                     → 200
+
+POST   http://localhost:8000/api/elemento-solicitudes-ampliacion/33/rechazar
+       Body: { "comentario_resolutor": "No justifica" }                 → 200
 ```
-- Solo puede hacerlo el usuario asignado a ese elemento
+- Solo puede crear solicitud el usuario asignado al elemento
 - `fecha_sugerida` debe ser mayor a la `fecha_limite` actual y no más de 30 días
-- Respuesta: `201` con la solicitud creada ✅
+- Fix aplicado: paginación usaba path incorrecto → resuelto con `withPath()` en `paginatedResponse()` ✅
 
 ---
 
@@ -576,3 +584,81 @@ Llamado al inicio de `uploadFile()` y `saveLink()` — antes de tocar Storage o 
 | `ElementAssignmentService::assignElement()` | Verifica `tipos_asignables` del modelo antes de crear asignación |
 | `FlexibleFileService::uploadFile()` | Verifica `tipos_asignables` del modelo antes de guardar en Storage |
 | `FlexibleFileService::saveLink()` | Verifica `tipos_asignables` del modelo antes de guardar enlace |
+
+---
+
+## Referencia rápida de endpoints — Modelo Flexible (para el Frontend)
+
+> Base URL: `http://localhost:8000`  
+> Todos los endpoints (excepto `GET /api/p/{token}`) requieren `Authorization: Bearer {token}`
+
+### HU-007 — Asignaciones de elementos
+
+| Método | Ruta | Body / Params | Respuesta |
+|---|---|---|---|
+| `POST` | `/api/elementos-asignaciones` | `{ "elemento_id": 19, "usuario_id": 56, "proceso_id": 33, "fecha_limite": "2026-12-31" }` | 201 asignación creada |
+| `GET` | `/api/elementos-asignaciones` | `?elemento_id=19` (query param) | 200 lista paginada |
+| `GET` | `/api/elementos-asignaciones/{id}` | — | 200 detalle |
+| `PATCH` | `/api/elementos-asignaciones/{id}` | `{ "estado": "En Progreso" }` | 200 actualizado |
+| `DELETE` | `/api/elementos-asignaciones/{id}` | — | 204 sin contenido |
+
+### HU-008 — Archivos de elementos
+
+| Método | Ruta | Body / Params | Respuesta |
+|---|---|---|---|
+| `POST` | `/api/elementos-archivos` | `{ "elemento_id": 19, "proceso_id": 33, "tipo": "enlace", "url": "https://...", "nombre_original": "Nombre" }` | 201 archivo creado |
+| `GET` | `/api/elementos-archivos` | `?elemento_id=19` (query param) | 200 lista |
+| `GET` | `/api/elementos-archivos/{id}` | — | 200 detalle |
+| `GET` | `/api/elementos-archivos/{id}/download` | — | Redirect 302 (enlace) o descarga binaria (archivo) |
+| `DELETE` | `/api/elementos-archivos/{id}` | — | 204 sin contenido |
+
+### HU-013 — Retroalimentación
+
+| Método | Ruta | Body | Respuesta |
+|---|---|---|---|
+| `POST` | `/api/elementos-asignaciones/{id}/retroalimentacion` | `{ "estado": "Observada" \| "Validada", "comentario": "texto" }` | 200 estado actualizado |
+
+> Requisito: la asignación debe tener `estado != "Pendiente"`. Si está en Pendiente, hacer PATCH con `{ "estado": "En Progreso" }` primero.
+
+### HU-016 — Solicitudes de ampliación (modelo flexible)
+
+| Método | Ruta | Body | Respuesta |
+|---|---|---|---|
+| `POST` | `/api/elemento-solicitudes-ampliacion` | `{ "elemento_asignacion_id": 18, "motivo": "texto", "fecha_sugerida": "2027-09-30" }` | 201 solicitud creada |
+| `GET` | `/api/elemento-solicitudes-ampliacion` | — | 200 lista paginada |
+| `GET` | `/api/elemento-solicitudes-ampliacion/pendientes` | — | 200 solo pendientes |
+| `GET` | `/api/elemento-solicitudes-ampliacion/mis-solicitudes` | — | 200 del usuario autenticado |
+| `GET` | `/api/elemento-solicitudes-ampliacion/{id}` | — | 200 detalle |
+| `POST` | `/api/elemento-solicitudes-ampliacion/{id}/aprobar` | `{ "comentario_resolutor": "texto" }` | 200 aprobada |
+| `POST` | `/api/elemento-solicitudes-ampliacion/{id}/rechazar` | `{ "comentario_resolutor": "texto" }` | 200 rechazada |
+
+### HU-023 — Enlace público sin autenticación
+
+| Método | Ruta | Auth | Body | Respuesta |
+|---|---|---|---|---|
+| `POST` | `/api/elementos-archivos/{id}/make-public` | ✅ Bearer | `{ "expires_at": "2027-12-31" }` (opcional) | 200 con `url_publica` y `token_publico` |
+| `POST` | `/api/elementos-archivos/{id}/revoke-public` | ✅ Bearer | — | 200 con `is_publico: false` |
+| `GET` | `/api/p/{token}` | ❌ Sin auth | — | 302 redirect (enlace) o descarga (archivo) |
+
+### HU-030 — Ciclos de acreditación
+
+| Método | Ruta | Body | Respuesta |
+|---|---|---|---|
+| `GET` | `/api/estructura/ciclos-acreditacion` | — | 200 lista |
+| `GET` | `/api/estructura/ciclos-acreditacion/{id}` | — | 200 detalle |
+| `POST` | `/api/estructura/ciclos-acreditacion` | `{ "nombre": "...", "carrera_sede_id": 19, "modelo_estructura_id": 37, "fecha_inicio": "2026-01-01", "fecha_fin": "2026-12-31" }` | 201 ciclo creado |
+| `PATCH` | `/api/estructura/ciclos-acreditacion/{id}` | campos a actualizar | 200 actualizado |
+| `DELETE` | `/api/estructura/ciclos-acreditacion/{id}` | — | 204 sin contenido |
+| `PATCH` | `/api/estructura/ciclos-acreditacion/{id}/reactivar` | — | 200 reactivado |
+
+### HU-006 / Panel de Estructura — Elementos Flexible
+
+| Método | Ruta | Params | Respuesta |
+|---|---|---|---|
+| `GET` | `/api/estructura/elementos` | `?modelo_estructura_id=37` | 200 lista paginada |
+| `GET` | `/api/estructura/elementos/filter` | `?busqueda=AG&estado=pendiente&modelo_estructura_id=37` | 200 filtrado |
+| `GET` | `/api/estructura/elementos/export/excel` | mismos params de filter | Descarga .xlsx |
+| `GET` | `/api/estructura/elementos/export/pdf` | mismos params de filter | Descarga .pdf |
+| `POST` | `/api/estructura/elementos` | `{ "nombre": "...", "tipo": "area", "nomenclatura": "AG-01", "modelo_estructura_id": 37 }` | 201 elemento creado |
+| `PATCH` | `/api/estructura/elementos/{id}` | campos a actualizar | 200 actualizado |
+| `DELETE` | `/api/estructura/elementos/{id}` | — | 204 sin contenido |
