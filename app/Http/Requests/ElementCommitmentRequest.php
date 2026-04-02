@@ -86,6 +86,14 @@ class ElementCommitmentRequest extends FormRequest
                 'integer',
                 'exists:USUARIO,usuario_id',
             ],
+            'elementos_asignar.*.roles' => [
+                'nullable',
+                'array',
+            ],
+            'elementos_asignar.*.roles.*' => [
+                'integer',
+                'exists:roles,id',
+            ],
             'elementos_asignar.*.fecha_limite' => [
                 'nullable',
                 'date',
@@ -118,6 +126,8 @@ class ElementCommitmentRequest extends FormRequest
             'elementos_asignar.*.elemento_id.required' => 'Cada asignación debe indicar el elemento_id.',
             'elementos_asignar.*.elemento_id.exists'   => 'Uno o más elementos no existen.',
             'elementos_asignar.*.usuarios.*.exists'    => 'Uno o más usuarios no existen.',
+            'elementos_asignar.*.roles.array'           => 'Los roles deben ser un arreglo.',
+            'elementos_asignar.*.roles.*.exists'        => 'Uno o más roles no existen.',
             'elementos_asignar.*.fecha_limite.date'    => 'La fecha límite debe ser una fecha válida.',
         ];
     }

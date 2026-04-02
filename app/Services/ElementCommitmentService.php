@@ -6,6 +6,8 @@ use App\Models\ElementCommitment;
 use App\Models\ElementAssignment;
 use App\Models\StructureElement;
 use App\Models\Process;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -265,6 +267,41 @@ class ElementCommitmentService
                     'comentario' => $comentario,
                 ]);
             }
+
+            // Asignar a todos los usuarios que tienen los roles indicados
+            $roles = $assignment['roles'] ?? [];
+            foreach ($roles as $roleId) {
+                $role = Role::find($roleId);
+                if (!$role) {
+                    throw ValidationException::withMessages([
+                        'elementos_asignar' => "El rol con ID {$roleId} no existe.",
+                    ]);
+                }
+
+                $usersWithRole = User::role($role->name)->active()->get();
+
+                foreach ($usersWithRole as $userObj) {
+                    if (ElementAssignment::where('proceso_id', $procesoId)
+                            ->where('elemento_id', $elementoId)
+                            ->where('usuario_id', $userObj->usuario_id)
+                            ->exists()) {
+                        continue; // Duplicado — saltar sin error
+                    }
+
+                    $newAssignment = ElementAssignment::create([
+                        'elemento_id'  => $elementoId,
+                        'usuario_id'   => $userObj->usuario_id,
+                        'proceso_id'   => $procesoId,
+                        'estado'       => ElementAssignment::ESTADO_PENDIENTE,
+                        'fecha_limite' => $fechaLimite,
+                        'comentario'   => $comentario,
+                    ]);
+
+                    $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
+                        'comentario' => $comentario,
+                    ]);
+                }
+            }
         }
     }
 
@@ -318,6 +355,43 @@ class ElementCommitmentService
                 $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
                     'comentario' => $comentario,
                 ]);
+            }
+
+            // Asignar a todos los usuarios que tienen los roles indicados
+            $roles = $assignment['roles'] ?? [];
+            foreach ($roles as $roleId) {
+                $role = Role::find($roleId);
+                if (!$role) {
+                    throw ValidationException::withMessages([
+                        'elementos_asignar' => "El rol con ID {$roleId} no existe.",
+                    ]);
+                }
+
+                $usersWithRole = User::role($role->name)->active()->get();
+
+                foreach ($usersWithRole as $userObj) {
+                    $existing = ElementAssignment::where('proceso_id', $procesoId)
+                        ->where('elemento_id', $elementoId)
+                        ->where('usuario_id', $userObj->usuario_id)
+                        ->first();
+
+                    if (!$existing) {
+                        $existing = ElementAssignment::create([
+                            'elemento_id'  => $elementoId,
+                            'usuario_id'   => $userObj->usuario_id,
+                            'proceso_id'   => $procesoId,
+                            'estado'       => ElementAssignment::ESTADO_PENDIENTE,
+                            'fecha_limite' => $fechaLimite,
+                            'comentario'   => $comentario,
+                        ]);
+                    } elseif ($fechaLimite) {
+                        $existing->update(['fecha_limite' => $fechaLimite]);
+                    }
+
+                    $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
+                        'comentario' => $comentario,
+                    ]);
+                }
             }
         }
     }
