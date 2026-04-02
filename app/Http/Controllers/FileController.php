@@ -376,8 +376,16 @@ class FileController extends Controller
     /**
      * Acceso público a archivo o enlace mediante token.
      * GET /api/p/{token}
-     * 
+     *
      * Esta ruta NO requiere autenticación (para SINAES/informes externos).
+     *
+     * NOTA: Este endpoint es COMPARTIDO entre el modelo tradicional y el modelo flexible.
+     * Funciona para ambos porque consulta el campo `token_publico` de la tabla ARCHIVO
+     * sin distinción de modelo. Los archivos del modelo flexible (ElementFileController)
+     * también usan esta tabla, por lo que make-public/revoke-public de ambos modelos
+     * generan tokens accesibles aquí.
+     * Si en el futuro se elimina FileController, este método debe moverse a un
+     * controlador base o a un SharedFileController dedicado.
      */
     public function publicAccess(string $token)
     {

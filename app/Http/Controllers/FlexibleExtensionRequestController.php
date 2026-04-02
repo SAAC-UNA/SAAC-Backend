@@ -50,6 +50,8 @@ class FlexibleExtensionRequestController extends Controller
 
     private function paginatedResponse($paginator): JsonResponse
     {
+        $paginator->withPath(url('api/elemento-solicitudes-ampliacion'));
+
         return response()->json([
             'data' => ExtensionRequestResource::collection($paginator->items()),
             'meta' => [
