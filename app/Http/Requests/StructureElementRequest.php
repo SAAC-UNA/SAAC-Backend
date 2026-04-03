@@ -74,6 +74,7 @@ class StructureElementRequest extends FormRequest
             'tipo' => $isUpdate
                 ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/']
                 : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/'],
+            'nombre'       => ['nullable', 'string', 'max:100'],
             'categoria'    => 'nullable|in:A,B,C,D',
             'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
             'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],

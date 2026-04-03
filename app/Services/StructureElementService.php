@@ -47,6 +47,7 @@ class StructureElementService
             'modelo_estructura_id' => $data['modelo_estructura_id'],
             'padre_id'             => $data['padre_id'] ?? null,
             'tipo'                 => $data['tipo'],
+            'nombre'               => $data['nombre'] ?? null,
             'categoria'            => $data['categoria'] ?? null,
             'nomenclatura'         => $data['nomenclatura'] ?? null,
             'descripcion'          => $data['descripcion'] ?? null,
@@ -66,6 +67,7 @@ class StructureElementService
         $elemento->update([
             'padre_id'     => $data['padre_id'] ?? $elemento->padre_id,
             'tipo'         => $data['tipo'] ?? $elemento->tipo,
+            'nombre'       => array_key_exists('nombre', $data) ? $data['nombre'] : $elemento->nombre,
             'categoria'    => $data['categoria'] ?? $elemento->categoria,
             'nomenclatura' => $data['nomenclatura'] ?? $elemento->nomenclatura,
             'descripcion'  => $data['descripcion'] ?? $elemento->descripcion,
