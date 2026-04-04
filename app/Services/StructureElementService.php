@@ -69,9 +69,20 @@ class StructureElementService
      */
     public function create(array $data): StructureElement
     {
+        $elemento = StructureElement::create([
+            'modelo_estructura_id' => $data['modelo_estructura_id'],
+            'padre_id'             => $data['padre_id'] ?? null,
+            'tipo'                 => $data['tipo'],
+            'nombre'               => $data['nombre'] ?? null,
+            'categoria'            => $data['categoria'] ?? null,
+            'nomenclatura'         => $data['nomenclatura'] ?? null,
+            'descripcion'          => $data['descripcion'] ?? null,
+            'activo'               => $data['activo'] ?? true,
+        ]);
+
+        $this->clearCache($data['tipo'] ?? null, $data['modelo_estructura_id'] ?? null);
 
         return $elemento;
-
     }
 
     /**

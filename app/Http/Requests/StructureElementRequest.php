@@ -82,12 +82,12 @@ class StructureElementRequest extends FormRequest
                 },
             ],
             'tipo' => $isUpdate
-                ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/']
-                : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/'],
+                ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/u']
+                : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/u'],
             'nombre'       => ['nullable', 'string', 'max:100'],
             'categoria'    => 'nullable|in:A,B,C,D',
             'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
-            'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],
+            'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
             'activo'       => 'boolean',
 
             // ── HU-012 (escritura flexible) — Gap 4 ──────────────────────────────────
@@ -105,7 +105,7 @@ class StructureElementRequest extends FormRequest
             // ─────────────────────────────────────────────────────────────────────────
             'evidencias'                  => $isUpdate ? 'prohibited' : 'sometimes|nullable|array',
             'evidencias.*.nomenclatura'   => 'required_with:evidencias|string|max:20|regex:/^[A-Za-z0-9.\-_]+$/',
-            'evidencias.*.descripcion'    => 'nullable|string|max:500|regex:/^[A-Za-zÀ-ÿ0-9 .,\-:;()]+$/',
+            'evidencias.*.descripcion'    => 'nullable|string|max:500|regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u',
         ];
     }
 
