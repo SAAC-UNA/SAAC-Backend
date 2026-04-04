@@ -6,23 +6,24 @@ use App\Models\File;
 use App\Http\Requests\StoreFileRequest;
 use App\Http\Requests\UpdateFileRequest;
 use App\Http\Resources\FileResource;
-use App\Services\FileService;
+use App\Services\FileStorageFactory;
 use App\Events\MultipleFilesUploaded;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class FileController extends Controller
 {
-    protected FileService $fileService;
+    protected FileStorageFactory $factory;
 
-    public function __construct(FileService $fileService)
+    public function __construct(FileStorageFactory $factory)
     {
-        $this->fileService = $fileService;
+        $this->factory = $factory;
     }
 
     /**
@@ -34,7 +35,7 @@ class FileController extends Controller
     {
         $request->validate([
             'evidencia_id' => 'sometimes|integer|exists:EVIDENCIA,evidencia_id',
-            'proceso_id' => 'sometimes|integer|exists:PROCESO,proceso_id',
+            'proceso_id'   => 'sometimes|integer|exists:PROCESO,proceso_id',
         ]);
 
         $query = File::query()->with(['evidence', 'user', 'process']);
@@ -42,10 +43,10 @@ class FileController extends Controller
         // Filtrar por evidencia si se proporciona
         if ($request->has('evidencia_id')) {
             $evidenciaId = $request->input('evidencia_id');
-            
+
             // Verificar autorización para ver archivos de esta evidencia
             Gate::authorize('viewAny', [File::class, $evidenciaId]);
-            
+
             $query->where('evidencia_id', $evidenciaId);
         }
 
@@ -79,7 +80,7 @@ class FileController extends Controller
         $validated = $request->validated();
 
         // Obtener el usuario autenticado
-        $usuarioId = auth()->id();
+        $usuarioId = Auth::id();
         
         if (!$usuarioId) {
             return response()->json([
@@ -90,26 +91,35 @@ class FileController extends Controller
 
         $archivos = [];
         $errores = [];
-        
+
+        $evidenciaId = $validated['evidencia_id'];
+
+        // Delega siempre al servicio tradicional
+        try {
+            $service = $this->factory->make($evidenciaId, null);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
         // Procesar según el tipo
         if ($validated['tipo'] === 'archivo') {
             // Procesar archivos físicos
             foreach ($request->file('archivos', []) as $index => $archivo) {
                 try {
-                    $archivoGuardado = $this->fileService->uploadFile(
+                    $archivoGuardado = $service->uploadFile(
                         file: $archivo,
-                        evidenciaId: $validated['evidencia_id'],
                         usuarioId: $usuarioId,
-                        procesoId: $validated['proceso_id']
+                        procesoId: $validated['proceso_id'],
+                        referenciaId: $evidenciaId
                     );
-                    
+
                     $archivoGuardado->load(['evidence', 'user', 'process']);
                     $archivos[] = new FileResource($archivoGuardado);
                 } catch (\Exception $e) {
                     $errores[] = [
                         'indice' => $index,
                         'nombre' => $archivo->getClientOriginalName(),
-                        'error' => $e->getMessage(),
+                        'error'  => $e->getMessage(),
                     ];
                 }
             }
@@ -117,26 +127,26 @@ class FileController extends Controller
             // Procesar enlaces/URLs
             $enlaces = $validated['enlaces'] ?? [];
             $nombres = $validated['enlaces_nombres'] ?? [];
-            
+
             foreach ($enlaces as $index => $url) {
                 try {
                     $nombreDescriptivo = $nombres[$index] ?? null;
-                    
-                    $enlaceGuardado = $this->fileService->saveLink(
+
+                    $enlaceGuardado = $service->saveLink(
                         url: $url,
-                        evidenciaId: $validated['evidencia_id'],
                         usuarioId: $usuarioId,
                         procesoId: $validated['proceso_id'],
+                        referenciaId: $evidenciaId,
                         nombreDescriptivo: $nombreDescriptivo
                     );
-                    
+
                     $enlaceGuardado->load(['evidence', 'user', 'process']);
                     $archivos[] = new FileResource($enlaceGuardado);
                 } catch (\Exception $e) {
                     $errores[] = [
                         'indice' => $index,
-                        'url' => $url,
-                        'error' => $e->getMessage(),
+                        'url'    => $url,
+                        'error'  => $e->getMessage(),
                     ];
                 }
             }
@@ -151,7 +161,7 @@ class FileController extends Controller
                     'size_kb' => round($resource->size / 1024, 2),
                 ], $archivos);
                 
-                event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+                event(new MultipleFilesUploaded($filesData, $usuarioId, $evidenciaId, $validated['proceso_id']));
             }
             
             return response()->json([
@@ -170,7 +180,7 @@ class FileController extends Controller
                 'size_kb' => round($resource->size / 1024, 2),
             ], $archivos);
             
-            event(new MultipleFilesUploaded($filesData, $usuarioId, $validated['evidencia_id'], $validated['proceso_id']));
+            event(new MultipleFilesUploaded($filesData, $usuarioId, $evidenciaId, $validated['proceso_id']));
         }
 
         return response()->json([
@@ -205,7 +215,7 @@ class FileController extends Controller
     {
         Gate::authorize('delete', $archivo);
 
-        $this->fileService->deleteFile($archivo);
+        $this->factory->makeFromFile($archivo)->deleteFile($archivo);
 
         return response()->json([
             'success' => true,
@@ -232,7 +242,7 @@ class FileController extends Controller
             ? new \DateTime($validated['expires_at']) 
             : null;
 
-        $this->fileService->makePublic($archivo, $expiresAt);
+        $this->factory->makeFromFile($archivo)->makePublic($archivo, $expiresAt);
 
         $archivo->load(['evidence', 'user', 'process']);
 
@@ -251,7 +261,7 @@ class FileController extends Controller
     {
         Gate::authorize('revokePublicAccess', $archivo);
 
-        $this->fileService->revokePublicAccess($archivo);
+        $this->factory->makeFromFile($archivo)->revokePublicAccess($archivo);
 
         $archivo->load(['evidence', 'user', 'process']);
 
@@ -287,10 +297,14 @@ class FileController extends Controller
             ? new \DateTime($validated['expires_at']) 
             : null;
 
-        $archivos = $this->fileService->bulkMakePublic(
-            $validated['archivos_ids'],
-            $expiresAt
-        );
+        // bulkMakePublic: los archivos pueden mezclar modelos, se resuelve por archivo
+        $archivos = [];
+        foreach ($validated['archivos_ids'] as $id) {
+            $archivoItem = File::find($id);
+            if ($archivoItem) {
+                $archivos[] = $this->factory->makeFromFile($archivoItem)->makePublic($archivoItem, $expiresAt);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -321,7 +335,8 @@ class FileController extends Controller
 
         // Si es un archivo físico, descargarlo
         try {
-            $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
+            $disk = $this->factory->makeFromFile($archivo)->getDisk();
+            $path = Storage::disk($disk)->path($archivo->path);
             
             if (!file_exists($path)) {
                 return response()->json([
@@ -335,7 +350,7 @@ class FileController extends Controller
         } catch (\Exception $e) {
             Log::error('Error descargando archivo', [
                 'archivo_id' => $archivo->archivo_id,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
             ]);
 
@@ -361,8 +376,16 @@ class FileController extends Controller
     /**
      * Acceso público a archivo o enlace mediante token.
      * GET /api/p/{token}
-     * 
+     *
      * Esta ruta NO requiere autenticación (para SINAES/informes externos).
+     *
+     * NOTA: Este endpoint es COMPARTIDO entre el modelo tradicional y el modelo flexible.
+     * Funciona para ambos porque consulta el campo `token_publico` de la tabla ARCHIVO
+     * sin distinción de modelo. Los archivos del modelo flexible (ElementFileController)
+     * también usan esta tabla, por lo que make-public/revoke-public de ambos modelos
+     * generan tokens accesibles aquí.
+     * Si en el futuro se elimina FileController, este método debe moverse a un
+     * controlador base o a un SharedFileController dedicado.
      */
     public function publicAccess(string $token)
     {
@@ -401,7 +424,8 @@ class FileController extends Controller
 
         // Si es un archivo físico, descargarlo
         try {
-            $path = Storage::disk($this->fileService->getDisk())->path($archivo->path);
+            $disk = $this->factory->makeFromFile($archivo)->getDisk();
+            $path = Storage::disk($disk)->path($archivo->path);
             
             if (!file_exists($path)) {
                 return response()->json([

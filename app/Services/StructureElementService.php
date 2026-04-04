@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\StructureElement;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class StructureElementService
 {
@@ -37,18 +38,39 @@ class StructureElementService
     }
 
     /**
-     * Buscar por ID
+     * Buscar por ID, incluyendo sus evidencias si las tiene.
+     *
+     * HU-012 (escritura flexible) — Gap 5a:
+     * ANTES: retornaba el ELEMENTO crudo sin relaciones.
+     * DESPUÉS: carga 'evidencias' en eager-load para que GET /elementos/{id}
+     *          muestre los documentos requeridos asociados al nodo.
+     *          En elementos del modelo tradicional la colección llega vacía
+     *          (correcto — sus evidencias pertenecen a CRITERIO, no a ELEMENTO).
      */
     public function findById(int $id): ?StructureElement
     {
-        return StructureElement::find($id);
+        return StructureElement::with('evidencias')->find($id);
     }
 
     /**
      * Crear nuevo elemento. El orden de listado es por elemento_id (orden de creación).
+     *
+     * HU-012 (escritura flexible) — Gap 5b:
+     * ANTES: solo creaba el ELEMENTO sin soporte para evidencias.
+     * DESPUÉS: si el request incluye 'evidencias[]' (campo opcional del modelo flexible),
+     *          todo se ejecuta en una transacción SQL atómica:
+     *            1. INSERT en ELEMENTO
+     *            2. INSERT en EVIDENCIA (una por cada item de evidencias[])
+     *          Si cualquier INSERT falla, rollback completo — no quedan elementos
+     *          huérfanos ni evidencias sin elemento.
+     *
+     * La transacción no cambia el comportamiento para el modelo tradicional
+     * (create sigue funcionando igual cuando 'evidencias' no viene).
      */
     public function create(array $data): StructureElement
     {
+
+
         $elemento = StructureElement::create([
             'modelo_estructura_id' => $data['modelo_estructura_id'],
             'padre_id'             => $data['padre_id'] ?? null,
@@ -62,6 +84,7 @@ class StructureElementService
         $this->clearCache($data['tipo'] ?? null, $data['modelo_estructura_id'] ?? null);
 
         return $elemento;
+
     }
 
     /**

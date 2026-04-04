@@ -49,7 +49,13 @@ class EvidenceAssignmentController extends Controller
                     'errores' => $resultado['errores']
                 ]
             ], 201);
-            
+
+        } catch (\InvalidArgumentException $e) {
+            // MODELO FLEXIBLE (HU-007): incompatibilidad de modelo entre proceso y evidencia
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al procesar las asignaciones.',

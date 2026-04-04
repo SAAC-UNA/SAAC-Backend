@@ -13,12 +13,11 @@ class StoreFileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Si no hay usuario autenticado, denegar
-        if (!auth()->check()) {
+        if ($this->user() === null) {
             return false;
         }
-        
-        // Autorizar si el usuario puede subir archivos a esta evidencia
+
+        // Modelo tradicional: autorizar según política de evidencia
         return Gate::allows('upload', [
             \App\Models\File::class,
             $this->input('evidencia_id')
@@ -69,7 +68,7 @@ class StoreFileRequest extends FormRequest
                 'max:255',
             ],
             
-            // Común para ambos tipos
+            // Modelo tradicional: evidencia_id requerido
             'evidencia_id' => [
                 'required',
                 'integer',
@@ -116,7 +115,7 @@ class StoreFileRequest extends FormRequest
             'evidencia_id.required' => 'Debe especificar la evidencia asociada.',
             'evidencia_id.integer' => 'El ID de evidencia debe ser un número entero.',
             'evidencia_id.exists' => 'La evidencia especificada no existe.',
-            
+
             'proceso_id.required' => 'Debe especificar el proceso asociado.',
             'proceso_id.integer' => 'El ID de proceso debe ser un número entero.',
             'proceso_id.exists' => 'El proceso especificado no existe.',
@@ -131,9 +130,9 @@ class StoreFileRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'archivo' => 'archivo',
+            'archivo'      => 'archivo',
             'evidencia_id' => 'evidencia',
-            'proceso_id' => 'proceso',
+            'proceso_id'   => 'proceso',
         ];
     }
 }

@@ -14,6 +14,15 @@ use App\Models\EvidenceAssignment;
 use App\Observers\AuditObserver;
 use App\Observers\EvidenceObserver;
 use App\Observers\EvidenceAssignmentObserver;
+use App\Contracts\FileStorageContract;
+use App\Services\TradicionalFileService;
+use App\Services\FlexibleFileService;
+use App\Services\FileStorageFactory;
+use App\Services\TradicionalExtensionRequestService;
+use App\Services\FlexibleExtensionRequestService;
+use App\Services\TradicionalEvidenceService;
+use App\Services\TradicionalEvidenceFilterService;
+use App\Services\FilterElementService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,7 +30,19 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Ligamos los servicios de almacenamiento al contenedor IoC.
+        // TradicionalFileService y FlexibleFileService son instancias únicas
+        // (singleton) porque no tienen estado mutable — el disco es config.
+        $this->app->singleton(TradicionalFileService::class);
+        $this->app->singleton(FlexibleFileService::class);
+        $this->app->singleton(FileStorageFactory::class);
+
+        $this->app->singleton(TradicionalExtensionRequestService::class);
+        $this->app->singleton(FlexibleExtensionRequestService::class);
+
+        $this->app->singleton(TradicionalEvidenceService::class);
+        $this->app->singleton(TradicionalEvidenceFilterService::class);
+        $this->app->singleton(FilterElementService::class);
     }
 //Es para registrar los observers de auditoria en cada modelo, para que se registren las acciones de crear, actualizar y eliminar en la tabla de auditoria
     public function boot(): void

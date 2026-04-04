@@ -33,11 +33,11 @@ class EvidenceService
     public function create(array $data): Evidence
     {
         $evidence = Evidence::create([
-            'criterio_id' => $data['criterio_id'],
-            'estado'      => $data['estado'] ?? 'Pendiente',
-            'descripcion' => $data['descripcion'],
+            'criterio_id'  => $data['criterio_id'],
+            'estado'       => $data['estado']       ?? 'Pendiente',
+            'descripcion'  => $data['descripcion'],
             'nomenclatura' => $data['nomenclatura'],
-            'activo'      => $data['activo'] ?? true,
+            'activo'       => $data['activo']       ?? true,
         ]);
         Cache::forget(self::CACHE_KEY);
         return $evidence->load(self::WITH_BASE);
@@ -46,7 +46,7 @@ class EvidenceService
     public function update(Evidence $evidence, array $data): Evidence
     {
         $evidence->update([
-            'criterio_id'  => $data['criterio_id']  ?? $evidence->criterio_id,
+            'criterio_id'  => array_key_exists('criterio_id', $data)  ? $data['criterio_id']  : $evidence->criterio_id,
             'estado'       => $data['estado']       ?? $evidence->estado,
             'descripcion'  => $data['descripcion']  ?? $evidence->descripcion,
             'nomenclatura' => $data['nomenclatura'] ?? $evidence->nomenclatura,
@@ -162,17 +162,21 @@ class EvidenceService
      */
     public function filterEvidences(array $filters, User $user): LengthAwarePaginator
     {
-        $perPage      = (int) ($filters['per_page'] ?? 15);
-        $page         = (int) ($filters['page']     ?? 1);
-        $criterioId   = $filters['criterio_id']         ?? null;
-        $componenteId = $filters['componente_id']       ?? null;
-        $dimensionId  = $filters['dimension_id']        ?? null;
-        $estandarId   = $filters['estandar_id']         ?? null;
-        $estadoId     = $filters['estado_evidencia_id'] ?? null;
-        $fechaDesde   = $filters['fecha_desde']         ?? null;
-        $fechaHasta   = $filters['fecha_hasta']         ?? null;
-        $sortBy       = $filters['sort_by']             ?? 'created_at';
-        $sortOrder    = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
+        $perPage            = (int) ($filters['per_page'] ?? 15);
+        $page               = (int) ($filters['page']     ?? 1);
+        $criterioId         = $filters['criterio_id']            ?? null;
+        $componenteId       = $filters['componente_id']          ?? null;
+        $dimensionId        = $filters['dimension_id']           ?? null;
+        $estandarId         = $filters['estandar_id']            ?? null;
+        // HU-012 (modelo flexible): filtros contextuales por ciclo y modelo.
+        $cicloId            = $filters['ciclo_acreditacion_id']  ?? null;
+        $modeloEstructuraId = $filters['modelo_estructura_id']   ?? null;
+        $estado             = $filters['estado']                 ?? null;
+        $estadoId           = $filters['estado_evidencia_id']    ?? null;
+        $fechaDesde         = $filters['fecha_desde']            ?? null;
+        $fechaHasta         = $filters['fecha_hasta']            ?? null;
+        $sortBy             = $filters['sort_by']                ?? 'created_at';
+        $sortOrder          = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
                         ? strtolower($filters['sort_order'])
                         : 'desc';
 
@@ -223,8 +227,21 @@ class EvidenceService
                 $q->where('estandar_id', $estandarId)
             );
         }
+        if ($cicloId) {
+            $query->whereHas('assignments.process', fn ($q) =>
+                $q->where('ciclo_acreditacion_id', $cicloId)
+            );
+        }
+        if ($modeloEstructuraId) {
+            $query->whereHas('assignments.process.accreditationCycle', fn ($q) =>
+                $q->where('modelo_estructura_id', $modeloEstructuraId)
+            );
+        }
         if ($estadoId) {
             $query->where('estado_evidencia_id', $estadoId);
+        }
+        if ($estado) {
+            $query->where('estado', $estado);
         }
         if ($fechaDesde) {
             $query->where('created_at', '>=', $fechaDesde . ' 00:00:00');

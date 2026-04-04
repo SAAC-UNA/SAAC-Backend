@@ -28,6 +28,7 @@ class Notification extends Model
      * Tipos de eventos que pueden generar notificaciones
      */
     public const TIPO_ASIGNACION_EVIDENCIA = 'asignacion_evidencia';
+    public const TIPO_ASIGNACION_ELEMENTO  = 'asignacion_elemento';
     public const TIPO_CARGA_ARCHIVO = 'carga_archivo';
     public const TIPO_VENCIMIENTO_PLAZO = 'vencimiento_plazo';
     public const TIPO_DEVOLUCION_OBSERVACION = 'devolucion_observacion';
@@ -177,6 +178,7 @@ class Notification extends Model
     {
         return in_array($this->tipo_evento, [
             self::TIPO_ASIGNACION_EVIDENCIA,
+            self::TIPO_ASIGNACION_ELEMENTO,
             self::TIPO_VENCIMIENTO_PLAZO,
             self::TIPO_DEVOLUCION_OBSERVACION,
             self::TIPO_SOLICITUD_AMPLIACION,
@@ -190,6 +192,7 @@ class Notification extends Model
     {
         return match($this->tipo_evento) {
             self::TIPO_ASIGNACION_EVIDENCIA => 'assignment',
+            self::TIPO_ASIGNACION_ELEMENTO  => 'assignment',
             self::TIPO_CARGA_ARCHIVO => 'upload',
             self::TIPO_VENCIMIENTO_PLAZO => 'alarm',
             self::TIPO_DEVOLUCION_OBSERVACION => 'undo',
@@ -209,6 +212,7 @@ class Notification extends Model
     {
         return match($this->tipo_evento) {
             self::TIPO_ASIGNACION_EVIDENCIA => 'blue',
+            self::TIPO_ASIGNACION_ELEMENTO  => 'blue',
             self::TIPO_CARGA_ARCHIVO => 'green',
             self::TIPO_VENCIMIENTO_PLAZO => 'red',
             self::TIPO_DEVOLUCION_OBSERVACION => 'orange',

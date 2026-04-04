@@ -25,4 +25,6 @@ class Role extends SpatieRole
         'description', // se mantiene en inglés por compatibilidad con Spatie
         'guard_name',
     ];
+
+    protected $hidden = ['pivot'];
 }

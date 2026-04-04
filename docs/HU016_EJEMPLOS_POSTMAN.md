@@ -8,25 +8,32 @@ Content-Type: application/json
 Accept: application/json
 ```
 
+> **Arquitectura actual (post refactorización SOLID):**  
+> Existen **dos endpoints** para crear solicitudes de ampliación según el modelo de negocio:
+> - **Modelo Tradicional** (`evidencia_asignacion_id`) → `POST /api/solicitudes-ampliacion`
+> - **Modelo Flexible** (`elemento_asignacion_id`) → `POST /api/elementos-asignaciones/{id}/solicitud-ampliacion`
+
 ---
 
-## 1️⃣ **Crear Solicitud de Ampliación**
+## 1️⃣ **Crear Solicitud — Modelo Tradicional**
 
 **Endpoint:** `POST http://localhost:8000/api/solicitudes-ampliacion`
+
+**Servicio:** `TradicionalExtensionRequestService::createRequest()`
 
 ### Request Body (JSON):
 ```json
 {
   "evidencia_asignacion_id": 1,
   "motivo": "Necesito más tiempo para recopilar la documentación requerida debido a que el departamento administrativo está en período de cierre mensual.",
-  "fecha_sugerida": "2025-12-20"
+  "fecha_sugerida": "2026-05-20"
 }
 ```
 
 ### Campos obligatorios:
-- `evidencia_asignacion_id`: ID de la asignación de evidencia (debe existir)
-- `motivo`: Mínimo 10 caracteres, máximo 300
-- `fecha_sugerida`: Fecha futura en formato YYYY-MM-DD
+- `evidencia_asignacion_id`: ID de la asignación de evidencia (debe existir en `EVIDENCIA_ASIGNACION`)
+- `motivo`: Mínimo 10, máximo **300** caracteres. Solo letras, números y puntuación básica
+- `fecha_sugerida`: Fecha futura en formato `YYYY-MM-DD` (estrictamente después de hoy)
 
 ### Respuesta exitosa (201):
 ```json
@@ -35,39 +42,94 @@ Accept: application/json
   "data": {
     "solicitud_ampliacion_id": 1,
     "evidencia_asignacion_id": 1,
+    "elemento_asignacion_id": null,
     "usuario_id": 5,
-    "fecha_solicitud": "2025-12-09T03:45:00.000000Z",
+    "fecha_solicitud": "2026-03-31T03:45:00.000000Z",
     "motivo": "Necesito más tiempo para recopilar la documentación...",
-    "fecha_sugerida": "2025-12-20T00:00:00.000000Z",
+    "fecha_sugerida": "2026-05-20T00:00:00.000000Z",
     "estado": "pendiente",
     "fecha_resolucion": null,
     "usuario_resolutor_id": null,
     "justificacion": null,
-    "created_at": "2025-12-09T03:45:00.000000Z",
-    "updated_at": "2025-12-09T03:45:00.000000Z",
     "evidencia_asignacion": {
       "evidencia_asignacion_id": 1,
       "evidencia_id": 10,
       "estado": "pendiente",
-      "fecha_limite": "2025-12-15T00:00:00.000000Z"
+      "fecha_limite": "2026-04-15T00:00:00.000000Z"
+    },
+    "elemento_asignacion": null,
+    "usuario": {
+      "usuario_id": 5,
+      "nombre": "María González",
+      "email": "maria@example.com"
+    },
+    "resolutor": null
+  }
+}
+```
+
+### 🔔 **Notificación enviada:**
+- Se envía email a todos los `Encargado de Acreditacion` de la carrera
+- Revisa `storage/logs/laravel.log` si `MAIL_MAILER=log`
+
+---
+
+## 1️⃣b **Crear Solicitud — Modelo Flexible**
+
+**Endpoint:** `POST http://localhost:8000/api/elementos-asignaciones/{id}/solicitud-ampliacion`
+
+**Servicio:** `FlexibleExtensionRequestService::createRequest()`
+
+El `{id}` de la URL es el `elemento_asignacion_id`. No se envía en el body.
+
+### Request Body (JSON):
+```json
+{
+  "motivo": "Necesito más tiempo para completar los documentos asignados al elemento.",
+  "fecha_sugerida": "2026-05-20"
+}
+```
+
+### Campos obligatorios:
+- `motivo`: Mínimo **10**, máximo **1000** caracteres
+- `fecha_sugerida`: Fecha futura en formato `YYYY-MM-DD`, debe ser estrictamente posterior a la `fecha_limite` actual de la asignación, y no puede exceder **30 días** desde esa fecha límite
+
+### Validaciones adicionales del servicio:
+- El usuario autenticado debe ser el dueño de la asignación (`usuario_id`)
+- No puede existir una solicitud `pendiente` para esa misma asignación
+
+### Respuesta exitosa (201):
+```json
+{
+  "data": {
+    "solicitud_ampliacion_id": 3,
+    "evidencia_asignacion_id": null,
+    "elemento_asignacion_id": 2,
+    "usuario_id": 5,
+    "motivo": "Necesito más tiempo para completar los documentos...",
+    "fecha_sugerida": "2026-05-20T00:00:00.000000Z",
+    "estado": "pendiente",
+    "fecha_resolucion": null,
+    "usuario_resolutor_id": null,
+    "justificacion": null,
+    "evidencia_asignacion": null,
+    "elemento_asignacion": {
+      "elemento_asignacion_id": 2,
+      "fecha_limite": "2026-04-15T00:00:00.000000Z",
+      "estado": "pendiente"
     },
     "usuario": {
       "usuario_id": 5,
       "nombre": "María González",
       "email": "maria@example.com"
     },
-    "resolutor": {
-      "usuario_id": null,
-      "nombre": null,
-      "email": null
-    }
+    "resolutor": null
   }
 }
 ```
 
 ### 🔔 **Notificación enviada:**
-- Se envía email a todos los `encargado_acreditacion`
-- Revisa `storage/logs/laravel.log` para ver el contenido
+- Misma lógica que el modelo tradicional: email a encargados + `event(ExtensionRequestCreated)` para notificaciones internas
 
 ---
 
@@ -220,7 +282,7 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
 ### Requiere:
 - Usuario con rol `encargado_acreditacion` o `admin`
 
-### Request Body (JSON):
+### Request Body (JSON) — opcional:
 ```json
 {
   "justificacion": "Se aprueba la extensión considerando la situación administrativa reportada."
@@ -228,7 +290,7 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
 ```
 
 ### Campos:
-- `justificacion`: Opcional al aprobar, máximo 500 caracteres
+- `justificacion`: Opcional al aprobar. Mínimo 10, máximo 500 caracteres
 
 ### Respuesta exitosa (200):
 ```json
@@ -237,13 +299,14 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
   "data": {
     "solicitud_ampliacion_id": 1,
     "estado": "aprobada",
-    "fecha_resolucion": "2025-12-09T04:00:00.000000Z",
+    "fecha_resolucion": "2026-03-31T04:00:00.000000Z",
     "usuario_resolutor_id": 2,
     "justificacion": "Se aprueba la extensión considerando...",
     "evidencia_asignacion": {
       "evidencia_asignacion_id": 1,
-      "fecha_limite": "2025-12-20T00:00:00.000000Z"
+      "fecha_limite": "2026-05-20T00:00:00.000000Z"
     },
+    "elemento_asignacion": null,
     "resolutor": {
       "usuario_id": 2,
       "nombre": "Carlos Pérez",
@@ -253,8 +316,10 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
 }
 ```
 
-### ⚠️ **Efecto:**
-- La `fecha_limite` de la asignación se actualiza a la fecha sugerida
+### ⚠️ **Efecto (patrón XOR):**
+- Si la solicitud es del **modelo tradicional**: se actualiza `EVIDENCIA_ASIGNACION.fecha_limite`
+- Si la solicitud es del **modelo flexible**: se actualiza `ELEMENTO_ASIGNACION.fecha_limite`
+- Nunca se actualizan ambas a la vez
 
 ---
 
@@ -273,7 +338,7 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
 ```
 
 ### Campos:
-- `justificacion`: **OBLIGATORIA** al rechazar, mínimo 10 caracteres, máximo 500
+- `justificacion`: **OBLIGATORIA** al rechazar, mínimo **10**, máximo **500** caracteres
 
 ### Respuesta exitosa (200):
 ```json
@@ -282,9 +347,11 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
   "data": {
     "solicitud_ampliacion_id": 1,
     "estado": "rechazada",
-    "fecha_resolucion": "2025-12-09T04:10:00.000000Z",
+    "fecha_resolucion": "2026-03-31T04:10:00.000000Z",
     "usuario_resolutor_id": 2,
     "justificacion": "La fecha solicitada excede...",
+    "evidencia_asignacion": { "fecha_limite": "2026-04-15T00:00:00.000000Z" },
+    "elemento_asignacion": null,
     "resolutor": {
       "usuario_id": 2,
       "nombre": "Carlos Pérez"
@@ -292,6 +359,9 @@ GET /api/solicitudes-ampliacion/pendientes?fecha_desde=2025-12-01&per_page=25&pa
   }
 }
 ```
+
+### ⚠️ **Efecto:**
+- La `fecha_limite` **no cambia** en ninguno de los dos modelos
 
 ---
 
@@ -371,34 +441,52 @@ GET /api/solicitudes-ampliacion?evidencia_asignacion_id=3&page=2
 
 ## ⚠️ **Validaciones y Errores**
 
-### Error 422 - Validación:
+### Error 422 — Validación fallida (tradicional):
 ```json
 {
   "success": false,
   "message": "Errores de validación",
   "errors": {
     "motivo": ["El motivo debe tener al menos 10 caracteres."],
-    "fecha_sugerida": ["La fecha sugerida debe ser posterior a hoy."]
+    "fecha_sugerida": ["La fecha sugerida debe ser posterior a hoy."],
+    "evidencia_asignacion_id": ["La asignación de evidencia no existe."]
   }
 }
 ```
 
-### Error 400 - Lógica de negocio:
+### Error 422 — Validación del servicio (flexible — reglas de negocio):
 ```json
 {
-  "message": "Error al crear la solicitud.",
-  "error": "Ya existe una solicitud pendiente para esta asignación."
+  "message": "Ya existe una solicitud de ampliación pendiente para esta asignación."
+}
+```
+```json
+{
+  "message": "La fecha sugerida debe ser posterior a la fecha límite actual (15/04/2026)."
+}
+```
+```json
+{
+  "message": "La ampliación no puede exceder 30 días desde la fecha límite actual."
 }
 ```
 
-### Error 403 - Sin autorización:
+### Error 400 — Lógica de resolución (aprobar/rechazar):
+```json
+{
+  "message": "Error al aprobar la solicitud.",
+  "error": "Solo se pueden aprobar solicitudes pendientes."
+}
+```
+
+### Error 403 — Sin autorización:
 ```json
 {
   "message": "This action is unauthorized."
 }
 ```
 
-### Error 404 - No encontrado:
+### Error 404 — No encontrado:
 ```json
 {
   "message": "Solicitud no encontrada."
@@ -420,23 +508,33 @@ Busca por: `"Nueva Solicitud de Ampliación - SAAC"`
 
 ## 🧪 **Pasos para Probar Flujo Completo**
 
-1. **Crear asignación de evidencia** (si no existe)
-2. **Crear solicitud** como usuario normal
-3. **Ver en logs** el email enviado a encargados
-4. **Listar pendientes** como encargado
-5. **Aprobar o rechazar** la solicitud
-6. **Verificar** que la fecha_limite se actualizó (si aprobada)
+### Flujo Tradicional (modelo evidencia):
+1. Verificar que exista una `EVIDENCIA_ASIGNACION` con un `evidencia_asignacion_id` válido
+2. **Crear solicitud** con `POST /api/solicitudes-ampliacion` como usuario normal
+3. Verificar en logs el email enviado a encargados
+4. **Listar pendientes** con `GET /api/solicitudes-ampliacion/pendientes` como encargado
+5. **Aprobar** con `POST /api/solicitudes-ampliacion/{id}/aprobar`
+6. Verificar que `EVIDENCIA_ASIGNACION.fecha_limite` se actualizó a `fecha_sugerida`
+
+### Flujo Flexible (modelo elemento):
+1. Verificar que exista un `ELEMENTO_ASIGNACION` con `elemento_asignacion_id` válido asignado al usuario autenticado
+2. **Crear solicitud** con `POST /api/elementos-asignaciones/{id}/solicitud-ampliacion`
+3. Verificar en logs el email enviado a encargados
+4. **Listar pendientes** con `GET /api/solicitudes-ampliacion/pendientes` como encargado (aparece junto a las tradicionales)
+5. **Aprobar** con `POST /api/solicitudes-ampliacion/{id}/aprobar`
+6. Verificar que `ELEMENTO_ASIGNACION.fecha_limite` se actualizó a `fecha_sugerida`
 
 ---
 
 ## 🔧 **Troubleshooting**
 
 ### Si no funciona la notificación:
-1. Verifica que `MAIL_MAILER=log` en `.env`
-2. Verifica que existan usuarios con rol `encargado_acreditacion`
+1. Verifica que `MAIL_MAILER=log` o `MAIL_MAILER=smtp` en `.env`
+2. Verifica que existan usuarios con rol `Encargado de Acreditacion` en la BD
 3. Revisa `storage/logs/laravel.log` para errores
+4. El email solo se envía a encargados con carrera asociada; si no hay coincidencia por carrera, se envía a todos los encargados del sistema
 
-### Si no puedes crear solicitud:
+### Si no puedes crear solicitud (tradicional):
 1. Verifica que la `evidencia_asignacion_id` existe
 2. Verifica que el usuario autenticado es el asignado
 3. Verifica que no hay solicitud pendiente para esa asignación

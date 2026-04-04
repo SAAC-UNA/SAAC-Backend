@@ -12,6 +12,16 @@ class StructureModelRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('activo')) {
+            $val = $this->input('activo');
+            if (is_string($val)) {
+                $this->merge(['activo' => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         $isUpdate = $this->isMethod('put') || $this->isMethod('patch');

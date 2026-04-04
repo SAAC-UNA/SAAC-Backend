@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ElementAssignment;
+use App\Models\StructureModel;
 
 class StructureElement extends Model
 {
@@ -23,12 +25,15 @@ class StructureElement extends Model
         'categoria',
         'nomenclatura',
         'descripcion',
-        'activo'
+        'activo',
+        'estado',
+        'fecha_limite',
     ];
 
     // Casts
     protected $casts = [
-        'activo' => 'boolean',
+        'activo'       => 'boolean',
+        'fecha_limite' => 'date',
     ];
 
     // ===== RELACIONES =====
@@ -48,6 +53,33 @@ class StructureElement extends Model
     {
         return $this->hasMany(StructureElement::class, 'padre_id', 'elemento_id')
                     ->orderBy('elemento_id');
+    }
+
+    /**
+     * Relation: An element has many user assignments (flexible model).
+     * HU-007
+     */
+    public function assignments()
+    {
+        return $this->hasMany(ElementAssignment::class, 'elemento_id', 'elemento_id');
+    }
+
+    /**
+     * Relation: An element has many direct files (flexible model).
+     * HU-008
+     */
+    public function files()
+    {
+        return $this->hasMany(File::class, 'elemento_id', 'elemento_id');
+    }
+
+    /**
+     * Relación: El modelo de estructura al que pertenece este elemento.
+     * Necesaria para verificar tipos_asignables (Estrategia 3).
+     */
+    public function modeloEstructura()
+    {
+        return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
 
     /**

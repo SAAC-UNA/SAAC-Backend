@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\EvidenceAssignment;
 use App\Models\Evidence;
 use App\Models\Process;
+use App\Models\StructureModel;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\File;
@@ -66,11 +67,25 @@ class EvidenceAssignmentService
         DB::beginTransaction();
         try {
             // Verificar existencia con Eloquent (evita N+1 si se reutiliza)
-            if (!Process::find($procesoId)) {
+            $proceso = Process::with('accreditationCycle.modeloEstructura')->find($procesoId);
+            if (!$proceso) {
                 throw new \Exception('El proceso especificado no existe.');
             }
-            if (!Evidence::find($evidenciaId)) {
+
+            $evidencia = Evidence::find($evidenciaId);
+            if (!$evidencia) {
                 throw new \Exception('La evidencia especificada no existe.');
+            }
+
+            // MODELO FLEXIBLE (HU-007 / Arquitectura B): el flujo flexible es
+            // PROCESO → ELEMENTO → ELEMENTO_ASIGNACION → ARCHIVO(elemento_id).
+            // EVIDENCIA_ASIGNACION solo existe en el modelo tradicional.
+            $tipoModelo = $proceso->accreditationCycle?->modeloEstructura?->tipo;
+            if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
+                throw new \InvalidArgumentException(
+                    'El proceso pertenece a un ciclo con modelo flexible. '
+                    . 'Use la API de asignaciones de elementos (POST /api/elementos-asignaciones) en su lugar.'
+                );
             }
 
             // Asignar a usuarios directamente

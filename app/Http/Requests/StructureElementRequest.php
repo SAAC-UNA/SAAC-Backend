@@ -16,6 +16,16 @@ class StructureElementRequest extends FormRequest
         return true; // Authorization handled by middleware
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('activo')) {
+            $val = $this->input('activo');
+            if (is_string($val)) {
+                $this->merge(['activo' => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)]);
+            }
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -78,6 +88,23 @@ class StructureElementRequest extends FormRequest
             'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
             'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],
             'activo'       => 'boolean',
+
+            // ── HU-012 (escritura flexible) — Gap 4 ──────────────────────────────────
+            // Campo opcional para crear ELEMENTO + EVIDENCIAs en una sola request
+            // (Opción 2 del documento COMPARACION_OPCIONES_ELEMENTO_EVIDENCIA.md).
+            //
+            // Reglas:
+            //  - Solo aplica en POST (create). En PUT/PATCH se ignora — las evidencias
+            //    se gestionan individualmente por POST /estructura/evidencias.
+            //  - Es opcional: si no viene o viene vacío, solo se crea el ELEMENTO.
+            //  - Solo válido para modelo_estructura tipo 'elemento_flexible'. Si el
+            //    modelo es 'tradicional', withValidator() devuelve error.
+            //  - Cada item solo necesita nomenclatura y descripcion; el estado y
+            //    elemento_id los asigna el servicio automáticamente.
+            // ─────────────────────────────────────────────────────────────────────────
+            'evidencias'                  => $isUpdate ? 'prohibited' : 'sometimes|nullable|array',
+            'evidencias.*.nomenclatura'   => 'required_with:evidencias|string|max:20|regex:/^[A-Za-z0-9.\-_]+$/',
+            'evidencias.*.descripcion'    => 'nullable|string|max:500|regex:/^[A-Za-zÀ-ÿ0-9 .,\-:;()]+$/',
         ];
     }
 
@@ -90,19 +117,26 @@ class StructureElementRequest extends FormRequest
     {
         return [
             'modelo_estructura_id.required' => 'El modelo de estructura es obligatorio.',
-            'modelo_estructura_id.exists' => 'El modelo de estructura seleccionado no es válido.',
-            'padre_id.exists' => 'El elemento padre seleccionado no existe.',
-            'padre_id.not_in' => 'Un elemento no puede ser su propio padre.',
-            'padre_id.same_model' => 'El elemento padre debe pertenecer al mismo modelo de estructura.',
-            'tipo.required'      => 'El tipo es obligatorio.',
-            'tipo.max'           => 'El tipo no puede exceder 30 caracteres.',
-            'tipo.regex'         => 'El tipo solo puede contener letras, números y espacios (ej: area, subarea, pauta, nivel1).',
-            'categoria.in'       => 'La categoría debe ser A, B, C o D.',
-            'nomenclatura.max'   => 'La nomenclatura no puede exceder 20 caracteres.',
-            'nomenclatura.regex' => 'La nomenclatura solo puede contener letras, números, puntos, guiones y guiones bajos (ej: AG-01, F1.1).',
-            'descripcion.max'    => 'La descripción no puede exceder 500 caracteres.',
-            'descripcion.regex'  => 'La descripción contiene caracteres no permitidos (no se permiten @, #, $, % u otros símbolos).',
-            'activo.boolean'     => 'El campo activo debe ser verdadero o falso.',
+            'modelo_estructura_id.exists'   => 'El modelo de estructura seleccionado no es válido.',
+            'padre_id.exists'               => 'El elemento padre seleccionado no existe.',
+            'padre_id.not_in'               => 'Un elemento no puede ser su propio padre.',
+            'padre_id.same_model'           => 'El elemento padre debe pertenecer al mismo modelo de estructura.',
+            'tipo.required'                 => 'El tipo es obligatorio.',
+            'tipo.max'                      => 'El tipo no puede exceder 30 caracteres.',
+            'tipo.regex'                    => 'El tipo solo puede contener letras, números y espacios (ej: area, subarea, pauta, nivel1).',
+            'categoria.in'                  => 'La categoría debe ser A, B, C o D.',
+            'nomenclatura.max'              => 'La nomenclatura no puede exceder 20 caracteres.',
+            'nomenclatura.regex'            => 'La nomenclatura solo puede contener letras, números, puntos, guiones y guiones bajos (ej: AG-01, F1.1).',
+            'descripcion.max'               => 'La descripción no puede exceder 500 caracteres.',
+            'descripcion.regex'             => 'La descripción contiene caracteres no permitidos (no se permiten @, #, $, % u otros símbolos).',
+            'activo.boolean'                => 'El campo activo debe ser verdadero o falso.',
+            // Mensajes para evidencias[] embebidas
+            'evidencias.prohibited'                 => 'No se pueden crear evidencias al actualizar un elemento. Use POST /estructura/evidencias.',
+            'evidencias.*.nomenclatura.required_with' => 'Cada evidencia debe tener nomenclatura.',
+            'evidencias.*.nomenclatura.max'            => 'La nomenclatura de evidencia no puede exceder 20 caracteres.',
+            'evidencias.*.nomenclatura.regex'          => 'La nomenclatura de evidencia solo permite letras, números, puntos, guiones y guiones bajos.',
+            'evidencias.*.descripcion.max'             => 'La descripción de evidencia no puede exceder 500 caracteres.',
+            'evidencias.*.descripcion.regex'           => 'La descripción de evidencia contiene caracteres no permitidos.',
         ];
     }
 }

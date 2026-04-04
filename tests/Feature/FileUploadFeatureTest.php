@@ -28,7 +28,6 @@ beforeEach(function () {
     // Mock Event para evitar efectos secundarios
     Event::fake();
     
-    // Create necessary ActionTypes for FileService
     ActionType::factory()->create([
         'tipo_accion_id' => 1,
         'descripcion' => 'file_upload'

@@ -31,9 +31,14 @@ use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\ElementFileController;
+use App\Http\Controllers\FlexibleExtensionRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AccreditationCycleController;
+
+use App\Http\Controllers\ElementAssignmentController;
 use App\Http\Controllers\CareerCampusController;
+
 
 // Dev Controllers (solo para pruebas)
 use App\Http\Controllers\DevUserController;
@@ -179,6 +184,9 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
     Route::middleware(['permission:elemento.view'])->group(function () {
         Route::get('estructura/elementos', [StructureElementController::class, 'index']);
+        Route::get('estructura/elementos/filter', [StructureElementController::class, 'filter']);
+        Route::get('estructura/elementos/export/excel', [StructureElementController::class, 'exportExcel']);
+        Route::get('estructura/elementos/export/pdf', [StructureElementController::class, 'exportPDF']);
         // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
         Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
     });
@@ -275,6 +283,30 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 });
 
 // ============================================
+// Element Assignments (HU-007 flexible model)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::middleware(['permission:asignaciones.view'])->group(function () {
+        Route::get('elementos-asignaciones', [ElementAssignmentController::class, 'index']);
+        Route::get('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'show']);
+        Route::get('elementos/{elementoId}/asignaciones', [ElementAssignmentController::class, 'byElement']);
+        Route::get('procesos/{procesoId}/elementos-asignaciones', [ElementAssignmentController::class, 'byProcess']);
+        Route::get('usuarios/{usuarioId}/elementos-asignados', [ElementAssignmentController::class, 'byUser']);
+    });
+
+    Route::post('elementos-asignaciones', [ElementAssignmentController::class, 'store'])
+        ->middleware('permission:asignaciones.create');
+    Route::match(['put', 'patch'], 'elementos-asignaciones/{id}', [ElementAssignmentController::class, 'update'])
+        ->middleware('permission:asignaciones.edit');
+    Route::post('elementos-asignaciones/{id}/retroalimentacion', [ElementAssignmentController::class, 'retroalimentar'])
+        ->middleware('permission:asignaciones.edit');
+    Route::post('elementos-asignaciones/{id}/solicitud-ampliacion', [ElementAssignmentController::class, 'storeExtension'])
+        ->middleware('permission:asignaciones.view');
+    Route::delete('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'destroy'])
+        ->middleware('permission:asignaciones.delete');
+});
+
+// ============================================
 // Solicitudes de Ampliación (HU-016 - ENCARGADO)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('solicitudes-ampliacion')->group(function () {
@@ -348,6 +380,40 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->grou
 
 // Acceso público mediante token (SIN autenticación - para SINAES/informes)
 Route::get('/p/{token}', [FileController::class, 'publicAccess']);
+
+// ============================================
+// Solicitudes de Ampliación - Modelo Flexible (HU-016b)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elemento-solicitudes-ampliacion')->group(function () {
+    Route::get('/', [FlexibleExtensionRequestController::class, 'index']);
+    Route::get('/pendientes', [FlexibleExtensionRequestController::class, 'pending']);
+    Route::get('/mis-solicitudes', [FlexibleExtensionRequestController::class, 'mySolicitudes']);
+    Route::get('/{id}', [FlexibleExtensionRequestController::class, 'show']);
+    Route::post('/', [FlexibleExtensionRequestController::class, 'store'])
+        ->middleware('throttle:10,1');
+    Route::post('/{id}/aprobar', [FlexibleExtensionRequestController::class, 'approve']);
+    Route::post('/{id}/rechazar', [FlexibleExtensionRequestController::class, 'reject']);
+});
+
+// ============================================
+// Archivos de Elementos (HU-008 modelo flexible)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elementos-archivos')->group(function () {
+    Route::get('/', [ElementFileController::class, 'index'])
+        ->middleware('permission:archivos.view');
+    Route::post('/', [ElementFileController::class, 'store'])
+        ->middleware(['throttle:10,1', 'permission:archivos.upload']);
+    Route::get('/{archivo}', [ElementFileController::class, 'show'])
+        ->middleware('permission:archivos.view');
+    Route::delete('/{archivo}', [ElementFileController::class, 'destroy'])
+        ->middleware('permission:archivos.delete');
+    Route::get('/{archivo}/download', [ElementFileController::class, 'download'])
+        ->middleware('permission:archivos.download');
+    Route::post('/{archivo}/make-public', [ElementFileController::class, 'makePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/{archivo}/revoke-public', [ElementFileController::class, 'revokePublic'])
+        ->middleware('permission:archivos.make_public');
+});
 
 // ============================================
 // Rutas de Gestión de Usuarios (HU-002)

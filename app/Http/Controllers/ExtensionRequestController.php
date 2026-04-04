@@ -6,7 +6,7 @@ use App\Models\ExtensionRequest;
 use App\Http\Requests\StoreExtensionRequestRequest;
 use App\Http\Requests\ReviewExtensionRequestRequest;
 use App\Http\Resources\ExtensionRequestResource;
-use App\Services\ExtensionRequestService;
+use App\Services\TradicionalExtensionRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +34,7 @@ class ExtensionRequestController extends Controller
     
     protected $service;
 
-    public function __construct(ExtensionRequestService $service)
+    public function __construct(TradicionalExtensionRequestService $service)
     {
         $this->service = $service;
     }

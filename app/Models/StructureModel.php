@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StructureModel extends Model
 {
+    use HasFactory;
     protected $table = 'MODELO_ESTRUCTURA';
     protected $primaryKey = 'modelo_estructura_id';
 
@@ -16,10 +18,12 @@ class StructureModel extends Model
         'tipo',
         'version',
         'activo',
+        'tipos_asignables',
     ];
 
     protected $casts = [
-        'activo' => 'boolean',
+        'activo'           => 'boolean',
+        'tipos_asignables' => 'array',
     ];
 
     // Constantes para tipos de modelo

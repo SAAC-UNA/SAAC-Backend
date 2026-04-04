@@ -36,15 +36,19 @@ class EvidenceRequest extends FormRequest
         }
 
         $rules = [
-            'criterio_id'         => [$isUpdate ? 'sometimes' : 'required','integer','exists:CRITERIO,criterio_id'],
-            'estado'              => [$isUpdate ? 'sometimes' : 'required', 'string', Rule::in(Evidence::ESTADOS)],
-            'descripcion'         => [
+            'criterio_id' => [
+                $isUpdate ? 'sometimes' : 'required',
+                'integer',
+                'exists:CRITERIO,criterio_id',
+            ],
+            'estado'      => [$isUpdate ? 'sometimes' : 'required', 'string', Rule::in(Evidence::ESTADOS)],
+            'descripcion' => [
                 $isUpdate ? 'sometimes' : 'required',
                 'string',
                 'max:80',
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ .,\-:;]+$/',
             ],
-            'nomenclatura'        => [$isUpdate ? 'sometimes' : 'required','string','max:20'],
+            'nomenclatura' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:20'],
         ];
 
         // Unicidad de "descripcion" (nombre) dentro del componente
@@ -66,7 +70,7 @@ class EvidenceRequest extends FormRequest
             $rules['descripcion'][] = $uniqueNombre;
         }
 
-        // Unicidad de "nomenclatura" dentro del mismo criterio (como ya tenías)
+        // Unicidad de nomenclatura dentro del mismo criterio (modelo tradicional)
         if (!is_null($criterioId)) {
             $uniqueNomen = Rule::unique($table, 'nomenclatura')
                 ->where(fn ($q) => $q->where('criterio_id', $criterioId));
@@ -84,27 +88,27 @@ class EvidenceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'criterio_id.required'         => 'El criterio es obligatorio.',
-            'criterio_id.exists'           => 'El criterio no existe.',
-            'estado.required' => 'El estado es obligatorio.',
-            'estado.in'       => 'El estado indicado no es válido.',
-            'descripcion.required'         => 'La descripción es obligatoria.',
-            'descripcion.regex'            => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
-            'descripcion.unique'           => 'Ya existe una evidencia con ese nombre en este componente.',
-            'nomenclatura.required'        => 'La nomenclatura es obligatoria.',
-            'nomenclatura.unique'          => 'Ya existe una evidencia con esa nomenclatura en este criterio.',
+            'criterio_id.exists'    => 'El criterio seleccionado no existe.',
+            'criterio_id.required'  => 'El criterio es obligatorio.',
+            'estado.required'       => 'El estado es obligatorio.',
+            'estado.in'             => 'El estado indicado no es válido.',
+            'descripcion.required'  => 'La descripción es obligatoria.',
+            'descripcion.regex'     => 'La descripción solo puede contener letras, espacios, puntos, comas, guiones, dos puntos y punto y coma.',
+            'descripcion.unique'    => 'Ya existe una evidencia con ese nombre en este componente.',
+            'nomenclatura.required' => 'La nomenclatura es obligatoria.',
+            'nomenclatura.unique'   => 'Ya existe una evidencia con esa nomenclatura en este criterio/elemento.',
         ];
     }
 
     public function withValidator($validator)
     {
-        if (in_array($this->method(), ['PUT','PATCH'])) {
-            $validator->after(function ($v) {
-                if (!$this->hasAny(['criterio_id', 'estado', 'descripcion', 'nomenclatura'])) {
-                    $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
-                }
-            });
-        }
+        $isUpdate = in_array($this->method(), ['PUT', 'PATCH']);
+
+        $validator->after(function ($v) use ($isUpdate) {
+            if ($isUpdate && !$this->hasAny(['criterio_id', 'estado', 'descripcion', 'nomenclatura'])) {
+                $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator)

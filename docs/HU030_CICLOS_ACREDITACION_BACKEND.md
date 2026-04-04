@@ -198,6 +198,38 @@ GET /estructura/ciclos-acreditacion?per_page=10
 
 ---
 
+## Adaptación al Modelo Flexible
+
+### Cambio implementado — Protección de coherencia al cambiar modelo (sprint 2)
+
+**Problema identificado:**
+`AccreditationCycleService::update()` permitía cambiar `modelo_estructura_id` libremente,
+incluso en ciclos que ya tenían procesos con evidencias creadas bajo el modelo anterior.
+Efecto: evidencias con `criterio_id` quedarían en un ciclo que dice ser `elemento_flexible`,
+o evidencias con `elemento_id` en un ciclo que dice ser `tradicional` — datos inconsistentes.
+
+**Cambio en `AccreditationCycleService::update()`:**
+Antes de actualizar, si el request incluye un `modelo_estructura_id` diferente al actual,
+se verifica si el ciclo ya tiene procesos. Si los tiene, se lanza `\InvalidArgumentException`
+con mensaje descriptivo.
+
+**Cambio en `AccreditationCycleController::update()`:**
+Se envuelve la llamada al service en `try/catch`. Si el service lanza `\InvalidArgumentException`,
+el controller retorna `422` con el mensaje de error.
+
+**Comportamiento resultante:**
+
+| Caso | Resultado |
+|---|---|
+| Cambiar `nombre`, `estado` u otros campos | ✅ Sin restricción |
+| Cambiar `modelo_estructura_id` en ciclo **sin** procesos | ✅ Permitido |
+| Cambiar `modelo_estructura_id` en ciclo **con** procesos | ❌ `422` con mensaje explicativo |
+
+### AC-M1 — Protección del modelo en ciclos con actividad
+- [x] `PATCH` cambiando `modelo_estructura_id` en ciclo sin procesos → `200` ✅
+- [x] `PATCH` cambiando `modelo_estructura_id` en ciclo con procesos → `422` con mensaje en español ✅
+- [x] `PATCH` sin cambiar `modelo_estructura_id` (mismo valor o campo ausente) → sin restricción ✅
+
 ## Usuarios de prueba (LDAP)
 
 | Usuario | Cédula | Rol | Permisos ciclos |
