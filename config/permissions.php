@@ -205,9 +205,7 @@ return [
             // Notificaciones (solo lectura)
             'notificaciones.view',
 
-            // Bitácora (lectura y exportación)
-            'bitacora.view',
-            'bitacora.export',
+
         ],
 
         'Encargado de Acreditación' => [
