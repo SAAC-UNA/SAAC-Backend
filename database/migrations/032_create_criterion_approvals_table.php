@@ -24,8 +24,8 @@ return new class extends Migration
             // Relación con usuario que aprueba (restrict: no borrar usuario si tiene aprobaciones)
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             
-            // Estado de la aprobación: 'aprobado' o 'rechazado'
-            $table->enum('estado', ['aprobado', 'rechazado']);
+            // Estado de la aprobación: 'aprobado', 'rechazado', 'pendiente' o 'incompleto'
+            $table->enum('estado', ['aprobado', 'rechazado', 'pendiente', 'incompleto']);
             
             // Comentario opcional de la aprobación/rechazo (máximo 100 caracteres)
             $table->string('comentario', 100)->nullable();

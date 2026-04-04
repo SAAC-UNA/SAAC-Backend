@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\ElementExtensionRequest;
 use App\Http\Requests\StoreElementExtensionTimeRequestRequest;
-use App\Http\Requests\UpdateElementExtensionTimeRequestRequest;
 use App\Http\Requests\ElementExtensionTimeRequestListRequest;
 use App\Http\Resources\ElementExtensionTimeRequestResource;
 use App\Services\ElementExtensionTimeRequestService;
@@ -118,69 +117,6 @@ class ElementExtensionTimeRequestController extends Controller
         } catch (\Exception $e) {
             Log::error('Error al crear solicitud de ampliación (elemento)', ['usuario_id' => Auth::id(), 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Ocurrió un error al crear la solicitud'], 500);
-        }
-    }
-
-    /**
-     * Actualiza una solicitud de elemento pendiente.
-     */
-    public function update(UpdateElementExtensionTimeRequestRequest $request, string $id): JsonResponse
-    {
-        try {
-            $extensionRequest = $this->service->getById((int)$id);
-
-            if (!$extensionRequest) {
-                return response()->json(['message' => 'Solicitud no encontrada.'], 404);
-            }
-
-            $this->authorize('update', $extensionRequest);
-
-            $solicitud = $this->service->updateRequest((int)$id, $request->validated(), Auth::id());
-
-            AuditLogService::log('editar', "Solicitud de ampliación (elemento) actualizada (ID: {$id})", 'Solicitudes Ampliación Elemento');
-
-            return response()->json([
-                'message' => 'Solicitud actualizada exitosamente.',
-                'data'    => new ElementExtensionTimeRequestResource($solicitud),
-            ], 200);
-
-        } catch (\Illuminate\Auth\Access\AuthorizationException) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['message' => 'No se puede actualizar la solicitud.', 'errors' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            Log::error('Error al actualizar solicitud (elemento)', ['solicitud_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error al actualizar la solicitud'], 500);
-        }
-    }
-
-    /**
-     * Elimina físicamente una solicitud de elemento pendiente.
-     */
-    public function destroy(string $id): JsonResponse
-    {
-        try {
-            $extensionRequest = $this->service->getById((int)$id);
-
-            if (!$extensionRequest) {
-                return response()->json(['message' => 'Solicitud no encontrada.'], 404);
-            }
-
-            $this->authorize('delete', $extensionRequest);
-
-            $this->service->deleteRequest((int)$id, Auth::id());
-
-            AuditLogService::log('eliminar', "Solicitud de ampliación (elemento) eliminada (ID: {$id})", 'Solicitudes Ampliación Elemento');
-
-            return response()->json(['message' => 'Solicitud eliminada exitosamente.'], 200);
-
-        } catch (\Illuminate\Auth\Access\AuthorizationException) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['message' => 'No se puede eliminar la solicitud.', 'errors' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            Log::error('Error al eliminar solicitud (elemento)', ['solicitud_id' => $id, 'error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error al eliminar la solicitud'], 500);
         }
     }
 

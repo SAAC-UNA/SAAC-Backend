@@ -337,12 +337,6 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
         Route::post('/', [ExtensionTimeRequestController::class, 'store'])
             ->middleware('throttle:10,1'); // Max 10 creaciones por minuto
 
-        // PUT: Actualizar solicitud pendiente
-        Route::put('/{id}', [ExtensionTimeRequestController::class, 'update']);
-
-        // DELETE: Eliminar solicitud pendiente
-        Route::delete('/{id}', [ExtensionTimeRequestController::class, 'destroy']);
-
         // PATCH: Cancelar solicitud (cambia estado a 'cancelada', no borra)
         Route::patch('/{id}/cancelar', [ExtensionTimeRequestController::class, 'cancel']);
     });
@@ -359,8 +353,6 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
         Route::get('/{id}', [ElementExtensionTimeRequestController::class, 'show']);
         Route::post('/', [ElementExtensionTimeRequestController::class, 'store'])
             ->middleware('throttle:10,1');
-        Route::put('/{id}', [ElementExtensionTimeRequestController::class, 'update']);
-        Route::delete('/{id}', [ElementExtensionTimeRequestController::class, 'destroy']);
         Route::patch('/{id}/cancelar', [ElementExtensionTimeRequestController::class, 'cancel']);
     });
 
@@ -372,6 +364,10 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
     Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
     Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
     Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+    // Aprobación individual de evidencias dentro de un bloque de criterio
+    Route::get('criterios/{criterionId}/evidencias/aprobaciones', [CriterionApprovalController::class, 'listEvidenceApprovals']);
+    Route::post('criterios/{criterionId}/evidencias/{evidenceId}/aprobar', [CriterionApprovalController::class, 'approveIndividualEvidence'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterionId}/evidencias/{evidenceId}/rechazar', [CriterionApprovalController::class, 'rejectIndividualEvidence'])->middleware('throttle:10,1');
 });
 
 // ============================================================

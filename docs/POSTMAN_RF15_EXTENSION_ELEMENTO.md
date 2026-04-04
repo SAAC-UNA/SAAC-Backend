@@ -1,4 +1,4 @@
-# Pruebas Postman Ã¢â‚¬â€ RF-15 Solicitudes de AmpliaciÃƒÂ³n (Tradicional y Flexible)
+﻿# Pruebas Postman Ã¢â‚¬â€ RF-15 Solicitudes de AmpliaciÃƒÂ³n (Tradicional y Flexible)
 
 GuÃƒÂ­a completa para los dos modelos de solicitudes de ampliaciÃƒÂ³n de plazo. Ambos estÃƒÂ¡n
 completamente separados: tablas distintas, rutas distintas, controllers distintos.
@@ -248,28 +248,6 @@ Authorization: Bearer {{token_marisol}}
 
 ---
 
-### 2.5 Actualizar solicitud flexible pendiente
-
-Solo se puede modificar `motivo` y/o `fecha_sugerida`. No se puede cambiar `elemento_asignacion_id`.
-
-```http
-PUT {{base_url}}/solicitudes-ampliacion-elemento/{{solicitud_flexible_id}}
-Authorization: Bearer {{token_marisol}}
-Content-Type: application/json
-
-{
-  "motivo": "ActualizaciÃƒÂ³n: se agrega requerimiento de documentaciÃƒÂ³n oficial del SINAES.",
-  "fecha_sugerida": "2026-08-15"
-}
-```
-
-**Intentar cambiar el ID de asignaciÃƒÂ³n Ã¢â€ â€™ 422 (campo prohibido):**
-```json
-{ "elemento_asignacion_id": 999 }
-```
-
----
-
 ### 2.6 Cancelar solicitud flexible
 
 Cancela sin eliminar Ã¢â‚¬â€ el registro permanece con estado `cancelada` para historial.
@@ -285,18 +263,6 @@ Authorization: Bearer {{token_marisol}}
 
 ---
 
-### 2.7 Eliminar solicitud flexible pendiente
-
-EliminaciÃƒÂ³n fÃƒÂ­sica Ã¢â‚¬â€ solo disponible mientras `estado = pendiente`.
-
-```http
-DELETE {{base_url}}/solicitudes-ampliacion-elemento/{{solicitud_flexible_id}}
-Authorization: Bearer {{token_marisol}}
-```
-
-**Respuesta 200:** `{ "message": "Solicitud eliminada exitosamente." }`
-
----
 
 ## 3. Modelo TRADICIONAL Ã¢â‚¬â€ `/api/solicitudes-ampliacion-tiempo`
 
@@ -345,16 +311,14 @@ Authorization: Bearer {{token_naydelin}}
 
 ---
 
-### 3.4 Ver, actualizar, cancelar, eliminar
+### 3.4 Ver y cancelar
 
 ```http
 GET    {{base_url}}/solicitudes-ampliacion-tiempo/{{solicitud_tradicional_id}}
-PUT    {{base_url}}/solicitudes-ampliacion-tiempo/{{solicitud_tradicional_id}}
 PATCH  {{base_url}}/solicitudes-ampliacion-tiempo/{{solicitud_tradicional_id}}/cancelar
-DELETE {{base_url}}/solicitudes-ampliacion-tiempo/{{solicitud_tradicional_id}}
 ```
 
-Mismas reglas que flexible. En PUT, `evidencia_asignacion_id` estÃƒÂ¡ prohibido.
+Mismas reglas que flexible.
 
 ---
 
@@ -516,14 +480,6 @@ Solo se permite **una** solicitud `pendiente` por asignaciÃ³n. Si ya existe un
     "elemento_asignacion_id": ["Ya tiene una solicitud de ampliaciÃ³n pendiente para esta asignaciÃ³n de elemento."]
   }
 }
-```
-
----
-
-### 5.5 Actualizar/cancelar/eliminar solicitud no-pendiente â†’ 422
-
-```json
-{ "message": "Solo se pueden actualizar solicitudes pendientes" }
 ```
 
 ---

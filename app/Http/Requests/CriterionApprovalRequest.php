@@ -24,8 +24,9 @@ class CriterionApprovalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proceso_id' => ['required', 'integer', 'exists:PROCESO,proceso_id'],
-            'comentario' => ['nullable', 'string', 'max:100']
+            'proceso_id'        => ['required', 'integer', 'exists:PROCESO,proceso_id'],
+            'comentario'        => ['nullable', 'string', 'max:500'],
+            'nueva_fecha_limite' => ['nullable', 'date', 'after:today'],
         ];
     }
 
@@ -41,7 +42,9 @@ class CriterionApprovalRequest extends FormRequest
             'proceso_id.integer' => 'El ID del proceso debe ser un número entero.',
             'proceso_id.exists' => 'El proceso especificado no existe.',
             'comentario.string' => 'El comentario debe ser una cadena de texto.',
-            'comentario.max' => 'El comentario no puede exceder 100 caracteres.'
+            'comentario.max'             => 'El comentario no puede exceder 500 caracteres.',
+            'nueva_fecha_limite.date'    => 'La nueva fecha límite debe ser una fecha válida.',
+            'nueva_fecha_limite.after'   => 'La nueva fecha límite debe ser posterior a hoy.',
         ];
     }
 
