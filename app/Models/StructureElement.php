@@ -22,6 +22,7 @@ class StructureElement extends Model
         'modelo_estructura_id',
         'padre_id',
         'tipo',
+        'nombre',
         'categoria',
         'nomenclatura',
         'descripcion',

@@ -14,6 +14,7 @@ return new class extends Migration
             $table->unsignedBigInteger('modelo_estructura_id')
                   ->comment('FK al modelo de estructura al que pertenece este elemento');
             $table->string('tipo', 30);
+            $table->string('nombre', 100)->nullable();
             $table->enum('categoria', ['A', 'B', 'C', 'D'])->nullable()
                   ->comment('Categoria de relevancia. Solo aplica para tipo=pauta');
             $table->string('nomenclatura', 20)->nullable();
