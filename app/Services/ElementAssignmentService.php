@@ -36,6 +36,51 @@ class ElementAssignmentService
     }
 
     /**
+     * Filter element assignments for the flexible model explorer.
+     * Used by GET /api/elementos-asignaciones/filtrar
+     */
+    public function filter(array $filters, User $user): array
+    {
+        $query = ElementAssignment::with(['element', 'user', 'process']);
+
+        if (!empty($filters['proceso_id'])) {
+            $query->where('proceso_id', (int) $filters['proceso_id']);
+        }
+
+        if (!empty($filters['elemento_id'])) {
+            $query->where('elemento_id', (int) $filters['elemento_id']);
+        }
+
+        if (!empty($filters['estado'])) {
+            $query->where('estado', $filters['estado']);
+        }
+
+        if (!empty($filters['usuario_id'])) {
+            $query->where('usuario_id', (int) $filters['usuario_id']);
+        }
+
+        // Usuarios sin rol de gestión solo ven sus propias asignaciones
+        if (!$user->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación'])) {
+            $query->where('usuario_id', $user->usuario_id);
+        }
+
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $page    = (int) ($filters['page'] ?? 1);
+
+        $paginated = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'data' => $paginated->items(),
+            'meta' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
+        ];
+    }
+
+    /**
      * Find an assignment by ID.
      */
     public function findById(int $id): ?ElementAssignment

@@ -31,6 +31,26 @@ class ElementAssignmentController extends Controller
     }
 
     /**
+     * GET /api/elementos-asignaciones/filtrar
+     * Explorador de pautas para el modelo flexible (equivalente a evidencias/filter).
+     */
+    public function filtrar(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'proceso_id'  => 'nullable|integer|exists:PROCESO,proceso_id',
+            'elemento_id' => 'nullable|integer|exists:ELEMENTO,elemento_id',
+            'estado'      => 'nullable|string|in:Pendiente,En Progreso,Completado,Vencido,Observada,Validada',
+            'usuario_id'  => 'nullable|integer|exists:USUARIO,usuario_id',
+            'per_page'    => 'nullable|integer|min:5|max:100',
+            'page'        => 'nullable|integer|min:1',
+        ]);
+
+        $result = $this->service->filter($filters, $request->user());
+
+        return response()->json($result, 200);
+    }
+
+    /**
      * POST /api/elementos-asignaciones
      * Assign an element to users and/or roles. HU-007 (flexible model).
      */

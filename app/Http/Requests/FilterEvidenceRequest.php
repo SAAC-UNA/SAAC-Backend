@@ -98,6 +98,14 @@ class FilterEvidenceRequest extends FormRequest
                 'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
             ],
 
+            // Filtro por Proceso de Acreditación (modelo flexible y tradicional)
+            // Ejemplo: { "proceso_id": 3 } retorna evidencias asignadas en ese proceso
+            'proceso_id' => [
+                'nullable',
+                'integer',
+                'exists:PROCESO,proceso_id',
+            ],
+
             // Filtro por Responsable (usuario asignado)
             // Ejemplo: { "responsable_id": 5 } busca evidencias asignadas a Ana García
             'responsable_id' => [
