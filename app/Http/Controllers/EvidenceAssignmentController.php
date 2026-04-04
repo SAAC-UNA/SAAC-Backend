@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceAssignment;
+use App\Models\User;
 use App\Http\Requests\EvidenceAssignmentRequest;
 use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
 use App\Http\Resources\EvidenceAssignmentResource;
@@ -11,6 +12,7 @@ use App\Events\EvidenceAssignmentDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class EvidenceAssignmentController extends Controller
 {
@@ -219,5 +221,57 @@ class EvidenceAssignmentController extends Controller
             'duplicados' => $duplicados->values(),
             'total_duplicados' => $duplicados->count(),
         ], 200);
+    }
+
+    /**
+     * GET /api/evidencias-asignaciones/catalogo/usuarios
+     * Catálogo mínimo de usuarios activos para formularios de asignación.
+     */
+    public function catalogUsers(): JsonResponse
+    {
+        $users = User::query()
+            ->active()
+            ->with('roles:id,name')
+            ->orderBy('nombre')
+            ->get(['usuario_id', 'nombre', 'email', 'status'])
+            ->map(function (User $user) {
+                return [
+                    'id' => $user->usuario_id,
+                    'name' => $user->nombre,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'roles' => $user->roles->map(function ($role) {
+                        return [
+                            'id' => $role->id,
+                            'name' => $role->name,
+                        ];
+                    })->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $users], 200);
+    }
+
+    /**
+     * GET /api/evidencias-asignaciones/catalogo/roles
+     * Catálogo mínimo de roles para formularios de asignación.
+     */
+    public function catalogRoles(): JsonResponse
+    {
+        $roles = Role::query()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(function (Role $role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'description' => null,
+                    'permissions' => [],
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $roles], 200);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\AccessResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,9 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $allPermissionCollection = $this->getAllPermissions();
+        $allPermissionNames = $allPermissionCollection->pluck('name')->values()->all();
+
         return [
             'id'          => $this->usuario_id,
             'name'        => $this->nombre,
@@ -38,7 +42,7 @@ class UserResource extends JsonResource
                     'label' => $descriptions[$permission->name] ?? $permission->name,
                 ];
             }),
-            'all_permissions' => $this->getAllPermissions()->map(function ($permission) {
+            'all_permissions' => $allPermissionCollection->map(function ($permission) {
                 $descriptions = config('permissions.descriptions', []);
                 return [
                     'id'    => $permission->id,
@@ -46,6 +50,7 @@ class UserResource extends JsonResource
                     'label' => $descriptions[$permission->name] ?? $permission->name,
                 ];
             }),
+            'all_capabilities' => AccessResolver::resolveCapabilities($allPermissionNames),
         ];
     }
 }

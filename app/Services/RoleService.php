@@ -140,7 +140,7 @@ class RoleService
         
         foreach ($modules as $module => $actions) {
             $modulePermissions = [];
-            
+
             foreach ($actions as $action) {
                 $permissionName = "{$module}.{$action}";
                 $modulePermissions[] = [
@@ -149,13 +149,11 @@ class RoleService
                     'label' => $descriptions[$permissionName] ?? $permissionName,
                 ];
             }
-            
-            // Generar nombre legible del módulo
-            $moduleName = ucfirst(str_replace('_', ' ', $module));
-            
+
             $structure[] = [
-                'module' => $module,
-                'name' => $moduleName,
+                'group' => $module,
+                'name' => ucfirst(str_replace('_', ' ', $module)),
+                'description' => null,
                 'permissions' => $modulePermissions,
             ];
         }

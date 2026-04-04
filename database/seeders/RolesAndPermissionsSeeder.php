@@ -65,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $administrador = Role::firstOrCreate(['name' => 'Administrador', 'guard_name' => 'api']);
         $profesor = Role::firstOrCreate(['name' => 'Profesor', 'guard_name' => 'api']);
         $encargado = Role::firstOrCreate(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
+        $asistente = Role::firstOrCreate(['name' => 'Asistente de Acreditación', 'guard_name' => 'api']);
 
         // Asignar permisos de HU-016 al rol "Encargado de Acreditación"
         $encargado->givePermissionTo([
@@ -72,6 +73,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'solicitudes_ampliacion.create',
             'solicitudes_ampliacion.approve',
             'solicitudes_ampliacion.reject',
+        ]);
+
+        // Perfil operativo similar para asistente de acreditación
+        $asistente->givePermissionTo([
+            'solicitudes_ampliacion.view',
+            'solicitudes_ampliacion.approve',
+            'solicitudes_ampliacion.reject',
+            'asignaciones.view',
+            'asignaciones.create',
+            'asignaciones.edit',
+            'evidencias.view',
+            'evidencias.assign',
+            'aprobaciones.view',
+            'reportes.generate',
+            'reportes.export',
         ]);
 
         // Usuario admin de prueba con múltiples roles para testing

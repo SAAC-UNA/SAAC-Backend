@@ -23,7 +23,7 @@ El sistema de permisos de SAAC-UNA está basado en **roles y permisos granulares
 ✅ **Roles protegidos** - 4 roles del sistema que no se pueden eliminar ni modificar  
 ✅ **Validación en backend** mediante Policies y Middleware  
 ✅ **API para frontend** para mostrar/ocultar elementos según permisos  
-✅ **Protección de rutas** granular en todas las operaciones CRUD  
+✅ **Protección de rutas** granular en todas las operaciones CRUD
 
 ### Arquitectura
 
@@ -37,18 +37,24 @@ Usuario → asignado a → Rol → contiene → Permisos → valida → Rutas/Ac
 
 ### Roles Protegidos vs Roles Personalizados
 
-**Roles Protegidos** (predefinidos por el sistema):
+✅ **Roles protegidos** - Roles base del sistema que no se pueden eliminar ni modificar
+
 - ✅ Superusuario
 - ✅ Administrador
 - ✅ Encargado de Acreditación
+  ✅ **Capacidades funcionales** derivadas para desacoplar UI de nombres técnicos de permisos
 - ✅ Profesor
 
 Estos roles **NO** pueden ser eliminados ni renombrados. Sus permisos pueden ser consultados pero están definidos en `config/permissions.php`.
 
 **Roles Personalizados**:
+
 - ✅ Pueden ser creados por el Superusuario
+- ✅ Asistente de Acreditación
 - ✅ Se les asignan permisos desde la interfaz
 - ✅ Pueden ser editados y eliminados (si no tienen usuarios asignados)
+
+Estos roles **NO** pueden ser eliminados ni renombrados. Sus permisos y capacidades se definen en `config/permissions.php` y `config/access.php`.
 
 ### API Endpoints para Gestión Dinámica
 
@@ -73,6 +79,36 @@ GET /api/roles/grouped
 // Response:
 {
   "protected": [
+
+### Contrato de Capacidades
+
+Las pantallas del frontend ya no dependen solo de permisos atómicos. También consumen capacidades funcionales derivadas desde backend.
+
+| Capacidad | Permisos equivalentes | Uso |
+|---|---|---|
+| `cap.admin.roles.manage` | `roles.create`, `roles.edit`, `roles.delete` | Menú y rutas de roles |
+| `cap.admin.users.manage` | `usuarios.create`, `usuarios.edit`, `usuarios.delete` | Menú y rutas de usuarios |
+| `cap.audit.view` | `bitacora.view` | Bitácora |
+| `cap.evidence.assign` | `evidencias.assign`, `asignaciones.create`, `asignaciones.edit` | Entregables / asignaciones |
+| `cap.evidence.view` | `evidencias.view`, `asignaciones.view` | Mis entregas |
+| `cap.evidence.upload` | `archivos.upload` | Subida de archivos |
+| `cap.extension.manage` | `solicitudes_ampliacion.approve`, `solicitudes_ampliacion.reject` | Gestionar solicitudes |
+| `cap.extension.view` | `solicitudes_ampliacion.view` | Mis solicitudes |
+| `cap.accreditation.process.view` | `procesos.view` | Procesos de acreditación |
+| `cap.accreditation.model.view` | `modelos.view` | Modelos |
+| `cap.accreditation.cycle.view` | `ciclos.view` | Ciclos |
+| `cap.improvement.access` | `compromisos_mejora.view`, `compromisos_mejora.create`, `compromisos_mejora.edit` | Compromisos de mejora |
+| `cap.approvals.view` | `aprobaciones.view` | Aprobaciones |
+| `cap.reports.access` | `reportes.generate`, `reportes.export` | Informes |
+
+### Aliases de Permisos
+
+Para tolerar cambios históricos de nombres entre módulos, el backend acepta equivalencias en `config/access.php`.
+
+| Permiso principal | Equivalencias |
+|---|---|
+| `evidencias.view` | `asignaciones.view` |
+| `evidencias.assign` | `asignaciones.create`, `asignaciones.edit` |
     { "id": 1, "name": "Superusuario", "is_protected": true, "users_count": 2 }
   ],
   "custom": [
@@ -98,10 +134,22 @@ PUT /api/roles/{id}
 DELETE /api/roles/{id}
 ```
 
+- ✅ Visualización de entregables y asignaciones
+- ✅ Operación sobre asignaciones de evidencias
+- ✅ Visualización/aprobación de solicitudes de ampliación
+- ✅ Visualización de aprobaciones
+- ✅ Generación y exportación de informes
+- ✅ Lectura de estructura académica para contexto operativo
+- ❌ No puede administrar usuarios
+- ❌ No puede administrar roles
+- ❌ No puede gestionar bitácora
+
 ### Validaciones del Sistema
 
 1. **Protección de roles del sistema**: Los roles protegidos no pueden ser eliminados.
-2. **Usuarios asignados**: Un rol personalizado no puede ser eliminado si tiene usuarios asignados.
+
+### 5. **Profesor**
+
 3. **Permisos solo del Superusuario**: Solo el Superusuario tiene permisos `roles.create`, `roles.edit`, `roles.delete`.
 4. **El Administrador puede ver roles**: Para asignar roles a usuarios, pero no crearlos/editarlos.
 
@@ -124,6 +172,7 @@ DELETE /api/roles/{id}
 **Descripción:** Gestión completa de su carrera específica.
 
 **Permisos:**
+
 - ✅ Gestión de usuarios de su carrera (crear, editar, eliminar)
 - ✅ Gestión completa de evidencias
 - ✅ Asignación de evidencias a profesores
@@ -141,6 +190,7 @@ DELETE /api/roles/{id}
 **Descripción:** Evaluación y aprobación de evidencias y criterios.
 
 **Permisos:**
+
 - ✅ Visualización de usuarios
 - ✅ Edición de estados de evidencias
 - ✅ Asignación de evidencias
@@ -159,6 +209,7 @@ DELETE /api/roles/{id}
 **Descripción:** Gestión de evidencias asignadas.
 
 **Permisos:**
+
 - ✅ Visualización de estructura académica (solo lectura)
 - ✅ Edición de evidencias **asignadas a él**
 - ✅ Subida y descarga de archivos
@@ -178,6 +229,7 @@ DELETE /api/roles/{id}
 Los permisos siguen el formato: `modulo.accion`
 
 **Acciones disponibles:**
+
 - `view` - Ver/listar
 - `create` - Crear
 - `edit` - Editar
@@ -193,27 +245,27 @@ Los permisos siguen el formato: `modulo.accion`
 
 ### Tabla de Permisos
 
-| Módulo | Permisos | Descripción |
-|--------|----------|-------------|
-| **usuarios** | view, create, edit, delete | Gestión de usuarios |
-| **roles** | view, create, edit, delete | Gestión de roles |
-| **universidades** | view, create, edit, delete | Estructura académica |
-| **campuses** | view, create, edit, delete | Sedes universitarias |
-| **carreras** | view, create, edit, delete | Carreras académicas |
-| **dimensiones** | view, create, edit, delete | Marco SINAES |
-| **componentes** | view, create, edit, delete | Marco SINAES |
-| **criterios** | view, create, edit, delete | Marco SINAES |
-| **estandares** | view, create, edit, delete | Marco SINAES |
-| **evidencias** | view, create, edit, delete, assign | Evidencias de acreditación |
-| **asignaciones** | view, create, edit, delete | Asignación de evidencias |
-| **archivos** | view, upload, download, delete, make_public | Gestión de archivos |
-| **solicitudes_ampliacion** | view, create, edit, delete, approve, reject | Solicitudes RF-15 |
-| **aprobaciones** | view, approve, reject | Aprobación de criterios |
-| **compromisos_mejora** | view, create, edit, delete | Compromisos de mejora |
-| **ciclos** | view, create, edit, delete | Ciclos de acreditación |
-| **reportes** | view, generate, export | Reportes del sistema |
-| **notificaciones** | view, create, delete | Notificaciones |
-| **bitacora** | view, export | Auditoría del sistema |
+| Módulo                     | Permisos                                    | Descripción                |
+| -------------------------- | ------------------------------------------- | -------------------------- |
+| **usuarios**               | view, create, edit, delete                  | Gestión de usuarios        |
+| **roles**                  | view, create, edit, delete                  | Gestión de roles           |
+| **universidades**          | view, create, edit, delete                  | Estructura académica       |
+| **campuses**               | view, create, edit, delete                  | Sedes universitarias       |
+| **carreras**               | view, create, edit, delete                  | Carreras académicas        |
+| **dimensiones**            | view, create, edit, delete                  | Marco SINAES               |
+| **componentes**            | view, create, edit, delete                  | Marco SINAES               |
+| **criterios**              | view, create, edit, delete                  | Marco SINAES               |
+| **estandares**             | view, create, edit, delete                  | Marco SINAES               |
+| **evidencias**             | view, create, edit, delete, assign          | Evidencias de acreditación |
+| **asignaciones**           | view, create, edit, delete                  | Asignación de evidencias   |
+| **archivos**               | view, upload, download, delete, make_public | Gestión de archivos        |
+| **solicitudes_ampliacion** | view, create, edit, delete, approve, reject | Solicitudes RF-15          |
+| **aprobaciones**           | view, approve, reject                       | Aprobación de criterios    |
+| **compromisos_mejora**     | view, create, edit, delete                  | Compromisos de mejora      |
+| **ciclos**                 | view, create, edit, delete                  | Ciclos de acreditación     |
+| **reportes**               | view, generate, export                      | Reportes del sistema       |
+| **notificaciones**         | view, create, delete                        | Notificaciones             |
+| **bitacora**               | view, export                                | Auditoría del sistema      |
 
 ---
 
@@ -258,6 +310,24 @@ return [
 
 ### Seeder
 
+### Estado actual de seeders
+
+Los seeders de seguridad están alineados con el contrato central:
+
+- `PermissionSeeder`: crea permisos y roles desde `config/permissions.php`.
+- `UserSeeder`: crea roles desde la config y asigna usuarios LDAP.
+- `RolesAndPermissionsSeeder`: se mantiene como alternativa combinada para escenarios de carga completa.
+
+### Asignación actual de usuarios seed
+
+| Usuario                         | Rol                       |
+| ------------------------------- | ------------------------- |
+| Naydelin Nayeli Jiron Castellon | Superusuario              |
+| Jose Andres Jara Arias          | Administrador             |
+| Marisol Hidalgo Murillo         | Profesor                  |
+| Ian Enmanuel Villegas Jimenez   | Encargado de Acreditación |
+| Ana Cristina Zuniga Cardenas    | Profesor                  |
+
 Los permisos se crean automáticamente ejecutando:
 
 ```bash
@@ -265,6 +335,7 @@ php artisan db:seed --class=PermissionSeeder
 ```
 
 El seeder:
+
 1. Lee la configuración de `config/permissions.php`
 2. Crea todos los permisos en la base de datos
 3. Crea los roles
@@ -330,7 +401,7 @@ public function update(Request $request, Evidence $evidence)
 {
     // Lanza excepción 403 si no tiene permiso
     $this->authorize('update', $evidence);
-    
+
     // Continuar con la lógica...
 }
 ```
@@ -409,33 +480,35 @@ if ($user->hasAllRoles(['Administrador', 'Profesor'])) {
 **URL:** `GET /api/auth/permissions`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 ```
 
 **Respuesta:**
+
 ```json
 {
-  "roles": ["Administrador"],
-  "permissions": [
-    "usuarios.view",
-    "usuarios.create",
-    "usuarios.edit",
-    "usuarios.delete",
-    "evidencias.view",
-    "evidencias.create",
-    "evidencias.edit",
-    "evidencias.delete",
-    "evidencias.assign",
-    // ...
-  ],
-  "permissions_with_descriptions": {
-    "usuarios.view": "Ver usuarios",
-    "usuarios.create": "Crear usuarios",
-    "evidencias.view": "Ver evidencias",
-    // ...
-  },
-  "direct_permissions": [] // Permisos asignados directamente (sin rol)
+    "roles": ["Administrador"],
+    "permissions": [
+        "usuarios.view",
+        "usuarios.create",
+        "usuarios.edit",
+        "usuarios.delete",
+        "evidencias.view",
+        "evidencias.create",
+        "evidencias.edit",
+        "evidencias.delete",
+        "evidencias.assign"
+        // ...
+    ],
+    "permissions_with_descriptions": {
+        "usuarios.view": "Ver usuarios",
+        "usuarios.create": "Crear usuarios",
+        "evidencias.view": "Ver evidencias"
+        // ...
+    },
+    "direct_permissions": [] // Permisos asignados directamente (sin rol)
 }
 ```
 
@@ -447,20 +520,20 @@ Authorization: Bearer {token}
 
 ```typescript
 // services/AuthService.ts
-import axios from 'axios';
+import axios from "axios";
 
 interface PermissionsResponse {
-  roles: string[];
-  permissions: string[];
-  permissions_with_descriptions: Record<string, string>;
-  direct_permissions: string[];
+    roles: string[];
+    permissions: string[];
+    permissions_with_descriptions: Record<string, string>;
+    direct_permissions: string[];
 }
 
 export class AuthService {
-  async getPermissions(): Promise<PermissionsResponse> {
-    const response = await axios.get('/api/auth/permissions');
-    return response.data;
-  }
+    async getPermissions(): Promise<PermissionsResponse> {
+        const response = await axios.get("/api/auth/permissions");
+        return response.data;
+    }
 }
 ```
 
@@ -543,16 +616,16 @@ export const usePermissions = () => {
 
 ```typescript
 // hooks/usePermissions.ts
-import { usePermissions } from '@/contexts/PermissionsContext';
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 export const useHasPermission = (permission: string): boolean => {
-  const { hasPermission } = usePermissions();
-  return hasPermission(permission);
+    const { hasPermission } = usePermissions();
+    return hasPermission(permission);
 };
 
 export const useHasRole = (role: string): boolean => {
-  const { hasRole } = usePermissions();
-  return hasRole(role);
+    const { hasRole } = usePermissions();
+    return hasRole(role);
 };
 ```
 
@@ -604,21 +677,21 @@ export const Can: React.FC<CanProps> = ({
 ### Ejemplo 1: Mostrar Botón Solo Si Tiene Permiso
 
 ```tsx
-import { Can } from '@/components/Can';
+import { Can } from "@/components/Can";
 
 function EvidenciasList() {
-  return (
-    <div>
-      <h1>Evidencias</h1>
-      
-      {/* Solo se muestra si tiene permiso evidencias.create */}
-      <Can permission="evidencias.create">
-        <button onClick={handleCreate}>Nueva Evidencia</button>
-      </Can>
-      
-      {/* Lista de evidencias... */}
-    </div>
-  );
+    return (
+        <div>
+            <h1>Evidencias</h1>
+
+            {/* Solo se muestra si tiene permiso evidencias.create */}
+            <Can permission="evidencias.create">
+                <button onClick={handleCreate}>Nueva Evidencia</button>
+            </Can>
+
+            {/* Lista de evidencias... */}
+        </div>
+    );
 }
 ```
 
@@ -627,33 +700,33 @@ function EvidenciasList() {
 ### Ejemplo 2: Deshabilitar Botón en Lugar de Ocultarlo
 
 ```tsx
-import { useHasPermission } from '@/hooks/usePermissions';
+import { useHasPermission } from "@/hooks/usePermissions";
 
 function EvidenciaCard({ evidencia }) {
-  const canEdit = useHasPermission('evidencias.edit');
-  const canDelete = useHasPermission('evidencias.delete');
-  
-  return (
-    <div className="card">
-      <h3>{evidencia.nombre}</h3>
-      
-      <button 
-        onClick={handleEdit} 
-        disabled={!canEdit}
-        title={!canEdit ? 'No tienes permiso para editar' : ''}
-      >
-        Editar
-      </button>
-      
-      <button 
-        onClick={handleDelete} 
-        disabled={!canDelete}
-        title={!canDelete ? 'No tienes permiso para eliminar' : ''}
-      >
-        Eliminar
-      </button>
-    </div>
-  );
+    const canEdit = useHasPermission("evidencias.edit");
+    const canDelete = useHasPermission("evidencias.delete");
+
+    return (
+        <div className="card">
+            <h3>{evidencia.nombre}</h3>
+
+            <button
+                onClick={handleEdit}
+                disabled={!canEdit}
+                title={!canEdit ? "No tienes permiso para editar" : ""}
+            >
+                Editar
+            </button>
+
+            <button
+                onClick={handleDelete}
+                disabled={!canDelete}
+                title={!canDelete ? "No tienes permiso para eliminar" : ""}
+            >
+                Eliminar
+            </button>
+        </div>
+    );
 }
 ```
 
@@ -662,32 +735,33 @@ function EvidenciaCard({ evidencia }) {
 ### Ejemplo 3: Ocultar Menú Según Rol
 
 ```tsx
-import { usePermissions } from '@/contexts/PermissionsContext';
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 function Sidebar() {
-  const { hasRole, hasPermission } = usePermissions();
-  
-  return (
-    <nav>
-      {/* Todos los usuarios ven esto */}
-      <MenuItem to="/dashboard">Dashboard</MenuItem>
-      
-      {/* Solo Administrador y Superusuario ven esto */}
-      {hasRole('Administrador') || hasRole('Superusuario') && (
-        <MenuItem to="/usuarios">Gestión de Usuarios</MenuItem>
-      )}
-      
-      {/* Solo quienes tengan el permiso ven esto */}
-      {hasPermission('bitacora.view') && (
-        <MenuItem to="/bitacora">Bitácora del Sistema</MenuItem>
-      )}
-      
-      {/* Solo Superusuario ve esto */}
-      {hasRole('Superusuario') && (
-        <MenuItem to="/admin/configuracion">Configuración</MenuItem>
-      )}
-    </nav>
-  );
+    const { hasRole, hasPermission } = usePermissions();
+
+    return (
+        <nav>
+            {/* Todos los usuarios ven esto */}
+            <MenuItem to="/dashboard">Dashboard</MenuItem>
+
+            {/* Solo Administrador y Superusuario ven esto */}
+            {hasRole("Administrador") ||
+                (hasRole("Superusuario") && (
+                    <MenuItem to="/usuarios">Gestión de Usuarios</MenuItem>
+                ))}
+
+            {/* Solo quienes tengan el permiso ven esto */}
+            {hasPermission("bitacora.view") && (
+                <MenuItem to="/bitacora">Bitácora del Sistema</MenuItem>
+            )}
+
+            {/* Solo Superusuario ve esto */}
+            {hasRole("Superusuario") && (
+                <MenuItem to="/admin/configuracion">Configuración</MenuItem>
+            )}
+        </nav>
+    );
 }
 ```
 
@@ -696,27 +770,27 @@ function Sidebar() {
 ### Ejemplo 4: Verificar Múltiples Permisos
 
 ```tsx
-import { Can } from '@/components/Can';
+import { Can } from "@/components/Can";
 
 function EvidenciaDetailPage() {
-  return (
-    <div>
-      <h1>Detalle de Evidencia</h1>
-      
-      {/* Se muestra si tiene CUALQUIERA de estos permisos (OR) */}
-      <Can anyPermissions={['evidencias.edit', 'evidencias.delete']}>
-        <div className="actions">
-          <button>Editar</button>
-          <button>Eliminar</button>
+    return (
+        <div>
+            <h1>Detalle de Evidencia</h1>
+
+            {/* Se muestra si tiene CUALQUIERA de estos permisos (OR) */}
+            <Can anyPermissions={["evidencias.edit", "evidencias.delete"]}>
+                <div className="actions">
+                    <button>Editar</button>
+                    <button>Eliminar</button>
+                </div>
+            </Can>
+
+            {/* Se muestra si tiene TODOS estos permisos (AND) */}
+            <Can allPermissions={["archivos.upload", "archivos.make_public"]}>
+                <button>Subir y Publicar Archivo</button>
+            </Can>
         </div>
-      </Can>
-      
-      {/* Se muestra si tiene TODOS estos permisos (AND) */}
-      <Can allPermissions={['archivos.upload', 'archivos.make_public']}>
-        <button>Subir y Publicar Archivo</button>
-      </Can>
-    </div>
-  );
+    );
 }
 ```
 
@@ -725,23 +799,21 @@ function EvidenciaDetailPage() {
 ### Ejemplo 5: Mostrar Mensaje Alternativo
 
 ```tsx
-import { Can } from '@/components/Can';
+import { Can } from "@/components/Can";
 
 function AdminPanel() {
-  return (
-    <Can 
-      role="Administrador"
-      fallback={
-        <div className="alert alert-warning">
-          No tienes acceso al panel de administración.
-        </div>
-      }
-    >
-      <div className="admin-panel">
-        {/* Contenido del panel... */}
-      </div>
-    </Can>
-  );
+    return (
+        <Can
+            role="Administrador"
+            fallback={
+                <div className="alert alert-warning">
+                    No tienes acceso al panel de administración.
+                </div>
+            }
+        >
+            <div className="admin-panel">{/* Contenido del panel... */}</div>
+        </Can>
+    );
 }
 ```
 
@@ -776,6 +848,7 @@ function AdminPanel() {
 ## ✅ Checklist de Implementación
 
 ### Backend
+
 - [x] Definir permisos en `config/permissions.php`
 - [x] Crear PermissionSeeder
 - [x] Implementar Policies para modelos críticos
@@ -784,6 +857,7 @@ function AdminPanel() {
 - [x] Ejecutar seeder para crear permisos
 
 ### Frontend
+
 - [ ] Crear PermissionsContext
 - [ ] Crear componente `<Can>`
 - [ ] Crear hooks `useHasPermission`, `useHasRole`
@@ -816,6 +890,7 @@ function AdminPanel() {
 ## 📞 Contacto y Soporte
 
 Para dudas sobre el sistema de permisos:
+
 - Revisar este documento
 - Consultar `config/permissions.php`
 - Revisar las Policies en `app/Policies/`

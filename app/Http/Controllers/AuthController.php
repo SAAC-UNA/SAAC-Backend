@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use App\Support\AccessResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -125,6 +126,7 @@ class AuthController extends Controller
             // Obtener todos los permisos efectivos del usuario
             // (incluye permisos directos + permisos heredados de roles)
             $allPermissions = $user->getAllPermissions()->pluck('name');
+            $capabilities = AccessResolver::resolveCapabilities($allPermissions->values()->all());
 
             // Obtener solo permisos directos (sin los de roles)
             $directPermissions = $user->permissions->pluck('name');
@@ -142,6 +144,7 @@ class AuthController extends Controller
             return response()->json([
                 'roles' => $roles,
                 'permissions' => $allPermissions->values(), // Array simple de permisos
+                'capabilities' => $capabilities,
                 'permissions_with_descriptions' => $permissionsWithDescriptions, // Objeto con descripciones
                 'direct_permissions' => $directPermissions->values(), // Permisos asignados directamente
             ], 200);
