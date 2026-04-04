@@ -171,6 +171,7 @@ class EvidenceService
         // HU-012 (modelo flexible): filtros contextuales por ciclo y modelo.
         $cicloId            = $filters['ciclo_acreditacion_id']  ?? null;
         $modeloEstructuraId = $filters['modelo_estructura_id']   ?? null;
+        $procesoId          = $filters['proceso_id']             ?? null;
         $estado             = $filters['estado']                 ?? null;
         $estadoId           = $filters['estado_evidencia_id']    ?? null;
         $fechaDesde         = $filters['fecha_desde']            ?? null;
@@ -235,6 +236,11 @@ class EvidenceService
         if ($modeloEstructuraId) {
             $query->whereHas('assignments.process.accreditationCycle', fn ($q) =>
                 $q->where('modelo_estructura_id', $modeloEstructuraId)
+            );
+        }
+        if ($procesoId) {
+            $query->whereHas('assignments', fn ($q) =>
+                $q->where('proceso_id', $procesoId)
             );
         }
         if ($estadoId) {
