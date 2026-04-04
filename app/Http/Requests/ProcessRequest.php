@@ -15,6 +15,16 @@ class ProcessRequest extends FormRequest
         return true; // Authorization handled by middleware
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('activo')) {
+            $val = $this->input('activo');
+            if (is_string($val)) {
+                $this->merge(['activo' => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)]);
+            }
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

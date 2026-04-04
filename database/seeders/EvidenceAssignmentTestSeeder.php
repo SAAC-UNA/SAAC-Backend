@@ -20,6 +20,13 @@ class EvidenceAssignmentTestSeeder extends Seeder
 
         echo "📝 Insertando datos de prueba para aprobación de criterios...\n";
 
+        // Obtener el primer usuario disponible dinámicamente
+        $primeroUsuarioId = DB::table('USUARIO')->value('usuario_id');
+        if (!$primeroUsuarioId) {
+            $this->command->warn('⚠️  EvidenceAssignmentTestSeeder omitido: no hay usuarios en BD.');
+            return;
+        }
+
         // Eliminar asignaciones previas de prueba
         DB::table('EVIDENCIA_ASIGNACION')
             ->whereIn('proceso_id', [1, 2])
@@ -39,7 +46,7 @@ class EvidenceAssignmentTestSeeder extends Seeder
             DB::table('EVIDENCIA_ASIGNACION')->insert([
                 'proceso_id' => 1,
                 'evidencia_id' => $evidenciaId,
-                'usuario_id' => 1,
+                'usuario_id' => $primeroUsuarioId,
                 'estado' => 'completado',
                 'fecha_asignacion' => now(),
                 'fecha_limite' => now()->addDays(30),
@@ -67,7 +74,7 @@ class EvidenceAssignmentTestSeeder extends Seeder
             DB::table('EVIDENCIA_ASIGNACION')->insert([
                 'proceso_id' => 2,
                 'evidencia_id' => $evidencia->evidencia_id,
-                'usuario_id' => 1,
+                'usuario_id' => $primeroUsuarioId,
                 'estado' => $estado,
                 'fecha_asignacion' => now(),
                 'fecha_limite' => now()->addDays(30),

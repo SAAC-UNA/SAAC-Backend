@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Evidence;
 use App\Models\StructureElement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +14,7 @@ class StructureElementService
     public function getAll(?string $tipo = null, ?int $modeloEstructuraId = null)
     {
         $cacheKey = "Elements.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
-        
+
         return Cache::remember($cacheKey, 300, function () use ($tipo, $modeloEstructuraId) {
             $query = StructureElement::orderBy('elemento_id');
 
@@ -70,24 +69,9 @@ class StructureElementService
      */
     public function create(array $data): StructureElement
     {
-        return DB::transaction(function () use ($data) {
-            $elemento = StructureElement::create([
-                'modelo_estructura_id' => $data['modelo_estructura_id'],
-                'padre_id'             => $data['padre_id'] ?? null,
-                'tipo'                 => $data['tipo'],
-                'categoria'            => $data['categoria'] ?? null,
-                'nomenclatura'         => $data['nomenclatura'] ?? null,
-                'descripcion'          => $data['descripcion'] ?? null,
-                'activo'               => $data['activo'] ?? true,
-            ]);
 
+        return $elemento;
 
-
-            $this->clearCache($data['tipo'] ?? null);
-
-            // Retornar elemento con evidencias ya cargadas para el response del controller
-            return $elemento->load('evidencias');
-        });
     }
 
     /**
@@ -96,12 +80,13 @@ class StructureElementService
     public function update(StructureElement $elemento, array $data): StructureElement
     {
         $elemento->update([
-            'padre_id'     => $data['padre_id'] ?? $elemento->padre_id,
-            'tipo'         => $data['tipo'] ?? $elemento->tipo,
-            'categoria'    => $data['categoria'] ?? $elemento->categoria,
+            'padre_id' => $data['padre_id'] ?? $elemento->padre_id,
+            'tipo' => $data['tipo'] ?? $elemento->tipo,
+            'nombre' => array_key_exists('nombre', $data) ? $data['nombre'] : $elemento->nombre,
+            'categoria' => $data['categoria'] ?? $elemento->categoria,
             'nomenclatura' => $data['nomenclatura'] ?? $elemento->nomenclatura,
-            'descripcion'  => $data['descripcion'] ?? $elemento->descripcion,
-            'activo'       => $data['activo'] ?? $elemento->activo,
+            'descripcion' => $data['descripcion'] ?? $elemento->descripcion,
+            'activo' => $data['activo'] ?? $elemento->activo,
         ]);
 
         $this->clearCache($elemento->tipo, $elemento->modelo_estructura_id);
@@ -146,7 +131,7 @@ class StructureElementService
     // public function getTree(?int $rootId = null, ?int $modeloEstructuraId = null)
     // {
     //     $cacheKey = "jerarquia.tree.{$rootId}.modelo.{$modeloEstructuraId}";
-    //     
+    //
     //     return Cache::remember($cacheKey, 300, function () use ($rootId, $modeloEstructuraId) {
     //         $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $modeloEstructuraId]);
     //         return array_map(fn($r) => (array) $r, $rows);

@@ -56,15 +56,28 @@ class ImprovementCommitmentSeeder extends Seeder
             ->whereIn('proceso_id', $procesosParaSeed->pluck('proceso_id'))
             ->get();
 
+        // Obtener IDs reales de evidencias disponibles en la DB
+        $todosLosIds = DB::table('EVIDENCIA')->pluck('evidencia_id')->toArray();
+
+        if (empty($todosLosIds)) {
+            $this->command->warn('⚠️  No hay evidencias en la DB, se omite la vinculación');
+            $this->command->info("✅ " . count($compromisos) . " compromisos de mejora creados (sin evidencias vinculadas)");
+            return;
+        }
+
+        // Dividir los IDs disponibles en 4 grupos para rotar entre compromisos
+        $chunks = array_chunk($todosLosIds, max(1, (int) ceil(count($todosLosIds) / 4)));
+        $grupos = [
+            0 => array_slice($chunks[0] ?? [], 0, 3),
+            1 => array_slice($chunks[1] ?? $chunks[0], 0, 2),
+            2 => array_slice($chunks[2] ?? $chunks[0], 0, 3),
+            3 => array_slice($chunks[3] ?? $chunks[0], 0, 3),
+        ];
+
         $evidenciasPivot = [];
         foreach ($compromisosCreados as $compromiso) {
-            // Asignar diferentes evidencias según el compromiso
-            $evidenciasIds = match($compromiso->compromiso_mejora_id % 4) {
-                1 => [1, 2, 3],      // Compromiso 1: evidencias 20, 21, 22
-                2 => [4, 5],         // Compromiso 2: evidencias 23, 24
-                3 => [10, 11, 12],   // Compromiso 3: evidencias 40, 41, 42
-                0 => [7, 8, 9],      // Compromiso 4: evidencias 26, 27, 28
-            };
+            $grupo = $compromiso->compromiso_mejora_id % 4;
+            $evidenciasIds = $grupos[$grupo];
 
             foreach ($evidenciasIds as $evidenciaId) {
                 $evidenciasPivot[] = [

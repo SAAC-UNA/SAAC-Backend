@@ -5,7 +5,7 @@ namespace App\Observers;
 use App\Models\CriterionApproval;
 use App\Models\EvidenceApproval;
 use App\Models\EvidenceAssignment;
-use App\Services\EvidenceService;
+use App\Services\TradicionalEvidenceService;
 
 /**
  * Cascada de estados: EVIDENCIA_ASIGNACION → EVIDENCIA → CRITERIO
@@ -18,7 +18,7 @@ use App\Services\EvidenceService;
 class EvidenceAssignmentObserver
 {
     public function __construct(
-        private readonly EvidenceService $evidenceService
+        private readonly TradicionalEvidenceService $evidenceService
     ) {}
 
     /** Se llama cuando el profesor actualiza su asignación (En Progreso, Completado, etc.) */

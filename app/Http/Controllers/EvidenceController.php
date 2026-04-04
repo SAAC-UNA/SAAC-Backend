@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Evidence;
 use Illuminate\Database\QueryException;
 use App\Http\Resources\EvidenceResource;
-use App\Services\EvidenceService;
+use App\Services\TradicionalEvidenceService;
+use App\Services\TradicionalEvidenceFilterService;
 use App\Http\Requests\EvidenceRequest;
 use App\Http\Requests\FilterEvidenceRequest;
 use App\Http\Requests\RetroalimentacionRequest;
@@ -16,11 +17,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class EvidenceController extends Controller
 {
-    protected $service; // Service
+    protected TradicionalEvidenceService $service;
+    protected TradicionalEvidenceFilterService $filterService;
 
-    public function __construct(EvidenceService $service)
-    {
-        $this->service = $service;
+    public function __construct(
+        TradicionalEvidenceService $service,
+        TradicionalEvidenceFilterService $filterService
+    ) {
+        $this->service       = $service;
+        $this->filterService = $filterService;
     }
     /**
      * GET /api/estructura/evidencias
@@ -189,16 +194,11 @@ class EvidenceController extends Controller
      */
     public function filter(FilterEvidenceRequest $request)
     {
-        // Obtener usuario autenticado (necesario para restricciones por rol)
-        $user = $request->user();
-
-        // Obtener filtros validados
+        $user    = $request->user();
         $filters = $request->validated();
 
-        // Llamar al servicio que implementa la lógica de filtrado
-        $paginatedResults = $this->service->filterEvidences($filters, $user);
+        $paginatedResults = $this->filterService->filter($filters, $user);
 
-        // Retornar colección paginada con metadata
         return EvidenceResource::collection($paginatedResults)->response();
     }
 
@@ -215,8 +215,8 @@ class EvidenceController extends Controller
         $filters = $request->validated();
 
         // Obtener evidencias sin paginación para exportar
-        $filters['per_page'] = 999999; // Sin límite
-        $evidences = $this->service->filterEvidences($filters, $user)->items();
+        $filters['per_page'] = 999999;
+        $evidences = $this->filterService->filter($filters, $user)->items();
 
         // Convertir a Collection para el export
         $collection = collect($evidences);
@@ -243,7 +243,7 @@ class EvidenceController extends Controller
 
         // Obtener evidencias sin paginación
         $filters['per_page'] = 999999;
-        $evidences = $this->service->filterEvidences($filters, $user)->items();
+        $evidences = $this->filterService->filter($filters, $user)->items();
 
         // Convertir a Collection
         $collection = collect($evidences);

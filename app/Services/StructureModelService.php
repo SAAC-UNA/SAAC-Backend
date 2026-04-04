@@ -7,12 +7,14 @@ use App\Models\File;
 use App\Models\Process;
 use App\Models\StructureElement;
 use App\Models\StructureModel;
-use App\Services\FileService;
+use App\Services\FileStorageFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class StructureModelService
 {
+    public function __construct(private readonly FileStorageFactory $factory) {}
+
     /**
      * Obtener todos los modelos de estructura
      */
@@ -139,8 +141,6 @@ class StructureModelService
         $summary = $this->getDeleteSummary($model);
 
         DB::transaction(function () use ($model) {
-            $fileService = app(FileService::class);
-
             $cicloIds = AccreditationCycle::where('modelo_estructura_id', $model->modelo_estructura_id)
                 ->pluck('ciclo_acreditacion_id');
 
@@ -152,7 +152,7 @@ class StructureModelService
                     // 1. Borrar archivos físicos + registros (restrict en proceso_id)
                     File::whereIn('proceso_id', $procesoIds)
                         ->get()
-                        ->each(fn (File $archivo) => $fileService->deleteFile($archivo));
+                        ->each(fn (File $archivo) => $this->factory->makeFromFile($archivo)->deleteFile($archivo));
 
                     // 2. Borrar solicitudes de ampliación (restrict en evidencia_asignacion_id)
                     $asignacionIds = DB::table('EVIDENCIA_ASIGNACION')

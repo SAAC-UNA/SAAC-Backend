@@ -6,10 +6,13 @@ use App\Models\Autoevaluation;
 use App\Models\File;
 use App\Models\ImprovementCommitment;
 use App\Models\Process;
+use App\Services\FileStorageFactory;
 use Illuminate\Support\Facades\DB;
 
 class ProcessService
 {
+    public function __construct(private readonly FileStorageFactory $factory) {}
+
     /**
      * Obtener todos los procesos con relaciones.
      */
@@ -111,10 +114,9 @@ class ProcessService
     {
         DB::transaction(function () use ($process) {
             // 1. Borrar archivos físicos + registros (restrict en proceso_id)
-            $fileService = app(FileService::class);
             File::where('proceso_id', $process->proceso_id)
                 ->get()
-                ->each(fn (File $archivo) => $fileService->deleteFile($archivo));
+                ->each(fn (File $archivo) => $this->factory->makeFromFile($archivo)->deleteFile($archivo));
 
             // 2. Borrar solicitudes de ampliación (restrict en evidencia_asignacion_id)
             $asignacionIds = DB::table('EVIDENCIA_ASIGNACION')

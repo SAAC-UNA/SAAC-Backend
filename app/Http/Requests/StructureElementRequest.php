@@ -16,6 +16,16 @@ class StructureElementRequest extends FormRequest
         return true; // Authorization handled by middleware
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('activo')) {
+            $val = $this->input('activo');
+            if (is_string($val)) {
+                $this->merge(['activo' => filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)]);
+            }
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -74,6 +84,7 @@ class StructureElementRequest extends FormRequest
             'tipo' => $isUpdate
                 ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/']
                 : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/'],
+            'nombre'       => ['nullable', 'string', 'max:100'],
             'categoria'    => 'nullable|in:A,B,C,D',
             'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
             'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/'],

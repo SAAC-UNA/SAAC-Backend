@@ -49,8 +49,9 @@ class FileResource extends JsonResource
             
             // Relaciones
             'evidencia_id' => $this->evidencia_id,
+            'elemento_id'  => $this->elemento_id,
             'evidencia' => $this->when(
-                $this->relationLoaded('evidence'),
+                $this->relationLoaded('evidence') && $this->evidence !== null,
                 fn() => [
                     'evidencia_id' => $this->evidence->evidencia_id,
                     'nombre' => $this->evidence->nombre,

@@ -4,17 +4,35 @@ namespace App\Http\Controllers;
 
 use App\Models\StructureElement;
 use App\Services\StructureElementService;
+use App\Services\FilterElementService;
 use App\Services\AuditLogService;
+use App\Exports\ElementsExport;
 use App\Http\Requests\StructureElementRequest;
+use App\Http\Requests\FilterElementRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class StructureElementController extends Controller
 {
     protected $service;
+    protected FilterElementService $filterService;
 
-    public function __construct(StructureElementService $service)
+    public function __construct(StructureElementService $service, FilterElementService $filterService)
     {
-        $this->service = $service;
+        $this->service       = $service;
+        $this->filterService = $filterService;
+    }
+
+    /**
+     * GET /api/estructura/elementos/filter
+     * Filtrado avanzado de elementos (modelo flexible).
+     */
+    public function filter(FilterElementRequest $request)
+    {
+        $user    = $request->user();
+        $filters = $request->validated();
+        $result  = $this->filterService->filter($filters, $user);
+        return response()->json($result, 200);
     }
 
     /**
@@ -82,9 +100,8 @@ class StructureElementController extends Controller
         );
 
         return response()->json([
-            'message'   => 'Elemento creado correctamente.',
-            'data'      => $item,
-            'evidencias' => $item->evidencias,
+            'message' => 'Elemento creado correctamente.',
+            'data'    => $item,
         ], 201);
     }
 
@@ -177,5 +194,46 @@ class StructureElementController extends Controller
             'message' => "Elemento {$statusText} correctamente.{$cascadeMessage}",
             'active'  => $newActiveState,
         ], 200);
+    }
+
+    /**
+     * GET /api/estructura/elementos/export/excel
+     * Exportar elementos filtrados a Excel.
+     */
+    public function exportExcel(FilterElementRequest $request)
+    {
+        $user    = $request->user();
+        $filters = $request->validated();
+
+        $filters['per_page'] = 999999;
+        $elements = $this->filterService->filter($filters, $user)->items();
+
+        $collection = collect($elements);
+        $exporter   = new ElementsExport($collection);
+        $filePath   = $exporter->generate();
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * GET /api/estructura/elementos/export/pdf
+     * Exportar elementos filtrados a PDF.
+     */
+    public function exportPDF(FilterElementRequest $request)
+    {
+        $user    = $request->user();
+        $filters = $request->validated();
+
+        $filters['per_page'] = 999999;
+        $elements = $this->filterService->filter($filters, $user)->items();
+
+        $collection = collect($elements);
+
+        $pdf = Pdf::loadView('exports.elements', ['elements' => $collection])
+            ->setPaper('a4', 'landscape');
+
+        $filename = 'elementos_' . now()->format('Y-m-d_His') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }

@@ -6,16 +6,20 @@ use App\Models\ElementAssignment;
 use App\Http\Requests\ElementAssignmentRequest;
 use App\Http\Requests\RetroalimentacionRequest;
 use App\Services\ElementAssignmentService;
+use App\Services\FlexibleExtensionRequestService;
+use App\Events\ExtensionRequestCreated;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ElementAssignmentController extends Controller
 {
     protected ElementAssignmentService $service;
+    protected FlexibleExtensionRequestService $extensionService;
 
-    public function __construct(ElementAssignmentService $service)
+    public function __construct(ElementAssignmentService $service, FlexibleExtensionRequestService $extensionService)
     {
-        $this->service = $service;
+        $this->service          = $service;
+        $this->extensionService = $extensionService;
     }
 
     /**
@@ -45,6 +49,10 @@ class ElementAssignmentController extends Controller
                 ],
             ], 201);
 
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error processing assignments.',
@@ -187,7 +195,7 @@ class ElementAssignmentController extends Controller
         ]);
 
         try {
-            $solicitud = $this->service->solicitarAmpliacion(
+            $solicitud = $this->extensionService->createRequest(
                 $assignment,
                 $validated,
                 $request->user()->usuario_id
@@ -195,6 +203,8 @@ class ElementAssignmentController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+
+        event(new ExtensionRequestCreated($solicitud));
 
         return response()->json(['data' => $solicitud->load(['user'])], 201);
     }

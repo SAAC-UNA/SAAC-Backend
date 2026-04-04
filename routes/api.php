@@ -1,50 +1,46 @@
 <?php
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\App;
-use Illuminate\Http\Request;
 
+use App\Http\Controllers\AccreditationCycleController;
+use App\Http\Controllers\ActionTypeController;
+use App\Http\Controllers\AuditLogController;
 // Models
-use App\Models\Process;
-use App\Models\AccreditationCycle;
-
-// Controllers
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UniversityController;
+// Controllers
 use App\Http\Controllers\CampusController;
+use App\Http\Controllers\CareerCampusController;
 use App\Http\Controllers\CareerController;
-use App\Http\Controllers\DimensionController;
 use App\Http\Controllers\ComponentController;
+use App\Http\Controllers\CriterionApprovalController;
 use App\Http\Controllers\CriterionController;
-use App\Http\Controllers\EvidenceController;
-use App\Http\Controllers\StructureElementController;
-use App\Http\Controllers\StructureModelController;
-use App\Http\Controllers\ProcessController;
+use App\Http\Controllers\DevCommentController;
+use App\Http\Controllers\DevUserController;
+use App\Http\Controllers\DimensionController;
+use App\Http\Controllers\ElementApprovalController;
+use App\Http\Controllers\ElementAssignmentController;
+use App\Http\Controllers\ElementCommitmentController;
+use App\Http\Controllers\ElementExtensionTimeRequestController;
+use App\Http\Controllers\ElementFileController;
 use App\Http\Controllers\EvidenceAssignmentController;
+use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
-use App\Http\Controllers\ElementExtensionTimeRequestController;
-use App\Http\Controllers\StandardController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\AuditLogController;
-use App\Http\Controllers\ActionTypeController;
-use App\Http\Controllers\ImprovementCommitmentController;
-use App\Http\Controllers\ElementCommitmentController;
-use App\Http\Controllers\CriterionApprovalController;
-use App\Http\Controllers\ElementApprovalController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\FlexibleExtensionRequestController;
+use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\AccreditationCycleController;
-
-use App\Http\Controllers\CareerCampusController;
-
-use App\Http\Controllers\ElementAssignmentController;
-
-
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProcessController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\StandardController;
+use App\Http\Controllers\StructureElementController;
+use App\Http\Controllers\StructureModelController;
+use App\Http\Controllers\UniversityController;
+use App\Http\Controllers\UserController;
+use App\Models\AccreditationCycle;
+use Illuminate\Http\Request;
 // Dev Controllers (solo para pruebas)
-use App\Http\Controllers\DevUserController;
-use App\Http\Controllers\DevCommentController;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Route;
 
 // ============================================
 // Rutas de Autenticación
@@ -63,7 +59,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // Rutas de Estructura (protegidas con permisos)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
-    
+
     // ===== UNIVERSIDADES =====
     Route::middleware(['permission:universidades.view'])->group(function () {
         Route::get('estructura/universidades', [UniversityController::class, 'index']);
@@ -77,7 +73,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:universidades.delete');
     Route::patch('estructura/universidades/{id}/active', [UniversityController::class, 'setActive'])
         ->middleware('permission:universidades.edit');
-    
+
     // ===== CAMPUSES =====
     Route::middleware(['permission:campuses.view'])->group(function () {
         Route::get('estructura/campuses', [CampusController::class, 'index']);
@@ -89,7 +85,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:campuses.edit');
     Route::delete('estructura/campuses/{campus}', [CampusController::class, 'destroy'])
         ->middleware('permission:campuses.delete');
-    
+
     // ===== CARRERAS =====
     Route::middleware(['permission:carreras.view'])->group(function () {
         Route::get('estructura/carreras', [CareerController::class, 'index']);
@@ -103,7 +99,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:carreras.delete');
     Route::patch('estructura/carreras/{id}/active', [CareerController::class, 'setActive'])
         ->middleware('permission:carreras.edit');
-    
+
     // ===== DIMENSIONES =====
     Route::middleware(['permission:dimensiones.view'])->group(function () {
         Route::get('estructura/dimensiones', [DimensionController::class, 'index']);
@@ -117,8 +113,8 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:dimensiones.delete');
     Route::patch('estructura/dimensiones/{id}/active', [DimensionController::class, 'setActive'])
         ->middleware('permission:dimensiones.edit');
-    
-    // ===== COMPONENTES =====    
+
+    // ===== COMPONENTES =====
     Route::middleware(['permission:componentes.view'])->group(function () {
         Route::get('estructura/componentes', [ComponentController::class, 'index']);
         Route::get('estructura/componentes/{component}', [ComponentController::class, 'show']);
@@ -131,7 +127,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:componentes.delete');
     Route::patch('estructura/componentes/{id}/active', [ComponentController::class, 'setActive'])
         ->middleware('permission:componentes.edit');
-    
+
     // ===== CRITERIOS =====
     Route::middleware(['permission:criterios.view'])->group(function () {
         Route::get('estructura/criterios', [CriterionController::class, 'index']);
@@ -145,7 +141,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:criterios.delete');
     Route::patch('estructura/criterios/{id}/active', [CriterionController::class, 'setActive'])
         ->middleware('permission:criterios.edit');
-    
+
     // ===== EVIDENCIAS ===== (HU-012: Filtrado avanzado DEBE ir ANTES de apiResource)
     Route::middleware(['permission:evidencias.view'])->group(function () {
         Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter']);
@@ -168,7 +164,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // POST porque no es idempotente: cada llamada crea un nuevo comentario en COMENTARIO
     Route::post('estructura/evidencias/{id}/retroalimentacion', [EvidenceController::class, 'retroalimentar'])
         ->middleware('permission:evidencias.edit');
-    
+
     // ===== ESTÁNDARES =====
     Route::middleware(['permission:estandares.view'])->group(function () {
         Route::get('estructura/estandares', [StandardController::class, 'index']);
@@ -182,10 +178,13 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:estandares.delete');
     Route::patch('estructura/estandares/{id}/active', [StandardController::class, 'setActive'])
         ->middleware('permission:estandares.edit');
-    
+
     // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
     Route::middleware(['permission:elemento.view'])->group(function () {
         Route::get('estructura/elementos', [StructureElementController::class, 'index']);
+        Route::get('estructura/elementos/filter', [StructureElementController::class, 'filter']);
+        Route::get('estructura/elementos/export/excel', [StructureElementController::class, 'exportExcel']);
+        Route::get('estructura/elementos/export/pdf', [StructureElementController::class, 'exportPDF']);
         // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
         Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
     });
@@ -197,7 +196,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:elemento.delete');
     Route::patch('estructura/elementos/{id}/active', [StructureElementController::class, 'setActive'])
         ->middleware('permission:elemento.edit');
-    
+
     // ===== MODELOS DE ESTRUCTURA =====
     Route::middleware(['permission:modelos.view'])->group(function () {
         Route::get('estructura/modelos', [StructureModelController::class, 'index']);
@@ -214,7 +213,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         ->middleware('permission:modelos.edit');
     Route::delete('estructura/modelos/{id}', [StructureModelController::class, 'destroy'])
         ->middleware('permission:modelos.delete');
-    
+
     // ===== PROCESOS Y CICLOS =====
     Route::middleware(['permission:procesos.view'])->group(function () {
         Route::get('estructura/procesos', [ProcessController::class, 'index']);
@@ -225,31 +224,30 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         Route::get('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'index']);
         Route::get('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'show']);
         Route::get('estructura/carrera-sede', [CareerCampusController::class, 'index']);
-       /* Route::get('estructura/ciclos-acreditacion', function () {
-            return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
-        });*/
+        /* Route::get('estructura/ciclos-acreditacion', function () {
+             return AccreditationCycle::with('careerCampus.career', 'careerCampus.campus')->get();
+         });*/
 
     });
 
     // POST, PUT, DELETE - cada uno con su propio permiso
-     // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
-        Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
+    // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
+    Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
         ->middleware('permission:ciclos.create');
-        Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])
+    Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])
         ->middleware('permission:ciclos.edit');
-        Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
+    Route::delete('estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'destroy'])
         ->middleware('permission:ciclos.delete');
-        Route::patch('estructura/ciclos-acreditacion/{id}/reactivar', [AccreditationCycleController::class, 'reactivate'])
+    Route::patch('estructura/ciclos-acreditacion/{id}/reactivar', [AccreditationCycleController::class, 'reactivate'])
         ->middleware('permission:ciclos.reactivar');
 
-    
     Route::post('estructura/procesos', [ProcessController::class, 'store'])
-    ->middleware('permission:ciclos.create');
+        ->middleware('permission:ciclos.create');
     Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
-    ->middleware('permission:ciclos.edit');
+        ->middleware('permission:ciclos.edit');
     Route::patch('estructura/procesos/{id}/active', [ProcessController::class, 'setActive'])
-    ->middleware('permission:ciclos.edit');
-    
+        ->middleware('permission:ciclos.edit');
+
     Route::post('estructura/procesos', [ProcessController::class, 'store'])
         ->middleware('permission:procesos.create');
     Route::match(['put', 'patch'], 'estructura/procesos/{id}', [ProcessController::class, 'update'])
@@ -271,7 +269,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
         Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
     });
-    
+
     Route::post('evidencias-asignaciones/validar-duplicados', [EvidenceAssignmentController::class, 'validateDuplicates']);
     Route::post('evidencias-asignaciones', [EvidenceAssignmentController::class, 'store'])
         ->middleware('permission:asignaciones.create');
@@ -385,7 +383,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->group(function () {
     Route::get('/test-data', [FileController::class, 'getTestData']); // TEMPORAL
-    
+
     Route::get('/', [FileController::class, 'index'])
         ->middleware('permission:archivos.view');
     Route::post('/', [FileController::class, 'store'])
@@ -408,6 +406,40 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->grou
 Route::get('/p/{token}', [FileController::class, 'publicAccess']);
 
 // ============================================
+// Solicitudes de Ampliación - Modelo Flexible (HU-016b)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elemento-solicitudes-ampliacion')->group(function () {
+    Route::get('/', [FlexibleExtensionRequestController::class, 'index']);
+    Route::get('/pendientes', [FlexibleExtensionRequestController::class, 'pending']);
+    Route::get('/mis-solicitudes', [FlexibleExtensionRequestController::class, 'mySolicitudes']);
+    Route::get('/{id}', [FlexibleExtensionRequestController::class, 'show']);
+    Route::post('/', [FlexibleExtensionRequestController::class, 'store'])
+        ->middleware('throttle:10,1');
+    Route::post('/{id}/aprobar', [FlexibleExtensionRequestController::class, 'approve']);
+    Route::post('/{id}/rechazar', [FlexibleExtensionRequestController::class, 'reject']);
+});
+
+// ============================================
+// Archivos de Elementos (HU-008 modelo flexible)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elementos-archivos')->group(function () {
+    Route::get('/', [ElementFileController::class, 'index'])
+        ->middleware('permission:archivos.view');
+    Route::post('/', [ElementFileController::class, 'store'])
+        ->middleware(['throttle:10,1', 'permission:archivos.upload']);
+    Route::get('/{archivo}', [ElementFileController::class, 'show'])
+        ->middleware('permission:archivos.view');
+    Route::delete('/{archivo}', [ElementFileController::class, 'destroy'])
+        ->middleware('permission:archivos.delete');
+    Route::get('/{archivo}/download', [ElementFileController::class, 'download'])
+        ->middleware('permission:archivos.download');
+    Route::post('/{archivo}/make-public', [ElementFileController::class, 'makePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/{archivo}/revoke-public', [ElementFileController::class, 'revokePublic'])
+        ->middleware('permission:archivos.make_public');
+});
+
+// ============================================
 // Rutas de Gestión de Usuarios (HU-002)
 // ============================================
 // Protegidas con:
@@ -417,14 +449,14 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
     Route::get('/', [UserController::class, 'index']);
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
-    Route::patch('{user}/activate',   [UserController::class, 'activate'])
+    Route::patch('{user}/activate', [UserController::class, 'activate'])
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
-    //Desactiva un usuario cambiando su estado a "inactive"
+    // Desactiva un usuario cambiando su estado a "inactive"
     // Ejemplo: Patch/api/admin/users/5/deactivate
     Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/role', [UserController::class, 'assignRole'])
-         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
+        ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/permissions', [UserController::class, 'assignPermissions'])
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
 });
@@ -433,37 +465,37 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
 // Gestión de Roles y Permisos (Sistema Dinámico)
 // ============================================
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
-    
+
     // ===== PERMISOS =====
     // Endpoint público para frontend (cualquier usuario autenticado)
     Route::get('admin/permissions', [PermissionController::class, 'index']);
-    
+
     // ===== ROLES =====
     Route::prefix('roles')->group(function () {
         // Ver roles (Administrador puede ver para asignar, Superusuario para gestionar)
         Route::get('/', [RoleController::class, 'listRoles'])
             ->middleware('permission:roles.view');
-        
+
         Route::get('/grouped', [RoleController::class, 'getRolesGrouped'])
             ->middleware('permission:roles.view');
-        
+
         Route::get('/modules', [RoleController::class, 'getModulesStructure'])
             ->middleware('permission:roles.view');
-        
+
         Route::get('/permisos', [RoleController::class, 'listPermissions'])
             ->middleware('permission:roles.view');
-        
+
         Route::get('/{id}', [RoleController::class, 'showRole'])
             ->middleware('permission:roles.view');
-        
+
         // Crear roles (solo Superusuario)
         Route::post('/', [RoleController::class, 'createRole'])
             ->middleware('permission:roles.create');
-        
+
         // Editar roles (solo Superusuario)
         Route::put('/{id}', [RoleController::class, 'updateRole'])
             ->middleware('permission:roles.edit');
-        
+
         // Eliminar roles (solo Superusuario)
         Route::delete('/{id}', [RoleController::class, 'deleteRole'])
             ->middleware('permission:roles.delete');
@@ -480,7 +512,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-de-m
         Route::get('/evidencia/{evidenciaId}', [ImprovementCommitmentController::class, 'getByEvidence']);
         Route::get('/{id}', [ImprovementCommitmentController::class, 'showCommitment']);
     });
-    
+
     Route::post('/', [ImprovementCommitmentController::class, 'createCommitment'])
         ->middleware('permission:compromisos_mejora.create');
     Route::put('/{id}', [ImprovementCommitmentController::class, 'updateCommitment'])
@@ -564,7 +596,7 @@ if (App::environment('local')) {
                 return response()->json([
                     'error' => $e->getMessage(),
                     'file' => $e->getFile(),
-                    'line' => $e->getLine()
+                    'line' => $e->getLine(),
                 ], 500);
             }
         })->middleware('auth:sanctum');
@@ -576,9 +608,9 @@ if (App::environment('local')) {
 // ============================================
 Route::get('/ping', function () {
     return response()->json([
-        'ok'    => true,
+        'ok' => true,
         'scope' => 'root',
-        'base'  => base_path(),
-        'mark'  => 'X1'
+        'base' => base_path(),
+        'mark' => 'X1',
     ]);
 });
