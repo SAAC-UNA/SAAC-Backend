@@ -268,6 +268,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         Route::get('evidencias-asignaciones/catalogo/roles', [EvidenceAssignmentController::class, 'catalogRoles']);
         Route::get('evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'show']);
         Route::get('usuarios/{usuarioId}/evidencias-asignadas', [EvidenceAssignmentController::class, 'getByUser']);
+        Route::get('usuarios/{usuarioId}/mis-ciclos', [EvidenceAssignmentController::class, 'getUserCycles']);
         Route::get('evidencias/{evidenciaId}/asignaciones', [EvidenceAssignmentController::class, 'getByEvidence']);
         Route::get('procesos/{procesoId}/asignaciones', [EvidenceAssignmentController::class, 'getByProcess']);
     });

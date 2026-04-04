@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceAssignment;
+use App\Models\ElementAssignment;
 use App\Models\User;
 use App\Http\Requests\EvidenceAssignmentRequest;
 use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
@@ -273,5 +274,40 @@ class EvidenceAssignmentController extends Controller
             ->values();
 
         return response()->json(['data' => $roles], 200);
+    }
+
+    /**
+     * GET /api/usuarios/{usuarioId}/mis-ciclos
+     * Obtener los ciclos de acreditación donde el usuario tiene asignaciones,
+     * con el tipo de modelo de cada uno (tradicional / elemento_flexible).
+     */
+    public function getUserCycles(string $usuarioId): JsonResponse
+    {
+        $userId = (int) $usuarioId;
+
+        $traditionalCycles = EvidenceAssignment::where('usuario_id', $userId)
+            ->with('process.accreditationCycle.modeloEstructura')
+            ->get()
+            ->pluck('process.accreditationCycle')
+            ->filter()
+            ->unique('ciclo_acreditacion_id');
+
+        $flexibleCycles = ElementAssignment::where('usuario_id', $userId)
+            ->with('process.accreditationCycle.modeloEstructura')
+            ->get()
+            ->pluck('process.accreditationCycle')
+            ->filter()
+            ->unique('ciclo_acreditacion_id');
+
+        $cycles = $traditionalCycles->merge($flexibleCycles)
+            ->unique('ciclo_acreditacion_id')
+            ->map(fn ($cycle) => [
+                'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+                'nombre'               => $cycle->nombre,
+                'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'tradicional',
+            ])
+            ->values();
+
+        return response()->json(['data' => $cycles], 200);
     }
 }
