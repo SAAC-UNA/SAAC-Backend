@@ -18,6 +18,7 @@ class ImprovementCommitmentSeeder extends Seeder
         // Obtener procesos de tipo Compromiso de mejora
         $procesosCompromiso = DB::table('PROCESO')
             ->where('tipo_proceso', 'Compromiso de mejora')
+            ->orderBy('proceso_id')
             ->get();
 
         if ($procesosCompromiso->isEmpty()) {
@@ -25,10 +26,14 @@ class ImprovementCommitmentSeeder extends Seeder
             return;
         }
 
+        // Dejar el último proceso libre para pruebas manuales en Postman
+        $procesosParaSeed = $procesosCompromiso->take($procesosCompromiso->count() - 1);
+        $procesoLibre = $procesosCompromiso->last();
+
         $compromisos = [];
         $index = 0;
 
-        foreach ($procesosCompromiso as $proceso) {
+        foreach ($procesosParaSeed as $proceso) {
             $compromisos[] = [
                 'proceso_id' => $proceso->proceso_id,
                 'descripcion' => "Compromiso de mejora para el ciclo {$proceso->ciclo_acreditacion_id}",
@@ -44,9 +49,11 @@ class ImprovementCommitmentSeeder extends Seeder
 
         DB::table('COMPROMISO_MEJORA')->insert($compromisos);
 
+        $this->command->info("⚠️  Proceso LIBRE para testing: proceso_id={$procesoLibre->proceso_id} (tipo: {$procesoLibre->tipo_proceso})");
+
         // Vincular evidencias a cada compromiso (tabla pivote COMPROMISO_MEJORA_EVIDENCIA)
         $compromisosCreados = DB::table('COMPROMISO_MEJORA')
-            ->whereIn('proceso_id', $procesosCompromiso->pluck('proceso_id'))
+            ->whereIn('proceso_id', $procesosParaSeed->pluck('proceso_id'))
             ->get();
 
         // Obtener IDs reales de evidencias disponibles en la DB

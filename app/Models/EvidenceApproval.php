@@ -14,7 +14,9 @@ class EvidenceApproval extends Model
         'proceso_id',
         'criterio_aprobacion_id',
         'usuario_id',
-        'estado'
+        'estado',
+        'comentario',
+        'nueva_fecha_limite',
     ];
 
     /**

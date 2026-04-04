@@ -74,10 +74,10 @@ it('desactivar dimension desactiva hijos en cascada', function ()
         // Verificar respuesta exitosa
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Estado de la dimensión actualizado correctamente. Elementos hijos desactivados en cascada.'
+                'message' => 'Estado de la dimensión actualizado correctamente. Elements hijos desactivados en cascada.'
             ]);
 
-        // Verificar que TODOS los elementos ahora estén desactivados
+        // Verificar que TODOS los Elements ahora estén desactivados
         $this->assertEquals(0, $dimension->fresh()->activo, 'La dimensión debe estar desactivada');
         $this->assertEquals(0, $component->fresh()->activo, 'El componente debe estar desactivado');
         $this->assertEquals(0, $criterion->fresh()->activo, 'El criterio debe estar desactivado');
@@ -226,9 +226,9 @@ it('activar dimension activa hijos en cascada', function ()
 
         // Verificar respuesta
         $response->assertStatus(200)
-            ->assertJson(['message' => 'Estado de la dimensión actualizado correctamente. Elementos hijos activados en cascada.']);
+            ->assertJson(['message' => 'Estado de la dimensión actualizado correctamente. Elements hijos activados en cascada.']);
 
-        // Verificar que TODOS los elementos se activaron en cascada
+        // Verificar que TODOS los Elements se activaron en cascada
         $this->assertEquals(1, $dimension->fresh()->activo, 'La dimensión debe estar activa');
         $this->assertEquals(1, $component->fresh()->activo, 'El componente debe estar activo');
         $this->assertEquals(1, $criterion->fresh()->activo, 'El criterio debe estar activo');
@@ -269,7 +269,7 @@ it('desactivar universidad desactiva campus en cascada', function ()
         // Verificar respuesta exitosa
         $response->assertStatus(200);
 
-        // Verificar que TODOS los elementos ahora estén desactivados
+        // Verificar que TODOS los Elements ahora estén desactivados
         $this->assertEquals(0, $university->fresh()->activo, 'La universidad debe estar desactivada');
         $this->assertEquals(0, $campus->fresh()->activo, 'El campus debe estar desactivado');
 });

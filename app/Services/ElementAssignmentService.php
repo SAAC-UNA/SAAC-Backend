@@ -265,7 +265,7 @@ class ElementAssignmentService
             AuditLogService::log(
                 'retroalimentar',
                 "Asignación de elemento ID {$assignment->elemento_asignacion_id} marcada como \"{$data['estado']}\". Comentario: {$data['comentario']}",
-                'ElementoAsignacion',
+                'ElementAsignacion',
                 $reviewer->usuario_id
             );
 
@@ -284,12 +284,12 @@ class ElementAssignmentService
                     'titulo'       => 'Elemento asignado — ' . strtoupper($data['estado']),
                     'mensaje'      => "El evaluador {$reviewer->nombre} marcó la asignación como \"{$data['estado']}\". Comentario: {$data['comentario']}",
                     'relacionado'  => $updated->element,
-                    'enlace'       => "/elementos/{$updated->elemento_id}",
+                    'enlace'       => "/Elements/{$updated->elemento_id}",
                     'forzar_email' => true,
                 ]);
             }
         } catch (\Throwable $e) {
-            logger()->error('ElementoAsignacionRetroalimentada notification failed', [
+            logger()->error('ElementAsignacionRetroalimentada notification failed', [
                 'elemento_asignacion_id' => $assignment->elemento_asignacion_id,
                 'error'                  => $e->getMessage(),
             ]);

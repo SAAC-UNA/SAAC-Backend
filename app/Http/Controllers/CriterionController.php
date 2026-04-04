@@ -110,7 +110,7 @@ class CriterionController extends Controller
         $criterion->activo = $newActiveState;
         $criterion->saveQuietly();
 
-        // Aplicar cambio en cascada a todos los elementos hijos
+        // Aplicar cambio en cascada a todos los Elements hijos
         // Aplicar a estándares del criterio
         foreach ($criterion->standards as $standard) {
             $standard->activo = $newActiveState;
@@ -124,8 +124,8 @@ class CriterionController extends Controller
         }
 
         $cascadeMessage = $newActiveState
-            ? ' Elementos hijos activados en cascada.'
-            : ' Elementos hijos desactivados en cascada.';
+            ? ' Elements hijos activados en cascada.'
+            : ' Elements hijos desactivados en cascada.';
         $estadoNuevo = $newActiveState ? 'ACTIVO' : 'INACTIVO';
 
         AuditLogService::log(

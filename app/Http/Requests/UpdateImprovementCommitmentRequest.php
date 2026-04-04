@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use App\Models\ImprovementCommitment;
 
 class UpdateImprovementCommitmentRequest extends FormRequest
@@ -25,15 +26,16 @@ class UpdateImprovementCommitmentRequest extends FormRequest
     {
         return [
             // En UPDATE todo es opcional (soporta PATCH-like por PUT)
-            'ciclo_acreditacion_id' => [
-                'sometimes',
-                'integer',
-                'exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
-            ],
             'proceso_id' => [
                 'sometimes',
                 'integer',
                 'exists:PROCESO,proceso_id',
+                function ($attribute, $value, $fail) {
+                    $tipo = DB::table('PROCESO')->where('proceso_id', $value)->value('tipo_proceso');
+                    if ($tipo !== 'Compromiso de mejora') {
+                        $fail('El proceso debe ser de tipo "Compromiso de mejora".');
+                    }
+                },
             ],
             'selecciones' => [
                 'sometimes',
@@ -123,23 +125,10 @@ class UpdateImprovementCommitmentRequest extends FormRequest
                 return; // el controller ya responde 404
             }
 
-            // Regla de seguridad: por defecto NO permitimos cambiar el proceso/ciclo en UPDATE.
-            // Si el cliente los envía, deben coincidir con los actuales.
+            // Regla de seguridad: por defecto NO permitimos cambiar el proceso en UPDATE.
+            // Si el cliente lo envía, debe coincidir con el actual.
             if ($this->has('proceso_id') && (int)$this->input('proceso_id') !== (int)$commitment->proceso_id) {
                 $validator->errors()->add('proceso_id', 'El proceso no puede modificarse en la actualización de un compromiso de mejora.');
-            }
-
-            if ($this->has('ciclo_acreditacion_id')) {
-                $currentCycleId = optional($commitment->process)->ciclo_acreditacion_id;
-                if ($currentCycleId === null) {
-                    $currentCycleId = \Illuminate\Support\Facades\DB::table('PROCESO')
-                        ->where('proceso_id', $commitment->proceso_id)
-                        ->value('ciclo_acreditacion_id');
-                }
-
-                if ($currentCycleId !== null && (int)$this->input('ciclo_acreditacion_id') !== (int)$currentCycleId) {
-                    $validator->errors()->add('ciclo_acreditacion_id', 'El ciclo de acreditación no puede modificarse en la actualización de un compromiso de mejora.');
-                }
             }
 
             // Regla de negocio: fecha_inicio NO se modifica (se define al crear).

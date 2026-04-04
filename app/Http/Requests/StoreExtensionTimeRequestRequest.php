@@ -35,43 +35,41 @@ class StoreExtensionTimeRequestRequest extends FormRequest
     
     public function rules(): array
     {
-       
         $userId = Auth::id();
-        
+
         return [
-            // La asignación de evidencia debe existir
-            // VALIDACIÓN ADICIONAL: No permitir duplicados PENDIENTES para misma evidencia del mismo usuario
+            // XOR: se requiere exactamente uno de los dos IDs de asignación.
+            // La lógica de exclusión mutua se aplica en withValidator().
             'evidencia_asignacion_id' => [
                 'required',
                 'integer',
                 'exists:EVIDENCIA_ASIGNACION,evidencia_asignacion_id',
                 function ($attribute, $value, $fail) use ($userId) {
+                    if ($value === null) {
+                        return;
+                    }
                     $existePendiente = DB::table('SOLICITUD_AMPLIACION')
                         ->where('usuario_id', $userId)
                         ->where('evidencia_asignacion_id', $value)
-                        ->where('estado', 'Pendiente')
+                        ->where('estado', 'pendiente')
                         ->exists();
-                    
                     if ($existePendiente) {
-                        $fail('Ya tiene una solicitud de ampliación PENDIENTE para esta evidencia. Debe esperar su resolución antes de crear otra.');
+                        $fail('Ya tiene una solicitud de ampliación pendiente para esta evidencia.');
                     }
                 },
             ],
-            
-            // Motivo: obligatorio, entre 10 y 1000 caracteres
-            // PL-10: Sanitización contra XSS
+
             'motivo' => [
                 'required',
                 'string',
                 'min:10',
                 'max:1000',
             ],
-            
-            // Fecha sugerida: obligatoria, debe ser futura (posterior a hoy)
+
             'fecha_sugerida' => 'required|date|after:today',
         ];
     }
-    
+
     /**
      * Prepare the data for validation.
      * 
@@ -95,16 +93,16 @@ class StoreExtensionTimeRequestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'evidencia_asignacion_id.required' => 'Debe especificar la asignación de evidencia.',
-            'evidencia_asignacion_id.exists' => 'La asignación de evidencia no existe.',
-            
+            'evidencia_asignacion_id.required' => 'La asignación de evidencia es obligatoria.',
+            'evidencia_asignacion_id.exists'   => 'La asignación de evidencia no existe.',
+
             'motivo.required' => 'El motivo de la solicitud es obligatorio.',
-            'motivo.min' => 'El motivo debe tener al menos 10 caracteres para una explicación adecuada.',
-            'motivo.max' => 'El motivo no puede exceder los 1000 caracteres.',
-            
+            'motivo.min'      => 'El motivo debe tener al menos 10 caracteres para una explicación adecuada.',
+            'motivo.max'      => 'El motivo no puede exceder los 1000 caracteres.',
+
             'fecha_sugerida.required' => 'Debe especificar una fecha sugerida para la nueva fecha límite.',
-            'fecha_sugerida.date' => 'La fecha sugerida debe ser una fecha válida.',
-            'fecha_sugerida.after' => 'La fecha sugerida debe ser posterior a hoy.',
+            'fecha_sugerida.date'     => 'La fecha sugerida debe ser una fecha válida.',
+            'fecha_sugerida.after'    => 'La fecha sugerida debe ser posterior a hoy.',
         ];
     }
 
@@ -117,8 +115,8 @@ class StoreExtensionTimeRequestRequest extends FormRequest
     {
         return [
             'evidencia_asignacion_id' => 'asignación de evidencia',
-            'motivo' => 'motivo',
-            'fecha_sugerida' => 'fecha sugerida',
+            'motivo'                  => 'motivo',
+            'fecha_sugerida'          => 'fecha sugerida',
         ];
     }
 

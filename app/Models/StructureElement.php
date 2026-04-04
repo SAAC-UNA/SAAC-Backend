@@ -106,7 +106,7 @@ class StructureElement extends Model
     // ===== SCOPES =====
 
     /**
-     * Scope: Solo elementos activos
+     * Scope: Solo Elements activos
      */
     public function scopeActive($query)
     {
@@ -122,7 +122,7 @@ class StructureElement extends Model
     }
 
     /**
-     * Scope: Solo elementos raíz (sin padre)
+     * Scope: Solo Elements raíz (sin padre)
      */
     public function scopeRoots($query)
     {

@@ -88,6 +88,9 @@ class PermissionSeeder extends Seeder
      */
     private function assignPermissionsToRoles(array $rolesConfig): void
     {
+        // Limpiar cache de Spatie para que encuentre los permisos recén creados
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        
         $this->command->info('🔗 Asignando permisos a roles...');
         
         foreach ($rolesConfig as $roleName => $permissions) {

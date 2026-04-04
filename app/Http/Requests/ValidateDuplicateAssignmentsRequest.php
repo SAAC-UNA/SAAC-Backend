@@ -43,7 +43,7 @@ class ValidateDuplicateAssignmentsRequest extends FormRequest
             'evidencia_id.exists' => 'El campo evidencia id seleccionado no existe.',
             'usuarios.required' => 'El campo usuarios es requerido.',
             'usuarios.array' => 'El campo usuarios debe ser un arreglo.',
-            'usuarios.min' => 'El campo usuarios debe contener al menos :min elementos.',
+            'usuarios.min' => 'El campo usuarios debe contener al menos :min Elements.',
             'usuarios.*.required' => 'Cada usuario es requerido.',
             'usuarios.*.integer' => 'Cada usuario debe ser un número entero.',
             'usuarios.*.exists' => 'El campo usuarios.:position seleccionado no existe.',

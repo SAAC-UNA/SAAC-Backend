@@ -5,13 +5,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class ElementoExampleSeeder extends Seeder
+class ElementExampleSeeder extends Seeder
 {
     /**
      * Seed para crear datos de ejemplo en ELEMENTO
      * Estructura basada en SINAES 2026 con pautas y fuentes
      * 
-     * Ejecutar con: php artisan db:seed --class=ElementoExampleSeeder
+     * Ejecutar con: php artisan db:seed --class=ElementExampleSeeder
      */
     public function run(): void
     {
@@ -177,7 +177,7 @@ class ElementoExampleSeeder extends Seeder
         $this->command->info('========================================');
         $this->command->info('✅ Seed completado exitosamente');
         $this->command->info('========================================');
-        $this->command->info("📊 Total de elementos creados: {$total}");
+        $this->command->info("📊 Total de Elements creados: {$total}");
         $this->command->info('');
         $this->command->info('Estructura creada:');
         $this->command->info('  📁 D1: Formación Profesional');
@@ -192,8 +192,8 @@ class ElementoExampleSeeder extends Seeder
         $this->command->info('      📄 F3.1: Currículos del personal académico');
         $this->command->info('');
         $this->command->info('🔍 Puedes probar con:');
-        $this->command->info('  GET /api/estructura/elementos');
-        $this->command->info('  GET /api/estructura/elementos/arbol');
-        $this->command->info('  GET /api/estructura/elementos?tipo=pauta');
+        $this->command->info('  GET /api/estructura/Elements');
+        $this->command->info('  GET /api/estructura/Elements/arbol');
+        $this->command->info('  GET /api/estructura/Elements?tipo=pauta');
     }
 }

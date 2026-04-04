@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ExtensionRequest;
 use App\Http\Requests\StoreExtensionTimeRequestRequest;
-use App\Http\Requests\UpdateExtensionTimeRequestRequest;
 use App\Http\Requests\ExtensionTimeRequestListRequest;
 use App\Http\Resources\ExtensionTimeRequestResource;
 use App\Services\ExtensionTimeRequestService;
 use App\Services\AuditLogService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -141,9 +139,11 @@ class ExtensionTimeRequestController extends Controller
             $extensionRequest = $this->service->createRequest($request->validated(), $userId);
 
             // Registro en bitácora
+            $tipoAsignacion = "evidencia asignación {$extensionRequest->evidencia_asignacion_id}";
+
             AuditLogService::log(
                 'crear',
-                "Solicitud de ampliación creada (ID: {$extensionRequest->solicitud_ampliacion_id}) para evidencia {$extensionRequest->evidencia_asignacion_id}",
+                "Solicitud de ampliación creada (ID: {$extensionRequest->solicitud_ampliacion_id}) para {$tipoAsignacion}",
                 'Solicitudes Ampliación'
             );
 
@@ -171,17 +171,16 @@ class ExtensionTimeRequestController extends Controller
     }
 
     /**
-     * Actualiza una solicitud de ampliación pendiente del profesor.
+     * Cancela una solicitud de ampliación pendiente (cambia estado a 'cancelada').
      *
      * AUTORIZACIÓN:
-     * - Solo el creador puede editar su solicitud (o admin)
+     * - Solo el creador puede cancelar su solicitud (o admin)
      * - Solo solicitudes en estado PENDIENTE
      *
-     * @param UpdateExtensionTimeRequestRequest $request
      * @param string $id
      * @return JsonResponse
      */
-    public function update(UpdateExtensionTimeRequestRequest $request, string $id): JsonResponse
+    public function cancel(string $id): JsonResponse
     {
         try {
             $extensionRequest = ExtensionRequest::find((int)$id);
@@ -190,120 +189,38 @@ class ExtensionTimeRequestController extends Controller
                 return response()->json(['message' => 'Solicitud no encontrada.'], 404);
             }
 
-            // PL-10: AUTORIZACIÓN con Policy
-            $this->authorize('update', $extensionRequest);
+            $this->authorize('cancel', $extensionRequest);
 
-            $userId = Auth::id();
+            $updated = $this->service->cancelRequest((int)$id, Auth::id());
 
-            if ($extensionRequest->estado !== 'Pendiente' && $extensionRequest->estado !== 'pendiente') {
-                return response()->json(['message' => 'Solo se pueden actualizar solicitudes pendientes'], 422);
-            }
-
-            $extensionRequest->update($request->validated());
-            $extensionRequest->refresh();
-
-            // Registro en bitácora
             AuditLogService::log(
-                'editar',
-                "Solicitud de ampliación actualizada (ID: {$id})",
+                'cancelar',
+                "Solicitud de ampliación cancelada (ID: {$id})",
                 'Solicitudes Ampliación'
             );
 
             return response()->json([
-                'message' => 'Solicitud actualizada exitosamente.',
-                'data' => new ExtensionTimeRequestResource($extensionRequest)
+                'message' => 'Solicitud cancelada exitosamente.'
             ], 200);
 
         } catch (\Illuminate\Auth\Access\AuthorizationException $exception) {
-            Log::warning('Intento de actualización no autorizada', [
+            Log::warning('Intento de cancelación no autorizada', [
                 'solicitud_id' => $id,
-                'usuario_id' => Auth::id()
+                'usuario_id'   => Auth::id()
             ]);
             return response()->json(['message' => 'No autorizado'], 403);
         } catch (\Illuminate\Validation\ValidationException $validationException) {
-            Log::warning('Error de validación al actualizar solicitud', [
-                'solicitud_id' => $id,
-                'usuario_id' => Auth::id(),
-                'errors' => $validationException->errors()
-            ]);
             return response()->json([
-                'message' => 'No se puede actualizar la solicitud.',
-                'errors' => $validationException->errors()
+                'message' => 'No se puede cancelar la solicitud.',
+                'errors'  => $validationException->errors()
             ], 422);
         } catch (\Exception $exception) {
-            Log::error('Error al actualizar solicitud', [
+            Log::error('Error al cancelar solicitud', [
                 'solicitud_id' => $id,
-                'usuario_id' => Auth::id(),
-                'error' => $exception->getMessage()
+                'usuario_id'   => Auth::id(),
+                'error'        => $exception->getMessage()
             ]);
-            return response()->json(['message' => 'Error al actualizar la solicitud'], 500);
-        }
-    }
-
-    /**
-     * Elimina una solicitud de ampliación pendiente del profesor.
-     *
-     * AUTORIZACIÓN:
-     * - Solo el creador puede eliminar su solicitud (o admin)
-     * - Solo solicitudes en estado PENDIENTE
-     *
-     * @param string $id
-     * @return JsonResponse
-     */
-    public function destroy(string $id): JsonResponse
-    {
-        try {
-            $extensionRequest = ExtensionRequest::find((int)$id);
-
-            if (!$extensionRequest) {
-                return response()->json(['message' => 'Solicitud no encontrada.'], 404);
-            }
-
-            // PL-10: AUTORIZACIÓN con Policy
-            $this->authorize('delete', $extensionRequest);
-
-            $userId = Auth::id();
-
-            if ($extensionRequest->estado !== 'Pendiente' && $extensionRequest->estado !== 'pendiente') {
-                return response()->json(['message' => 'Solo se pueden eliminar solicitudes pendientes'], 422);
-            }
-
-            $extensionRequest->delete();
-
-            // Registro en bitácora
-            AuditLogService::log(
-                'eliminar',
-                "Solicitud de ampliación eliminada (ID: {$id})",
-                'Solicitudes Ampliación'
-            );
-
-            return response()->json([
-                'message' => 'Solicitud eliminada exitosamente.'
-            ], 200);
-
-        } catch (\Illuminate\Auth\Access\AuthorizationException $exception) {
-            Log::warning('Intento de eliminación no autorizada', [
-                'solicitud_id' => $id,
-                'usuario_id' => Auth::id()
-            ]);
-            return response()->json(['message' => 'No autorizado'], 403);
-        } catch (\Illuminate\Validation\ValidationException $validationException) {
-            Log::warning('Error al eliminar solicitud', [
-                'solicitud_id' => $id,
-                'usuario_id' => Auth::id(),
-                'errors' => $validationException->errors()
-            ]);
-            return response()->json([
-                'message' => 'No se puede eliminar la solicitud.',
-                'errors' => $validationException->errors()
-            ], 422);
-        } catch (\Exception $exception) {
-            Log::error('Error al eliminar solicitud', [
-                'solicitud_id' => $id,
-                'usuario_id' => Auth::id(),
-                'error' => $exception->getMessage()
-            ]);
-            return response()->json(['message' => 'Error al eliminar la solicitud'], 500);
+            return response()->json(['message' => 'Error al cancelar la solicitud'], 500);
         }
     }
 
@@ -320,7 +237,6 @@ class ExtensionTimeRequestController extends Controller
     public function upcomingEvidences(): JsonResponse
     {
         try {
-            // PL-10: Usuario autenticado
             $userId = Auth::id();
 
             if (!$userId) {
@@ -345,4 +261,5 @@ class ExtensionTimeRequestController extends Controller
             return response()->json(['message' => 'Error al obtener evidencias'], 500);
         }
     }
+
 }

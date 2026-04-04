@@ -47,7 +47,7 @@ class StructureElementRequest extends FormRequest
                             ->where('modelo_estructura_id', $value)
                             ->value('tipo');
                         if ($tipo !== 'elemento_flexible') {
-                            $fail('El modelo de estructura debe ser de tipo elemento_flexible para crear elementos.');
+                            $fail('El modelo de estructura debe ser de tipo elemento_flexible para crear Elements.');
                         }
                     },
                 ],

@@ -143,4 +143,25 @@ class ExtensionRequestPolicy
         // No se puede rechazar si ya está resuelta
         return $extensionRequest->estado === ExtensionRequest::ESTADO_PENDIENTE;
     }
+
+    /**
+     * Determinar si el usuario puede cancelar una solicitud.
+     *
+     * RESTRICCIONES:
+     * - Solo solicitudes en estado PENDIENTE
+     * - Solo el creador (a menos que sea Superusuario)
+     */
+    public function cancel(User $user, ExtensionRequest $extensionRequest): bool
+    {
+        if (!$user->can('solicitudes_ampliacion.cancel')) {
+            return false;
+        }
+
+        if (strtolower($extensionRequest->estado) !== ExtensionRequest::ESTADO_PENDIENTE) {
+            return false;
+        }
+
+        return $extensionRequest->usuario_id === $user->usuario_id ||
+               $user->hasRole('Superusuario');
+    }
 }

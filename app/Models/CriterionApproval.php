@@ -21,7 +21,8 @@ class CriterionApproval extends Model
         'proceso_id',
         'usuario_id',
         'estado',
-        'comentario'
+        'comentario',
+        'nueva_fecha_limite'
     ];
 
     /**

@@ -35,7 +35,7 @@ class NotifyElementAssignment implements ShouldQueue
                 : 'No definida'
         );
 
-        $enlace = "/elementos/{$element->elemento_id}";
+        $enlace = "/Elements/{$element->elemento_id}";
 
         try {
             NotificationService::create([

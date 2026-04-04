@@ -3,7 +3,6 @@ namespace App\Services;
 
 use App\Models\ImprovementCommitment;
 use App\Models\User;
-use App\Models\Process;
 use App\Models\Standard;
 use App\Models\Evidence;
 use App\Models\EvidenceAssignment;
@@ -108,7 +107,7 @@ class ImprovementCommitmentService
             $this->validateSelections($data['selecciones']);
 
             // Obtener o crear proceso automaticamente
-            $processId = $data['proceso_id'] ?? $this->getOrCreateImprovementProcess($data['ciclo_acreditacion_id']);
+            $processId = $data['proceso_id'];
 
             // Validar que NO exista ya un compromiso en este proceso
             if (ImprovementCommitment::where('proceso_id', $processId)->exists()) {
@@ -170,13 +169,7 @@ class ImprovementCommitmentService
 
             // Determinar proceso_id para actualizacion
             $processId = $commitment->proceso_id;
-            if (isset($data['ciclo_acreditacion_id'])) {
-                $newProcessId = $this->getOrCreateImprovementProcess($data['ciclo_acreditacion_id']);
-                if ($newProcessId !== $processId) {
-                    $processId  = $newProcessId;
-                    $hasChanges = true;
-                }
-            } elseif (isset($data['proceso_id']) && $data['proceso_id'] !== $processId) {
+            if (isset($data['proceso_id']) && $data['proceso_id'] !== $processId) {
                 $processId  = $data['proceso_id'];
                 $hasChanges = true;
             }
@@ -263,7 +256,7 @@ class ImprovementCommitmentService
     private function getCommitmentEvidenceIds(int $compromisoId): array
     {
         return ImprovementCommitment::find($compromisoId)
-            ?->evidences()->pluck('evidencia_id')->toArray() ?? [];
+            ?->evidences()->pluck('EVIDENCIA.evidencia_id')->toArray() ?? [];
     }
 
     /**
@@ -497,19 +490,6 @@ class ImprovementCommitmentService
                 ]);
             }
         }
-    }
-
-    /**
-     * Obtiene o crea un proceso de tipo "Compromiso de mejora" para el ciclo dado.
-     *
-     * @param int $cycleId ID del ciclo de acreditacion.
-     * @return int ID del proceso.
-     */
-    private function getOrCreateImprovementProcess(int $cycleId): int
-    {
-        return Process::firstOrCreate(
-            ['ciclo_acreditacion_id' => $cycleId, 'tipo_proceso' => 'Compromiso de mejora']
-        )->proceso_id;
     }
 
     /**

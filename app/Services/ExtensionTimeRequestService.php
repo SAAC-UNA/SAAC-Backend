@@ -13,20 +13,25 @@ use Carbon\Carbon;
  */
 class ExtensionTimeRequestService
 {
-    private const WITH_BASE = ['evidenceAssignment.evidence.criterion', 'user', 'resolutor'];
+    private const WITH_BASE = [
+        'evidenceAssignment.evidence.criterion',
+        'user',
+        'resolutor',
+    ];
 
     /**
      * Listar solicitudes con paginacion y filtros.
      */
     public function listRequests(int $perPage = 15, array $filters = [])
     {
-        $estado      = $filters['estado'] ?? null;
-        $usuarioId   = $filters['usuario_id'] ?? null;
-        $asignacionId= $filters['evidencia_asignacion_id'] ?? null;
-        $fechaDesde  = $filters['fecha_desde'] ?? null;
-        $fechaHasta  = $filters['fecha_hasta'] ?? null;
+        $estado       = $filters['estado'] ?? null;
+        $usuarioId    = $filters['usuario_id'] ?? null;
+        $asignacionId = $filters['evidencia_asignacion_id'] ?? null;
+        $fechaDesde   = $filters['fecha_desde'] ?? null;
+        $fechaHasta   = $filters['fecha_hasta'] ?? null;
 
         return ExtensionRequest::with(self::WITH_BASE)
+            ->whereNotNull('evidencia_asignacion_id')
             ->when($estado,       fn($q) => $q->where('estado', $estado))
             ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
             ->when($asignacionId, fn($q) => $q->where('evidencia_asignacion_id', $asignacionId))
@@ -49,7 +54,7 @@ class ExtensionTimeRequestService
     }
 
     /**
-     * Obtener evidencias proximas a vencer para un usuario.
+     * Obtener evidencias próximas a vencer para un usuario (modelo tradicional).
      */
     public function getUpcomingEvidences(int $userId)
     {
@@ -63,31 +68,35 @@ class ExtensionTimeRequestService
     }
 
     /**
-     * Crear una nueva solicitud de ampliacion con validaciones de negocio.
+     * Crear una nueva solicitud de ampliación con validaciones de negocio.
+     * Soporta tanto asignaciones de evidencia (modelo tradicional) como de elemento (modelo flexible).
      */
     public function createRequest(array $data, int $userId): ExtensionRequest
     {
         return DB::transaction(function () use ($data, $userId) {
-            // 1. Verificar que la asignacion existe
-            $assignment = EvidenceAssignment::find($data['evidencia_asignacion_id']);
+            $asignacionKey = 'evidencia_asignacion_id';
+            $asignacionId  = $data[$asignacionKey];
+
+            // 1. Verificar que la asignación existe
+            $assignment = EvidenceAssignment::find($asignacionId);
 
             if (!$assignment) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'La asignacion de evidencia no existe o no esta activa.',
+                    $asignacionKey => 'La asignación no existe o no está activa.',
                 ]);
             }
 
             // 2. Verificar que el usuario es el asignado
             if ($assignment->usuario_id !== $userId) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'Solo puede solicitar ampliacion para evidencias asignadas a usted.',
+                    $asignacionKey => 'Solo puede solicitar ampliación para asignaciones propias.',
                 ]);
             }
 
-            // 3. Verificar que la evidencia no este aprobada
-            if ($assignment->estado === 'Aprobada') {
+            // 3. Verificar que la asignación no esté aprobada/validada
+            if (in_array($assignment->estado, ['Aprobada', 'aprobada', 'Validada'])) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'No se puede solicitar ampliacion para evidencias ya aprobadas.',
+                    $asignacionKey => 'No se puede solicitar ampliación para asignaciones ya aprobadas.',
                 ]);
             }
 
@@ -95,99 +104,51 @@ class ExtensionTimeRequestService
             $fechaLimite = Carbon::parse($assignment->fecha_limite);
             if ($fechaLimite->lt(Carbon::now())) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'No se puede solicitar ampliacion para evidencias con plazo ya vencido.',
+                    $asignacionKey => 'No se puede solicitar ampliación para asignaciones con plazo ya vencido.',
                 ]);
             }
 
-            // 5. Verificar que no tenga solicitud pendiente
-            $tienePendiente = ExtensionRequest::where('evidencia_asignacion_id', $data['evidencia_asignacion_id'])
+            // 5. Verificar que no tenga solicitud pendiente para esta asignación
+            $tienePendiente = ExtensionRequest::where($asignacionKey, $asignacionId)
                 ->where('estado', ExtensionRequest::ESTADO_PENDIENTE)
                 ->exists();
             if ($tienePendiente) {
                 throw ValidationException::withMessages([
-                    'evidencia_asignacion_id' => 'Ya tiene una solicitud pendiente para esta evidencia.',
+                    $asignacionKey => 'Ya tiene una solicitud pendiente para esta asignación.',
                 ]);
             }
 
-            // 6. Validar que la fecha sugerida sea posterior a la fecha limite
+            // 6. Validar que la fecha sugerida sea posterior a la fecha límite
             $suggestedDate    = Carbon::parse($data['fecha_sugerida']);
             $originalDeadline = $fechaLimite;
 
             if ($suggestedDate->lte($originalDeadline)) {
                 throw ValidationException::withMessages([
-                    'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha limite original (' . $originalDeadline->format('d/m/Y H:i') . ').',
+                    'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha límite original (' . $originalDeadline->format('d/m/Y H:i') . ').',
                 ]);
             }
 
-            // 7. Validar que la ampliacion sea de maximo 30 dias
+            // 7. Validar que la ampliación sea de máximo 30 días
             $extensionDays = $originalDeadline->diffInDays($suggestedDate);
             if ($extensionDays > 30) {
                 throw ValidationException::withMessages([
-                    'fecha_sugerida' => 'La ampliacion solicitada no puede exceder 30 dias desde la fecha limite original.',
+                    'fecha_sugerida' => 'La ampliación solicitada no puede exceder 30 días desde la fecha límite original.',
                 ]);
             }
 
             // 8. Crear la solicitud
-            return ExtensionRequest::create([
-                'evidencia_asignacion_id' => $data['evidencia_asignacion_id'],
-                'usuario_id'              => $userId,
-                'motivo'                  => $data['motivo'],
-                'fecha_sugerida'          => $data['fecha_sugerida'],
-                'estado'                  => ExtensionRequest::ESTADO_PENDIENTE,
+            $nueva = ExtensionRequest::create([
+                $asignacionKey   => $asignacionId,
+                'usuario_id'     => $userId,
+                'motivo'         => $data['motivo'],
+                'fecha_sugerida' => $data['fecha_sugerida'],
+                'estado'         => ExtensionRequest::ESTADO_PENDIENTE,
             ]);
+            return $nueva->load(self::WITH_BASE);
         });
     }
 
-    /**
-     * Actualizar una solicitud de ampliacion pendiente del profesor.
-     */
-    public function updateRequest(int $requestId, array $data, int $userId): ExtensionRequest
-    {
-        return DB::transaction(function () use ($requestId, $data, $userId) {
-            $solicitud = ExtensionRequest::with('evidenceAssignment')->find($requestId);
-
-            if (!$solicitud) {
-                throw ValidationException::withMessages(['solicitud' => 'Solicitud no encontrada.']);
-            }
-
-            if ($solicitud->usuario_id !== $userId) {
-                throw ValidationException::withMessages(['solicitud' => 'No tiene permisos para editar esta solicitud.']);
-            }
-
-            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
-                throw ValidationException::withMessages(['solicitud' => 'Solo se pueden editar solicitudes pendientes.']);
-            }
-
-            if (isset($data['fecha_sugerida']) && $solicitud->evidenceAssignment) {
-                $originalDeadline = Carbon::parse($solicitud->evidenceAssignment->fecha_limite);
-                $suggestedDate    = Carbon::parse($data['fecha_sugerida']);
-
-                if ($suggestedDate->lte($originalDeadline)) {
-                    throw ValidationException::withMessages([
-                        'fecha_sugerida' => 'La fecha sugerida debe ser posterior a la fecha limite original.',
-                    ]);
-                }
-
-                if ($originalDeadline->diffInDays($suggestedDate) > 30) {
-                    throw ValidationException::withMessages([
-                        'fecha_sugerida' => 'La ampliacion no puede exceder 30 dias.',
-                    ]);
-                }
-            }
-
-            $solicitud->update([
-                'motivo'         => $data['motivo']         ?? $solicitud->motivo,
-                'fecha_sugerida' => $data['fecha_sugerida'] ?? $solicitud->fecha_sugerida,
-            ]);
-
-            return $solicitud->refresh();
-        });
-    }
-
-    /**
-     * Eliminar una solicitud pendiente del profesor.
-     */
-    public function deleteRequest(int $requestId, int $userId): bool
+    public function cancelRequest(int $requestId, int $userId): ExtensionRequest
     {
         return DB::transaction(function () use ($requestId, $userId) {
             $solicitud = ExtensionRequest::find($requestId);
@@ -196,16 +157,19 @@ class ExtensionTimeRequestService
                 throw ValidationException::withMessages(['solicitud' => 'La solicitud no existe.']);
             }
             if ($solicitud->usuario_id !== $userId) {
-                throw ValidationException::withMessages(['solicitud' => 'Solo puede eliminar sus propias solicitudes.']);
+                throw ValidationException::withMessages(['solicitud' => 'Solo puede cancelar sus propias solicitudes.']);
             }
-            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
+            if (strtolower($solicitud->estado) !== ExtensionRequest::ESTADO_PENDIENTE) {
                 throw ValidationException::withMessages([
-                    'solicitud' => 'Solo se pueden eliminar solicitudes pendientes.',
+                    'solicitud' => 'Solo se pueden cancelar solicitudes pendientes.',
                 ]);
             }
 
-            $solicitud->delete();
-            return true;
+            $solicitud->update(['estado' => ExtensionRequest::ESTADO_CANCELADA]);
+            $solicitud->refresh();
+
+            return $solicitud->load(self::WITH_BASE);
         });
     }
+
 }

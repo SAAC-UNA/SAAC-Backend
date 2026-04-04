@@ -18,7 +18,6 @@ class ExtensionRequest extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = [
         'evidencia_asignacion_id',
-        'elemento_asignacion_id',
         'usuario_id',
         'motivo',
         'fecha_sugerida',
@@ -35,9 +34,10 @@ class ExtensionRequest extends Model
     ];
 
     // Constantes de estados
-    const ESTADO_PENDIENTE = 'pendiente';
-    const ESTADO_APROBADA = 'aprobada';
-    const ESTADO_RECHAZADA = 'rechazada';
+    const ESTADO_PENDIENTE  = 'pendiente';
+    const ESTADO_APROBADA   = 'aprobada';
+    const ESTADO_RECHAZADA  = 'rechazada';
+    const ESTADO_CANCELADA  = 'cancelada';
 
     /**
      * Relación: Una solicitud pertenece a una asignación de evidencia.
@@ -47,16 +47,6 @@ class ExtensionRequest extends Model
     public function evidenceAssignment()
     {
         return $this->belongsTo(EvidenceAssignment::class, 'evidencia_asignacion_id', 'evidencia_asignacion_id');
-    }
-
-    /**
-     * Relación: Una solicitud puede pertenecer a una asignación de elemento (modelo flexible).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function elementAssignment()
-    {
-        return $this->belongsTo(ElementAssignment::class, 'elemento_asignacion_id', 'elemento_asignacion_id');
     }
 
     /**

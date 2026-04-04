@@ -53,7 +53,7 @@ class ExtensionTimeRequestListRequest extends FormRequest
             'per_page.min' => 'Debe solicitar al menos 1 registro por página.',
             'per_page.max' => 'No puede solicitar más de 100 registros por página.',
             'usuario_id.exists' => 'El usuario especificado no existe.',
-            'estado.in' => 'El estado debe ser uno de: pendiente, aprobada, rechazada.',
+            'estado.in' => 'El estado debe ser uno de: pendiente, aprobada, rechazada, cancelada.',
             'evidencia_asignacion_id.exists' => 'La asignación de evidencia especificada no existe.',
             'fecha_desde.date' => 'La fecha desde debe ser una fecha válida.',
             'fecha_hasta.date' => 'La fecha hasta debe ser una fecha válida.',

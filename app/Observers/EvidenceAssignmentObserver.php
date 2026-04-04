@@ -2,6 +2,8 @@
 
 namespace App\Observers;
 
+use App\Models\CriterionApproval;
+use App\Models\EvidenceApproval;
 use App\Models\EvidenceAssignment;
 use App\Services\TradicionalEvidenceService;
 
@@ -24,6 +26,25 @@ class EvidenceAssignmentObserver
     {
         if ($assignment->wasChanged('estado')) {
             $this->evidenceService->recalcularEstadoEvidencia($assignment->evidencia_id);
+
+            // HU-010: si el responsable marcó Completado y existe una APROBACION_EVIDENCIA
+            // rechazada para esta evidencia+proceso, el bloque incompleto vuelve a pendiente
+            // para que el RF sepa que hay nuevas correcciones listas para revisar.
+            if ($assignment->estado === EvidenceAssignment::ESTADO_COMPLETADO) {
+                $tieneRechazo = EvidenceApproval::where('evidencia_id', $assignment->evidencia_id)
+                    ->where('proceso_id', $assignment->proceso_id)
+                    ->where('estado', 'rechazado')
+                    ->exists();
+
+                if ($tieneRechazo) {
+                    CriterionApproval::where('estado', 'incompleto')
+                        ->whereHas('evidenceApprovals', function ($q) use ($assignment) {
+                            $q->where('evidencia_id', $assignment->evidencia_id)
+                              ->where('proceso_id', $assignment->proceso_id);
+                        })
+                        ->update(['estado' => 'pendiente']);
+                }
+            }
         }
     }
 

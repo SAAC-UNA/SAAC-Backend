@@ -39,7 +39,8 @@ class CriterionApprovalController extends Controller
         $this->authorize('viewAny', \App\Models\CriterionApproval::class);
 
         try {
-            $approvals = $this->approvalService->listApprovals();
+            $estado    = request()->query('estado');
+            $approvals = $this->approvalService->listApprovals($estado);
 
             return response()->json([
                 'success' => true,
@@ -110,22 +111,9 @@ class CriterionApprovalController extends Controller
                 ], 404);
             }
 
-            // Verificar si ya existe una aprobación para este criterio
-            $existingApproval = $this->approvalService->getApprovalByCriterionAndProcess(
-                $criterioId,
-                $request->proceso_id
-            );
-
-            if ($existingApproval && $existingApproval->estado === 'aprobado') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El criterio ya está aprobado.'
-                ], 400);
-            }
-
             $usuarioId = Auth::id();
 
-            $approval = $this->approvalService->approveCriterion(
+            $result = $this->approvalService->approveCriterion(
                 $criterioId,
                 $request->proceso_id,
                 $usuarioId,
@@ -133,7 +121,7 @@ class CriterionApprovalController extends Controller
             );
 
             // Disparar evento para notificaciones
-            event(new CriterionApproved($approval));
+            event(new CriterionApproved($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'aprobar',
@@ -144,7 +132,10 @@ class CriterionApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio aprobado exitosamente.',
-                'data' => $approval
+                'data' => [
+                    'raiz'      => $result['raiz'],
+                    'evidencias' => $result['evidencias'],
+                ],
             ], 201);
 
         } catch (AuthorizationException $exception) {
@@ -179,30 +170,18 @@ class CriterionApprovalController extends Controller
                     'message' => 'El criterio especificado no existe.'
                 ], 404);
             }
-         // Verificar si ya existe una aprobación para este criterio
-            $existingApproval = $this->approvalService->getApprovalByCriterionAndProcess(
-                $criterioId,
-                $request->proceso_id
-            );
-
-            if ($existingApproval && $existingApproval->estado === 'rechazado') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El criterio ya está rechazado.'
-                ], 400);
-            }
-
             $usuarioId = Auth::id();
 
-            $approval = $this->approvalService->rejectCriterion(
+            $result = $this->approvalService->rejectCriterion(
                 $criterioId,
                 $request->proceso_id,
                 $usuarioId,
-                $request->comentario
+                $request->comentario,
+                $request->nueva_fecha_limite
             );
 
             // Disparar evento para notificaciones
-            event(new CriterionRejected($approval));
+            event(new CriterionRejected($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'rechazar',
@@ -213,7 +192,10 @@ class CriterionApprovalController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Criterio rechazado exitosamente.',
-                'data' => $approval
+                'data' => [
+                    'raiz'      => $result['raiz'],
+                    'evidencias' => $result['evidencias'],
+                ],
             ], 201);
 
         } catch (AuthorizationException $exception) {
@@ -225,6 +207,167 @@ class CriterionApprovalController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $exception->getMessage()
+            ], 400);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Aprobaciones individuales de evidencias (HU-010 individual)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Listar el estado de aprobación individual de cada evidencia activa de un criterio.
+     * Query param: proceso_id (requerido).
+     *
+     * @param int $criterioId
+     * @return JsonResponse
+     */
+    public function listEvidenceApprovals(int $criterionId): JsonResponse
+    {
+        $this->authorize('viewAny', \App\Models\CriterionApproval::class);
+
+        $processId = request()->query('proceso_id');
+
+        if (!$processId || !is_numeric($processId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El parámetro proceso_id es requerido y debe ser un número entero.',
+            ], 422);
+        }
+
+        try {
+            $data = $this->approvalService->listEvidenceApprovals((int) $criterionId, (int) $processId);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $data,
+            ], 200);
+
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las aprobaciones de evidencias.',
+                'error'   => $exception->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Aprobar una evidencia individual dentro de un bloque de criterio.
+     * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
+     *
+     * @param CriterionApprovalRequest $request
+     * @param int $criterioId
+     * @param int $evidenciaId
+     * @return JsonResponse
+     */
+    public function approveIndividualEvidence(
+        CriterionApprovalRequest $request,
+        int $criterionId,
+        int $evidenceId
+    ): JsonResponse {
+        try {
+            $this->authorize('approve', \App\Models\CriterionApproval::class);
+
+            $criterion = Criterion::find($criterionId);
+            if (!$criterion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El criterio especificado no existe.',
+                ], 404);
+            }
+
+            $userId = Auth::id();
+
+            $result = $this->approvalService->approveIndividualEvidence(
+                $criterionId,
+                $evidenceId,
+                $request->proceso_id,
+                $userId
+            );
+
+            AuditLogService::log(
+                'aprobar',
+                "Evidencia {$evidenceId} aprobada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                'Aprobación Criterios'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evidencia aprobada individualmente.',
+                'data'    => $result,
+            ], 201);
+
+        } catch (AuthorizationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta acción.',
+            ], 403);
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Rechazar una evidencia individual dentro de un bloque de criterio.
+     * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
+     *
+     * @param CriterionApprovalRequest $request
+     * @param int $criterioId
+     * @param int $evidenciaId
+     * @return JsonResponse
+     */
+    public function rejectIndividualEvidence(
+        CriterionApprovalRequest $request,
+        int $criterionId,
+        int $evidenceId
+    ): JsonResponse {
+        try {
+            $this->authorize('reject', \App\Models\CriterionApproval::class);
+
+            $criterion = Criterion::find($criterionId);
+            if (!$criterion) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El criterio especificado no existe.',
+                ], 404);
+            }
+
+            $userId = Auth::id();
+
+            $result = $this->approvalService->rejectIndividualEvidence(
+                $criterionId,
+                $evidenceId,
+                $request->proceso_id,
+                $userId,
+                $request->comentario,
+                $request->nueva_fecha_limite
+            );
+
+            AuditLogService::log(
+                'rechazar',
+                "Evidencia {$evidenceId} rechazada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                'Aprobación Criterios'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evidencia rechazada individualmente.',
+                'data'    => $result,
+            ], 201);
+
+        } catch (AuthorizationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para realizar esta acción.',
+            ], 403);
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
             ], 400);
         }
     }
