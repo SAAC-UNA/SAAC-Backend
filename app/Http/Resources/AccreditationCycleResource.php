@@ -38,6 +38,8 @@ class AccreditationCycleResource extends JsonResource
                 'carrera_sede_id' => $this->careerCampus?->carrera_sede_id,
                 'sede_id'         => $this->careerCampus?->sede_id,
                 'carrera_id'      => $this->careerCampus?->carrera_id,
+                'carrera_nombre'  => $this->careerCampus?->career?->nombre,
+                'sede_nombre'     => $this->careerCampus?->campus?->nombre,
             ]),
 
             // Relación con procesos (cuando está cargada)
