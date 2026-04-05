@@ -39,11 +39,6 @@ class CriterionApprovalPolicy
             return false;
         }
 
-        // Superusuario, Encargado y Administrador pueden ver todas
-        if ($user->hasAnyRole(['Superusuario', 'Encargado de Acreditación', 'Administrador'])) {
-            return true;
-        }
-
         // Profesor solo puede ver aprobaciones de criterios donde tiene evidencias asignadas
         if ($user->hasRole('Profesor')) {
             return $approval->criterion
@@ -54,7 +49,7 @@ class CriterionApprovalPolicy
                 ->exists();
         }
 
-        return false;
+        return true;
     }
 
     /**

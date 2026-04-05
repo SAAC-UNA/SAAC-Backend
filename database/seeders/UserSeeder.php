@@ -23,13 +23,10 @@ class UserSeeder extends Seeder
          */
         $this->command->info('🔐 Verificando roles...');
         
-        $roles = [
-            'Superusuario' => 'Acceso total al sistema',
-            'Administrador' => 'Administrador de carrera',
-            'Profesor' => 'Docente de la carrera',
-        ];
+        // Fuente unica: tomar todos los roles desde config/permissions.php
+        $roles = array_keys(config('permissions.roles', []));
 
-        foreach ($roles as $roleName => $description) {
+        foreach ($roles as $roleName) {
             Role::firstOrCreate(
                 ['name' => $roleName, 'guard_name' => 'api']
             );
@@ -100,7 +97,7 @@ class UserSeeder extends Seeder
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 
-        // Ian Enmanuel Villegas Jimenez
+        // Ian Enmanuel Villegas Jimenez - Encargado de Acreditación
         // dn: uid=207800171,ou=estudiantes,ou=users,dc=una,dc=local
         $users[] = [
             'user_data' => [
@@ -110,7 +107,7 @@ class UserSeeder extends Seeder
                 'password' => null, // Usuario LDAP
                 'status' => User::STATUS_ACTIVE,
             ],
-            'roles' => ['Profesor'],
+            'roles' => ['Encargado de Acreditación'],
             'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
         ];
 

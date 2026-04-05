@@ -38,19 +38,7 @@ class ElementApprovalPolicy
             return false;
         }
 
-        if ($user->hasAnyRole(['Superusuario', 'Encargado de Acreditación', 'Administrador'])) {
-            return true;
-        }
-
-        // TODO HU-009: cuando exista ELEMENTO_ASIGNACION, filtrar por usuario aquí:
-        // if ($user->hasRole('Profesor')) {
-        //     return ElementAssignment::where('elemento_id', $approval->elemento_id)
-        //         ->where('proceso_id', $approval->proceso_id)
-        //         ->where('usuario_id', $user->usuario_id)
-        //         ->exists();
-        // }
-
-        return false;
+        return true;
     }
 
     /**

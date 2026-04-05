@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceAssignment;
+use App\Models\ElementAssignment;
+use App\Models\User;
 use App\Http\Requests\EvidenceAssignmentRequest;
 use App\Http\Requests\ValidateDuplicateAssignmentsRequest;
 use App\Http\Resources\EvidenceAssignmentResource;
@@ -11,6 +13,7 @@ use App\Events\EvidenceAssignmentDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class EvidenceAssignmentController extends Controller
 {
@@ -219,5 +222,92 @@ class EvidenceAssignmentController extends Controller
             'duplicados' => $duplicados->values(),
             'total_duplicados' => $duplicados->count(),
         ], 200);
+    }
+
+    /**
+     * GET /api/evidencias-asignaciones/catalogo/usuarios
+     * Catálogo mínimo de usuarios activos para formularios de asignación.
+     */
+    public function catalogUsers(): JsonResponse
+    {
+        $users = User::query()
+            ->active()
+            ->with('roles:id,name')
+            ->orderBy('nombre')
+            ->get(['usuario_id', 'nombre', 'email', 'status'])
+            ->map(function (User $user) {
+                return [
+                    'id' => $user->usuario_id,
+                    'name' => $user->nombre,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'roles' => $user->roles->map(function ($role) {
+                        return [
+                            'id' => $role->id,
+                            'name' => $role->name,
+                        ];
+                    })->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $users], 200);
+    }
+
+    /**
+     * GET /api/evidencias-asignaciones/catalogo/roles
+     * Catálogo mínimo de roles para formularios de asignación.
+     */
+    public function catalogRoles(): JsonResponse
+    {
+        $roles = Role::query()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(function (Role $role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'description' => null,
+                    'permissions' => [],
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $roles], 200);
+    }
+
+    /**
+     * GET /api/usuarios/{usuarioId}/mis-ciclos
+     * Obtener los ciclos de acreditación donde el usuario tiene asignaciones,
+     * con el tipo de modelo de cada uno (tradicional / elemento_flexible).
+     */
+    public function getUserCycles(string $usuarioId): JsonResponse
+    {
+        $userId = (int) $usuarioId;
+
+        $traditionalCycles = EvidenceAssignment::where('usuario_id', $userId)
+            ->with('process.accreditationCycle.modeloEstructura')
+            ->get()
+            ->pluck('process.accreditationCycle')
+            ->filter()
+            ->unique('ciclo_acreditacion_id');
+
+        $flexibleCycles = ElementAssignment::where('usuario_id', $userId)
+            ->with('process.accreditationCycle.modeloEstructura')
+            ->get()
+            ->pluck('process.accreditationCycle')
+            ->filter()
+            ->unique('ciclo_acreditacion_id');
+
+        $cycles = $traditionalCycles->merge($flexibleCycles)
+            ->unique('ciclo_acreditacion_id')
+            ->map(fn ($cycle) => [
+                'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+                'nombre'               => $cycle->nombre,
+                'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'tradicional',
+            ])
+            ->values();
+
+        return response()->json(['data' => $cycles], 200);
     }
 }

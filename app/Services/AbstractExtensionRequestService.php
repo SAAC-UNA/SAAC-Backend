@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Log;
  */
 abstract class AbstractExtensionRequestService implements ExtensionRequestContract
 {
-    protected const WITH_BASE = ['evidenceAssignment.evidence', 'elementAssignment', 'user', 'resolutor'];
+    protected const WITH_BASE = ['evidenceAssignment.evidence', 'evidenceAssignment.process', 'elementAssignment.process', 'user', 'resolutor'];
 
     /**
      * Obtener todas las solicitudes con filtros y paginación.
