@@ -33,6 +33,7 @@ class Notification extends Model
     public const TIPO_VENCIMIENTO_PLAZO = 'vencimiento_plazo';
     public const TIPO_DEVOLUCION_OBSERVACION = 'devolucion_observacion';
     public const TIPO_APROBACION_CRITERIO = 'aprobacion_criterio';
+    public const TIPO_RECHAZO_CRITERIO    = 'rechazo_criterio';
     public const TIPO_APROBACION_EVIDENCIA = 'aprobacion_evidencia';
     public const TIPO_RECHAZO_EVIDENCIA = 'rechazo_evidencia';
     public const TIPO_SOLICITUD_AMPLIACION = 'solicitud_ampliacion';

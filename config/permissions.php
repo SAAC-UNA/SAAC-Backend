@@ -388,10 +388,10 @@ return [
         'estandares.delete' => 'Eliminar estándares',
         
         // Elements
-        'elemento.view' => 'Ver Elements de estructura',
-        'elemento.create' => 'Crear Elements de estructura',
-        'elemento.edit' => 'Editar Elements de estructura',
-        'elemento.delete' => 'Eliminar Elements de estructura',
+        'elemento.view' => 'Ver Elemento de estructura',
+        'elemento.create' => 'Crear Elemento de estructura',
+        'elemento.edit' => 'Editar Elemento de estructura',
+        'elemento.delete' => 'Eliminar Elemento de estructura',
         
         // Evidencias
         'evidencias.view' => 'Ver evidencias',

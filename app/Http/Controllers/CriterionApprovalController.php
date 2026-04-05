@@ -6,8 +6,6 @@ use App\Http\Requests\CriterionApprovalRequest;
 use App\Services\CriterionApprovalService;
 use App\Services\AuditLogService;
 use App\Models\Criterion;
-use App\Events\CriterionApproved;
-use App\Events\CriterionRejected;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -120,8 +118,6 @@ class CriterionApprovalController extends Controller
                 $request->comentario
             );
 
-            // Disparar evento para notificaciones
-            event(new CriterionApproved($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'aprobar',
@@ -180,8 +176,6 @@ class CriterionApprovalController extends Controller
                 $request->nueva_fecha_limite
             );
 
-            // Disparar evento para notificaciones
-            event(new CriterionRejected($result['raiz']));
             // Registrar en bitácora
             AuditLogService::log(
                 'rechazar',
