@@ -16,9 +16,10 @@ class ElementApprovalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proceso_id'   => ['required', 'integer', 'exists:PROCESO,proceso_id'],
-            'comentario'   => ['nullable', 'string', 'max:100'],
-            'fecha_limite' => ['nullable', 'date', 'after:now'],
+            'proceso_id'         => ['required', 'integer', 'exists:PROCESO,proceso_id'],
+            'comentario'         => ['nullable', 'string', 'max:100'],
+            'fecha_limite'       => ['nullable', 'date', 'after:now'],
+            'nueva_fecha_limite' => ['nullable', 'date', 'after:now'],
         ];
     }
 

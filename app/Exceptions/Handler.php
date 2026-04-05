@@ -20,6 +20,20 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
+        // 404 - Recurso no encontrado por lógica de negocio (servicio)
+        $this->renderable(function (\InvalidArgumentException $exception, $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return $this->jsonError($exception->getMessage(), 404);
+            }
+        });
+
+        // 422 - Regla de negocio violada (servicio)
+        $this->renderable(function (\LogicException $exception, $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return $this->jsonError($exception->getMessage(), 422);
+            }
+        });
+
         //  404 - Ruta o recurso no encontrado
         $this->renderable(function (NotFoundHttpException $exception, $request) {
             if ($request->expectsJson()) {

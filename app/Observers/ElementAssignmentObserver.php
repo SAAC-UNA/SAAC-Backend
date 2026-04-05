@@ -2,8 +2,10 @@
 
 namespace App\Observers;
 
+use App\Models\ElementApproval;
 use App\Models\ElementAssignment;
 use App\Models\ElementExtensionRequest;
+use App\Models\StructureElement;
 use Illuminate\Support\Facades\Log;
 
 class ElementAssignmentObserver
@@ -38,5 +40,41 @@ class ElementAssignmentObserver
                 'nuevo_estado'           => $nuevoEstado,
             ]);
         }
+    }
+
+    /**
+     * HU-010 flexible: cuando el responsable marca su asignación como Completado
+     * y existe una APROBACION_ELEMENTO rechazada para ese elemento+proceso,
+     * el bloque padre incompleto vuelve a 'pendiente' para que el evaluador sepa
+     * que hay nuevas correcciones listas para revisar.
+     */
+    public function updated(ElementAssignment $assignment): void
+    {
+        if (!$assignment->wasChanged('estado')) {
+            return;
+        }
+
+        if ($assignment->estado !== ElementAssignment::ESTADO_COMPLETADO) {
+            return;
+        }
+
+        $tieneRechazo = ElementApproval::where('elemento_id', $assignment->elemento_id)
+            ->where('proceso_id', $assignment->proceso_id)
+            ->where('estado', 'rechazado')
+            ->exists();
+
+        if (!$tieneRechazo) {
+            return;
+        }
+
+        $elemento = StructureElement::find($assignment->elemento_id);
+        if (!$elemento || !$elemento->padre_id) {
+            return;
+        }
+
+        ElementApproval::where('elemento_id', $elemento->padre_id)
+            ->where('proceso_id', $assignment->proceso_id)
+            ->where('estado', 'incompleto')
+            ->update(['estado' => 'pendiente']);
     }
 }

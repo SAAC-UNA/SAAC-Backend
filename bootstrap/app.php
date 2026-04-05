@@ -49,6 +49,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // 404 - Elemento no encontrado por lógica de negocio
+        $exceptions->render(function (\InvalidArgumentException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['status' => 'error', 'code' => 404, 'message' => $e->getMessage()], 404);
+            }
+        });
+
+        // 422 - Regla de negocio violada (elemento bloqueado, estado inválido, etc.)
+        $exceptions->render(function (\LogicException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['status' => 'error', 'code' => 422, 'message' => $e->getMessage()], 422);
+            }
+        });
+
         // Forzar respuestas JSON para todas las rutas /api/*
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {

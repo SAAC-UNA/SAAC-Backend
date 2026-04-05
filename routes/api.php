@@ -379,6 +379,9 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
     Route::get('aprobaciones-elementos/{aprobacionId}', [ElementApprovalController::class, 'showApproval']);
     Route::post('elementos/{elementoId}/aprobar', [ElementApprovalController::class, 'approveElemento'])->middleware('throttle:10,1');
     Route::post('elementos/{elementoId}/rechazar', [ElementApprovalController::class, 'rejectElemento'])->middleware('throttle:10,1');
+    // Aprobación individual de hijos dentro de un bloque de elemento
+    Route::post('elementos/{padreId}/hijos/{hijoId}/aprobar', [ElementApprovalController::class, 'approveIndividualChild'])->middleware('throttle:10,1');
+    Route::post('elementos/{padreId}/hijos/{hijoId}/rechazar', [ElementApprovalController::class, 'rejectIndividualChild'])->middleware('throttle:10,1');
 });
 
 // ============================================
