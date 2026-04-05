@@ -155,4 +155,40 @@ class ElementApprovalController extends Controller
             ], 400);
         }
     }
+
+    public function approveIndividualChild(ElementApprovalRequest $request, int $padreId, int $hijoId): JsonResponse
+    {
+        $this->authorize('approve', \App\Models\ElementApproval::class);
+
+        $result = $this->approvalService->approveIndividualChild(
+            $padreId,
+            $hijoId,
+            $request->proceso_id
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Elemento hijo aprobado individualmente.',
+            'data'    => $result,
+        ], 201);
+    }
+
+    public function rejectIndividualChild(ElementApprovalRequest $request, int $padreId, int $hijoId): JsonResponse
+    {
+        $this->authorize('reject', \App\Models\ElementApproval::class);
+
+        $result = $this->approvalService->rejectIndividualChild(
+            $padreId,
+            $hijoId,
+            $request->proceso_id,
+            $request->comentario,
+            $request->nueva_fecha_limite
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Elemento hijo rechazado individualmente.',
+            'data'    => $result,
+        ], 201);
+    }
 }

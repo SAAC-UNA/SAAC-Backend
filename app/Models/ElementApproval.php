@@ -18,6 +18,11 @@ class ElementApproval extends Model
         'usuario_id',
         'estado',
         'comentario',
+        'nueva_fecha_limite',// para almacenar la nueva fecha límite propuesta por el usuario en caso de rechazo
+    ];
+
+    protected $casts = [
+        'nueva_fecha_limite' => 'date',// para asegurarnos de que se trate como una fecha al acceder a este campo
     ];
 
     /**
