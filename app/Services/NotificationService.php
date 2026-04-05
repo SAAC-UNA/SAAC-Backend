@@ -233,6 +233,8 @@ class NotificationService
             Notification::TIPO_VENCIMIENTO_PLAZO,
             Notification::TIPO_DEVOLUCION_OBSERVACION,
             Notification::TIPO_SOLICITUD_AMPLIACION,
+            Notification::TIPO_RECHAZO_CRITERIO,
+            Notification::TIPO_RECHAZO_EVIDENCIA,
         ];
 
         if (in_array($tipoEvento, $eventosCriticos) || $forzarEmail) {

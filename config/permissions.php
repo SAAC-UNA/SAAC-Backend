@@ -420,7 +420,7 @@ return [
         'estandares.edit' => 'Editar estándares',
         'estandares.delete' => 'Eliminar estándares',
 
-        // Elements
+        // Elementos
         'elemento.view' => 'Ver Elementos de estructura',
         'elemento.create' => 'Crear Elementos de estructura',
         'elemento.edit' => 'Editar Elementos de estructura',
