@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\ElementApproval;
 use App\Models\ElementAssignment;
 use App\Models\StructureElement;
+use App\Models\Notification;
 use App\Events\ElementApproved;
 use App\Events\ElementRejected;
 use App\Services\AuditLogService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
@@ -201,6 +203,38 @@ class ElementApprovalService
             'Aprobación Elements'
         );
 
+        // NUEVO (HU-notificaciones): por cada elemento aprobado (pauta + sus fuentes),
+        // busca quién tiene asignado ese elemento y le manda notificación interna (solo app).
+        // Va fuera de la transacción: si falla el envío no revierte la aprobación.
+        foreach ($allIds as $elementId) {
+            try {
+                $assignedUserIds = ElementAssignment::where('elemento_id', $elementId)
+                    ->where('proceso_id', $procesoId)
+                    ->pluck('usuario_id')
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                if (!empty($assignedUserIds)) {
+                    $el = StructureElement::find($elementId);
+                    NotificationService::createMany(
+                        $assignedUserIds,
+                        [
+                            'tipo_evento' => Notification::TIPO_APROBACION_ELEMENTO,
+                            'titulo'      => "Elemento {$el->nomenclatura} aprobado",
+                            'mensaje'     => "El elemento {$el->nomenclatura} — {$el->descripcion} ha sido aprobado para el proceso #{$procesoId}.",
+                            'enlace'      => "/elementos/{$elementoId}/aprobaciones",
+                        ]
+                    );
+                }
+            } catch (\Throwable $excepcion) {
+                logger()->error('ElementApproved notification failed', [
+                    'elemento_id' => $elementId,
+                    'error'       => $excepcion->getMessage(),
+                ]);
+            }
+        }
+
         return $result;
     }
 
@@ -270,6 +304,41 @@ class ElementApprovalService
             'Aprobación Elements'
         );
 
+        // NUEVO (HU-notificaciones): por cada elemento rechazado (pauta + sus fuentes),
+        // busca quién tiene asignado ese elemento y le manda email + notificación interna.
+        // Incluye el comentario del evaluador y la nueva fecha límite si se proporcionaron.
+        $deadlineMessage = $fechaLimite ? " Nueva fecha límite: {$fechaLimite}." : '';
+        $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+
+        foreach ($allIds as $elementId) {
+            try {
+                $assignedUserIds = ElementAssignment::where('elemento_id', $elementId)
+                    ->where('proceso_id', $procesoId)
+                    ->pluck('usuario_id')
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                if (!empty($assignedUserIds)) {
+                    $el = StructureElement::find($elementId);
+                    NotificationService::createMany(
+                        $assignedUserIds,
+                        [
+                            'tipo_evento' => Notification::TIPO_RECHAZO_ELEMENTO,
+                            'titulo'      => "Elemento {$el->nomenclatura} rechazado — se requieren correcciones",
+                            'mensaje'     => "El elemento {$el->nomenclatura} — {$el->descripcion} ha sido rechazado para el proceso #{$procesoId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
+                            'enlace'      => "/elementos/{$elementoId}/aprobaciones",
+                        ]
+                    );
+                }
+            } catch (\Throwable $excepcion) {
+                logger()->error('ElementRejected notification failed', [
+                    'elemento_id' => $elementId,
+                    'error'       => $excepcion->getMessage(),
+                ]);
+            }
+        }
+
         return $result;
     }
 
@@ -319,7 +388,7 @@ class ElementApprovalService
             );
         }
 
-        return DB::transaction(function () use ($padreId, $hijoId, $procesoId, $hijo) {
+        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $hijo) {
             $usuarioId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
@@ -350,6 +419,37 @@ class ElementApprovalService
                 'hijo_approval'  => $childApproval->load(['elemento']),
             ];
         });
+
+        // NUEVO (HU-notificaciones): notifica al usuario asignado al hijo aprobado.
+        // Solo canal interno (app), no email — aprobación no requiere acción urgente.
+        try {
+            $assignedUserIds = ElementAssignment::where('elemento_id', $hijoId)
+                ->where('proceso_id', $procesoId)
+                ->pluck('usuario_id')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($assignedUserIds)) {
+                $hijoEl = $result['hijo_approval']->elemento;
+                NotificationService::createMany(
+                    $assignedUserIds,
+                    [
+                        'tipo_evento' => Notification::TIPO_APROBACION_ELEMENTO,
+                        'titulo'      => "Elemento {$hijoEl->nomenclatura} aprobado",
+                        'mensaje'     => "El elemento {$hijoEl->nomenclatura} — {$hijoEl->descripcion} ha sido aprobado para el proceso #{$procesoId}.",
+                        'enlace'      => "/elementos/{$padreId}/aprobaciones",
+                    ]
+                );
+            }
+        } catch (\Throwable $excepcion) {
+            logger()->error('ChildElementApproved notification failed', [
+                'elemento_id' => $hijoId,
+                'error'       => $excepcion->getMessage(),
+            ]);
+        }
+
+        return $result;
     }
 
     /**
@@ -400,7 +500,7 @@ class ElementApprovalService
             );
         }
 
-        return DB::transaction(function () use ($padreId, $hijoId, $procesoId, $comentario, $nuevaFechaLimite, $hijo) {
+        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $comentario, $nuevaFechaLimite, $hijo) {
             $usuarioId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
@@ -445,5 +545,38 @@ class ElementApprovalService
                 'hijo_approval'  => $childApproval->load(['elemento']),
             ];
         });
+
+        // NUEVO (HU-notificaciones): notifica al usuario asignado al hijo rechazado.
+        // Canal email + app — rechazo individual requiere que el profesor corrija y reenvíe.
+        try {
+            $assignedUserIds = ElementAssignment::where('elemento_id', $hijoId)
+                ->where('proceso_id', $procesoId)
+                ->pluck('usuario_id')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($assignedUserIds)) {
+                $hijoEl = $result['hijo_approval']->elemento;
+                $deadlineMessage = $nuevaFechaLimite ? " Nueva fecha límite: {$nuevaFechaLimite}." : '';
+                $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+                NotificationService::createMany(
+                    $assignedUserIds,
+                    [
+                        'tipo_evento' => Notification::TIPO_RECHAZO_ELEMENTO,
+                        'titulo'      => "Elemento {$hijoEl->nomenclatura} rechazado — se requieren correcciones",
+                        'mensaje'     => "El elemento {$hijoEl->nomenclatura} — {$hijoEl->descripcion} ha sido rechazado para el proceso #{$procesoId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
+                        'enlace'      => "/elementos/{$padreId}/aprobaciones",
+                    ]
+                );
+            }
+        } catch (\Throwable $excepcion) {
+            logger()->error('ChildElementRejected notification failed', [
+                'elemento_id' => $hijoId,
+                'error'       => $excepcion->getMessage(),
+            ]);
+        }
+
+        return $result;
     }
 }

@@ -36,6 +36,9 @@ class Notification extends Model
     public const TIPO_RECHAZO_CRITERIO    = 'rechazo_criterio';
     public const TIPO_APROBACION_EVIDENCIA = 'aprobacion_evidencia';
     public const TIPO_RECHAZO_EVIDENCIA = 'rechazo_evidencia';
+    // Agregados para HU-018 de notificaciones más específicas
+    public const TIPO_APROBACION_ELEMENTO  = 'aprobacion_elemento';
+    public const TIPO_RECHAZO_ELEMENTO     = 'rechazo_elemento';
     public const TIPO_SOLICITUD_AMPLIACION = 'solicitud_ampliacion';
     public const TIPO_RESPUESTA_AMPLIACION = 'respuesta_ampliacion';
     public const TIPO_COMENTARIO_NUEVO = 'comentario_nuevo';
