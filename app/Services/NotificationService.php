@@ -235,6 +235,7 @@ class NotificationService
             Notification::TIPO_SOLICITUD_AMPLIACION,
             Notification::TIPO_RECHAZO_CRITERIO,
             Notification::TIPO_RECHAZO_EVIDENCIA,
+            Notification::TIPO_RECHAZO_ELEMENTO,
         ];
 
         if (in_array($tipoEvento, $eventosCriticos) || $forzarEmail) {
