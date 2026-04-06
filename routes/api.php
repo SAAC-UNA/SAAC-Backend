@@ -302,7 +302,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
 Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->group(function () {
     Route::middleware(['permission:asignaciones.view'])->group(function () {
         Route::get('elementos-asignaciones', [ElementAssignmentController::class, 'index']);
-        Route::get('elementos-asignaciones/filtrar', [ElementAssignmentController::class, 'filter']);
+        Route::get('elementos-asignaciones/filtrar', [ElementAssignmentController::class, 'filtrar']);
         Route::get('elementos-asignaciones/{id}', [ElementAssignmentController::class, 'show']);
         Route::get('elementos/{elementoId}/asignaciones', [ElementAssignmentController::class, 'byElement']);
         Route::get('procesos/{procesoId}/elementos-asignaciones', [ElementAssignmentController::class, 'byProcess']);
