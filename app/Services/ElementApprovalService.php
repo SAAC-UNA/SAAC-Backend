@@ -49,6 +49,11 @@ class ElementApprovalService
             $query->where('estado', $estado);
         }
 
+        $procesoId = request()->query('proceso_id');
+        if ($procesoId !== null) {
+            $query->where('proceso_id', (int) $procesoId);
+        }
+
         return $query->get();
     }
 
@@ -285,6 +290,9 @@ class ElementApprovalService
 
             // Resetear asignaciones a Pendiente para que los responsables reenvíen
             $assignmentUpdate = ['estado' => ElementAssignment::ESTADO_PENDIENTE];
+            if ($comentario !== null) {
+                $assignmentUpdate['comentario'] = $comentario;
+            }
             if ($fechaLimite !== null) {
                 $assignmentUpdate['fecha_limite'] = $fechaLimite;
             }
