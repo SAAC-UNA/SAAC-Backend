@@ -40,7 +40,7 @@ return [
 
     'modules' => [
         // Gestión de Usuarios (HU-002)
-        'usuarios' => ['view', 'create', 'edit', 'delete'],
+        'usuarios' => ['view', 'create', 'edit', 'delete', 'assign', 'approve'],
 
         // Gestión de Roles (Admin)
         'roles' => ['view', 'create', 'edit', 'delete', 'assign'],
@@ -124,6 +124,7 @@ return [
             'usuarios.create',
             'usuarios.edit',
             'usuarios.delete',
+            'usuarios.assign',
 
             // Gestión de roles (ver y asignar a usuarios)
             'roles.view',
@@ -367,6 +368,8 @@ return [
         'usuarios.create' => 'Crear usuarios',
         'usuarios.edit' => 'Editar usuarios',
         'usuarios.delete' => 'Eliminar usuarios',
+        'usuarios.assign' => 'Asignar carreras a usuarios',
+        'usuarios.approve' => 'Delegar asignación de carreras a usuarios con alcance administrativo',
 
         // Admin
         'admin.super' => 'Acceso total al sistema',

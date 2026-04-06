@@ -29,6 +29,7 @@ class ImprovementCommitmentListRequest extends FormRequest
             'per_page' => 'nullable|integer|min:1|max:50',
             'search' => 'string|nullable',
             'estado' => 'string|nullable|in:Pendiente,En Progreso,Completado,Vencido',
+            'ciclo_acreditacion_id' => 'integer|nullable|exists:CICLO_ACREDITACION,ciclo_acreditacion_id',
             'proceso_id' => 'integer|nullable|exists:PROCESO,proceso_id',
             'usuario_id' => 'integer|nullable|exists:USUARIO,usuario_id',
         ];
@@ -48,6 +49,7 @@ class ImprovementCommitmentListRequest extends FormRequest
             'per_page.min' => 'Debe solicitar al menos 1 registro por página.',
             'per_page.max' => 'No puede solicitar más de 50 registros por página.',
             'estado.in' => 'El estado debe ser uno de: Pendiente, En Progreso, Completado, Vencido.',
+            'ciclo_acreditacion_id.exists' => 'El ciclo de acreditación especificado no existe.',
             'proceso_id.exists' => 'El proceso especificado no existe.',
             'usuario_id.exists' => 'El usuario especificado no existe.',
         ];

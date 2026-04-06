@@ -27,8 +27,9 @@ abstract class BaseCareer extends Model
                 }
             }
 
-            //  Modo Postman: sin usuario, pero con parámetro
-            if (!$user && $careerParam) {
+            // Si viene carrera explícita en el request, siempre respetarla.
+            // Esto habilita el contexto global también para Superusuario.
+            if ($careerParam) {
                 static::applyFilter($query, $modelName, [$careerParam]);
                 return;
             }

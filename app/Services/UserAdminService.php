@@ -88,4 +88,51 @@ class UserAdminService
 
         return $user;
     }
+
+    /**
+     * Asigna carreras a un usuario con control de alcance por permisos.
+     *
+     * Reglas:
+     * - `usuarios.assign`: puede asignar carreras a usuarios operativos.
+     * - `usuarios.approve`: puede asignar carreras a usuarios que también delegan (`usuarios.assign`).
+     * - No Superusuario: solo puede asignar carreras que él mismo tiene asociadas.
+     */
+    public function setCareers(User $actor, User $target, array $careerIds): User
+    {
+        $canAssign = $actor->can('usuarios.assign') || $actor->can('usuarios.approve');
+        if (!$canAssign) {
+            abort(response()->json([
+                'message' => 'No tiene permisos para asignar carreras.',
+            ], 403));
+        }
+
+        $targetDelegates = $target->can('usuarios.assign') || $target->can('usuarios.approve');
+        if ($targetDelegates && !$actor->can('usuarios.approve')) {
+            abort(response()->json([
+                'message' => 'Se requiere permiso de delegación para asignar carreras a este usuario.',
+            ], 403));
+        }
+
+        $careerIds = array_values(array_unique(array_map('intval', $careerIds)));
+
+        if (!$actor->hasRole('Superusuario')) {
+            $allowedCareerIds = $actor->careers()
+                ->pluck('CARRERA.carrera_id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $notAllowed = array_values(array_diff($careerIds, $allowedCareerIds));
+            if ($notAllowed !== []) {
+                abort(response()->json([
+                    'message' => 'Solo puede asignar carreras dentro de su alcance.',
+                    'not_allowed_careers' => $notAllowed,
+                ], 403));
+            }
+        }
+
+        $target->careers()->sync($careerIds);
+
+        return $target->fresh(['roles', 'permissions', 'careers']);
+    }
 }

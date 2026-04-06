@@ -34,6 +34,14 @@ class ExtensionRequestResource extends JsonResource
             'justificacion' => $this->justificacion,
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
+
+            // Contexto normalizado para filtros en frontend
+            'context' => [
+                'proceso_id' => $this->evidenceAssignment?->proceso_id
+                    ?? $this->elementAssignment?->proceso_id,
+                'ciclo_acreditacion_id' => $this->evidenceAssignment?->process?->ciclo_acreditacion_id
+                    ?? $this->elementAssignment?->process?->ciclo_acreditacion_id,
+            ],
             
             // Relación con la asignación de evidencia (solo cuando la solicitud es de tipo tradicional)
             'evidencia_asignacion' => $this->when(
@@ -41,12 +49,18 @@ class ExtensionRequestResource extends JsonResource
                 fn() => $this->whenLoaded('evidenceAssignment', fn() => $this->evidenceAssignment ? [
                     'evidencia_asignacion_id' => $this->evidenceAssignment->evidencia_asignacion_id,
                     'evidencia_id'            => $this->evidenceAssignment->evidencia_id,
+                    'proceso_id'              => $this->evidenceAssignment->proceso_id,
                     'estado'                  => $this->evidenceAssignment->estado,
                     'fecha_limite'            => optional($this->evidenceAssignment->fecha_limite)->toISOString(),
                     'evidencia'               => $this->evidenceAssignment->evidence ? [
                         'evidencia_id' => $this->evidenceAssignment->evidence->evidencia_id,
                         'nomenclatura' => $this->evidenceAssignment->evidence->nomenclatura,
                         'descripcion'  => $this->evidenceAssignment->evidence->descripcion,
+                    ] : null,
+                    'process'                 => $this->evidenceAssignment->process ? [
+                        'proceso_id'           => $this->evidenceAssignment->process->proceso_id,
+                        'nombre'               => $this->evidenceAssignment->process->nombre ?? null,
+                        'ciclo_acreditacion_id' => $this->evidenceAssignment->process->ciclo_acreditacion_id ?? null,
                     ] : null,
                 ] : null)
             ),
@@ -57,8 +71,14 @@ class ExtensionRequestResource extends JsonResource
                 fn() => $this->whenLoaded('elementAssignment', fn() => $this->elementAssignment ? [
                     'elemento_asignacion_id' => $this->elementAssignment->elemento_asignacion_id,
                     'elemento_id'            => $this->elementAssignment->elemento_id,
+                    'proceso_id'             => $this->elementAssignment->proceso_id,
                     'estado'                 => $this->elementAssignment->estado,
                     'fecha_limite'           => optional($this->elementAssignment->fecha_limite)->toISOString(),
+                    'process'                => $this->elementAssignment->process ? [
+                        'proceso_id'           => $this->elementAssignment->process->proceso_id,
+                        'nombre'               => $this->elementAssignment->process->nombre ?? null,
+                        'ciclo_acreditacion_id' => $this->elementAssignment->process->ciclo_acreditacion_id ?? null,
+                    ] : null,
                 ] : null)
             ),
 
