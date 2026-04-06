@@ -40,7 +40,7 @@ class ElementCommitmentService
         $elementoId = $filters['elemento_id'] ?? null;
         $usuarioId  = $filters['usuario_id'] ?? null;
 
-        return ElementCommitment::with(['process', 'assignedElements.element'])
+        return ElementCommitment::with(['process', 'assignedElements.element', 'assignedElements.user'])
             ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
             ->when($estado, fn($q) => $q->where('estado', $estado))
             ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
@@ -65,6 +65,7 @@ class ElementCommitmentService
         return ElementCommitment::with([
             'process',
             'assignedElements.element',
+            'assignedElements.user',
         ])->find($id);
     }
 
@@ -245,23 +246,23 @@ class ElementCommitmentService
             }
 
             foreach ($usuarios as $usuarioId) {
-                if (ElementAssignment::where('proceso_id', $procesoId)
-                        ->where('elemento_id', $elementoId)
-                        ->where('usuario_id', $usuarioId)
-                        ->exists()) {
-                    throw ValidationException::withMessages([
-                        'elementos_asignar' => "El elemento ID {$elementoId} ya está asignado al usuario ID {$usuarioId} en este proceso.",
-                    ]);
-                }
+                $newAssignment = ElementAssignment::where('proceso_id', $procesoId)
+                    ->where('elemento_id', $elementoId)
+                    ->where('usuario_id', $usuarioId)
+                    ->first();
 
-                $newAssignment = ElementAssignment::create([
-                    'elemento_id'  => $elementoId,
-                    'usuario_id'   => $usuarioId,
-                    'proceso_id'   => $procesoId,
-                    'estado'       => ElementAssignment::ESTADO_PENDIENTE,
-                    'fecha_limite' => $fechaLimite,
-                    'comentario'   => $comentario,
-                ]);
+                if (!$newAssignment) {
+                    $newAssignment = ElementAssignment::create([
+                        'elemento_id'  => $elementoId,
+                        'usuario_id'   => $usuarioId,
+                        'proceso_id'   => $procesoId,
+                        'estado'       => ElementAssignment::ESTADO_PENDIENTE,
+                        'fecha_limite' => $fechaLimite,
+                        'comentario'   => $comentario,
+                    ]);
+                } elseif ($fechaLimite) {
+                    $newAssignment->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                }
 
                 $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
                     'comentario' => $comentario,
