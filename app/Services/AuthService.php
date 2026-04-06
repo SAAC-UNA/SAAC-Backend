@@ -84,11 +84,12 @@ class AuthService
     }
 
     /**
-     * Cierra la sesión del usuario: elimina token actual y registra en bitácora.
+     * Cierra la sesión del usuario: elimina token actual, limpia contexto y registra en bitácora.
      */
     public function terminate(User $user): void
     {
         optional($user->currentAccessToken())->delete();
+        app(GlobalFilterContextService::class)->clear($user);
         AuditLogService::log('logout', "Usuario {$user->nombre} cerró sesión", 'Autenticación');
     }
 }

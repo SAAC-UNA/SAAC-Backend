@@ -26,6 +26,7 @@ use App\Http\Controllers\ExtensionRequestController;
 use App\Http\Controllers\ExtensionTimeRequestController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FlexibleExtensionRequestController;
+use App\Http\Controllers\GlobalFilterContextController;
 use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
@@ -58,6 +59,13 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // ============================================
 // Rutas de Estructura (protegidas con permisos)
 // ============================================
+Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('contexto/filtros-globales')->group(function () {
+    Route::get('/', [GlobalFilterContextController::class, 'show']);
+    Route::put('/', [GlobalFilterContextController::class, 'update']);
+    Route::delete('/', [GlobalFilterContextController::class, 'reset']);
+    Route::get('/catalogo', [GlobalFilterContextController::class, 'catalog']);
+});
+
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 
     // ===== UNIVERSIDADES =====
@@ -144,13 +152,16 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 
     // ===== EVIDENCIAS ===== (HU-012: Filtrado avanzado DEBE ir ANTES de apiResource)
     Route::middleware(['permission:evidencias.view'])->group(function () {
-        Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter']);
+        Route::get('estructura/evidencias/filter', [EvidenceController::class, 'filter'])
+            ->middleware('global.filter.context');
         Route::get('estructura/evidencias', [EvidenceController::class, 'index']);
         Route::get('estructura/evidencias/{evidence}', [EvidenceController::class, 'show']);
     });
     Route::get('estructura/evidencias/export/excel', [EvidenceController::class, 'exportExcel'])
+        ->middleware('global.filter.context')
         ->middleware('permission:reportes.export');
     Route::get('estructura/evidencias/export/pdf', [EvidenceController::class, 'exportPDF'])
+        ->middleware('global.filter.context')
         ->middleware('permission:reportes.export');
     Route::post('estructura/evidencias', [EvidenceController::class, 'store'])
         ->middleware('permission:evidencias.create');
@@ -182,9 +193,12 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     // ===== ELEMENTO (Tabla flexible para SINAES 2026) =====
     Route::middleware(['permission:elemento.view'])->group(function () {
         Route::get('estructura/elementos', [StructureElementController::class, 'index']);
-        Route::get('estructura/elementos/filter', [StructureElementController::class, 'filter']);
-        Route::get('estructura/elementos/export/excel', [StructureElementController::class, 'exportExcel']);
-        Route::get('estructura/elementos/export/pdf', [StructureElementController::class, 'exportPDF']);
+        Route::get('estructura/elementos/filter', [StructureElementController::class, 'filter'])
+            ->middleware('global.filter.context');
+        Route::get('estructura/elementos/export/excel', [StructureElementController::class, 'exportExcel'])
+            ->middleware('global.filter.context');
+        Route::get('estructura/elementos/export/pdf', [StructureElementController::class, 'exportPDF'])
+            ->middleware('global.filter.context');
         // Route::get('estructura/elementos/arbol', [StructureElementController::class, 'tree']); // TODO: Funcionalidad tree para futuro
         Route::get('estructura/elementos/{id}', [StructureElementController::class, 'show']);
     });
@@ -261,7 +275,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // ============================================
 // Rutas para Asignaciones de Evidencias (HU-007)
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->group(function () {
     Route::middleware(['permission:asignaciones.view'])->group(function () {
         Route::get('evidencias-asignaciones', [EvidenceAssignmentController::class, 'index']);
         Route::get('evidencias-asignaciones/catalogo/usuarios', [EvidenceAssignmentController::class, 'catalogUsers']);
@@ -285,7 +299,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // ============================================
 // Element Assignments (HU-007 flexible model)
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->group(function () {
     Route::middleware(['permission:asignaciones.view'])->group(function () {
         Route::get('elementos-asignaciones', [ElementAssignmentController::class, 'index']);
         Route::get('elementos-asignaciones/filtrar', [ElementAssignmentController::class, 'filter']);
@@ -387,7 +401,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
 // ============================================
 // Archivos (HU-008 - Subida de Evidencias)
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('archivos')->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->prefix('archivos')->group(function () {
     Route::get('/test-data', [FileController::class, 'getTestData']); // TEMPORAL
 
     Route::get('/', [FileController::class, 'index'])
@@ -428,7 +442,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elemento-solicit
 // ============================================
 // Archivos de Elementos (HU-008 modelo flexible)
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elementos-archivos')->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->prefix('elementos-archivos')->group(function () {
     Route::get('/', [ElementFileController::class, 'index'])
         ->middleware('permission:archivos.view');
     Route::post('/', [ElementFileController::class, 'store'])
@@ -451,7 +465,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('elementos-archiv
 // Protegidas con:
 // - auth:sanctum: Requiere usuario autenticado con token válido
 // - permission:usuarios.edit: Requiere permiso específico para editar usuarios
-Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.edit'])->group(function () {
+Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.view|usuarios.edit'])->group(function () {
     Route::get('/', [UserController::class, 'index']);
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
@@ -464,6 +478,9 @@ Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.e
     Route::put('{user}/role', [UserController::class, 'assignRole'])
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/permissions', [UserController::class, 'assignPermissions'])
+        ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
+    Route::put('{user}/careers', [UserController::class, 'assignCareers'])
+        ->middleware('permission:usuarios.assign|usuarios.approve')
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
 });
 
@@ -511,7 +528,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // ============================================
 // Compromisos de Mejora
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-de-mejora')->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->prefix('compromisos-de-mejora')->group(function () {
     Route::middleware(['permission:compromisos_mejora.view'])->group(function () {
         Route::get('/', [ImprovementCommitmentController::class, 'listCommitments']);
         Route::get('/usuario/{usuarioId}', [ImprovementCommitmentController::class, 'getByUser']);
@@ -530,7 +547,7 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-de-m
 // ============================================
 // Compromisos de Mejora — Modelo Flexible (ELEMENTO)
 // ============================================
-Route::middleware(['auth:sanctum', 'refresh.session'])->prefix('compromisos-elementos')->group(function () {
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->prefix('compromisos-elementos')->group(function () {
     Route::middleware(['permission:compromisos_mejora.view'])->group(function () {
         Route::get('/', [ElementCommitmentController::class, 'listCommitments']);
         Route::get('/usuario/{usuarioId}', [ElementCommitmentController::class, 'getByUser']);

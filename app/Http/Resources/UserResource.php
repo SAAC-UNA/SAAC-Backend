@@ -34,6 +34,12 @@ class UserResource extends JsonResource
                     'name' => $role->name,
                 ];
             }),
+            'careers' => $this->careers->map(function ($career) {
+                return [
+                    'carrera_id' => $career->carrera_id,
+                    'nombre' => $career->nombre,
+                ];
+            })->values(),
             'direct_permissions' => $this->permissions->map(function ($permission) {
                 $descriptions = config('permissions.descriptions', []);
                 return [

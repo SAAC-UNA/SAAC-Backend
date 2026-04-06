@@ -14,11 +14,13 @@ use App\Models\Role;
 use App\Events\ElementAssigned;
 use App\Services\AuditLogService;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ElementAssignmentService
 {
     private const WITH_BASE = ['element', 'user', 'process', 'assignedBy'];
+    private const CACHE_TTL = 60;
 
     private function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
@@ -30,9 +32,11 @@ class ElementAssignmentService
      */
     public function getAll()
     {
-        return $this->baseQuery()
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return Cache::remember('element-assignments.all', self::CACHE_TTL, fn () =>
+            $this->baseQuery()
+                ->orderBy('created_at', 'desc')
+                ->get()
+        );
     }
 
     /**
@@ -41,43 +45,51 @@ class ElementAssignmentService
      */
     public function filter(array $filters, User $user): array
     {
-        $query = ElementAssignment::with(['element', 'user', 'process']);
+        $cacheKey = 'element-assignments.filter:' . md5(json_encode([
+            'filters' => $filters,
+            'user' => $user->usuario_id,
+            'roles' => $user->roles()->pluck('name')->sort()->values()->all(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
-        if (!empty($filters['proceso_id'])) {
-            $query->where('proceso_id', (int) $filters['proceso_id']);
-        }
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($filters, $user) {
+            $query = ElementAssignment::with(['element', 'user', 'process']);
 
-        if (!empty($filters['elemento_id'])) {
-            $query->where('elemento_id', (int) $filters['elemento_id']);
-        }
+            if (!empty($filters['proceso_id'])) {
+                $query->where('proceso_id', (int) $filters['proceso_id']);
+            }
 
-        if (!empty($filters['estado'])) {
-            $query->where('estado', $filters['estado']);
-        }
+            if (!empty($filters['elemento_id'])) {
+                $query->where('elemento_id', (int) $filters['elemento_id']);
+            }
 
-        if (!empty($filters['usuario_id'])) {
-            $query->where('usuario_id', (int) $filters['usuario_id']);
-        }
+            if (!empty($filters['estado'])) {
+                $query->where('estado', $filters['estado']);
+            }
 
-        // Usuarios sin rol de gestión solo ven sus propias asignaciones
-        if (!$user->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación'])) {
-            $query->where('usuario_id', $user->usuario_id);
-        }
+            if (!empty($filters['usuario_id'])) {
+                $query->where('usuario_id', (int) $filters['usuario_id']);
+            }
 
-        $perPage = (int) ($filters['per_page'] ?? 15);
-        $page    = (int) ($filters['page'] ?? 1);
+            // Usuarios sin rol de gestión solo ven sus propias asignaciones
+            if (!$user->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación'])) {
+                $query->where('usuario_id', $user->usuario_id);
+            }
 
-        $paginated = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+            $perPage = (int) ($filters['per_page'] ?? 15);
+            $page    = (int) ($filters['page'] ?? 1);
 
-        return [
-            'data' => $paginated->items(),
-            'meta' => [
-                'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
-                'per_page'     => $paginated->perPage(),
-                'total'        => $paginated->total(),
-            ],
-        ];
+            $paginated = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
+            return [
+                'data' => $paginated->items(),
+                'meta' => [
+                    'current_page' => $paginated->currentPage(),
+                    'last_page'    => $paginated->lastPage(),
+                    'per_page'     => $paginated->perPage(),
+                    'total'        => $paginated->total(),
+                ],
+            ];
+        });
     }
 
     /**
@@ -254,10 +266,12 @@ class ElementAssignmentService
      */
     public function getByUser(int $userId)
     {
-        return $this->baseQuery()
-            ->where('usuario_id', $userId)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return Cache::remember("element-assignments.user.{$userId}", self::CACHE_TTL, fn () =>
+            $this->baseQuery()
+                ->where('usuario_id', $userId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+        );
     }
 
     /**
@@ -265,10 +279,12 @@ class ElementAssignmentService
      */
     public function getByElement(int $elementId)
     {
-        return $this->baseQuery()
-            ->where('elemento_id', $elementId)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return Cache::remember("element-assignments.element.{$elementId}", self::CACHE_TTL, fn () =>
+            $this->baseQuery()
+                ->where('elemento_id', $elementId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+        );
     }
 
     /**
@@ -276,10 +292,12 @@ class ElementAssignmentService
      */
     public function getByProcess(int $processId)
     {
-        return $this->baseQuery()
-            ->where('proceso_id', $processId)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return Cache::remember("element-assignments.process.{$processId}", self::CACHE_TTL, fn () =>
+            $this->baseQuery()
+                ->where('proceso_id', $processId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+        );
     }
 
     /**

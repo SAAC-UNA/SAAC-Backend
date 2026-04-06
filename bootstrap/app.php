@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'refresh.session' => \App\Http\Middleware\RefreshSessionMiddleware::class,
+            'global.filter.context' => \App\Http\Middleware\ApplyGlobalFilterContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

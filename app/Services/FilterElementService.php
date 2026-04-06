@@ -36,6 +36,7 @@ class FilterElementService
         $fechaLimiteDesde   = $filters['fecha_limite_desde']   ?? null;
         $fechaLimiteHasta   = $filters['fecha_limite_hasta']   ?? null;
         $cicloId            = $filters['ciclo_acreditacion_id'] ?? null;
+        $procesoId          = $filters['proceso_id']           ?? null;
         $rolId              = $filters['rol_id']               ?? null;
         $responsableId      = $filters['responsable_id']       ?? null;
         $elementoRaizId     = $filters['elemento_raiz_id']     ?? null;
@@ -101,6 +102,11 @@ class FilterElementService
         if ($cicloId !== null) {
             $query->whereHas('assignments.process', fn ($q) =>
                 $q->where('ciclo_acreditacion_id', $cicloId)
+            );
+        }
+        if ($procesoId !== null) {
+            $query->whereHas('assignments', fn ($q) =>
+                $q->where('proceso_id', $procesoId)
             );
         }
         if ($rolId !== null) {

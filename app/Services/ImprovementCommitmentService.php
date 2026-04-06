@@ -28,11 +28,13 @@ class ImprovementCommitmentService
     {
         $search    = $filters['search']    ?? null;
         $estado    = $filters['estado']    ?? null;
+        $cycleId   = $filters['ciclo_acreditacion_id'] ?? null;
         $procesoId = $filters['proceso_id'] ?? null;
         $usuarioId = $filters['usuario_id'] ?? null;
 
         return ImprovementCommitment::with([
-                'process',
+            'process.accreditationCycle.careerCampus.career',
+            'process.accreditationCycle.careerCampus.campus',
                 'evidences.criterion.component.dimension',
                 'evidences.criterion.standards',
                 'assignedEvidences.evidence',
@@ -40,6 +42,7 @@ class ImprovementCommitmentService
             ])
             ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
             ->when($estado, fn($q) => $q->where('estado', $estado))
+            ->when($cycleId, fn($q) => $q->whereHas('process', fn($processQuery) => $processQuery->where('ciclo_acreditacion_id', $cycleId)))
             ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
             ->when($usuarioId, fn($q) => $q->whereHas('assignedEvidences', fn($sub) => $sub->where('usuario_id', $usuarioId)))
             ->paginate($perPage);

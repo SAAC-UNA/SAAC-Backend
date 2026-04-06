@@ -14,6 +14,7 @@ use App\Services\UserAdminService;
 use App\Services\AuditLogService;
 use App\Http\Requests\AssignRoleRequest;
 use App\Http\Requests\AssignPermissionsRequest;
+use App\Http\Requests\AssignCareersRequest;
 
 
 
@@ -32,7 +33,7 @@ class UserController extends Controller
     {
         // Cargamos roles, permisos directos y permisos de cada rol
         // para que getAllPermissions() en UserResource no dispare lazy loads por usuario
-        $users = User::with(['roles', 'permissions', 'roles.permissions'])
+        $users = User::with(['roles', 'permissions', 'roles.permissions', 'careers'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -185,6 +186,32 @@ class UserController extends Controller
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
             'granted' => $permisosAsignados, 
+        ], 200);
+    }
+
+    public function assignCareers(AssignCareersRequest $request, User $user): JsonResponse
+    {
+        $actor = $request->user();
+        if (!$actor) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        $careers = $request->input('careers', []);
+        $updatedUser = $this->userAdmin->setCareers($actor, $user, $careers);
+
+        AuditLogService::log(
+            'asignar_carreras',
+            "Carreras actualizadas para: {$updatedUser->nombre} (ID: {$updatedUser->usuario_id}).",
+            'Usuarios'
+        );
+
+        return response()->json([
+            'message' => 'Carreras asignadas correctamente.',
+            'user_id' => $updatedUser->usuario_id,
+            'careers' => $updatedUser->careers->map(fn ($career) => [
+                'carrera_id' => $career->carrera_id,
+                'nombre' => $career->nombre,
+            ])->values(),
         ], 200);
     }
     
