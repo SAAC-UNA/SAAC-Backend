@@ -61,6 +61,14 @@ class FullSystemDemoSeeder extends Seeder
         $this->command->info('🧹 Limpiando datos de demostración previos...');
         $this->cleanup();
 
+        // 5. Crear ciclo flexible DEMO + sus procesos
+        $this->command->info('');
+        $this->command->info('🔧 Creando ciclo flexible DEMO...');
+        [$procFlexAutoeval, $procFlexCompromiso] = $this->createFlexibleCiclo();
+        if (!$procFlexAutoeval || !$procFlexCompromiso) {
+            return;
+        }
+
         // ─── MODELO TRADICIONAL ───────────────────────────────────────────────
         $this->command->info('');
         $this->command->info('📚 TRADICIONAL (SINAES 2018)');
@@ -71,7 +79,7 @@ class FullSystemDemoSeeder extends Seeder
         $this->command->info('');
         $this->command->info('🌿 FLEXIBLE (SINAES 2026)');
 
-        $this->seedFlexible($encargado, $profesor, $procAutoeval, $procCompromiso);
+        $this->seedFlexible($encargado, $profesor, $procFlexAutoeval, $procFlexCompromiso);
 
         // ─── NOTIFICACIONES ──────────────────────────────────────────────────
         $this->command->info('');
@@ -256,6 +264,79 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('ARCHIVO')
             ->where('path', 'like', 'demo/%')
             ->delete();
+
+        // Ciclo flexible DEMO + sus procesos (creados por este seeder)
+        $demoCicloIds = DB::table('CICLO_ACREDITACION')
+            ->where('nombre', 'like', self::TAG . '%')
+            ->pluck('ciclo_acreditacion_id');
+
+        if ($demoCicloIds->isNotEmpty()) {
+            DB::table('PROCESO')
+                ->whereIn('ciclo_acreditacion_id', $demoCicloIds)
+                ->delete();
+            DB::table('CICLO_ACREDITACION')
+                ->whereIn('ciclo_acreditacion_id', $demoCicloIds)
+                ->delete();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CICLO FLEXIBLE DEMO
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function createFlexibleCiclo(): array
+    {
+        $modeloFlexible = DB::table('MODELO_ESTRUCTURA')
+            ->where('tipo', 'elemento_flexible')
+            ->value('modelo_estructura_id');
+
+        if (!$modeloFlexible) {
+            $this->command->error('❌ No existe modelo elemento_flexible en MODELO_ESTRUCTURA.');
+            return [null, null];
+        }
+
+        $carreraSede = DB::table('CARRERA_SEDE')->first();
+        if (!$carreraSede) {
+            $this->command->error('❌ No existe ninguna CARRERA_SEDE.');
+            return [null, null];
+        }
+
+        $now = now();
+
+        $cicloId = DB::table('CICLO_ACREDITACION')->insertGetId([
+            'carrera_sede_id'      => $carreraSede->carrera_sede_id,
+            'nombre'               => self::TAG . ' Ciclo Flexible 2026-2030',
+            'modelo_estructura_id' => $modeloFlexible,
+            'estado'               => 'activo',
+            'created_at'           => $now,
+            'updated_at'           => $now,
+        ]);
+
+        $procAutoevalId = DB::table('PROCESO')->insertGetId([
+            'ciclo_acreditacion_id' => $cicloId,
+            'tipo_proceso'          => 'Autoevaluación',
+            'fecha_inicio'          => $now->toDateString(),
+            'fecha_finalizacion'    => $now->copy()->addMonths(8)->toDateString(),
+            'activo'                => true,
+            'created_at'            => $now,
+            'updated_at'            => $now,
+        ]);
+
+        $procCompromisoId = DB::table('PROCESO')->insertGetId([
+            'ciclo_acreditacion_id' => $cicloId,
+            'tipo_proceso'          => 'Compromiso de mejora',
+            'fecha_inicio'          => $now->copy()->addMonth()->toDateString(),
+            'fecha_finalizacion'    => $now->copy()->addYear()->toDateString(),
+            'activo'                => true,
+            'created_at'            => $now,
+            'updated_at'            => $now,
+        ]);
+
+        $this->command->info("  ✓ Ciclo Flexible DEMO creado (ID {$cicloId}, modelo_estructura_id {$modeloFlexible})");
+        $this->command->info("  ✓ Proceso Autoevaluación flexible: ID {$procAutoevalId}");
+        $this->command->info("  ✓ Proceso Compromiso Mejora flexible: ID {$procCompromisoId}");
+
+        return [Process::find($procAutoevalId), Process::find($procCompromisoId)];
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -566,9 +647,11 @@ class FullSystemDemoSeeder extends Seeder
     private function seedFlexible(
         User    $encargado,
         User    $profesor,
-        Process $procAutoeval,
-        Process $procCompromiso
+        Process $procFlexAutoeval,
+        Process $procFlexCompromiso
     ): void {
+        $procAutoeval   = $procFlexAutoeval;
+        $procCompromiso = $procFlexCompromiso;
         $now = now();
 
         // ── 1. Obtener fuentes reales del modelo flexible ────────────────────
@@ -958,7 +1041,7 @@ class FullSystemDemoSeeder extends Seeder
                 'usuario_id'    => $profesor->usuario_id,
                 'proceso_id'    => $procAutoeval->proceso_id,
                 'fecha_subida'  => $now->toDateTimeString(),
-                'tipo'          => 'evidencia',
+                'tipo'          => 'archivo',
                 'path'          => 'demo/evidencias/plan_estudios_ingenieria_sistemas_2026.pdf',
                 'url'           => null,
                 'nombre_original'=> 'Plan de Estudios ISI 2026.pdf',
@@ -972,7 +1055,7 @@ class FullSystemDemoSeeder extends Seeder
                 'usuario_id'    => $profesor->usuario_id,
                 'proceso_id'    => $procAutoeval->proceso_id,
                 'fecha_subida'  => $now->copy()->subDays(3)->toDateTimeString(),
-                'tipo'          => 'evidencia',
+                'tipo'          => 'archivo',
                 'path'          => 'demo/evidencias/acta_reunion_comite_acreditacion_2025.pdf',
                 'url'           => null,
                 'nombre_original'=> 'Acta Reunión Comité Acreditación 2025.pdf',
@@ -987,7 +1070,7 @@ class FullSystemDemoSeeder extends Seeder
                 'usuario_id'    => $profesor->usuario_id,
                 'proceso_id'    => $procAutoeval->proceso_id,
                 'fecha_subida'  => $now->copy()->subDays(1)->toDateTimeString(),
-                'tipo'          => 'elemento',
+                'tipo'          => 'archivo',
                 'path'          => 'demo/elementos/reglamento_evaluacion_sinaes2026.docx',
                 'url'           => null,
                 'nombre_original'=> 'Reglamento de Evaluacion SINAES 2026.docx',
@@ -1002,14 +1085,14 @@ class FullSystemDemoSeeder extends Seeder
                 'usuario_id'    => $encargado->usuario_id,
                 'proceso_id'    => $procAutoeval->proceso_id,
                 'fecha_subida'  => $now->copy()->subDays(7)->toDateTimeString(),
-                'tipo'          => 'evidencia',
+                'tipo'          => 'archivo',
                 'path'          => 'demo/public/informe_autoevaluacion_2024_publico.pdf',
                 'url'           => null,
                 'nombre_original'=> 'Informe Autoevaluación 2024 (Público).pdf',
                 'tamanio'       => 5242880,   // ~5 MB
                 'tipo_mime'     => 'application/pdf',
                 'is_publico'    => true,
-                'token_publico' => \Illuminate\Support\Str::random(64),
+                'token_publico' => (string) \Illuminate\Support\Str::uuid(),
                 'link_expira_en'=> $now->copy()->addDays(30)->toDateTimeString(),
             ],
         ];
