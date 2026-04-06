@@ -19,12 +19,17 @@ use Illuminate\Support\Facades\DB;
 
 class ElementAssignmentService
 {
-    private const WITH_BASE = ['element', 'user', 'process', 'assignedBy'];
+    private const WITH_BASE     = ['element', 'user', 'process', 'assignedBy'];
+    private const WITH_EXISTS   = [
+        'pendingExtensionRequests as has_pending_extension_request',
+        'filesByAssignee as has_uploaded_files',
+    ];
     private const CACHE_TTL = 60;
 
     private function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return ElementAssignment::with(self::WITH_BASE);
+        return ElementAssignment::with(self::WITH_BASE)
+            ->withExists(self::WITH_EXISTS);
     }
 
     /**
@@ -93,11 +98,13 @@ class ElementAssignmentService
     }
 
     /**
-     * Find an assignment by ID.
+     * Find an assignment by ID (incluye comments.user para el modal de detalle).
      */
     public function findById(int $id): ?ElementAssignment
     {
-        return $this->baseQuery()->find($id);
+        return ElementAssignment::with([...self::WITH_BASE, 'comments.user'])
+            ->withExists(self::WITH_EXISTS)
+            ->find($id);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ElementAssignment;
 use App\Http\Requests\ElementAssignmentRequest;
 use App\Http\Requests\RetroalimentacionRequest;
+use App\Http\Resources\ElementAssignmentResource;
 use App\Services\ElementAssignmentService;
 use App\Services\FlexibleExtensionRequestService;
 use App\Events\ExtensionRequestCreated;
@@ -92,7 +93,7 @@ class ElementAssignmentController extends Controller
             return response()->json(['message' => 'Assignment not found.'], 404);
         }
 
-        return response()->json(['data' => $assignment], 200);
+        return response()->json(['data' => new ElementAssignmentResource($assignment)], 200);
     }
 
     /**
@@ -149,7 +150,8 @@ class ElementAssignmentController extends Controller
      */
     public function byUser(string $userId): JsonResponse
     {
-        return response()->json(['data' => $this->service->getByUser((int) $userId)], 200);
+        $assignments = $this->service->getByUser((int) $userId);
+        return response()->json(['data' => ElementAssignmentResource::collection($assignments)], 200);
     }
 
     /**

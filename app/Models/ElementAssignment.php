@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Observers\ElementAssignmentObserver;
+use App\Models\File;
+use App\Models\ExtensionRequest;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -92,5 +94,23 @@ class ElementAssignment extends Model
     public function extensionRequests()
     {
         return $this->hasMany(ExtensionRequest::class, 'elemento_asignacion_id', 'elemento_asignacion_id');
+    }
+
+    /**
+     * Solicitudes de ampliación en estado pendiente (para withExists).
+     */
+    public function pendingExtensionRequests()
+    {
+        return $this->extensionRequests()->where('estado', ExtensionRequest::ESTADO_PENDIENTE);
+    }
+
+    /**
+     * Archivos subidos por el mismo usuario y proceso de la asignación (para withExists).
+     */
+    public function filesByAssignee()
+    {
+        return $this->hasMany(File::class, 'elemento_id', 'elemento_id')
+            ->whereColumn('ARCHIVO.usuario_id', 'ELEMENTO_ASIGNACION.usuario_id')
+            ->whereColumn('ARCHIVO.proceso_id', 'ELEMENTO_ASIGNACION.proceso_id');
     }
 }
