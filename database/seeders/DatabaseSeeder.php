@@ -67,8 +67,11 @@ class DatabaseSeeder extends Seeder
             // === COMPROMISOS DE MEJORA - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
             CommitmentElementsTestSeeder::class, // 21. Compromisos de mejora elementos (HU-010 modelo flexible)
 
+            // === DEMOSTRACIÓN COMPLETA DEL SISTEMA ===
+            FullSystemDemoSeeder::class,         // 22. Datos de demo para TODOS los RF (ambos modelos)
+
             // === AUDITORÍA Y LOGS ===
-            ActionTypeSeeder::class,          // 21. Tipos de acción (catálogo de TIPO_ACCION)
+            ActionTypeSeeder::class,          // 23. Tipos de acción (catálogo de TIPO_ACCION)
             // AuditLogSeeder::class,            // 22. Logs de auditoría
         ]);
 
