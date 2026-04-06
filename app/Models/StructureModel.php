@@ -19,11 +19,13 @@ class StructureModel extends Model
         'version',
         'activo',
         'tipos_asignables',
+        'tipos_jerarquia',
     ];
 
     protected $casts = [
         'activo'           => 'boolean',
         'tipos_asignables' => 'array',
+        'tipos_jerarquia'   => 'array',
     ];
 
     // Constantes para tipos de modelo
