@@ -348,6 +348,86 @@ Se completó SOLID creando la capa HTTP exclusiva para el modelo flexible:
 | `POST` | `/api/elementos-archivos/{archivo}/make-public` | `archivos.make_public` | Generar enlace público con expiración |
 | `POST` | `/api/elementos-archivos/{archivo}/revoke-public` | `archivos.make_public` | Revocar acceso público |
 
+### Request — `POST /api/elementos-archivos` (subir archivos)
+
+**Headers requeridos en todas las rutas:**
+```
+Authorization: Bearer {token_sanctum}
+Content-Type: multipart/form-data   ← para archivos
+Content-Type: application/json      ← para enlaces
+```
+
+**Subir archivo físico (`multipart/form-data`):**
+
+| Campo | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `tipo` | string | ✅ | Siempre `"archivo"` |
+| `archivos[]` | file | ✅ | 1–5 archivos, máx 50 MB c/u |
+| `elemento_id` | integer | ✅ | ID del elemento (tabla `ELEMENTO`) |
+| `proceso_id` | integer | ✅ | ID del proceso (tabla `PROCESO`) |
+
+Formatos permitidos: `pdf, doc, docx, xls, xlsx, ppt, pptx, jpg, jpeg, png, gif, bmp, svg, webp, mp4, avi, mov, wmv, mkv, webm, zip, rar, 7z, txt, csv, rtf`
+
+**Guardar enlace externo (`application/json`):**
+
+```json
+{
+  "tipo": "enlace",
+  "elemento_id": 1,
+  "proceso_id": 1,
+  "enlaces": ["https://ejemplo.com/doc1", "https://ejemplo.com/doc2"],
+  "enlaces_nombres": ["Nombre descriptivo 1", "Nombre descriptivo 2"]
+}
+```
+
+`enlaces_nombres` es opcional. Máximo 5 enlaces por request.
+
+### Response exitoso (201)
+
+```json
+{
+  "success": true,
+  "message": "1 archivo(s) subido(s) exitosamente.",
+  "count": 1,
+  "data": [
+    {
+      "archivo_id": 42,
+      "nombre_original": "informe.pdf",
+      "fecha_subida": "2026-04-06 10:30:00",
+      "tipo": "archivo",
+      "tamanio": 102400,
+      "tipo_mime": "application/pdf",
+      "is_publico": false,
+      "elemento_id": 1,
+      "elemento": {
+        "elemento_id": 1,
+        "nomenclatura": "C1.1",
+        "tipo": "criterio",
+        "descripcion": "Descripción del elemento"
+      },
+      "autor": {
+        "nombre": "Juan Pérez",
+        "rol": "Docente"
+      },
+      "proceso_id": 1,
+      "proceso": {
+        "proceso_id": 1,
+        "nombre": "Proceso de acreditación 2026"
+      }
+    }
+  ]
+}
+```
+
+Response parcial con errores (207 Multi-Status): si algún archivo falla, `success: true` y se retorna `errores[]` con detalle por índice.
+
+### Notas para el frontend
+
+- `elemento_id` reemplaza a `evidencia_id` — **no enviar ambos**
+- El estado del `ElementAssignment` pasa automáticamente de `Pendiente → En Progreso` al subir el primer archivo
+- Para listar archivos: `GET /api/elementos-archivos?elemento_id={id}&proceso_id={id}`
+- El contexto global (`proceso_id` en sesión) debe estar seteado via `PUT /api/contexto/filtros-globales`
+
 ### HUs cubiertas por ElementFileResource (sin migración adicional)
 
 | HU | Campo que la cubre | Fuente |
