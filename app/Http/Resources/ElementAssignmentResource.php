@@ -23,6 +23,7 @@ class ElementAssignmentResource extends JsonResource
             // Flags calculados via withExists() en el servicio
             'has_pending_extension_request' => (bool) ($this->has_pending_extension_request ?? false),
             'has_uploaded_files'            => (bool) ($this->has_uploaded_files ?? false),
+            'is_returned_for_changes'       => (bool) ($this->is_returned_for_changes ?? false),
 
             'element' => $this->whenLoaded('element', fn () => [
                 'elemento_id'  => $this->element->elemento_id,

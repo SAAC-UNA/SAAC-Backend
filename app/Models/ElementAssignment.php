@@ -20,6 +20,7 @@ class ElementAssignment extends Model
         'elemento_id',
         'usuario_id',
         'proceso_id',
+        'asignado_por',
         'estado',
         'fecha_limite',
         'comentario',
@@ -112,5 +113,17 @@ class ElementAssignment extends Model
         return $this->hasMany(File::class, 'elemento_id', 'elemento_id')
             ->whereColumn('ARCHIVO.usuario_id', 'ELEMENTO_ASIGNACION.usuario_id')
             ->whereColumn('ARCHIVO.proceso_id', 'ELEMENTO_ASIGNACION.proceso_id');
+    }
+
+    /**
+     * Aprobaciones rechazadas del mismo usuario/proceso para este elemento.
+     * Se usa con withExists() para marcar devoluciones pendientes de corrección.
+     */
+    public function rejectedApprovalsByAssignee()
+    {
+        return $this->hasMany(ElementApproval::class, 'elemento_id', 'elemento_id')
+            ->whereColumn('APROBACION_ELEMENTO.usuario_id', 'ELEMENTO_ASIGNACION.usuario_id')
+            ->whereColumn('APROBACION_ELEMENTO.proceso_id', 'ELEMENTO_ASIGNACION.proceso_id')
+            ->where('estado', 'rechazado');
     }
 }

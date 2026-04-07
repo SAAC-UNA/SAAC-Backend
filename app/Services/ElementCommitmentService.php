@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Events\ElementAssigned;
 use App\Models\ElementCommitment;
 use App\Models\ElementAssignment;
 use App\Models\StructureElement;
 use App\Models\Process;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -256,13 +258,18 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $usuarioId,
                         'proceso_id'   => $procesoId,
+                        'asignado_por' => auth()->id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
                     ]);
+
+                    $this->emitElementAssignedEvent($newAssignment);
                 } elseif ($fechaLimite) {
                     $newAssignment->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
                 }
+
+                $this->clearElementAssignmentCaches($newAssignment);
 
                 $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
                     'comentario' => $comentario,
@@ -293,10 +300,14 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $userObj->usuario_id,
                         'proceso_id'   => $procesoId,
+                        'asignado_por' => auth()->id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
                     ]);
+
+                    $this->emitElementAssignedEvent($newAssignment);
+                    $this->clearElementAssignmentCaches($newAssignment);
 
                     $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
                         'comentario' => $comentario,
@@ -345,13 +356,18 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $usuarioId,
                         'proceso_id'   => $procesoId,
+                        'asignado_por' => auth()->id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
                     ]);
+
+                    $this->emitElementAssignedEvent($existing);
                 } elseif ($fechaLimite) {
                     $existing->update(['fecha_limite' => $fechaLimite]);
                 }
+
+                $this->clearElementAssignmentCaches($existing);
 
                 $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
                     'comentario' => $comentario,
@@ -381,13 +397,18 @@ class ElementCommitmentService
                             'elemento_id'  => $elementoId,
                             'usuario_id'   => $userObj->usuario_id,
                             'proceso_id'   => $procesoId,
+                            'asignado_por' => auth()->id(),
                             'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                             'fecha_limite' => $fechaLimite,
                             'comentario'   => $comentario,
                         ]);
+
+                        $this->emitElementAssignedEvent($existing);
                     } elseif ($fechaLimite) {
                         $existing->update(['fecha_limite' => $fechaLimite]);
                     }
+
+                    $this->clearElementAssignmentCaches($existing);
 
                     $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
                         'comentario' => $comentario,
@@ -395,5 +416,25 @@ class ElementCommitmentService
                 }
             }
         }
+    }
+
+    /**
+     * Dispara el evento de asignación para crear la notificación al responsable.
+     */
+    private function emitElementAssignedEvent(ElementAssignment $assignment): void
+    {
+        $assignment->loadMissing(['element', 'user', 'process', 'assignedBy']);
+        event(new ElementAssigned($assignment));
+    }
+
+    /**
+     * Limpia cachés de listados para que “Mis Entregas” refleje cambios inmediatamente.
+     */
+    private function clearElementAssignmentCaches(ElementAssignment $assignment): void
+    {
+        Cache::forget('element-assignments.all');
+        Cache::forget("element-assignments.user.{$assignment->usuario_id}");
+        Cache::forget("element-assignments.element.{$assignment->elemento_id}");
+        Cache::forget("element-assignments.process.{$assignment->proceso_id}");
     }
 }

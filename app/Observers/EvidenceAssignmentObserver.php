@@ -28,15 +28,23 @@ class EvidenceAssignmentObserver
             $this->evidenceService->recalcularEstadoEvidencia($assignment->evidencia_id);
 
             // HU-010: si el responsable marcó Completado y existe una APROBACION_EVIDENCIA
-            // rechazada para esta evidencia+proceso, el bloque incompleto vuelve a pendiente
+            // rechazada para esa misma evidencia+proceso+usuario, la decisión se
+            // reinicia a pendiente y el bloque incompleto vuelve a pendiente
             // para que el RF sepa que hay nuevas correcciones listas para revisar.
             if ($assignment->estado === EvidenceAssignment::ESTADO_COMPLETADO) {
-                $tieneRechazo = EvidenceApproval::where('evidencia_id', $assignment->evidencia_id)
+                $tieneRechazoPropio = EvidenceApproval::where('evidencia_id', $assignment->evidencia_id)
                     ->where('proceso_id', $assignment->proceso_id)
+                    ->where('usuario_id', $assignment->usuario_id)
                     ->where('estado', 'rechazado')
                     ->exists();
 
-                if ($tieneRechazo) {
+                if ($tieneRechazoPropio) {
+                    EvidenceApproval::where('evidencia_id', $assignment->evidencia_id)
+                        ->where('proceso_id', $assignment->proceso_id)
+                        ->where('usuario_id', $assignment->usuario_id)
+                        ->where('estado', 'rechazado')
+                        ->update(['estado' => 'pendiente']);
+
                     CriterionApproval::where('estado', 'incompleto')
                         ->whereHas('evidenceApprovals', function ($q) use ($assignment) {
                             $q->where('evidencia_id', $assignment->evidencia_id)

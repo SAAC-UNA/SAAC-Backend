@@ -107,16 +107,41 @@ class ElementAssignmentController extends Controller
             return response()->json(['message' => 'Assignment not found.'], 404);
         }
 
-        $request->validate([
-            'estado'       => 'sometimes|string|in:Pendiente,En Progreso,Completado,Vencido',
-            'fecha_limite' => 'sometimes|nullable|date',
-            'comentario'   => 'sometimes|nullable|string|max:1000',
-        ]);
+        $user = $request->user();
+        $isOwner = (int) $assignment->usuario_id === (int) ($user?->usuario_id ?? 0);
+        $canEditAssignments = (bool) ($user?->can('asignaciones.edit') ?? false);
+
+        if (!$isOwner && !$canEditAssignments) {
+            return response()->json([
+                'message' => 'No autorizado para actualizar esta asignación.',
+            ], 403);
+        }
+
+        // El responsable puede modificar únicamente su propio estado de trabajo.
+        if ($isOwner && !$canEditAssignments) {
+            if ($request->hasAny(['fecha_limite', 'comentario'])) {
+                return response()->json([
+                    'message' => 'No autorizado para modificar fecha límite o comentario.',
+                ], 403);
+            }
+
+            $request->validate([
+                'estado' => 'required|string|in:En Progreso,Completado',
+            ]);
+            $payload = $request->only(['estado']);
+        } else {
+            $request->validate([
+                'estado'       => 'sometimes|string|in:Pendiente,En Progreso,Completado,Vencido',
+                'fecha_limite' => 'sometimes|nullable|date',
+                'comentario'   => 'sometimes|nullable|string|max:1000',
+            ]);
+            $payload = $request->only(['estado', 'fecha_limite', 'comentario']);
+        }
 
         try {
             $updated = $this->service->updateAssignment(
                 $assignment,
-                $request->only(['estado', 'fecha_limite', 'comentario'])
+                $payload
             );
 
             return response()->json(['data' => $updated], 200);
@@ -157,9 +182,18 @@ class ElementAssignmentController extends Controller
     /**
      * GET /api/elementos/{elementoId}/asignaciones
      */
-    public function byElement(string $elementId): JsonResponse
+    public function byElement(Request $request, string $elementId): JsonResponse
     {
-        return response()->json(['data' => $this->service->getByElement((int) $elementId)], 200);
+        $processId = $request->query('proceso_id');
+
+        $parsedProcessId = null;
+        if ($processId !== null && is_numeric($processId)) {
+            $parsedProcessId = (int) $processId;
+        }
+
+        return response()->json([
+            'data' => $this->service->getByElement((int) $elementId, $parsedProcessId),
+        ], 200);
     }
 
     /**

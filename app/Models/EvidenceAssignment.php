@@ -138,4 +138,16 @@ class EvidenceAssignment extends Model
             ->whereColumn('ARCHIVO.usuario_id', 'EVIDENCIA_ASIGNACION.usuario_id')
             ->whereColumn('ARCHIVO.proceso_id', 'EVIDENCIA_ASIGNACION.proceso_id');
     }
+
+    /**
+     * Aprobaciones rechazadas del mismo usuario/proceso para esta evidencia.
+     * Se usa con withExists() para marcar asignaciones devueltas para corrección.
+     */
+    public function rejectedApprovalsByAssignee()
+    {
+        return $this->hasMany(EvidenceApproval::class, 'evidencia_id', 'evidencia_id')
+            ->whereColumn('APROBACION_EVIDENCIA.usuario_id', 'EVIDENCIA_ASIGNACION.usuario_id')
+            ->whereColumn('APROBACION_EVIDENCIA.proceso_id', 'EVIDENCIA_ASIGNACION.proceso_id')
+            ->where('estado', 'rechazado');
+    }
 }

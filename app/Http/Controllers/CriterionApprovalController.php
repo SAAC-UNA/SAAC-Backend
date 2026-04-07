@@ -277,7 +277,8 @@ class CriterionApprovalController extends Controller
                 $criterionId,
                 $evidenceId,
                 $request->proceso_id,
-                $userId
+                $userId,
+                $request->responsable_usuario_id
             );
 
             AuditLogService::log(
@@ -338,7 +339,8 @@ class CriterionApprovalController extends Controller
                 $request->proceso_id,
                 $userId,
                 $request->comentario,
-                $request->nueva_fecha_limite
+                $request->nueva_fecha_limite,
+                $request->responsable_usuario_id
             );
 
             AuditLogService::log(

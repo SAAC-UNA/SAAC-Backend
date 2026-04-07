@@ -23,6 +23,7 @@ class ElementAssignmentService
     private const WITH_EXISTS   = [
         'pendingExtensionRequests as has_pending_extension_request',
         'filesByAssignee as has_uploaded_files',
+        'rejectedApprovalsByAssignee as is_returned_for_changes',
     ];
     private const CACHE_TTL = 60;
 
@@ -30,6 +31,15 @@ class ElementAssignmentService
     {
         return ElementAssignment::with(self::WITH_BASE)
             ->withExists(self::WITH_EXISTS);
+    }
+
+    private function clearAssignmentCaches(ElementAssignment $assignment): void
+    {
+        Cache::forget('element-assignments.all');
+        Cache::forget("element-assignments.user.{$assignment->usuario_id}");
+        Cache::forget("element-assignments.element.{$assignment->elemento_id}");
+        Cache::forget("element-assignments.process.{$assignment->proceso_id}");
+        Cache::forget("element-assignments.element.{$assignment->elemento_id}.process.{$assignment->proceso_id}");
     }
 
     /**
@@ -243,6 +253,8 @@ class ElementAssignmentService
         // Fire event for notifications (HU-018)
         event(new ElementAssigned($assignment));
 
+        $this->clearAssignmentCaches($assignment);
+
         return $assignment;
     }
 
@@ -257,6 +269,8 @@ class ElementAssignmentService
             'comentario'   => $data['comentario']    ?? null,
         ], fn ($v) => $v !== null));
 
+        $this->clearAssignmentCaches($assignment);
+
         return $this->baseQuery()->find($assignment->getKey());
     }
 
@@ -265,6 +279,7 @@ class ElementAssignmentService
      */
     public function deleteAssignment(ElementAssignment $assignment): void
     {
+        $this->clearAssignmentCaches($assignment);
         $assignment->delete();
     }
 
@@ -284,11 +299,16 @@ class ElementAssignmentService
     /**
      * Get assignments by element.
      */
-    public function getByElement(int $elementId)
+    public function getByElement(int $elementId, ?int $processId = null)
     {
-        return Cache::remember("element-assignments.element.{$elementId}", self::CACHE_TTL, fn () =>
+        $cacheKey = $processId !== null
+            ? "element-assignments.element.{$elementId}.process.{$processId}"
+            : "element-assignments.element.{$elementId}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, fn () =>
             $this->baseQuery()
                 ->where('elemento_id', $elementId)
+                ->when($processId !== null, fn ($q) => $q->where('proceso_id', $processId))
                 ->orderBy('created_at', 'desc')
                 ->get()
         );
@@ -324,6 +344,8 @@ class ElementAssignmentService
 
         $updated = DB::transaction(function () use ($assignment, $data, $reviewer) {
             $assignment->update(['estado' => $data['estado']]);
+
+            $this->clearAssignmentCaches($assignment);
 
             Comment::create([
                 'usuario_id'       => $reviewer->usuario_id,
