@@ -27,7 +27,7 @@ class StoreElementFileRequest extends FormRequest
             'archivos.*' => [
                 'file',
                 'max:51200', // 50 MB
-                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,bmp,svg,webp,mp4,avi,mov,wmv,mkv,webm,zip,rar,7z,txt,csv,rtf',
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,bmp,svg,webp,avif,heic,heif,mp4,avi,mov,wmv,mkv,webm,zip,rar,7z,txt,csv,rtf',
             ],
 
             'enlaces'          => ['required_if:tipo,enlace', 'array', 'min:1', 'max:5'],
