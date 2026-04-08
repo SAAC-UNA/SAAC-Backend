@@ -37,8 +37,8 @@ class NotifyEvidenceAssignment implements ShouldQueue
             $assignment->fecha_limite ? $assignment->fecha_limite->format('d/m/Y') : 'No definida'
         );
 
-        // Construir enlace directo
-        $enlace = "/evidencias/{$evidence->evidencia_id}/asignar";
+        // Redirigir al módulo de asignaciones del usuario.
+        $enlace = '/mis-evidencias-asignadas';
 
         try {
             NotificationService::create([

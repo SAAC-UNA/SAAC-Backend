@@ -239,9 +239,11 @@ return [
             'asignaciones.view',
             'asignaciones.create',
 
-            // Archivos (ver y descargar)
+            // Archivos (ver, subir y descargar)
             'archivos.view',
+            'archivos.upload',
             'archivos.download',
+            'archivos.delete',
             'archivos.make_public',
 
             // Solicitudes (aprobar/rechazar)
@@ -295,6 +297,12 @@ return [
             'asignaciones.view',
             'asignaciones.create',
             'asignaciones.edit',
+
+            // Archivos (operación en asignaciones propias)
+            'archivos.view',
+            'archivos.upload',
+            'archivos.download',
+            'archivos.delete',
 
             // Solicitudes de ampliación
             'solicitudes_ampliacion.view',

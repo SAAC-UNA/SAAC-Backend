@@ -291,7 +291,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
     Route::post('evidencias-asignaciones', [EvidenceAssignmentController::class, 'store'])
         ->middleware('permission:asignaciones.create');
     Route::match(['put', 'patch'], 'evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'update'])
-        ->middleware('permission:asignaciones.edit');
+        ->middleware('permission:asignaciones.view');
     Route::delete('evidencias-asignaciones/{evidenceAssignment}', [EvidenceAssignmentController::class, 'destroy'])
         ->middleware('permission:asignaciones.delete');
 });
@@ -312,7 +312,7 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
     Route::post('elementos-asignaciones', [ElementAssignmentController::class, 'store'])
         ->middleware('permission:asignaciones.create');
     Route::match(['put', 'patch'], 'elementos-asignaciones/{id}', [ElementAssignmentController::class, 'update'])
-        ->middleware('permission:asignaciones.edit');
+        ->middleware('permission:asignaciones.view');
     Route::post('elementos-asignaciones/{id}/retroalimentacion', [ElementAssignmentController::class, 'retroalimentar'])
         ->middleware('permission:asignaciones.edit');
     Route::post('elementos-asignaciones/{id}/solicitud-ampliacion', [ElementAssignmentController::class, 'storeExtension'])

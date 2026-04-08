@@ -20,6 +20,7 @@ class ElementApprovalRequest extends FormRequest
             'comentario'         => ['nullable', 'string', 'max:100'],
             'fecha_limite'       => ['nullable', 'date', 'after:now'],
             'nueva_fecha_limite' => ['nullable', 'date', 'after:now'],
+            'responsable_usuario_id' => ['nullable', 'integer', 'exists:USUARIO,usuario_id'],
         ];
     }
 
@@ -33,6 +34,8 @@ class ElementApprovalRequest extends FormRequest
             'comentario.max'      => 'El comentario no puede exceder 100 caracteres.',
             'fecha_limite.date'   => 'La fecha límite debe ser una fecha válida.',
             'fecha_limite.after'  => 'La nueva fecha límite debe ser posterior a la fecha actual.',
+            'responsable_usuario_id.integer' => 'El usuario responsable debe ser un número entero.',
+            'responsable_usuario_id.exists'  => 'El usuario responsable seleccionado no existe.',
         ];
     }
 

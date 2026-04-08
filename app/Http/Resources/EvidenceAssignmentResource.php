@@ -62,6 +62,8 @@ class EvidenceAssignmentResource extends JsonResource
             'has_pending_extension_request' => (bool) $this->has_pending_extension_request,
             // Indica si ya existe al menos un archivo/enlace subido por el responsable
             'has_uploaded_files' => (bool) $this->has_uploaded_files,
+            // Indica si el evaluador devolvió esta asignación para correcciones.
+            'is_returned_for_changes' => (bool) ($this->is_returned_for_changes ?? false),
         ];
     }
 }

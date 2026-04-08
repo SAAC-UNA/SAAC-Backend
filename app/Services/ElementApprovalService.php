@@ -12,6 +12,7 @@ use App\Services\AuditLogService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection;
 
 /**
  * Servicio de aprobación de bloques — modelo flexible (ELEMENTO directo).
@@ -107,6 +108,92 @@ class ElementApprovalService
         return $ids;
     }
 
+    private function getTargetAssigneeIds(int $elementoId, int $procesoId, ?int $targetUserId): array
+    {
+        $query = ElementAssignment::where('elemento_id', $elementoId)
+            ->where('proceso_id', $procesoId);
+
+        if ($targetUserId !== null) {
+            $query->where('usuario_id', $targetUserId);
+        }
+
+        $userIds = $query->pluck('usuario_id')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if ($targetUserId !== null && empty($userIds)) {
+            throw new \InvalidArgumentException(
+                'El responsable seleccionado no tiene asignado este elemento en el proceso indicado.'
+            );
+        }
+
+        return $userIds;
+    }
+
+    /**
+     * @return array<int, ElementApproval>
+     */
+    private function getLatestApprovalsByUser(Collection $approvals): array
+    {
+        $latest = [];
+
+        $approvals->groupBy('usuario_id')->each(function (Collection $group, $userId) use (&$latest) {
+            $ordered = $group->sortByDesc(
+                fn(ElementApproval $approval) => $approval->updated_at?->getTimestamp() ?? $approval->aprobacion_elemento_id
+            );
+            $latest[(int) $userId] = $ordered->first();
+        });
+
+        return $latest;
+    }
+
+    private function resolveDecisionSummary(
+        array $targetUserIds,
+        Collection $approvals,
+        bool $allowIncomplete
+    ): string {
+        $latestByUser = $this->getLatestApprovalsByUser($approvals);
+        $states = [];
+
+        if (!empty($targetUserIds)) {
+            foreach ($targetUserIds as $targetUserId) {
+                $states[] = $latestByUser[$targetUserId]->estado ?? 'pendiente';
+            }
+        } else {
+            foreach ($latestByUser as $approval) {
+                $states[] = $approval->estado;
+            }
+        }
+
+        $total = count($states);
+        if ($total === 0) {
+            return 'pendiente';
+        }
+
+        $approvedCount = count(array_filter($states, fn($state) => $state === 'aprobado'));
+        $rejectedCount = count(array_filter($states, fn($state) => $state === 'rechazado'));
+
+        if ($approvedCount === $total) {
+            return 'aprobado';
+        }
+
+        if ($rejectedCount === $total) {
+            return 'rechazado';
+        }
+
+        if ($allowIncomplete && $rejectedCount >= 1) {
+            return 'incompleto';
+        }
+
+        if ($rejectedCount >= 1) {
+            return 'rechazado';
+        }
+
+        return 'pendiente';
+    }
+
     /**
      * Recalcula y persiste el estado del bloque padre según las decisiones
      * individuales de sus hijos directos activos.
@@ -131,21 +218,63 @@ class ElementApprovalService
             ->where('activo', true)
             ->pluck('elemento_id');
 
-        $total    = $childIds->count();
-        $approved = ElementApproval::whereIn('elemento_id', $childIds)
-            ->where('proceso_id', $procesoId)
-            ->where('estado', 'aprobado')
-            ->count();
-        $rejected = ElementApproval::whereIn('elemento_id', $childIds)
-            ->where('proceso_id', $procesoId)
-            ->where('estado', 'rechazado')
-            ->count();
+        $total = $childIds->count();
 
-        if ($total > 0 && $approved === $total) {
+        if ($total === 0) {
+            $block->estado = 'pendiente';
+            $block->save();
+            return;
+        }
+
+        $assignmentsByElementId = ElementAssignment::where('proceso_id', $procesoId)
+            ->whereIn('elemento_id', $childIds)
+            ->get()
+            ->groupBy('elemento_id');
+
+        $approvalsByElementId = ElementApproval::where('proceso_id', $procesoId)
+            ->whereIn('elemento_id', $childIds)
+            ->get()
+            ->groupBy('elemento_id');
+
+        $approved = 0;
+        $rejected = 0;
+        $incomplete = 0;
+
+        foreach ($childIds as $childId) {
+            $assigneeIds = $assignmentsByElementId
+                ->get($childId, collect())
+                ->pluck('usuario_id')
+                ->map(fn($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $status = $this->resolveDecisionSummary(
+                $assigneeIds,
+                $approvalsByElementId->get($childId, collect()),
+                true
+            );
+
+            if ($status === 'aprobado') {
+                $approved++;
+                continue;
+            }
+
+            if ($status === 'rechazado') {
+                $rejected++;
+                continue;
+            }
+
+            if ($status === 'incompleto') {
+                $incomplete++;
+            }
+        }
+
+        if ($approved === $total) {
             $block->estado = 'aprobado';
-        } elseif ($total > 0 && $rejected === $total) {
+        } elseif ($rejected === $total) {
             $block->estado = 'rechazado';
-        } elseif ($rejected >= 1) {
+        } elseif ($incomplete > 0 || $rejected > 0) {
             $block->estado = 'incompleto';
         } else {
             $block->estado = 'pendiente';
@@ -185,15 +314,29 @@ class ElementApprovalService
             $root     = null;
             $cascada  = [];
             foreach ($allIds as $id) {
-                $approval = ElementApproval::updateOrCreate(
-                    ['elemento_id' => $id, 'proceso_id' => $procesoId],
-                    ['usuario_id' => $usuarioId, 'estado' => 'aprobado', 'comentario' => $comentario]
-                )->load(['elemento', 'process', 'user']);
+                $targetUserIds = $id === $elementoId
+                    ? [(int) $usuarioId]
+                    : $this->getTargetAssigneeIds($id, $procesoId, null);
 
-                if ($id === $elementoId) {
-                    $root = $approval;
-                } else {
-                    $cascada[] = $approval;
+                if (empty($targetUserIds)) {
+                    $targetUserIds = [(int) $usuarioId];
+                }
+
+                foreach ($targetUserIds as $targetUserId) {
+                    $approval = ElementApproval::updateOrCreate(
+                        [
+                            'elemento_id' => $id,
+                            'proceso_id'  => $procesoId,
+                            'usuario_id'  => $targetUserId,
+                        ],
+                        ['estado' => 'aprobado', 'comentario' => $comentario]
+                    )->load(['elemento', 'process', 'user']);
+
+                    if ($id === $elementoId) {
+                        $root = $approval;
+                    } else {
+                        $cascada[] = $approval;
+                    }
                 }
             }
             return ['raiz' => $root, 'cascada' => $cascada];
@@ -276,15 +419,33 @@ class ElementApprovalService
             $root    = null;
             $cascada = [];
             foreach ($allIds as $id) {
-                $approval = ElementApproval::updateOrCreate(
-                    ['elemento_id' => $id, 'proceso_id' => $procesoId],
-                    ['usuario_id' => $usuarioId, 'estado' => 'rechazado', 'comentario' => $comentario, 'nueva_fecha_limite' => $fechaLimite]
-                )->load(['elemento', 'process', 'user']);
+                $targetUserIds = $id === $elementoId
+                    ? [(int) $usuarioId]
+                    : $this->getTargetAssigneeIds($id, $procesoId, null);
 
-                if ($id === $elementoId) {
-                    $root = $approval;
-                } else {
-                    $cascada[] = $approval;
+                if (empty($targetUserIds)) {
+                    $targetUserIds = [(int) $usuarioId];
+                }
+
+                foreach ($targetUserIds as $targetUserId) {
+                    $approval = ElementApproval::updateOrCreate(
+                        [
+                            'elemento_id' => $id,
+                            'proceso_id'  => $procesoId,
+                            'usuario_id'  => $targetUserId,
+                        ],
+                        [
+                            'estado'             => 'rechazado',
+                            'comentario'         => $comentario,
+                            'nueva_fecha_limite' => $fechaLimite,
+                        ]
+                    )->load(['elemento', 'process', 'user']);
+
+                    if ($id === $elementoId) {
+                        $root = $approval;
+                    } else {
+                        $cascada[] = $approval;
+                    }
                 }
             }
 
@@ -368,7 +529,8 @@ class ElementApprovalService
     public function approveIndividualChild(
         int $padreId,
         int $hijoId,
-        int $procesoId
+        int $procesoId,
+        ?int $responsableUsuarioId = null
     ): array {
         // Validaciones fuera de la transacción para que el Handler las capture directamente
         $hijo = StructureElement::where('elemento_id', $hijoId)
@@ -386,17 +548,24 @@ class ElementApprovalService
             ->where('proceso_id', $procesoId)
             ->first();
 
+        $targetUserIds = $this->getTargetAssigneeIds($hijoId, $procesoId, $responsableUsuarioId);
+        if (empty($targetUserIds)) {
+            $targetUserIds = [(int) Auth::id()];
+        }
+
         $existing = ElementApproval::where('elemento_id', $hijoId)
             ->where('proceso_id', $procesoId)
-            ->first();
+            ->whereIn('usuario_id', $targetUserIds)
+            ->get();
 
-        if ($existing && $existing->estado === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
+        $existingSummary = $this->resolveDecisionSummary($targetUserIds, $existing, true);
+        if ($existingSummary === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
             throw new \LogicException(
                 'Este elemento ya fue aprobado y está bloqueado mientras el bloque tenga estado incompleto.'
             );
         }
 
-        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $hijo) {
+        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $hijo, $targetUserIds) {
             $usuarioId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
@@ -404,14 +573,20 @@ class ElementApprovalService
                 ['usuario_id' => $usuarioId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
-            $childApproval = ElementApproval::updateOrCreate(
-                ['elemento_id' => $hijoId, 'proceso_id' => $procesoId],
-                [
-                    'usuario_id' => $usuarioId,
-                    'estado'     => 'aprobado',
-                    'comentario' => null,
-                ]
-            );
+            $childApprovals = [];
+            foreach ($targetUserIds as $targetUserId) {
+                $childApprovals[] = ElementApproval::updateOrCreate(
+                    [
+                        'elemento_id' => $hijoId,
+                        'proceso_id'  => $procesoId,
+                        'usuario_id'  => $targetUserId,
+                    ],
+                    [
+                        'estado'     => 'aprobado',
+                        'comentario' => null,
+                    ]
+                )->load(['elemento']);
+            }
 
             $this->recalculateParentState($padreId, $procesoId);
 
@@ -424,22 +599,21 @@ class ElementApprovalService
 
             return [
                 'padre_approval' => $parentApproval->fresh()->load(['elemento', 'process', 'user']),
-                'hijo_approval'  => $childApproval->load(['elemento']),
+                'hijo_approval'  => $childApprovals[0] ?? null,
+                'hijo_approvals' => $childApprovals,
             ];
         });
 
         // NUEVO (HU-notificaciones): notifica al usuario asignado al hijo aprobado.
         // Solo canal interno (app), no email — aprobación no requiere acción urgente.
         try {
-            $assignedUserIds = ElementAssignment::where('elemento_id', $hijoId)
-                ->where('proceso_id', $procesoId)
-                ->pluck('usuario_id')
-                ->unique()
-                ->values()
-                ->toArray();
+            $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $hijoEl = $result['hijo_approval']->elemento;
+                $hijoEl = $result['hijo_approval']?->elemento;
+                if (!$hijoEl) {
+                    return $result;
+                }
                 NotificationService::createMany(
                     $assignedUserIds,
                     [
@@ -480,7 +654,8 @@ class ElementApprovalService
         int $hijoId,
         int $procesoId,
         ?string $comentario = null,
-        ?string $nuevaFechaLimite = null
+        ?string $nuevaFechaLimite = null,
+        ?int $responsableUsuarioId = null
     ): array {
         // Validaciones fuera de la transacción para que el Handler las capture directamente
         $hijo = StructureElement::where('elemento_id', $hijoId)
@@ -498,17 +673,24 @@ class ElementApprovalService
             ->where('proceso_id', $procesoId)
             ->first();
 
+        $targetUserIds = $this->getTargetAssigneeIds($hijoId, $procesoId, $responsableUsuarioId);
+        if (empty($targetUserIds)) {
+            $targetUserIds = [(int) Auth::id()];
+        }
+
         $existing = ElementApproval::where('elemento_id', $hijoId)
             ->where('proceso_id', $procesoId)
-            ->first();
+            ->whereIn('usuario_id', $targetUserIds)
+            ->get();
 
-        if ($existing && $existing->estado === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
+        $existingSummary = $this->resolveDecisionSummary($targetUserIds, $existing, true);
+        if ($existingSummary === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
             throw new \LogicException(
                 'Este elemento ya fue aprobado y está bloqueado mientras el bloque tenga estado incompleto.'
             );
         }
 
-        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $comentario, $nuevaFechaLimite, $hijo) {
+        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $comentario, $nuevaFechaLimite, $hijo, $targetUserIds) {
             $usuarioId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
@@ -516,15 +698,21 @@ class ElementApprovalService
                 ['usuario_id' => $usuarioId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
-            $childApproval = ElementApproval::updateOrCreate(
-                ['elemento_id' => $hijoId, 'proceso_id' => $procesoId],
-                [
-                    'usuario_id'         => $usuarioId,
-                    'estado'             => 'rechazado',
-                    'comentario'         => $comentario,
-                    'nueva_fecha_limite' => $nuevaFechaLimite,
-                ]
-            );
+            $childApprovals = [];
+            foreach ($targetUserIds as $targetUserId) {
+                $childApprovals[] = ElementApproval::updateOrCreate(
+                    [
+                        'elemento_id' => $hijoId,
+                        'proceso_id'  => $procesoId,
+                        'usuario_id'  => $targetUserId,
+                    ],
+                    [
+                        'estado'             => 'rechazado',
+                        'comentario'         => $comentario,
+                        'nueva_fecha_limite' => $nuevaFechaLimite,
+                    ]
+                )->load(['elemento']);
+            }
 
             // Devolver la asignación al responsable: resetear estado + guardar observación + nueva fecha
             $assignmentUpdate = ['estado' => ElementAssignment::ESTADO_PENDIENTE];
@@ -535,9 +723,14 @@ class ElementApprovalService
                 $assignmentUpdate['fecha_limite'] = $nuevaFechaLimite;
             }
 
-            ElementAssignment::where('elemento_id', $hijoId)
-                ->where('proceso_id', $procesoId)
-                ->update($assignmentUpdate);
+            $assignmentQuery = ElementAssignment::where('elemento_id', $hijoId)
+                ->where('proceso_id', $procesoId);
+
+            if (!empty($targetUserIds)) {
+                $assignmentQuery->whereIn('usuario_id', $targetUserIds);
+            }
+
+            $assignmentQuery->update($assignmentUpdate);
 
             $this->recalculateParentState($padreId, $procesoId);
 
@@ -550,22 +743,21 @@ class ElementApprovalService
 
             return [
                 'padre_approval' => $parentApproval->fresh()->load(['elemento', 'process', 'user']),
-                'hijo_approval'  => $childApproval->load(['elemento']),
+                'hijo_approval'  => $childApprovals[0] ?? null,
+                'hijo_approvals' => $childApprovals,
             ];
         });
 
         // NUEVO (HU-notificaciones): notifica al usuario asignado al hijo rechazado.
         // Canal email + app — rechazo individual requiere que el profesor corrija y reenvíe.
         try {
-            $assignedUserIds = ElementAssignment::where('elemento_id', $hijoId)
-                ->where('proceso_id', $procesoId)
-                ->pluck('usuario_id')
-                ->unique()
-                ->values()
-                ->toArray();
+            $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $hijoEl = $result['hijo_approval']->elemento;
+                $hijoEl = $result['hijo_approval']?->elemento;
+                if (!$hijoEl) {
+                    return $result;
+                }
                 $deadlineMessage = $nuevaFechaLimite ? " Nueva fecha límite: {$nuevaFechaLimite}." : '';
                 $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
                 NotificationService::createMany(
