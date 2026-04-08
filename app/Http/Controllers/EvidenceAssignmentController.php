@@ -94,16 +94,41 @@ class EvidenceAssignmentController extends Controller
             return response()->json(['message' => 'Asignación no encontrada.'], 404);
         }
 
-        // Validación simple para actualización de estado
-        $request->validate([
-            'estado' => 'sometimes|string|in:pendiente,en_progreso,completado,vencido',
-            'fecha_limite' => 'sometimes|nullable|date|after:now'
-        ]);
+        $user = $request->user();
+        $isOwner = (int) $assignment->usuario_id === (int) ($user?->usuario_id ?? 0);
+        $canEditAssignments = (bool) ($user?->can('asignaciones.edit') ?? false);
+
+        if (!$isOwner && !$canEditAssignments) {
+            return response()->json([
+                'message' => 'No autorizado para actualizar esta asignación.',
+            ], 403);
+        }
+
+        // El responsable puede cambiar únicamente su propio estado (en progreso/completado).
+        if ($isOwner && !$canEditAssignments) {
+            if ($request->hasAny(['fecha_limite', 'comentario'])) {
+                return response()->json([
+                    'message' => 'No autorizado para modificar fecha límite o comentario.',
+                ], 403);
+            }
+
+            $request->validate([
+                'estado' => 'required|string|in:en_progreso,completado',
+            ]);
+            $payload = $request->only(['estado']);
+        } else {
+            $request->validate([
+                'estado' => 'sometimes|string|in:pendiente,en_progreso,completado,vencido',
+                'fecha_limite' => 'sometimes|nullable|date|after:now',
+                'comentario' => 'sometimes|nullable|string|max:1000',
+            ]);
+            $payload = $request->only(['estado', 'fecha_limite', 'comentario']);
+        }
 
         try {
             $updatedAssignment = $this->service->updateAssignment(
                 $assignment, 
-                $request->only(['estado', 'fecha_limite'])
+                $payload
             );
 
             return EvidenceAssignmentResource::make($updatedAssignment)->response();

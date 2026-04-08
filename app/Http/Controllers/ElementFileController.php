@@ -44,6 +44,7 @@ class ElementFileController extends Controller
         $request->validate([
             'elemento_id' => 'required|integer|exists:ELEMENTO,elemento_id',
             'proceso_id'  => 'sometimes|integer|exists:PROCESO,proceso_id',
+            'usuario_id'  => 'sometimes|integer|exists:USUARIO,usuario_id',
         ]);
 
         $query = File::query()
@@ -52,6 +53,10 @@ class ElementFileController extends Controller
 
         if ($request->has('proceso_id')) {
             $query->where('proceso_id', $request->input('proceso_id'));
+        }
+
+        if ($request->has('usuario_id')) {
+            $query->where('usuario_id', $request->input('usuario_id'));
         }
 
         $archivos = $query->orderBy('fecha_subida', 'desc')->get();

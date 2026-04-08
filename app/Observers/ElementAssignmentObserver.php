@@ -6,10 +6,25 @@ use App\Models\ElementApproval;
 use App\Models\ElementAssignment;
 use App\Models\ElementExtensionRequest;
 use App\Models\StructureElement;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ElementAssignmentObserver
 {
+    private function clearAssignmentCaches(ElementAssignment $assignment): void
+    {
+        Cache::forget('element-assignments.all');
+        Cache::forget("element-assignments.user.{$assignment->usuario_id}");
+        Cache::forget("element-assignments.element.{$assignment->elemento_id}");
+        Cache::forget("element-assignments.process.{$assignment->proceso_id}");
+        Cache::forget("element-assignments.element.{$assignment->elemento_id}.process.{$assignment->proceso_id}");
+    }
+
+    public function created(ElementAssignment $assignment): void
+    {
+        $this->clearAssignmentCaches($assignment);
+    }
+
     /**
      * Al actualizar una asignación, si el estado pasa a Completado o Validada,
      * cancela automáticamente todas las solicitudes de ampliación pendientes
@@ -54,18 +69,27 @@ class ElementAssignmentObserver
             return;
         }
 
+        $this->clearAssignmentCaches($assignment);
+
         if ($assignment->estado !== ElementAssignment::ESTADO_COMPLETADO) {
             return;
         }
 
-        $tieneRechazo = ElementApproval::where('elemento_id', $assignment->elemento_id)
+        $tieneRechazoPropio = ElementApproval::where('elemento_id', $assignment->elemento_id)
             ->where('proceso_id', $assignment->proceso_id)
+            ->where('usuario_id', $assignment->usuario_id)
             ->where('estado', 'rechazado')
             ->exists();
 
-        if (!$tieneRechazo) {
+        if (!$tieneRechazoPropio) {
             return;
         }
+
+        ElementApproval::where('elemento_id', $assignment->elemento_id)
+            ->where('proceso_id', $assignment->proceso_id)
+            ->where('usuario_id', $assignment->usuario_id)
+            ->where('estado', 'rechazado')
+            ->update(['estado' => 'pendiente']);
 
         $elemento = StructureElement::find($assignment->elemento_id);
         if (!$elemento || !$elemento->padre_id) {
@@ -76,5 +100,10 @@ class ElementAssignmentObserver
             ->where('proceso_id', $assignment->proceso_id)
             ->where('estado', 'incompleto')
             ->update(['estado' => 'pendiente']);
+    }
+
+    public function deleted(ElementAssignment $assignment): void
+    {
+        $this->clearAssignmentCaches($assignment);
     }
 }

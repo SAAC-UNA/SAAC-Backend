@@ -28,6 +28,7 @@ class EvidenceAssignmentService
             ->withExists([
                 'pendingExtensionRequests as has_pending_extension_request',
                 'filesByAssignee as has_uploaded_files',
+                'rejectedApprovalsByAssignee as is_returned_for_changes',
             ]);
     }
 
@@ -166,7 +167,11 @@ class EvidenceAssignmentService
 
         // Cargar relaciones para el evento y el retorno
         $assignment->load(self::WITH_BASE);
-        $assignment->loadExists('pendingExtensionRequests as has_pending_extension_request');
+        $assignment->loadExists([
+            'pendingExtensionRequests as has_pending_extension_request',
+            'filesByAssignee as has_uploaded_files',
+            'rejectedApprovalsByAssignee as is_returned_for_changes',
+        ]);
 
         // Disparar evento de asignacion para notificaciones
         event(new EvidenceAssigned($assignment));

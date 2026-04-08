@@ -6,6 +6,7 @@ use App\Models\ElementAssignment;
 use App\Models\File;
 use App\Models\StructureElement;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -66,6 +67,7 @@ class FlexibleFileService extends AbstractFileService
             ]);
 
             $this->marcarEnProgreso($referenciaId, $usuarioId, $procesoId);
+            $this->clearAssignmentCaches($referenciaId, $usuarioId, $procesoId);
 
             return $archivo;
         });
@@ -112,9 +114,19 @@ class FlexibleFileService extends AbstractFileService
             ]);
 
             $this->marcarEnProgreso($referenciaId, $usuarioId, $procesoId);
+            $this->clearAssignmentCaches($referenciaId, $usuarioId, $procesoId);
 
             return $enlace;
         });
+    }
+
+    private function clearAssignmentCaches(int $elementoId, int $usuarioId, int $procesoId): void
+    {
+        Cache::forget('element-assignments.all');
+        Cache::forget("element-assignments.user.{$usuarioId}");
+        Cache::forget("element-assignments.element.{$elementoId}");
+        Cache::forget("element-assignments.process.{$procesoId}");
+        Cache::forget("element-assignments.element.{$elementoId}.process.{$procesoId}");
     }
 
     /**

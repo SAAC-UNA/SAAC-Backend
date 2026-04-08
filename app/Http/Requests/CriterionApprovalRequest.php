@@ -27,6 +27,7 @@ class CriterionApprovalRequest extends FormRequest
             'proceso_id'        => ['required', 'integer', 'exists:PROCESO,proceso_id'],
             'comentario'        => ['nullable', 'string', 'max:500'],
             'nueva_fecha_limite' => ['nullable', 'date', 'after:today'],
+            'responsable_usuario_id' => ['nullable', 'integer', 'exists:USUARIO,usuario_id'],
         ];
     }
 
@@ -45,6 +46,8 @@ class CriterionApprovalRequest extends FormRequest
             'comentario.max'             => 'El comentario no puede exceder 500 caracteres.',
             'nueva_fecha_limite.date'    => 'La nueva fecha límite debe ser una fecha válida.',
             'nueva_fecha_limite.after'   => 'La nueva fecha límite debe ser posterior a hoy.',
+            'responsable_usuario_id.integer' => 'El usuario responsable debe ser un número entero.',
+            'responsable_usuario_id.exists'  => 'El usuario responsable seleccionado no existe.',
         ];
     }
 

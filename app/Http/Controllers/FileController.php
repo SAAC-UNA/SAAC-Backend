@@ -36,6 +36,7 @@ class FileController extends Controller
         $request->validate([
             'evidencia_id' => 'sometimes|integer|exists:EVIDENCIA,evidencia_id',
             'proceso_id'   => 'sometimes|integer|exists:PROCESO,proceso_id',
+            'usuario_id'   => 'sometimes|integer|exists:USUARIO,usuario_id',
         ]);
 
         $query = File::query()->with(['evidence', 'user', 'process']);
@@ -53,6 +54,11 @@ class FileController extends Controller
         // Filtrar por proceso si se proporciona
         if ($request->has('proceso_id')) {
             $query->where('proceso_id', $request->input('proceso_id'));
+        }
+
+        // Filtrar por usuario responsable cuando se requiere aislar archivos por asignación.
+        if ($request->has('usuario_id')) {
+            $query->where('usuario_id', $request->input('usuario_id'));
         }
 
         $archivos = $query->orderBy('fecha_subida', 'desc')->get();

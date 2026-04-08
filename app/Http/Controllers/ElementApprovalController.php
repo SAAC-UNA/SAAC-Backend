@@ -163,7 +163,8 @@ class ElementApprovalController extends Controller
         $result = $this->approvalService->approveIndividualChild(
             $padreId,
             $hijoId,
-            $request->proceso_id
+            $request->proceso_id,
+            $request->responsable_usuario_id
         );
 
         return response()->json([
@@ -182,7 +183,8 @@ class ElementApprovalController extends Controller
             $hijoId,
             $request->proceso_id,
             $request->comentario,
-            $request->nueva_fecha_limite
+            $request->nueva_fecha_limite,
+            $request->responsable_usuario_id
         );
 
         return response()->json([
