@@ -1,48 +1,61 @@
 <?php
 
-use App\Models\EvidenceState;
+use App\Models\Evidence;
+use App\Models\Criterion;
+use App\Models\Component;
+use App\Models\Dimension;
 
-it('evidence state has many evidences', function () {
-    $state = \App\Models\EvidenceState::factory()->create();
-    $dimension = \App\Models\Dimension::factory()->create();
-    $component = \App\Models\Component::factory()->create([
-        'dimension_id' => $dimension->dimension_id,
-    ]);
-    $criterion = \App\Models\Criterion::factory()->create([
-        'componente_id' => $component->componente_id,
-    ]);
-    $evidence = \App\Models\Evidence::factory()->create([
+function makeEvidenceCriterion(): Criterion
+{
+    $dimension  = Dimension::factory()->create();
+    $component  = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
+    return Criterion::factory()->create(['componente_id' => $component->componente_id]);
+}
+
+it('evidence estado defaults to Pendiente', function () {
+    $criterion = makeEvidenceCriterion();
+    $evidence  = Evidence::factory()->create(['criterio_id' => $criterion->criterio_id]);
+
+    expect($evidence->estado)->toBe('Pendiente');
+});
+
+it('evidence acepta todos los estados validos', function () {
+    $criterion = makeEvidenceCriterion();
+
+    foreach (Evidence::ESTADOS as $estado) {
+        $evidence = Evidence::factory()->create([
+            'criterio_id' => $criterion->criterio_id,
+            'estado'       => $estado,
+        ]);
+        expect($evidence->estado)->toBe($estado);
+    }
+});
+
+it('scopeByState filtra correctamente por estado', function () {
+    $criterion = makeEvidenceCriterion();
+    Evidence::factory()->create(['criterio_id' => $criterion->criterio_id, 'estado' => 'Pendiente']);
+    Evidence::factory()->create(['criterio_id' => $criterion->criterio_id, 'estado' => 'Aprobado']);
+    Evidence::factory()->create(['criterio_id' => $criterion->criterio_id, 'estado' => 'Aprobado']);
+
+    $aprobadas = Evidence::byState('Aprobado')->get();
+
+    expect($aprobadas->count())->toBeGreaterThanOrEqual(2);
+    $aprobadas->each(fn ($e) => expect($e->estado)->toBe('Aprobado'));
+});
+
+it('evidence puede actualizar su estado', function () {
+    $criterion = makeEvidenceCriterion();
+    $evidence  = Evidence::factory()->create(['criterio_id' => $criterion->criterio_id, 'estado' => 'Pendiente']);
+
+    $evidence->update(['estado' => 'Completado']);
+
+    expect($evidence->fresh()->estado)->toBe('Completado');
+});
+
+it('evidence con estado invalido lanza excepcion de base de datos', function () {
+    $criterion = makeEvidenceCriterion();
+    Evidence::factory()->create([
         'criterio_id' => $criterion->criterio_id,
-        'estado_evidencia_id' => $state->estado_evidencia_id,
+        'estado'       => 'EstadoInexistente',
     ]);
-    $state->refresh();
-    expect($state->evidences->contains($evidence))->toBeTrue();
-});
-
-it('creates an evidence state', function () {
-    $state = EvidenceState::factory()->create([
-        'nombre' => 'Estado 1',
-    ]);
-
-    $this->assertDatabaseHas('ESTADO_EVIDENCIA', [
-        'nombre' => 'Estado 1',
-    ]);
-});
-
-it('requires nombre field', function () {
-    EvidenceState::factory()->create(['nombre' => null]);
 })->throws(\Illuminate\Database\QueryException::class);
-
-it('updates an evidence state', function () {
-    $state = EvidenceState::factory()->create(['nombre' => 'Original']);
-    $state->update(['nombre' => 'Actualizado']);
-
-    $this->assertDatabaseHas('ESTADO_EVIDENCIA', ['nombre' => 'Actualizado']);
-});
-
-it('deletes an evidence state', function () {
-    $state = EvidenceState::factory()->create();
-    $state->delete();
-
-    $this->assertDatabaseMissing('ESTADO_EVIDENCIA', ['estado_evidencia_id' => $state->estado_evidencia_id]);
-});

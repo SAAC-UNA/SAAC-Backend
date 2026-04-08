@@ -34,9 +34,12 @@ class RefreshSessionMiddleware
         $sessionLifetimeMinutes = (int) config('session.lifetime', 120);
         $newExpiration = now()->addMinutes($sessionLifetimeMinutes);
 
-        $token->forceFill([
+        $refreshed = $token->forceFill([
             'expires_at' => $newExpiration,
-        ])->save();
+        ]);
+        if ($refreshed instanceof PersonalAccessToken) {
+            $refreshed->save();
+        }
 
         $plainTextToken = $request->bearerToken();
         if (!$plainTextToken) {

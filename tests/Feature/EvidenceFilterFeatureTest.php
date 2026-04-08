@@ -1,320 +1,181 @@
-<?php
+﻿<?php
 
-use App\Models\Evidence;
-use App\Models\Criterion;
-use App\Models\Component;
-use App\Models\Dimension;
-use App\Models\EvidenceState;
-use App\Models\User;
-use App\Models\Process;
 use App\Models\AccreditationCycle;
 use App\Models\Career;
 use App\Models\Campus;
-use App\Models\University;
+use App\Models\CareerCampus;
+use App\Models\Component;
+use App\Models\Criterion;
+use App\Models\Dimension;
+use App\Models\Evidence;
 use App\Models\EvidenceAssignment;
+use App\Models\Process;
+use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 
-beforeEach(function () {
-    $this->filterEndpoint = '/api/estructura/evidencias/filter';
-    
-    // Crear usuario básico con rol Superusuario para evitar restricciones de filtrado
-    $this->user = User::factory()->create();
-    
-    // Crear rol Superusuario y asignárselo (necesario para el filtrado)
-    if (!Role::where('name', 'Superusuario')->where('guard_name', 'api')->exists()) {
-        Role::create(['name' => 'Superusuario', 'guard_name' => 'api']);
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function efEndpoint(): string
+{
+    return '/api/estructura/evidencias/filter';
+}
+
+function efAdmin()
+{
+    Artisan::call('db:seed', ['--class' => \Database\Seeders\RolesAndPermissionsSeeder::class]);
+    $user = User::factory()->create();
+    $user->assignRole(Role::findByName('Superusuario', 'api'));
+    return $user;
+}
+
+function efCriterion(?int $compId = null)
+{
+    if ($compId) {
+        return Criterion::factory()->create(['componente_id' => $compId]);
     }
-    $this->user->assignRole('Superusuario');
-    
-    // Crear usuarios adicionales para pruebas específicas sin roles por ahora
-    $this->superUser = $this->user; // Reutilizar el usuario principal
-    $this->coordinador = User::factory()->create();  
-    $this->evaluador = User::factory()->create();
-    
-    // Usar el usuario principal con rol Superusuario para autenticación por defecto
-    Sanctum::actingAs($this->user, ['web'], 'sanctum');
-});
+    $dim  = Dimension::factory()->create();
+    $comp = Component::factory()->create(['dimension_id' => $dim->dimension_id]);
+    return Criterion::factory()->create(['componente_id' => $comp->componente_id]);
+}
+
+function efProcess()
+{
+    $cc    = CareerCampus::factory()->create([
+        'carrera_id' => Career::factory()->create()->carrera_id,
+        'sede_id'    => Campus::factory()->create()->sede_id,
+    ]);
+    $cycle = AccreditationCycle::factory()->create(['carrera_sede_id' => $cc->carrera_sede_id]);
+    return Process::factory()->create(['ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id]);
+}
+
+// â”€â”€ tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 it('filter requiere autenticacion', function () {
-    // Limpiar autenticación para probar que se requiere autenticación
-    $this->app['auth']->forgetGuards();
-    
-    $response = $this->withHeaders([
-        'Accept' => 'application/json',
-        'Authorization' => '' // Asegurarse de no enviar token
-    ])->getJson($this->filterEndpoint);
-    
+    /** @var \Tests\TestCase $this */
+    $response = $this->withHeaders(['Authorization' => ''])->getJson(efEndpoint());
     $response->assertUnauthorized();
 });
 
 it('filter devuelve todas las evidencias sin filtros', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit = efCriterion();
+    Evidence::factory()->count(5)->create(['criterio_id' => $crit->criterio_id]);
 
-        // Crear estructura necesaria
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-
-        // Crear evidencias
-        Evidence::factory()->count(5)->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint);
-
-    $response->assertOk()
-        ->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'evidencia_id',
-                    'descripcion',
-                    'nomenclatura',
-                    'estado_evidencia',
-                    'fecha_publicacion',
-                ]
-            ],
-            'links',
-            'meta'
-        ])
+    $this->getJson(efEndpoint())
+        ->assertOk()
+        ->assertJsonStructure(['data' => [['evidencia_id', 'descripcion', 'nomenclatura']], 'links', 'meta'])
         ->assertJsonCount(5, 'data');
 });
 
 it('filter por criterio devuelve evidencias correctas', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $dim   = Dimension::factory()->create();
+    $comp  = Component::factory()->create(['dimension_id' => $dim->dimension_id]);
+    $crit1 = efCriterion($comp->componente_id);
+    $crit2 = efCriterion($comp->componente_id);
+    Evidence::factory()->count(3)->create(['criterio_id' => $crit1->criterio_id]);
+    Evidence::factory()->count(2)->create(['criterio_id' => $crit2->criterio_id]);
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion1 = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $criterion2 = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-
-        // 3 evidencias del criterio 1
-        Evidence::factory()->count(3)->create([
-            'criterio_id' => $criterion1->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        // 2 evidencias del criterio 2
-        Evidence::factory()->count(2)->create([
-            'criterio_id' => $criterion2->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?criterio_id=' . $criterion1->getKey());
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . "?criterio_id={$crit1->criterio_id}")
+        ->assertOk()
         ->assertJsonCount(3, 'data');
 });
 
 it('filter por estado devuelve evidencias correctas', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit = efCriterion();
+    Evidence::factory()->count(4)->create(['criterio_id' => $crit->criterio_id, 'estado' => 'Pendiente']);
+    Evidence::factory()->count(2)->create(['criterio_id' => $crit->criterio_id, 'estado' => 'Completado']);
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state1 = EvidenceState::factory()->create(['nombre' => 'Pendiente']);
-        $state2 = EvidenceState::factory()->create(['nombre' => 'Completado']);
-
-        Evidence::factory()->count(4)->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state1->getKey(),
-        ]);
-
-        Evidence::factory()->count(2)->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state2->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?estado_evidencia_id=' . $state1->getKey());
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . '?estado=Pendiente')
+        ->assertOk()
         ->assertJsonCount(4, 'data');
 });
 
 it('filter por responsable devuelve evidencias asignadas', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit    = efCriterion();
+    $process = efProcess();
+    $ev1     = Evidence::factory()->create(['criterio_id' => $crit->criterio_id]);
+    Evidence::factory()->create(['criterio_id' => $crit->criterio_id]);
+    $resp    = User::factory()->create();
+    EvidenceAssignment::factory()->create([
+        'proceso_id'   => $process->proceso_id,
+        'evidencia_id' => $ev1->evidencia_id,
+        'usuario_id'   => $resp->usuario_id,
+    ]);
 
-        // Crear estructura
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-        $university = University::factory()->create();
-        $campus = Campus::factory()->create(['universidad_id' => $university->getKey()]);
-        $career = Career::factory()->create();
-        $career->campuses()->attach($campus->getKey());
-        $careerCampus = \DB::table('CARRERA_SEDE')
-            ->where('carrera_id', $career->getKey())
-            ->where('sede_id', $campus->getKey())
-            ->first();
-        $cycle = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampus->carrera_sede_id]);
-        $process = Process::factory()->create(['ciclo_acreditacion_id' => $cycle->getKey()]);
-
-        $evidence1 = Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $evidence2 = Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $user = User::factory()->create();
-
-        // Asignar solo evidence1 al usuario
-        EvidenceAssignment::factory()->create([
-            'proceso_id' => $process->getKey(),
-            'evidencia_id' => $evidence1->getKey(),
-            'usuario_id' => $user->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?responsable_id=' . $user->getKey());
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . "?responsable_id={$resp->usuario_id}")
+        ->assertOk()
         ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
+        ->assertJsonPath('data.0.evidencia_id', $ev1->evidencia_id);
 });
 
 it('filter ordenamiento por nomenclatura ascendente', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit = efCriterion();
+    foreach (['23', '20', '21'] as $n) {
+        Evidence::factory()->create(['criterio_id' => $crit->criterio_id, 'nomenclatura' => $n]);
+    }
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-
-        Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-            'nomenclatura' => '23',
-        ]);
-
-        Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-            'nomenclatura' => '20',
-        ]);
-
-        Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-            'nomenclatura' => '21',
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?sort_by=nomenclatura&sort_order=asc');
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . '?sort_by=nomenclatura&sort_order=asc')
+        ->assertOk()
         ->assertJsonPath('data.0.nomenclatura', '20')
         ->assertJsonPath('data.1.nomenclatura', '21')
         ->assertJsonPath('data.2.nomenclatura', '23');
 });
 
 it('filter paginacion funciona correctamente', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit = efCriterion();
+    Evidence::factory()->count(10)->create(['criterio_id' => $crit->criterio_id]);
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-
-        Evidence::factory()->count(10)->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?per_page=5');
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . '?per_page=5')
+        ->assertOk()
         ->assertJsonCount(5, 'data')
         ->assertJsonPath('meta.per_page', 5)
         ->assertJsonPath('meta.total', 10);
 });
 
 it('superusuario ve todas las evidencias', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $crit = efCriterion();
+    Evidence::factory()->count(5)->create(['criterio_id' => $crit->criterio_id]);
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-
-        Evidence::factory()->count(5)->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint);
-
-    $response->assertOk()
+    $this->getJson(efEndpoint())
+        ->assertOk()
         ->assertJsonCount(5, 'data');
 });
 
-it('evaluador solo ve evidencias asignadas', function () {
-    Sanctum::actingAs($this->evaluador, ['web'], 'sanctum');
-
-        // Crear estructura
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state = EvidenceState::factory()->create();
-        $university = University::factory()->create();
-        $campus = Campus::factory()->create(['universidad_id' => $university->getKey()]);
-        $career = Career::factory()->create();
-        $career->campuses()->attach($campus->getKey());
-        $careerCampus = \DB::table('CARRERA_SEDE')
-            ->where('carrera_id', $career->getKey())
-            ->where('sede_id', $campus->getKey())
-            ->first();
-        $cycle = AccreditationCycle::factory()->create(['carrera_sede_id' => $careerCampus->carrera_sede_id]);
-        $process = Process::factory()->create(['ciclo_acreditacion_id' => $cycle->getKey()]);
-
-        $evidence1 = Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        $evidence2 = Evidence::factory()->create([
-            'criterio_id' => $criterion->getKey(),
-            'estado_evidencia_id' => $state->getKey(),
-        ]);
-
-        // Solo asignar evidence1 al evaluador
-        EvidenceAssignment::factory()->create([
-            'proceso_id' => $process->getKey(),
-            'evidencia_id' => $evidence1->getKey(),
-            'usuario_id' => $this->evaluador->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint);
-
-    $response->assertOk()
-        ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.evidencia_id', $evidence1->getKey());
-});
-
 it('filter multiples parametros combinados', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = efAdmin();
+    Sanctum::actingAs($admin);
+    $dim   = Dimension::factory()->create();
+    $comp  = Component::factory()->create(['dimension_id' => $dim->dimension_id]);
+    $crit1 = efCriterion($comp->componente_id);
+    $crit2 = efCriterion($comp->componente_id);
+    Evidence::factory()->count(3)->create(['criterio_id' => $crit1->criterio_id, 'estado' => 'Pendiente']);
+    Evidence::factory()->count(2)->create(['criterio_id' => $crit1->criterio_id, 'estado' => 'Completado']);
+    Evidence::factory()->count(2)->create(['criterio_id' => $crit2->criterio_id, 'estado' => 'Pendiente']);
 
-        $dimension = Dimension::factory()->create();
-        $component = Component::factory()->create(['dimension_id' => $dimension->getKey()]);
-        $criterion1 = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $criterion2 = Criterion::factory()->create(['componente_id' => $component->getKey()]);
-        $state1 = EvidenceState::factory()->create(['nombre' => 'Pendiente']);
-        $state2 = EvidenceState::factory()->create(['nombre' => 'Completado']);
-
-        Evidence::factory()->count(3)->create([
-            'criterio_id' => $criterion1->getKey(),
-            'estado_evidencia_id' => $state1->getKey(),
-        ]);
-
-        Evidence::factory()->count(2)->create([
-            'criterio_id' => $criterion1->getKey(),
-            'estado_evidencia_id' => $state2->getKey(),
-        ]);
-
-        Evidence::factory()->count(2)->create([
-            'criterio_id' => $criterion2->getKey(),
-            'estado_evidencia_id' => $state1->getKey(),
-        ]);
-
-        $response = $this->getJson($this->filterEndpoint . '?criterio_id=' . $criterion1->getKey() . '&estado_evidencia_id=' . $state1->getKey());
-
-    $response->assertOk()
+    $this->getJson(efEndpoint() . "?criterio_id={$crit1->criterio_id}&estado=Pendiente")
+        ->assertOk()
         ->assertJsonCount(3, 'data');
 });

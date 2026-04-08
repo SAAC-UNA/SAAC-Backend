@@ -18,7 +18,7 @@ class EvidenceAssignmentFactory extends Factory
             'proceso_id' => Process::factory(),
             'evidencia_id' => Evidence::factory(),
             'usuario_id' => User::factory(),
-            'estado' => $this->faker->randomElement(['pendiente', 'completado', 'rechazado']),
+            'estado' => $this->faker->randomElement(['Pendiente', 'En Progreso', 'Completado', 'Vencido']),
             'fecha_asignacion' => $this->faker->dateTimeBetween('-1 month', 'now'),
             'fecha_limite' => $this->faker->dateTimeBetween('now', '+1 month'),
             'comentario' => $this->faker->optional(0.7)->sentence(12),
