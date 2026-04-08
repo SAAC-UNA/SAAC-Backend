@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 
 class ElementAssignmentService
 {
-    private const WITH_BASE     = ['element', 'user', 'process', 'assignedBy'];
+    private const WITH_BASE     = ['element', 'user', 'process.accreditationCycle', 'assignedBy'];
     private const WITH_EXISTS   = [
         'pendingExtensionRequests as has_pending_extension_request',
         'filesByAssignee as has_uploaded_files',
@@ -57,7 +57,7 @@ class ElementAssignmentService
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($filters, $user) {
-            $query = ElementAssignment::with(['element', 'user', 'process']);
+            $query = ElementAssignment::with(['element', 'user', 'process.accreditationCycle']);
 
             if (!empty($filters['proceso_id'])) {
                 $query->where('proceso_id', (int) $filters['proceso_id']);

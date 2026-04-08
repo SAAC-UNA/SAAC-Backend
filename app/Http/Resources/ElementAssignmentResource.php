@@ -34,7 +34,8 @@ class ElementAssignmentResource extends JsonResource
 
             'process' => $this->whenLoaded('process', fn () => [
                 'proceso_id'            => $this->process->proceso_id,
-                'nombre'                => $this->process->nombre,
+                'nombre'                => trim($this->process->tipo_proceso . ' - ' . ($this->process->accreditationCycle?->nombre ?? '')),
+                'tipo_proceso'          => $this->process->tipo_proceso,
                 'ciclo_acreditacion_id' => $this->process->ciclo_acreditacion_id,
             ]),
 
