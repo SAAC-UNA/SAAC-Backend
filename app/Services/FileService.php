@@ -228,7 +228,9 @@ class FileService
         if (!$archivo->isPubliclyAccessible()) {
             return null;
         }
-        return route('files.public', ['token' => $archivo->token_publico]);
+        $baseUrl = (string) config('app.frontend_url', config('app.url'));
+
+        return rtrim($baseUrl, '/') . '/p/' . $archivo->token_publico;
     }
 
     public function fileExists(File $archivo): bool

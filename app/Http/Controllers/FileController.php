@@ -456,6 +456,92 @@ class FileController extends Controller
         }
     }
 
+    /**
+        * Datos públicos tipo carpeta agrupados por evidencia o fuente (elemento).
+     * GET /api/p/{token}/carpeta
+     */
+        public function publicFolder(string $token): JsonResponse
+    {
+        $archivoBase = File::with(['evidence', 'elemento'])
+            ->where('token_publico', $token)
+            ->first();
+
+        if (!$archivoBase) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Archivo no encontrado o enlace inválido.',
+            ], 404);
+        }
+
+        if (!$archivoBase->is_publico || $archivoBase->hasExpiredLink()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El enlace público no está disponible.',
+            ], 410);
+        }
+
+        $esEvidencia = !empty($archivoBase->evidencia_id);
+        $esElemento  = !empty($archivoBase->elemento_id);
+
+        if (!$esEvidencia && !$esElemento) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El archivo no está asociado a una evidencia o fuente de información.',
+            ], 422);
+        }
+
+        $archivos = File::query()
+            ->where('is_publico', true)
+            ->whereNotNull('token_publico')
+            ->where(function ($query) {
+                $query->whereNull('link_expira_en')
+                    ->orWhere('link_expira_en', '>', now());
+            })
+            ->when($esEvidencia, function ($query) use ($archivoBase) {
+                $query->where('evidencia_id', $archivoBase->evidencia_id)
+                    ->with('evidence');
+            })
+            ->when($esElemento, function ($query) use ($archivoBase) {
+                $query->where('elemento_id', $archivoBase->elemento_id)
+                    ->with('elemento');
+            })
+            ->orderByDesc('fecha_subida')
+            ->get();
+
+        $items = $archivos->map(function (File $archivo) {
+            return [
+                'archivo_id' => $archivo->archivo_id,
+                'nombre_original' => $archivo->nombre_original,
+                'tipo' => $archivo->tipo ?? 'archivo',
+                'token_publico' => $archivo->token_publico,
+                'fecha_subida' => optional($archivo->fecha_subida)->format('d/m/Y H:i'),
+                'url' => $archivo->tipo === 'enlace' ? $archivo->url : null,
+            ];
+        });
+
+        $contexto = $esEvidencia
+            ? [
+                'tipo' => 'Evidencia',
+                'titulo' => 'Evidencia',
+                'nomenclatura' => $archivoBase->evidence?->nomenclatura,
+                'descripcion' => $archivoBase->evidence?->descripcion,
+            ]
+            : [
+                'tipo' => 'Fuente de información',
+                'titulo' => 'Fuente de información',
+                'nomenclatura' => $archivoBase->elemento?->nomenclatura,
+                'descripcion' => $archivoBase->elemento?->descripcion,
+            ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'contexto' => $contexto,
+                'items' => $items,
+            ],
+        ]);
+    }
+
     // =================================================================
     // MÉTODOS TEMPORALES PARA PRUEBAS (REMOVER EN PRODUCCIÓN)
     // =================================================================

@@ -36,9 +36,18 @@ class ElementFileResource extends JsonResource
 
             // Acceso público
             'is_publico'     => $this->is_publico,
+            'token_publico'  => $this->token_publico,
             'url_publica'    => $this->when(
                 $this->isPubliclyAccessible(),
                 fn() => $this->getPublicUrl()
+            ),
+            'url_publica_carpeta' => $this->when(
+                $this->isPubliclyAccessible(),
+                function () {
+                    $baseUrl = (string) config('app.frontend_url', config('app.url'));
+
+                    return rtrim($baseUrl, '/') . '/p/' . $this->token_publico;
+                }
             ),
             'link_expira_en' => $this->when(
                 $this->is_publico && $this->link_expira_en,

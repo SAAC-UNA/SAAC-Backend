@@ -423,7 +423,10 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
 });
 
 // Acceso público mediante token (SIN autenticación - para SINAES/informes)
-Route::get('/p/{token}', [FileController::class, 'publicAccess']);
+Route::get('/p/{token}', [FileController::class, 'publicAccess'])
+    ->name('public.files.access');
+Route::get('/p/{token}/carpeta', [FileController::class, 'publicFolder'])
+    ->name('public.files.folder');
 
 // ============================================
 // Solicitudes de Ampliación - Modelo Flexible (HU-016b)

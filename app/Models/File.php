@@ -154,7 +154,9 @@ class File extends Model
             return null;
         }
 
-        return url('/api/p/' . $this->token_publico);
+        $baseUrl = (string) config('app.frontend_url', config('app.url'));
+
+        return rtrim($baseUrl, '/') . '/p/' . $this->token_publico;
     }
 
     /**
