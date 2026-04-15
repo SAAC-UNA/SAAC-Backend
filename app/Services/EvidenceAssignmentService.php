@@ -29,7 +29,8 @@ class EvidenceAssignmentService
                 'pendingExtensionRequests as has_pending_extension_request',
                 'filesByAssignee as has_uploaded_files',
                 'rejectedApprovalsByAssignee as is_returned_for_changes',
-            ]);
+            ])
+            ->withAggregate('pendingExtensionRequests as pending_extension_request_id', 'solicitud_ampliacion_id', 'max');
     }
 
     /**
@@ -172,6 +173,7 @@ class EvidenceAssignmentService
             'filesByAssignee as has_uploaded_files',
             'rejectedApprovalsByAssignee as is_returned_for_changes',
         ]);
+        $assignment->loadAggregate('pendingExtensionRequests as pending_extension_request_id', 'solicitud_ampliacion_id', 'max');
 
         // Disparar evento de asignacion para notificaciones
         event(new EvidenceAssigned($assignment));

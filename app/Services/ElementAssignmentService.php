@@ -25,12 +25,14 @@ class ElementAssignmentService
         'filesByAssignee as has_uploaded_files',
         'rejectedApprovalsByAssignee as is_returned_for_changes',
     ];
+    private const WITH_AGGREGATE = ['pendingExtensionRequests as pending_extension_request_id', 'solicitud_ampliacion_id', 'max'];
     private const CACHE_TTL = 60;
 
     private function baseQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return ElementAssignment::with(self::WITH_BASE)
-            ->withExists(self::WITH_EXISTS);
+            ->withExists(self::WITH_EXISTS)
+            ->withAggregate(self::WITH_AGGREGATE[0], self::WITH_AGGREGATE[1], self::WITH_AGGREGATE[2]);
     }
 
     private function clearAssignmentCaches(ElementAssignment $assignment): void
@@ -114,6 +116,7 @@ class ElementAssignmentService
     {
         return ElementAssignment::with([...self::WITH_BASE, 'comments.user'])
             ->withExists(self::WITH_EXISTS)
+            ->withAggregate(self::WITH_AGGREGATE[0], self::WITH_AGGREGATE[1], self::WITH_AGGREGATE[2])
             ->find($id);
     }
 
