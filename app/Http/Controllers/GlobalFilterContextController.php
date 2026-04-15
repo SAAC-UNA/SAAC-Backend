@@ -67,7 +67,7 @@ class GlobalFilterContextController extends Controller
                     $careersQuery->whereIn('carrera_sede_id', $ids);
                 }
 
-                $cyclesQuery = AccreditationCycle::query()->with(['careerCampus.career', 'careerCampus.campus']);
+                $cyclesQuery = AccreditationCycle::query()->with('modeloEstructura')->with(['careerCampus.career', 'careerCampus.campus']);
                 if ($context['career_campus_id']) {
                     $cyclesQuery->where('carrera_sede_id', $context['career_campus_id']);
                 }
@@ -93,6 +93,7 @@ class GlobalFilterContextController extends Controller
                         'nombre'                => $item->nombre,
                         'estado'                => $item->estado,
                         'carrera_sede_id'       => $item->carrera_sede_id,
+                        'modelo_tipo'           => $item->modeloEstructura?->tipo ?? null,
                     ])->values(),
                     'processes' => $processesQuery->orderByDesc('proceso_id')->get()->map(fn (Process $item) => [
                         'proceso_id'            => $item->proceso_id,

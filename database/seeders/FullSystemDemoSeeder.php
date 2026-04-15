@@ -561,7 +561,7 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('SOLICITUD_AMPLIACION')->insert([
             'evidencia_asignacion_id' => $evidExt1Id,
             'usuario_id'              => $profesor->usuario_id,
-            'motivo'                  => self::TAG . ' El archivo de soporte requiere firma del coordinador y el proceso tomará más tiempo del previsto inicialmente.',
+            'motivo'                  => 'El archivo de soporte requiere firma del coordinador y el proceso tomará más tiempo del previsto inicialmente.',
             'fecha_sugerida'          => $now->copy()->addDays(30)->toDateTimeString(),
             'estado'                  => 'pendiente',
             'created_at'              => $now,
@@ -572,12 +572,12 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('SOLICITUD_AMPLIACION')->insert([
             'evidencia_asignacion_id' => $evidExt2Id,
             'usuario_id'              => $profesor->usuario_id,
-            'motivo'                  => self::TAG . ' El laboratorio de informática estuvo cerrado por mantenimiento durante la semana anterior. Se solicita 10 días adicionales.',
+            'motivo'                  => 'El laboratorio de informática estuvo cerrado por mantenimiento durante la semana anterior. Se solicita 10 días adicionales.',
             'fecha_sugerida'          => $now->copy()->addDays(10)->toDateTimeString(),
             'estado'                  => 'aprobada',
             'fecha_resolucion'        => $now->copy()->subDays(2)->toDateTimeString(),
             'usuario_resolutor_id'    => $encargado->usuario_id,
-            'justificacion'           => self::TAG . ' Se aprueba la extensión. El motivo es válido y el plazo solicitado es razonable.',
+            'justificacion'           => 'Se aprueba la extensión. El motivo es válido y el plazo solicitado es razonable.',
             'created_at'              => $now->copy()->subDays(5),
             'updated_at'              => $now,
         ]);
@@ -586,12 +586,12 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('SOLICITUD_AMPLIACION')->insert([
             'evidencia_asignacion_id' => $evidVencidaId,
             'usuario_id'              => $encargado->usuario_id,
-            'motivo'                  => self::TAG . ' Solicitud enviada luego de que el plazo ya había vencido sin justificación previa.',
+            'motivo'                  => 'Solicitud enviada luego de que el plazo ya había vencido sin justificación previa.',
             'fecha_sugerida'          => $now->copy()->addDays(7)->toDateTimeString(),
             'estado'                  => 'rechazada',
             'fecha_resolucion'        => $now->copy()->subDays(4)->toDateTimeString(),
             'usuario_resolutor_id'    => $encargado->usuario_id,
-            'justificacion'           => self::TAG . ' La solicitud fue presentada fuera del plazo reglamentario. No se admite extensión.',
+            'justificacion'           => 'La solicitud fue presentada fuera del plazo reglamentario. No se admite extensión.',
             'created_at'              => $now->copy()->subDays(6),
             'updated_at'              => $now,
         ]);
@@ -803,7 +803,7 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('SOLICITUD_AMPLIACION_ELEMENTO')->insert([
             'elemento_asignacion_id' => $eleAsign3Id,
             'usuario_id'             => $profesor->usuario_id,
-            'motivo'                 => self::TAG . ' Pendiente la firma de validación del coordinador de área sobre la fuente de evidencia F2.1. El proceso administrativo está en trámite.',
+            'motivo'                 => 'Pendiente la firma de validación del coordinador de área sobre la fuente de evidencia F2.1. El proceso administrativo está en trámite.',
             'fecha_sugerida'         => $now->copy()->addDays(21)->toDateTimeString(),
             'estado'                 => 'pendiente',
             'created_at'             => $now,
@@ -814,12 +814,12 @@ class FullSystemDemoSeeder extends Seeder
         DB::table('SOLICITUD_AMPLIACION_ELEMENTO')->insert([
             'elemento_asignacion_id' => $eleAsign1Id,
             'usuario_id'             => $profesor->usuario_id,
-            'motivo'                 => self::TAG . ' El repositorio central estuvo fuera de servicio durante 3 días hábiles impidiendo la carga del documento.',
+            'motivo'                 => 'El repositorio central estuvo fuera de servicio durante 3 días hábiles impidiendo la carga del documento.',
             'fecha_sugerida'         => $now->copy()->addDays(7)->toDateTimeString(),
             'estado'                 => 'aprobada',
             'fecha_resolucion'       => $now->copy()->subDays(1)->toDateTimeString(),
             'usuario_resolutor_id'   => $encargado->usuario_id,
-            'justificacion'          => self::TAG . ' Incidencia técnica confirmada. Se concede la extensión de 7 días.',
+            'justificacion'          => 'Incidencia técnica confirmada. Se concede la extensión de 7 días.',
             'created_at'             => $now->copy()->subDays(4),
             'updated_at'             => $now,
         ]);
