@@ -36,23 +36,23 @@ class ElementAssignmentObserver
             return;
         }
 
-        $nuevoEstado = $model->estado;
+        $newState = $model->estado;
 
-        if (!in_array($nuevoEstado, [ElementAssignment::ESTADO_COMPLETADO, ElementAssignment::ESTADO_VALIDADA])) {
+        if (!in_array($newState, [ElementAssignment::ESTADO_COMPLETADO, ElementAssignment::ESTADO_VALIDADA])) {
             return;
         }
 
-        $canceladas = ElementExtensionRequest::where('elemento_asignacion_id', $model->elemento_asignacion_id)
+        $cancelled = ElementExtensionRequest::where('elemento_asignacion_id', $model->elemento_asignacion_id)
             ->where('estado', ElementExtensionRequest::ESTADO_PENDIENTE)
             ->update([
                 'estado'        => ElementExtensionRequest::ESTADO_CANCELADA,
-                'justificacion' => 'Auto-cancelada: la asignación fue marcada como ' . strtolower($nuevoEstado) . '.',
+                'justificacion' => 'Auto-cancelada: la asignación fue marcada como ' . strtolower($newState) . '.',
             ]);
 
-        if ($canceladas > 0) {
-            Log::info("Observer: {$canceladas} solicitud(es) de ampliación canceladas automáticamente.", [
+        if ($cancelled > 0) {
+            Log::info("Observer: {$cancelled} solicitud(es) de ampliación canceladas automáticamente.", [
                 'elemento_asignacion_id' => $model->elemento_asignacion_id,
-                'nuevo_estado'           => $nuevoEstado,
+                'nuevo_estado'           => $newState,
             ]);
         }
     }
@@ -75,13 +75,13 @@ class ElementAssignmentObserver
             return;
         }
 
-        $tieneRechazoPropio = ElementApproval::where('elemento_id', $assignment->elemento_id)
+        $hasOwnRejection = ElementApproval::where('elemento_id', $assignment->elemento_id)
             ->where('proceso_id', $assignment->proceso_id)
             ->where('usuario_id', $assignment->usuario_id)
             ->where('estado', 'rechazado')
             ->exists();
 
-        if (!$tieneRechazoPropio) {
+        if (!$hasOwnRejection) {
             return;
         }
 
@@ -91,12 +91,12 @@ class ElementAssignmentObserver
             ->where('estado', 'rechazado')
             ->update(['estado' => 'pendiente']);
 
-        $elemento = StructureElement::find($assignment->elemento_id);
-        if (!$elemento || !$elemento->padre_id) {
+        $element = StructureElement::find($assignment->elemento_id);
+        if (!$element || !$element->padre_id) {
             return;
         }
 
-        ElementApproval::where('elemento_id', $elemento->padre_id)
+        ElementApproval::where('elemento_id', $element->padre_id)
             ->where('proceso_id', $assignment->proceso_id)
             ->where('estado', 'incompleto')
             ->update(['estado' => 'pendiente']);

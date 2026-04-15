@@ -223,6 +223,11 @@ class ImprovementCommitmentController extends Controller
                 'errors' => $exception->errors(),
             ], 422);
 
+        } catch (\Exception $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
+
         } catch (QueryException $exception) {
             return response()->json([
                 'error' => 'Database Error',

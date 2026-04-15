@@ -199,14 +199,20 @@ class ElementCommitmentController extends Controller
                 'data'    => $updated,
             ], 200);
 
-        } catch (ValidationException $e) {
+        } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors'  => $e->errors(),
+                'errors'  => $exception->errors(),
             ], 422);
 
-        } catch (QueryException $e) {
+        } catch (\Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+
+        } catch (QueryException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar el compromiso de mejora.',

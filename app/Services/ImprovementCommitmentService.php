@@ -209,6 +209,25 @@ class ImprovementCommitmentService
                 }
                 $newEvidenceIds = array_unique($newEvidenceIds);
 
+                // VALIDACIÓN: No permitir quitar evidencias con asignaciones en estado avanzado
+                $currentEvidenceIds = $commitment->evidences()->pluck('evidencia_id')->toArray();
+                $evidencesToRemove = array_diff($currentEvidenceIds, $newEvidenceIds);
+
+                if (!empty($evidencesToRemove)) {
+                    $activeAssignment = EvidenceAssignment::whereIn('evidencia_id', $evidencesToRemove)
+                        ->whereIn('estado', ['En Progreso', 'Completado'])
+                        ->with('evidence:evidencia_id,nomenclatura,descripcion')
+                        ->first();
+
+                    if ($activeAssignment) {
+                        $evidenceName = $activeAssignment->evidence->nomenclatura;
+                        throw new \Exception(
+                            "No se puede quitar la evidencia '{$evidenceName}' del compromiso " .
+                            "porque tiene asignaciones en estado 'En Progreso' o 'Completado'."
+                        );
+                    }
+                }
+
                 // Reemplazar completamente evidencias vinculadas
                 $commitment->evidences()->sync($newEvidenceIds);
                 $hasChanges = true;
@@ -375,6 +394,27 @@ class ImprovementCommitmentService
     {
         // Obtener evidencias vinculadas al compromiso
         $commitmentEvidenceIds = $this->getCommitmentEvidenceIds($commitment->compromiso_mejora_id);
+
+        // VALIDACIÓN: No permitir quitar asignaciones individuales en estado activo
+        $currentAssignmentIds = $commitment->assignedEvidences()->pluck('evidencia_asignacion_id')->toArray();
+        $newAssignmentIds = $this->collectNewAssignmentIds($assignmentsData, $processId);
+        $assignmentsToRemove = array_diff($currentAssignmentIds, $newAssignmentIds);
+
+        if (!empty($assignmentsToRemove)) {
+            $activeAssignment = EvidenceAssignment::whereIn('evidencia_asignacion_id', $assignmentsToRemove)
+                ->whereIn('estado', ['En Progreso', 'Completado'])
+                ->with(['evidence:evidencia_id,nomenclatura,descripcion', 'user:usuario_id,nombre'])
+                ->first();
+
+            if ($activeAssignment) {
+                $evidenceName = $activeAssignment->evidence->nomenclatura ?? 'evidencia';
+                $userName = $activeAssignment->user->nombre ?? 'usuario';
+                throw new \Exception(
+                    "No se puede quitar la asignación de '{$userName}' a la evidencia '{$evidenceName}' " .
+                    "porque ya está en estado '{$activeAssignment->estado}'."
+                );
+            }
+        }
 
         // Desvincular asignaciones existentes del compromiso
         $commitment->assignedEvidences()->detach();
@@ -546,5 +586,46 @@ class ImprovementCommitmentService
             ->where('criterio_id', $criterionId)
             ->pluck('evidencia_id')
             ->toArray();
+    }
+
+    /**
+     * Recolecta IDs de asignaciones que se mantendrán después de la sincronización.
+     */
+    private function collectNewAssignmentIds(array $assignmentsData, int $processId): array
+    {
+        $assignmentIds = [];
+        
+        foreach ($assignmentsData as $assignment) {
+            $evidenceId = $assignment['evidencia_id'];
+            $users = $assignment['usuarios'] ?? [];
+            
+            foreach ($users as $userId) {
+                $existing = EvidenceAssignment::where('proceso_id', $processId)
+                    ->where('evidencia_id', $evidenceId)
+                    ->where('usuario_id', $userId)
+                    ->value('evidencia_asignacion_id');
+                
+                if ($existing) {
+                    $assignmentIds[] = $existing;
+                }
+            }
+
+            $roles = $assignment['roles'] ?? [];
+            foreach ($roles as $roleId) {
+                $role = \App\Models\Role::find($roleId);
+                if ($role) {
+                    $usersWithRole = User::role($role->name)->active()->pluck('usuario_id');
+                    $existingIds = EvidenceAssignment::where('proceso_id', $processId)
+                        ->where('evidencia_id', $evidenceId)
+                        ->whereIn('usuario_id', $usersWithRole)
+                        ->pluck('evidencia_asignacion_id')
+                        ->toArray();
+                    
+                    $assignmentIds = array_merge($assignmentIds, $existingIds);
+                }
+            }
+        }
+        
+        return array_unique($assignmentIds);
     }
 }

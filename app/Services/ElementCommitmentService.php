@@ -9,6 +9,7 @@ use App\Models\StructureElement;
 use App\Models\Process;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -258,7 +259,7 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $usuarioId,
                         'proceso_id'   => $procesoId,
-                        'asignado_por' => auth()->id(),
+                        'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
@@ -300,7 +301,7 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $userObj->usuario_id,
                         'proceso_id'   => $procesoId,
-                        'asignado_por' => auth()->id(),
+                        'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
@@ -327,6 +328,52 @@ class ElementCommitmentService
         array $arbolElementIds,
         int $procesoId
     ): void {
+        // VALIDACIÓN 1: No permitir quitar elementos con asignaciones activas
+        $currentElementIds = $commitment->assignedElements()
+            ->pluck('ELEMENTO_ASIGNACION.elemento_id')
+            ->unique()
+            ->toArray();
+
+        $newElementIds = collect($assignmentsData)->pluck('elemento_id')->unique()->toArray();
+        $elementsToRemove = array_diff($currentElementIds, $newElementIds);
+
+        if (!empty($elementsToRemove)) {
+            $activeAssignments = ElementAssignment::whereIn('elemento_id', $elementsToRemove)
+                ->whereIn('estado', ['En Progreso', 'Completado'])
+                ->with('element:elemento_id,nombre,nomenclatura')
+                ->first();
+
+            if ($activeAssignments) {
+                $elementName = $activeAssignments->element->nomenclatura ?? $activeAssignments->element->nombre;
+                throw new \Exception(
+                    "No se puede quitar el elemento '{$elementName}' del compromiso " .
+                    "porque tiene asignaciones en estado 'En Progreso' o 'Completado'."
+                );
+            }
+        }
+
+        // VALIDACIÓN 2: No permitir quitar asignaciones individuales (usuario+elemento) en estado activo
+        $currentAssignmentIds = $commitment->assignedElements()->pluck('elemento_asignacion_id')->toArray();
+        $newAssignmentIds = $this->collectNewAssignmentIds($assignmentsData, $procesoId);
+        $assignmentsToRemove = array_diff($currentAssignmentIds, $newAssignmentIds);
+
+        if (!empty($assignmentsToRemove)) {
+            $activeAssignment = ElementAssignment::whereIn('elemento_asignacion_id', $assignmentsToRemove)
+                ->whereIn('estado', ['En Progreso', 'Completado'])
+                ->with(['element:elemento_id,nombre,nomenclatura', 'user:usuario_id,nombre'])
+                ->first();
+
+            if ($activeAssignment) {
+                $elementName = $activeAssignment->element->nomenclatura ?? $activeAssignment->element->nombre;
+                $userName = $activeAssignment->user->nombre ?? 'usuario';
+                throw new \Exception(
+                    "No se puede quitar la asignación de '{$userName}' al elemento '{$elementName}' " .
+                    "porque ya está en estado '{$activeAssignment->estado}'."
+                );
+            }
+        }
+
+        // Desvincular todas las asignaciones actuales
         $commitment->assignedElements()->detach();
 
         if (empty($assignmentsData)) {
@@ -356,7 +403,7 @@ class ElementCommitmentService
                         'elemento_id'  => $elementoId,
                         'usuario_id'   => $usuarioId,
                         'proceso_id'   => $procesoId,
-                        'asignado_por' => auth()->id(),
+                        'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                         'fecha_limite' => $fechaLimite,
                         'comentario'   => $comentario,
@@ -397,7 +444,7 @@ class ElementCommitmentService
                             'elemento_id'  => $elementoId,
                             'usuario_id'   => $userObj->usuario_id,
                             'proceso_id'   => $procesoId,
-                            'asignado_por' => auth()->id(),
+                            'asignado_por' => Auth::id(),
                             'estado'       => ElementAssignment::ESTADO_PENDIENTE,
                             'fecha_limite' => $fechaLimite,
                             'comentario'   => $comentario,
@@ -427,8 +474,47 @@ class ElementCommitmentService
         event(new ElementAssigned($assignment));
     }
 
-    /**
-     * Limpia cachés de listados para que “Mis Entregas” refleje cambios inmediatamente.
+    /**     * Recolecta IDs de asignaciones que se mantendrán después de la sincronización.
+     */
+    private function collectNewAssignmentIds(array $assignmentsData, int $processId): array
+    {
+        $assignmentIds = [];
+        
+        foreach ($assignmentsData as $assignment) {
+            $elementId = $assignment['elemento_id'];
+            $users = $assignment['usuarios'] ?? [];
+            
+            foreach ($users as $userId) {
+                $existing = ElementAssignment::where('proceso_id', $processId)
+                    ->where('elemento_id', $elementId)
+                    ->where('usuario_id', $userId)
+                    ->value('elemento_asignacion_id');
+                
+                if ($existing) {
+                    $assignmentIds[] = $existing;
+                }
+            }
+
+            $roles = $assignment['roles'] ?? [];
+            foreach ($roles as $roleId) {
+                $role = Role::find($roleId);
+                if ($role) {
+                    $usersWithRole = User::role($role->name)->active()->pluck('usuario_id');
+                    $existingIds = ElementAssignment::where('proceso_id', $processId)
+                        ->where('elemento_id', $elementId)
+                        ->whereIn('usuario_id', $usersWithRole)
+                        ->pluck('elemento_asignacion_id')
+                        ->toArray();
+                    
+                    $assignmentIds = array_merge($assignmentIds, $existingIds);
+                }
+            }
+        }
+        
+        return array_unique($assignmentIds);
+    }
+
+    /**     * Limpia cachés de listados para que “Mis Entregas” refleje cambios inmediatamente.
      */
     private function clearElementAssignmentCaches(ElementAssignment $assignment): void
     {

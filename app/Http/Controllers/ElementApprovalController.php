@@ -29,8 +29,8 @@ class ElementApprovalController extends Controller
         $this->authorize('viewAny', \App\Models\ElementApproval::class);
 
         try {
-            $estado    = request()->query('estado');
-            $approvals = $this->approvalService->listApprovals($estado);
+            $status    = request()->query('estado');
+            $approvals = $this->approvalService->listApprovals($status);
 
             return response()->json([
                 'success' => true,

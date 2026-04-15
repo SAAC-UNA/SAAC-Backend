@@ -32,7 +32,7 @@ class ElementApprovalService
      * Si el usuario es Profesor, muestra todas las de su proceso
      * (filtro por ELEMENTO_ASIGNACION pendiente HU-009).
      */
-    public function listApprovals(?string $estado = null)
+    public function listApprovals(?string $status = null)
     {
         $query = ElementApproval::with(['elemento', 'process', 'user']);
 
@@ -46,13 +46,13 @@ class ElementApprovalService
             );
         }
 
-        if ($estado !== null) {
-            $query->where('estado', $estado);
+        if ($status !== null) {
+            $query->where('estado', $status);
         }
 
-        $procesoId = request()->query('proceso_id');
-        if ($procesoId !== null) {
-            $query->where('proceso_id', (int) $procesoId);
+        $processId = request()->query('proceso_id');
+        if ($processId !== null) {
+            $query->where('proceso_id', (int) $processId);
         }
 
         return $query->get();
@@ -61,13 +61,13 @@ class ElementApprovalService
     /**
      * Obtiene una aprobación específica por ID.
      */
-    public function getApproval(int $aprobacionId): ?ElementApproval
+    public function getApproval(int $approvalId): ?ElementApproval
     {
-        $approval = ElementApproval::with(['elemento', 'process', 'user'])->find($aprobacionId);
+        $approval = ElementApproval::with(['elemento', 'process', 'user'])->find($approvalId);
 
         if ($approval) {
             $childIds = $approval->elemento->children->pluck('elemento_id');
-            $approval->hijos = ElementApproval::with(['elemento'])
+            $approval->children = ElementApproval::with(['elemento'])
                 ->whereIn('elemento_id', $childIds)
                 ->where('proceso_id', $approval->proceso_id)
                 ->get();
@@ -79,10 +79,10 @@ class ElementApprovalService
     /**
      * Obtiene la aprobación de un elemento en un proceso específico.
      */
-    public function getApprovalByElementAndProcess(int $elementoId, int $procesoId): ?ElementApproval
+    public function getApprovalByElementAndProcess(int $elementId, int $processId): ?ElementApproval
     {
-        return ElementApproval::where('elemento_id', $elementoId)
-            ->where('proceso_id', $procesoId)
+        return ElementApproval::where('elemento_id', $elementId)
+            ->where('proceso_id', $processId)
             ->first();
     }
 
@@ -94,10 +94,10 @@ class ElementApprovalService
      * Recolecta recursivamente los IDs de un elemento y todos sus descendientes activos.
      * Ejemplo: pauta → [pauta_id, fuente1_id, fuente2_id]
      */
-    private function collectDescendantIds(int $elementoId): array
+    private function collectDescendantIds(int $elementId): array
     {
-        $ids = [$elementoId];
-        $children = StructureElement::where('padre_id', $elementoId)
+        $ids = [$elementId];
+        $children = StructureElement::where('padre_id', $elementId)
             ->where('activo', true)
             ->pluck('elemento_id');
 
@@ -108,10 +108,10 @@ class ElementApprovalService
         return $ids;
     }
 
-    private function getTargetAssigneeIds(int $elementoId, int $procesoId, ?int $targetUserId): array
+    private function getTargetAssigneeIds(int $elementId, int $processId, ?int $targetUserId): array
     {
-        $query = ElementAssignment::where('elemento_id', $elementoId)
-            ->where('proceso_id', $procesoId);
+        $query = ElementAssignment::where('elemento_id', $elementId)
+            ->where('proceso_id', $processId);
 
         if ($targetUserId !== null) {
             $query->where('usuario_id', $targetUserId);
@@ -204,17 +204,17 @@ class ElementApprovalService
      *   - Al menos 1 rechazado (no todos iguales) → 'incompleto'
      *   - Ninguna decisión tomada aún             → 'pendiente'
      */
-    public function recalculateParentState(int $padreId, int $procesoId): void
+    public function recalculateParentState(int $parentId, int $processId): void
     {
-        $block = ElementApproval::where('elemento_id', $padreId)
-            ->where('proceso_id', $procesoId)
+        $block = ElementApproval::where('elemento_id', $parentId)
+            ->where('proceso_id', $processId)
             ->first();
 
         if (!$block) {
             return;
         }
 
-        $childIds = StructureElement::where('padre_id', $padreId)
+        $childIds = StructureElement::where('padre_id', $parentId)
             ->where('activo', true)
             ->pluck('elemento_id');
 
@@ -226,12 +226,12 @@ class ElementApprovalService
             return;
         }
 
-        $assignmentsByElementId = ElementAssignment::where('proceso_id', $procesoId)
+        $assignmentsByElementId = ElementAssignment::where('proceso_id', $processId)
             ->whereIn('elemento_id', $childIds)
             ->get()
             ->groupBy('elemento_id');
 
-        $approvalsByElementId = ElementApproval::where('proceso_id', $procesoId)
+        $approvalsByElementId = ElementApproval::where('proceso_id', $processId)
             ->whereIn('elemento_id', $childIds)
             ->get()
             ->groupBy('elemento_id');
@@ -293,92 +293,92 @@ class ElementApprovalService
      * Devuelve la aprobación del elemento raíz solicitado.
      */
     public function approveElemento(
-        int $elementoId,
-        int $procesoId,
-        ?string $comentario = null
+        int $elementId,
+        int $processId,
+        ?string $comment = null
     ): array {
-        $elemento = StructureElement::find($elementoId);
-        if (!$elemento) {
+        $element = StructureElement::find($elementId);
+        if (!$element) {
             throw new \InvalidArgumentException('El elemento especificado no existe.');
         }
 
-        $existing = $this->getApprovalByElementAndProcess($elementoId, $procesoId);
+        $existing = $this->getApprovalByElementAndProcess($elementId, $processId);
         if ($existing && $existing->estado === 'aprobado') {
             throw new \InvalidArgumentException('El elemento ya está aprobado.');
         }
 
-        $usuarioId  = Auth::id();
-        $allIds     = $this->collectDescendantIds($elementoId);
+        $userId  = Auth::id();
+        $allIds     = $this->collectDescendantIds($elementId);
 
-        $result = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario) {
+        $result = DB::transaction(function () use ($allIds, $elementId, $processId, $userId, $comment) {
             $root     = null;
-            $cascada  = [];
+            $cascade  = [];
             foreach ($allIds as $id) {
-                $targetUserIds = $id === $elementoId
-                    ? [(int) $usuarioId]
-                    : $this->getTargetAssigneeIds($id, $procesoId, null);
+                $targetUserIds = $id === $elementId
+                    ? [(int) $userId]
+                    : $this->getTargetAssigneeIds($id, $processId, null);
 
                 if (empty($targetUserIds)) {
-                    $targetUserIds = [(int) $usuarioId];
+                    $targetUserIds = [(int) $userId];
                 }
 
                 foreach ($targetUserIds as $targetUserId) {
                     $approval = ElementApproval::updateOrCreate(
                         [
                             'elemento_id' => $id,
-                            'proceso_id'  => $procesoId,
+                            'proceso_id'  => $processId,
                             'usuario_id'  => $targetUserId,
                         ],
-                        ['estado' => 'aprobado', 'comentario' => $comentario]
+                        ['estado' => 'aprobado', 'comentario' => $comment]
                     )->load(['elemento', 'process', 'user']);
 
-                    if ($id === $elementoId) {
+                    if ($id === $elementId) {
                         $root = $approval;
                     } else {
-                        $cascada[] = $approval;
+                        $cascade[] = $approval;
                     }
                 }
             }
-            return ['raiz' => $root, 'cascada' => $cascada];
+            return ['raiz' => $root, 'cascada' => $cascade];
         });
 
         event(new ElementApproved($result['raiz']));
         $total = count($allIds);
-        $desc  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
+        $description  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
             'aprobar',
-            "Elemento aprobado: {$elemento->nomenclatura} (ID: {$elementoId}){$desc}",
+            "Elemento aprobado: {$element->nomenclatura} (ID: {$elementId}){$description}",
             'Aprobación Elements'
         );
 
         // NUEVO (HU-notificaciones): por cada elemento aprobado (pauta + sus fuentes),
         // busca quién tiene asignado ese elemento y le manda notificación interna (solo app).
         // Va fuera de la transacción: si falla el envío no revierte la aprobación.
-        foreach ($allIds as $elementId) {
+        foreach ($allIds as $elementIdLoop) {
             try {
-                $assignedUserIds = ElementAssignment::where('elemento_id', $elementId)
-                    ->where('proceso_id', $procesoId)
+                $assignedUserIds = ElementAssignment::where('elemento_id', $elementIdLoop)
+                    ->where('proceso_id', $processId)
                     ->pluck('usuario_id')
                     ->unique()
                     ->values()
                     ->toArray();
 
                 if (!empty($assignedUserIds)) {
-                    $el = StructureElement::find($elementId);
+                    $elementLoop = StructureElement::find($elementIdLoop);
                     NotificationService::createMany(
                         $assignedUserIds,
                         [
                             'tipo_evento' => Notification::TIPO_APROBACION_ELEMENTO,
-                            'titulo'      => "Elemento {$el->nomenclatura} aprobado",
-                            'mensaje'     => "El elemento {$el->nomenclatura} — {$el->descripcion} ha sido aprobado para el proceso #{$procesoId}.",
-                            'enlace'      => "/elementos/{$elementoId}/aprobaciones",
+                            'titulo'      => "Elemento {$elementLoop->nomenclatura} aprobado",
+                            'mensaje'     => "El elemento {$elementLoop->nomenclatura} — {$elementLoop->descripcion} ha sido aprobado para el proceso #{$processId}.",
+                            'enlace'      => "/elementos/{$elementId}/aprobaciones",
                         ]
                     );
                 }
-            } catch (\Throwable $excepcion) {
+            } catch (\Throwable $exception) {
                 logger()->error('ElementApproved notification failed', [
-                    'elemento_id' => $elementId,
-                    'error'       => $excepcion->getMessage(),
+                    'elemento_id' => $elementIdLoop,
+                    'error'       => $exception->getMessage(),
                 ]);
             }
         }
@@ -397,113 +397,113 @@ class ElementApprovalService
      * TODO HU-009: también actualizará ELEMENTO_ASIGNACION a estado Rechazado.
      */
     public function rejectElemento(
-        int $elementoId,
-        int $procesoId,
-        ?string $comentario = null,
-        ?string $fechaLimite = null
+        int $elementId,
+        int $processId,
+        ?string $comment = null,
+        ?string $deadline = null
     ): array {
-        $elemento = StructureElement::find($elementoId);
-        if (!$elemento) {
+        $element = StructureElement::find($elementId);
+        if (!$element) {
             throw new \InvalidArgumentException('El elemento especificado no existe.');
         }
 
-        $existing = $this->getApprovalByElementAndProcess($elementoId, $procesoId);
+        $existing = $this->getApprovalByElementAndProcess($elementId, $processId);
         if ($existing && $existing->estado === 'rechazado') {
             throw new \InvalidArgumentException('El elemento ya está rechazado.');
         }
 
-        $usuarioId  = Auth::id();
-        $allIds     = $this->collectDescendantIds($elementoId);
+        $userId  = Auth::id();
+        $allIds     = $this->collectDescendantIds($elementId);
 
-        $result = DB::transaction(function () use ($allIds, $elementoId, $procesoId, $usuarioId, $comentario, $fechaLimite) {
+        $result = DB::transaction(function () use ($allIds, $elementId, $processId, $userId, $comment, $deadline) {
             $root    = null;
-            $cascada = [];
+            $cascade = [];
             foreach ($allIds as $id) {
-                $targetUserIds = $id === $elementoId
-                    ? [(int) $usuarioId]
-                    : $this->getTargetAssigneeIds($id, $procesoId, null);
+                $targetUserIds = $id === $elementId
+                    ? [(int) $userId]
+                    : $this->getTargetAssigneeIds($id, $processId, null);
 
                 if (empty($targetUserIds)) {
-                    $targetUserIds = [(int) $usuarioId];
+                    $targetUserIds = [(int) $userId];
                 }
 
                 foreach ($targetUserIds as $targetUserId) {
                     $approval = ElementApproval::updateOrCreate(
                         [
                             'elemento_id' => $id,
-                            'proceso_id'  => $procesoId,
+                            'proceso_id'  => $processId,
                             'usuario_id'  => $targetUserId,
                         ],
                         [
                             'estado'             => 'rechazado',
-                            'comentario'         => $comentario,
-                            'nueva_fecha_limite' => $fechaLimite,
+                            'comentario'         => $comment,
+                            'nueva_fecha_limite' => $deadline,
                         ]
                     )->load(['elemento', 'process', 'user']);
 
-                    if ($id === $elementoId) {
+                    if ($id === $elementId) {
                         $root = $approval;
                     } else {
-                        $cascada[] = $approval;
+                        $cascade[] = $approval;
                     }
                 }
             }
 
             // Resetear asignaciones a Pendiente para que los responsables reenvíen
             $assignmentUpdate = ['estado' => ElementAssignment::ESTADO_PENDIENTE];
-            if ($comentario !== null) {
-                $assignmentUpdate['comentario'] = $comentario;
+            if ($comment !== null) {
+                $assignmentUpdate['comentario'] = $comment;
             }
-            if ($fechaLimite !== null) {
-                $assignmentUpdate['fecha_limite'] = $fechaLimite;
+            if ($deadline !== null) {
+                $assignmentUpdate['fecha_limite'] = $deadline;
             }
             ElementAssignment::whereIn('elemento_id', $allIds)
-                ->where('proceso_id', $procesoId)
+                ->where('proceso_id', $processId)
                 ->update($assignmentUpdate);
 
-            return ['raiz' => $root, 'cascada' => $cascada];
+            return ['raiz' => $root, 'cascada' => $cascade];
         });
 
         event(new ElementRejected($result['raiz']));
         $total = count($allIds);
-        $desc  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
+        $description  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
             'rechazar',
-            "Elemento rechazado: {$elemento->nomenclatura} (ID: {$elementoId}){$desc}",
+            "Elemento rechazado: {$element->nomenclatura} (ID: {$elementId}){$description}",
             'Aprobación Elements'
         );
 
         // NUEVO (HU-notificaciones): por cada elemento rechazado (pauta + sus fuentes),
         // busca quién tiene asignado ese elemento y le manda email + notificación interna.
         // Incluye el comentario del evaluador y la nueva fecha límite si se proporcionaron.
-        $deadlineMessage = $fechaLimite ? " Nueva fecha límite: {$fechaLimite}." : '';
-        $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+        $deadlineMessage = $deadline ? " Nueva fecha límite: {$deadline}." : '';
+        $reviewerComment = $comment ? " Observación del evaluador: {$comment}." : '';
 
-        foreach ($allIds as $elementId) {
+        foreach ($allIds as $elementIdLoop) {
             try {
-                $assignedUserIds = ElementAssignment::where('elemento_id', $elementId)
-                    ->where('proceso_id', $procesoId)
+                $assignedUserIds = ElementAssignment::where('elemento_id', $elementIdLoop)
+                    ->where('proceso_id', $processId)
                     ->pluck('usuario_id')
                     ->unique()
                     ->values()
                     ->toArray();
 
                 if (!empty($assignedUserIds)) {
-                    $el = StructureElement::find($elementId);
+                    $elementLoop = StructureElement::find($elementIdLoop);
                     NotificationService::createMany(
                         $assignedUserIds,
                         [
                             'tipo_evento' => Notification::TIPO_RECHAZO_ELEMENTO,
-                            'titulo'      => "Elemento {$el->nomenclatura} rechazado — se requieren correcciones",
-                            'mensaje'     => "El elemento {$el->nomenclatura} — {$el->descripcion} ha sido rechazado para el proceso #{$procesoId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
-                            'enlace'      => "/elementos/{$elementoId}/aprobaciones",
+                            'titulo'      => "Elemento {$elementLoop->nomenclatura} rechazado — se requieren correcciones",
+                            'mensaje'     => "El elemento {$elementLoop->nomenclatura} — {$elementLoop->descripcion} ha sido rechazado para el proceso #{$processId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
+                            'enlace'      => "/elementos/{$elementId}/aprobaciones",
                         ]
                     );
                 }
-            } catch (\Throwable $excepcion) {
+            } catch (\Throwable $exception) {
                 logger()->error('ElementRejected notification failed', [
-                    'elemento_id' => $elementId,
-                    'error'       => $excepcion->getMessage(),
+                    'elemento_id' => $elementIdLoop,
+                    'error'       => $exception->getMessage(),
                 ]);
             }
         }
@@ -527,58 +527,58 @@ class ElementApprovalService
      * @throws \LogicException           Si el hijo ya está aprobado y el bloque es 'incompleto'.
      */
     public function approveIndividualChild(
-        int $padreId,
-        int $hijoId,
-        int $procesoId,
-        ?int $responsableUsuarioId = null
+        int $parentId,
+        int $childId,
+        int $processId,
+        ?int $assigneeUserId = null
     ): array {
         // Validaciones fuera de la transacción para que el Handler las capture directamente
-        $hijo = StructureElement::where('elemento_id', $hijoId)
-            ->where('padre_id', $padreId)
+        $child = StructureElement::where('elemento_id', $childId)
+            ->where('padre_id', $parentId)
             ->where('activo', true)
             ->firstOrFail();
 
-        if (!$hijo) {
+        if (!$child) {
             throw new \InvalidArgumentException(
                 'El elemento hijo no existe, no pertenece al padre indicado o está inactivo.'
             );
         }
 
-        $padreApproval = ElementApproval::where('elemento_id', $padreId)
-            ->where('proceso_id', $procesoId)
+        $parentApproval = ElementApproval::where('elemento_id', $parentId)
+            ->where('proceso_id', $processId)
             ->first();
 
-        $targetUserIds = $this->getTargetAssigneeIds($hijoId, $procesoId, $responsableUsuarioId);
+        $targetUserIds = $this->getTargetAssigneeIds($childId, $processId, $assigneeUserId);
         if (empty($targetUserIds)) {
             $targetUserIds = [(int) Auth::id()];
         }
 
-        $existing = ElementApproval::where('elemento_id', $hijoId)
-            ->where('proceso_id', $procesoId)
+        $existing = ElementApproval::where('elemento_id', $childId)
+            ->where('proceso_id', $processId)
             ->whereIn('usuario_id', $targetUserIds)
             ->get();
 
         $existingSummary = $this->resolveDecisionSummary($targetUserIds, $existing, true);
-        if ($existingSummary === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
+        if ($existingSummary === 'aprobado' && $parentApproval && $parentApproval->estado === 'incompleto') {
             throw new \LogicException(
                 'Este elemento ya fue aprobado y está bloqueado mientras el bloque tenga estado incompleto.'
             );
         }
 
-        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $hijo, $targetUserIds) {
-            $usuarioId = Auth::id();
+        $result = DB::transaction(function () use ($parentId, $childId, $processId, $child, $targetUserIds) {
+            $userId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
-                ['elemento_id' => $padreId, 'proceso_id' => $procesoId],
-                ['usuario_id' => $usuarioId, 'estado' => 'pendiente', 'comentario' => null]
+                ['elemento_id' => $parentId, 'proceso_id' => $processId],
+                ['usuario_id' => $userId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
             $childApprovals = [];
             foreach ($targetUserIds as $targetUserId) {
                 $childApprovals[] = ElementApproval::updateOrCreate(
                     [
-                        'elemento_id' => $hijoId,
-                        'proceso_id'  => $procesoId,
+                        'elemento_id' => $childId,
+                        'proceso_id'  => $processId,
                         'usuario_id'  => $targetUserId,
                     ],
                     [
@@ -588,12 +588,12 @@ class ElementApprovalService
                 )->load(['elemento']);
             }
 
-            $this->recalculateParentState($padreId, $procesoId);
+            $this->recalculateParentState($parentId, $processId);
 
-            $padre = StructureElement::find($padreId);
+            $parent = StructureElement::find($parentId);
             AuditLogService::log(
                 'aprobar',
-                "Hijo '{$hijo->nomenclatura}' aprobado individualmente en bloque '{$padre->nomenclatura}'",
+                "Hijo '{$child->nomenclatura}' aprobado individualmente en bloque '{$parent->nomenclatura}'",
                 'Aprobación Elements'
             );
 
@@ -610,24 +610,24 @@ class ElementApprovalService
             $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $hijoEl = $result['hijo_approval']?->elemento;
-                if (!$hijoEl) {
+                $childElement = $result['hijo_approval']?->elemento;
+                if (!$childElement) {
                     return $result;
                 }
                 NotificationService::createMany(
                     $assignedUserIds,
                     [
                         'tipo_evento' => Notification::TIPO_APROBACION_ELEMENTO,
-                        'titulo'      => "Elemento {$hijoEl->nomenclatura} aprobado",
-                        'mensaje'     => "El elemento {$hijoEl->nomenclatura} — {$hijoEl->descripcion} ha sido aprobado para el proceso #{$procesoId}.",
-                        'enlace'      => "/elementos/{$padreId}/aprobaciones",
+                        'titulo'      => "Elemento {$childElement->nomenclatura} aprobado",
+                        'mensaje'     => "El elemento {$childElement->nomenclatura} — {$childElement->descripcion} ha sido aprobado para el proceso #{$processId}.",
+                        'enlace'      => "/elementos/{$parentId}/aprobaciones",
                     ]
                 );
             }
-        } catch (\Throwable $excepcion) {
+        } catch (\Throwable $exception) {
             logger()->error('ChildElementApproved notification failed', [
-                'elemento_id' => $hijoId,
-                'error'       => $excepcion->getMessage(),
+                'elemento_id' => $childId,
+                'error'       => $exception->getMessage(),
             ]);
         }
 
@@ -650,81 +650,81 @@ class ElementApprovalService
      * @throws \LogicException           Si el hijo ya está aprobado y el bloque es 'incompleto'.
      */
     public function rejectIndividualChild(
-        int $padreId,
-        int $hijoId,
-        int $procesoId,
-        ?string $comentario = null,
-        ?string $nuevaFechaLimite = null,
-        ?int $responsableUsuarioId = null
+        int $parentId,
+        int $childId,
+        int $processId,
+        ?string $comment = null,
+        ?string $newDeadline = null,
+        ?int $assigneeUserId = null
     ): array {
         // Validaciones fuera de la transacción para que el Handler las capture directamente
-        $hijo = StructureElement::where('elemento_id', $hijoId)
-            ->where('padre_id', $padreId)
+        $child = StructureElement::where('elemento_id', $childId)
+            ->where('padre_id', $parentId)
             ->where('activo', true)
             ->first();
 
-        if (!$hijo) {
+        if (!$child) {
             throw new \InvalidArgumentException(
                 'El elemento hijo no existe, no pertenece al padre indicado o está inactivo.'
             );
         }
 
-        $padreApproval = ElementApproval::where('elemento_id', $padreId)
-            ->where('proceso_id', $procesoId)
+        $parentApproval = ElementApproval::where('elemento_id', $parentId)
+            ->where('proceso_id', $processId)
             ->first();
 
-        $targetUserIds = $this->getTargetAssigneeIds($hijoId, $procesoId, $responsableUsuarioId);
+        $targetUserIds = $this->getTargetAssigneeIds($childId, $processId, $assigneeUserId);
         if (empty($targetUserIds)) {
             $targetUserIds = [(int) Auth::id()];
         }
 
-        $existing = ElementApproval::where('elemento_id', $hijoId)
-            ->where('proceso_id', $procesoId)
+        $existing = ElementApproval::where('elemento_id', $childId)
+            ->where('proceso_id', $processId)
             ->whereIn('usuario_id', $targetUserIds)
             ->get();
 
         $existingSummary = $this->resolveDecisionSummary($targetUserIds, $existing, true);
-        if ($existingSummary === 'aprobado' && $padreApproval && $padreApproval->estado === 'incompleto') {
+        if ($existingSummary === 'aprobado' && $parentApproval && $parentApproval->estado === 'incompleto') {
             throw new \LogicException(
                 'Este elemento ya fue aprobado y está bloqueado mientras el bloque tenga estado incompleto.'
             );
         }
 
-        $result = DB::transaction(function () use ($padreId, $hijoId, $procesoId, $comentario, $nuevaFechaLimite, $hijo, $targetUserIds) {
-            $usuarioId = Auth::id();
+        $result = DB::transaction(function () use ($parentId, $childId, $processId, $comment, $newDeadline, $child, $targetUserIds) {
+            $userId = Auth::id();
 
             $parentApproval = ElementApproval::firstOrCreate(
-                ['elemento_id' => $padreId, 'proceso_id' => $procesoId],
-                ['usuario_id' => $usuarioId, 'estado' => 'pendiente', 'comentario' => null]
+                ['elemento_id' => $parentId, 'proceso_id' => $processId],
+                ['usuario_id' => $userId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
             $childApprovals = [];
             foreach ($targetUserIds as $targetUserId) {
                 $childApprovals[] = ElementApproval::updateOrCreate(
                     [
-                        'elemento_id' => $hijoId,
-                        'proceso_id'  => $procesoId,
+                        'elemento_id' => $childId,
+                        'proceso_id'  => $processId,
                         'usuario_id'  => $targetUserId,
                     ],
                     [
                         'estado'             => 'rechazado',
-                        'comentario'         => $comentario,
-                        'nueva_fecha_limite' => $nuevaFechaLimite,
+                        'comentario'         => $comment,
+                        'nueva_fecha_limite' => $newDeadline,
                     ]
                 )->load(['elemento']);
             }
 
             // Devolver la asignación al responsable: resetear estado + guardar observación + nueva fecha
             $assignmentUpdate = ['estado' => ElementAssignment::ESTADO_PENDIENTE];
-            if ($comentario !== null) {
-                $assignmentUpdate['comentario'] = $comentario;
+            if ($comment !== null) {
+                $assignmentUpdate['comentario'] = $comment;
             }
-            if ($nuevaFechaLimite !== null) {
-                $assignmentUpdate['fecha_limite'] = $nuevaFechaLimite;
+            if ($newDeadline !== null) {
+                $assignmentUpdate['fecha_limite'] = $newDeadline;
             }
 
-            $assignmentQuery = ElementAssignment::where('elemento_id', $hijoId)
-                ->where('proceso_id', $procesoId);
+            $assignmentQuery = ElementAssignment::where('elemento_id', $childId)
+                ->where('proceso_id', $processId);
 
             if (!empty($targetUserIds)) {
                 $assignmentQuery->whereIn('usuario_id', $targetUserIds);
@@ -732,12 +732,12 @@ class ElementApprovalService
 
             $assignmentQuery->update($assignmentUpdate);
 
-            $this->recalculateParentState($padreId, $procesoId);
+            $this->recalculateParentState($parentId, $processId);
 
-            $padre = StructureElement::find($padreId);
+            $parent = StructureElement::find($parentId);
             AuditLogService::log(
                 'rechazar',
-                "Hijo '{$hijo->nomenclatura}' rechazado individualmente en bloque '{$padre->nomenclatura}'",
+                "Hijo '{$child->nomenclatura}' rechazado individualmente en bloque '{$parent->nomenclatura}'",
                 'Aprobación Elements'
             );
 
@@ -754,26 +754,26 @@ class ElementApprovalService
             $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $hijoEl = $result['hijo_approval']?->elemento;
-                if (!$hijoEl) {
+                $childElement = $result['hijo_approval']?->elemento;
+                if (!$childElement) {
                     return $result;
                 }
-                $deadlineMessage = $nuevaFechaLimite ? " Nueva fecha límite: {$nuevaFechaLimite}." : '';
-                $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+                $deadlineMessage = $newDeadline ? " Nueva fecha límite: {$newDeadline}." : '';
+                $reviewerComment = $comment ? " Observación del evaluador: {$comment}." : '';
                 NotificationService::createMany(
                     $assignedUserIds,
                     [
                         'tipo_evento' => Notification::TIPO_RECHAZO_ELEMENTO,
-                        'titulo'      => "Elemento {$hijoEl->nomenclatura} rechazado — se requieren correcciones",
-                        'mensaje'     => "El elemento {$hijoEl->nomenclatura} — {$hijoEl->descripcion} ha sido rechazado para el proceso #{$procesoId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
-                        'enlace'      => "/elementos/{$padreId}/aprobaciones",
+                        'titulo'      => "Elemento {$childElement->nomenclatura} rechazado — se requieren correcciones",
+                        'mensaje'     => "El elemento {$childElement->nomenclatura} — {$childElement->descripcion} ha sido rechazado para el proceso #{$processId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
+                        'enlace'      => "/elementos/{$parentId}/aprobaciones",
                     ]
                 );
             }
-        } catch (\Throwable $excepcion) {
+        } catch (\Throwable $exception) {
             logger()->error('ChildElementRejected notification failed', [
-                'elemento_id' => $hijoId,
-                'error'       => $excepcion->getMessage(),
+                'elemento_id' => $childId,
+                'error'       => $exception->getMessage(),
             ]);
         }
 
