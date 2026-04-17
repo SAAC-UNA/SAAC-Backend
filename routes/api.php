@@ -522,6 +522,10 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
         Route::put('/{id}', [RoleController::class, 'updateRole'])
             ->middleware('permission:roles.edit');
 
+        // Activar/Inactivar rol (solo Superusuario)
+        Route::patch('/{id}/toggle', [RoleController::class, 'toggleRole'])
+            ->middleware('permission:roles.edit');
+
         // Eliminar roles (solo Superusuario)
         Route::delete('/{id}', [RoleController::class, 'deleteRole'])
             ->middleware('permission:roles.delete');

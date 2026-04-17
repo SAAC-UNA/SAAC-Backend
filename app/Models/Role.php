@@ -24,6 +24,11 @@ class Role extends SpatieRole
         'name',
         'description', // se mantiene en inglés por compatibilidad con Spatie
         'guard_name',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     protected $hidden = ['pivot'];
