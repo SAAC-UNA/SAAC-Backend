@@ -33,8 +33,8 @@ class StructureElement extends Model
 
     // Casts
     protected $casts = [
-        'activo'       => 'boolean',
-        'fecha_limite' => 'date',
+        'activo'           => 'boolean',
+        'fecha_limite'     => 'date',
     ];
 
     // ===== RELACIONES =====

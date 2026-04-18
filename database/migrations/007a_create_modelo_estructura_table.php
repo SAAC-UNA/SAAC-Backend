@@ -16,6 +16,8 @@ return new class extends Migration
             $table->enum('tipo', ['tradicional', 'elemento_flexible']);
             $table->string('version', 20)->nullable();
             $table->boolean('activo')->default(true);
+           
+            $table->json('tipos_requieren_archivo')->nullable();
             $table->timestamps();
 
             $table->index('tipo');
