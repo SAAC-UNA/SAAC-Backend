@@ -257,4 +257,28 @@ class RoleService
             return $role;
         });
     }
+    
+    /**
+     * Activar un rol (cambia su estado a activo)
+     *
+     * @param Role $role Rol a activar
+     * @return Role Rol actualizado
+     */
+    public function activateRole(Role $role): Role
+    {
+        $role->activate();
+        return $role->fresh();
+    }
+
+    /**
+     * Desactivar un rol (cambia su estado a inactivo)
+     *
+     * @param Role $role Rol a desactivar
+     * @return Role Rol actualizado
+     */
+    public function deactivateRole(Role $role): Role
+    {
+        $role->deactivate();
+        return $role->fresh();
+    }
 }

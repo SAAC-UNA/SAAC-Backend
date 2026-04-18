@@ -37,6 +37,7 @@ class RoleController extends Controller
                 'id' => $role->id,
                 'name' => $role->name,
                 'description' => $role->description,
+                'status' => $role->status,  // Estado del rol
                 'permissions' => $role->permissions->map(function ($permission) use ($descriptions) {
                     return [
                         'id'    => $permission->id,
@@ -244,5 +245,87 @@ class RoleController extends Controller
                 'total' => $grouped['protected']->count() + $grouped['custom']->count(),
             ],
         ], 200);
+    }
+
+    /**
+     * Activar un rol (marca como activo)
+     *
+     * @param int $id Identificador del rol
+     * @return JsonResponse
+     */
+    public function activateRole(int $id): JsonResponse
+    {
+        $role = $this->roleService->getRole($id);
+
+        if (!$role) {
+            return response()->json([
+                'error'   => 'Not Found',
+                'message' => 'Rol no encontrado',
+            ], 404);
+        }
+
+        // Verificar si ya está activo
+        if ($role->isActive()) {
+            return response()->json([
+                'message' => 'El rol ya estaba activo',
+                'role_id' => $role->id,
+            ], 409);
+        }
+
+        $this->roleService->activateRole($role);
+
+        // Registrar en bitácora
+        AuditLogService::log(
+            'activar',
+            "Rol activado: {$role->name} (ID: {$role->id})",
+            'Roles'
+        );
+
+        return response()->json(['message' => 'Rol activado'], 200);
+    }
+
+    /**
+     * Desactivar un rol (marca como inactivo)
+     *
+     * @param int $id Identificador del rol
+     * @return JsonResponse
+     */
+    public function deactivateRole(int $id): JsonResponse
+    {
+        $role = $this->roleService->getRole($id);
+
+        if (!$role) {
+            return response()->json([
+                'error'   => 'Not Found',
+                'message' => 'Rol no encontrado',
+            ], 404);
+        }
+
+        // Verificar si es un rol protegido
+        if ($this->roleService->isProtectedRole($role)) {
+            return response()->json([
+                'error'   => 'Forbidden',
+                'message' => 'Los roles del sistema no pueden ser desactivados',
+            ], 403);
+        }
+
+        // Verificar si ya está inactivo
+        if (!$role->isActive()) {
+            return response()->json([
+                'message' => 'El rol ya estaba inactivo',
+                'role_id' => $role->id,
+            ], 409);
+        }
+
+        $this->roleService->deactivateRole($role);
+
+        // Registrar en bitácora
+        AuditLogService::log(
+            'desactivar',
+            "Rol desactivado: {$role->name} (ID: {$role->id})",
+            'Roles'
+        );
+
+        return response()->json(['message' => 'Rol desactivado'], 200);
     }
 }
