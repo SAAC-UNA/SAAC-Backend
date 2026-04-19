@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccreditationCycleController;
+use App\Http\Controllers\AccreditationReportController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\AuditLogController;
 // Models
@@ -460,6 +461,23 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
         ->middleware('permission:archivos.make_public');
     Route::post('/{archivo}/revoke-public', [ElementFileController::class, 'revokePublic'])
         ->middleware('permission:archivos.make_public');
+});
+
+// ============================================
+// Informes de Acreditación (HU-028)
+// ============================================
+
+// Lectura pública: no requieren autenticación
+Route::get('informes-acreditacion', [AccreditationReportController::class, 'index']);
+Route::get('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'showByCycle']);
+
+// Escritura: requieren autenticación
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::post('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'publish'])
+        ->middleware('permission:informes_acreditacion.publish');
+
+    Route::patch('informes-acreditacion/{report}/despublicar', [AccreditationReportController::class, 'unpublish'])
+        ->middleware('permission:informes_acreditacion.unpublish');
 });
 
 // ============================================

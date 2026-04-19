@@ -43,6 +43,9 @@ class Notification extends Model
     public const TIPO_RESPUESTA_AMPLIACION = 'respuesta_ampliacion';
     public const TIPO_COMENTARIO_NUEVO = 'comentario_nuevo';
     public const TIPO_ACTUALIZACION_SISTEMA = 'actualizacion_sistema';
+    // Acciones de informes de acreditación (HU-028)
+    public const TIPO_PUBLICACION_INFORME    = 'publicacion_informe';
+    public const TIPO_DESPUBLICACION_INFORME = 'despublicacion_informe';
 
     /**
      * Canales de notificación
@@ -186,6 +189,7 @@ class Notification extends Model
             self::TIPO_VENCIMIENTO_PLAZO,
             self::TIPO_DEVOLUCION_OBSERVACION,
             self::TIPO_SOLICITUD_AMPLIACION,
+            self::TIPO_PUBLICACION_INFORME,
         ]);
     }
 
@@ -205,6 +209,8 @@ class Notification extends Model
             self::TIPO_SOLICITUD_AMPLIACION => 'schedule',
             self::TIPO_RESPUESTA_AMPLIACION => 'reply',
             self::TIPO_COMENTARIO_NUEVO => 'comment',
+            self::TIPO_PUBLICACION_INFORME    => 'verified',
+            self::TIPO_DESPUBLICACION_INFORME => 'unpublished',
             default => 'notifications',
         };
     }
@@ -225,6 +231,8 @@ class Notification extends Model
             self::TIPO_SOLICITUD_AMPLIACION => 'purple',
             self::TIPO_RESPUESTA_AMPLIACION => 'blue',
             self::TIPO_COMENTARIO_NUEVO => 'teal',
+            self::TIPO_PUBLICACION_INFORME    => 'green',
+            self::TIPO_DESPUBLICACION_INFORME => 'orange',
             default => 'gray',
         };
     }

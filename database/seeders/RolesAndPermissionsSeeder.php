@@ -73,6 +73,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'solicitudes_ampliacion.create',
             'solicitudes_ampliacion.approve',
             'solicitudes_ampliacion.reject',
+            // Informes de Acreditación (HU-028)
+            'informes_acreditacion.view',
+            'informes_acreditacion.publish',
+            'informes_acreditacion.download',
         ]);
 
         // Perfil operativo similar para asistente de acreditación

@@ -1,0 +1,192 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ListAccreditationReportsRequest;
+use App\Http\Requests\PublishAccreditationReportRequest;
+use App\Http\Requests\UnpublishAccreditationReportRequest;
+use App\Http\Resources\AccreditationReportResource;
+use App\Models\AccreditationCycle;
+use App\Models\AccreditationReport;
+use App\Models\Notification;
+use App\Models\User;
+use App\Services\AccreditationReportService;
+use App\Services\AuditLogService;
+use App\Services\NotificationService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Controlador de Informes de Acreditación.
+ *
+ * HU-028: Publicación de informe de acreditación aprobado.
+ *
+ * Rutas:
+ *   GET    /api/informes-acreditacion              → index()         (público)
+ *   GET    /api/ciclos/{cycle}/informe             → showByCycle()   (público)
+ *   POST   /api/ciclos/{cycle}/informe             → publish()       (auth + permiso)
+ *   PATCH  /api/informes-acreditacion/{report}/despublicar → unpublish() (auth + permiso)
+ */
+class AccreditationReportController extends Controller
+{
+    use AuthorizesRequests;
+
+    public function __construct(
+        private readonly AccreditationReportService $service
+    ) {}
+
+    // -----------------------------------------------------------------------
+    // Lectura pública (sin autenticación)
+    // -----------------------------------------------------------------------
+
+    /**
+     * GET /api/informes-acreditacion
+     * Lista paginada de informes publicados, accesible sin autenticación.
+     * Filtros opcionales (query string): carrera_id, sede_id, per_page (máx. 25).
+     */
+    public function index(ListAccreditationReportsRequest $request)
+    {
+        $filters = $request->validated();
+        $filters['per_page'] = min((int) ($filters['per_page'] ?? 15), 25); // máx. 25: endpoint público con eager loading, programas SINAES activos no superan ~30
+
+        $reports = $this->service->getPublicReports($filters);
+
+        return AccreditationReportResource::collection($reports);
+    }
+
+    /**
+     * GET /api/ciclos/{cycle}/informe
+     * Devuelve el informe del ciclo indicado.
+     * Si el informe está publicado, es accesible sin autenticación.
+     * Si está despublicado, requiere permiso informes_acreditacion.view.
+     */
+    public function showByCycle(AccreditationCycle $cycle)
+    {
+        $report = $this->service->getReportByCycle($cycle);
+
+        if (!$report) {
+            return response()->json(['message' => 'Este ciclo aún no tiene un informe de acreditación.'], 404);
+        }
+
+        // Solo requiere autorización si el informe no está publicado
+        // Un informe publicado es de acceso libre (HU-028)
+        if (!$report->isPublished()) {
+            $this->authorize('view', $report);
+        }
+
+        return new AccreditationReportResource(
+            $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Escritura (autenticación requerida)
+    // -----------------------------------------------------------------------
+
+    /**
+     * POST /api/ciclos/{cycle}/informe
+     * Publica el informe de acreditación de un ciclo completado.
+     * El ciclo llega resuelto por Route Model Binding ({cycle}).
+     */
+    public function publish(PublishAccreditationReportRequest $request, AccreditationCycle $cycle)
+    {
+        $this->authorize('publish', [AccreditationReport::class, $cycle]);
+
+        try {
+            $report = $this->service->publishReport(
+                $cycle,
+                $request->validated(),
+                $request->user()
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        AuditLogService::log(
+            'publicar',
+            "Se publicó el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion}).",
+            'Informe Acreditación'
+        );
+
+        try {
+            $carreraId    = $cycle->loadMissing('careerCampus')->careerCampus->carrera_id;
+            $recipientIds = User::whereHas('careers', fn($q) => $q->where('carrera_id', $carreraId))
+                ->where('status', User::STATUS_ACTIVE)
+                ->where('usuario_id', '!=', $request->user()->usuario_id)
+                ->pluck('usuario_id')
+                ->toArray();
+
+            if (!empty($recipientIds)) {
+                NotificationService::createMany($recipientIds, [
+                    'tipo_evento' => Notification::TIPO_PUBLICACION_INFORME,
+                    'titulo'      => 'Nuevo informe de acreditación publicado',
+                    'mensaje'     => "Se ha publicado el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion}).",
+                    'enlace'      => '/informes-acreditacion',
+                    'relacionado' => $report,
+                ]);
+            }
+        } catch (\Throwable $notifEx) {
+            Log::warning('Error al enviar notificaciones de publicación de informe', [
+                'informe_id' => $report->informe_acreditacion_id,
+                'error'      => $notifEx->getMessage(),
+            ]);
+        }
+
+        return AccreditationReportResource::make(
+            $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
+        )->response()->setStatusCode(201);
+    }
+
+    /**
+     * PATCH /api/informes-acreditacion/{report}/despublicar
+     * Despublica el informe y revoca el acceso público al PDF.
+     */
+    public function unpublish(UnpublishAccreditationReportRequest $request, AccreditationReport $report)
+    {
+        $this->authorize('unpublish', $report);
+
+        try {
+            $data = $request->validated();
+            $updated = $this->service->unpublishReport(
+                $report,
+                $data['motivo'] ?? null
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
+        }
+
+        AuditLogService::log(
+            'despublicar',
+            "Se despublicó el informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}).",
+            'Informe Acreditación'
+        );
+
+        try {
+            $carreraId    = $updated->accreditationCycle->loadMissing('careerCampus')->careerCampus->carrera_id;
+            $recipientIds = User::whereHas('careers', fn($q) => $q->where('carrera_id', $carreraId))
+                ->where('status', User::STATUS_ACTIVE)
+                ->where('usuario_id', '!=', $request->user()->usuario_id)
+                ->pluck('usuario_id')
+                ->toArray();
+
+            if (!empty($recipientIds)) {
+                NotificationService::createMany($recipientIds, [
+                    'tipo_evento' => Notification::TIPO_DESPUBLICACION_INFORME,
+                    'titulo'      => 'Informe de acreditación despublicado',
+                    'mensaje'     => "El informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}) ha sido despublicado.",
+                    'enlace'      => '/informes-acreditacion',
+                    'relacionado' => $updated,
+                ]);
+            }
+        } catch (\Throwable $notifEx) {
+            Log::warning('Error al enviar notificaciones de despublicación de informe', [
+                'informe_id' => $updated->informe_acreditacion_id,
+                'error'      => $notifEx->getMessage(),
+            ]);
+        }
+
+        return new AccreditationReportResource(
+            $updated->loadMissing(['accreditationCycle', 'file', 'publishedBy'])
+        );
+    }
+}

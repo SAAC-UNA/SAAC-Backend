@@ -108,4 +108,15 @@ class AccreditationCycle extends BaseCareer
     {
         return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
+
+    /**
+     * Relación: Un ciclo de acreditación puede tener un informe de acreditación publicado.
+     * Un ciclo solo puede tener un informe (restricción unique en BD).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function accreditationReport()
+    {
+        return $this->hasOne(AccreditationReport::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
+    }
 }
