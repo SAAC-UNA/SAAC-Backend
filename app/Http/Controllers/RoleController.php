@@ -211,46 +211,6 @@ class RoleController extends Controller
     }
 
     /**
-     * Alterna el estado activo/inactivo de un rol.
-     * Solo aplica a roles no protegidos del sistema.
-     *
-     * @param int $id Identificador del rol.
-     * @return JsonResponse
-     */
-    public function toggleRole(int $id): JsonResponse
-    {
-        $role = $this->roleService->getRole($id);
-
-        if (!$role) {
-            return response()->json([
-                'error'   => 'Not Found',
-                'message' => 'Rol no encontrado',
-            ], 404);
-        }
-
-        $result = $this->roleService->toggleRoleStatus($role);
-
-        if (!$result['success']) {
-            return response()->json([
-                'error'   => 'Forbidden',
-                'message' => $result['message'],
-            ], 403);
-        }
-
-        $state = $result['role']->is_active ? 'activado' : 'desactivado';
-        AuditLogService::log(
-            $state,
-            "Rol {$state}: {$result['role']->name} (ID: {$result['role']->id})",
-            'Roles'
-        );
-
-        return response()->json([
-            'message'   => $result['message'],
-            'is_active' => $result['role']->is_active,
-        ], 200);
-    }
-
-    /**
      * Obtener la estructura de módulos y permisos del sistema.
      * Útil para construir interfaces de gestión de roles.
      *
