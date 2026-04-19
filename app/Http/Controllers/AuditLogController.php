@@ -43,9 +43,9 @@ class AuditLogController extends Controller
      */
     public function getModules()
     {
-        $modulos = $this->auditLogService->getModules();
+        $modules = $this->auditLogService->getModules();
 
-        return response()->json($modulos);
+        return response()->json($modules);
     }
     // metodo de exportar bitacora a PDF o Excel
     public function export(AuditLogExportRequest $request, ExcelExportService $excelExportService)
@@ -53,12 +53,12 @@ class AuditLogController extends Controller
         //  Datos ya vienen validados por el FormRequest
         $data = $request->validated();
 
-        $fechaDesde = $data['fecha_desde'];
-        $fechaHasta = $data['fecha_hasta'];
-        $format     = $data['format'] ?? 'pdf';
+        $dateFrom = $data['fecha_desde'];
+        $dateTo   = $data['fecha_hasta'];
+        $format   = $data['format'] ?? 'pdf';
 
         //  Pedimos al servicio SOLO los registros dentro del rango
-        $logs = $this->auditLogService->getForExport($fechaDesde, $fechaHasta);
+        $logs = $this->auditLogService->getForExport($dateFrom, $dateTo);
 
         // Excel
         if ($format === 'excel') {

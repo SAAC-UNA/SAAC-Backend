@@ -173,10 +173,10 @@ class UserController extends Controller
         $this->userAdmin->setModulePermissions($user, $modules);
         
         // Registrar en bitácora
-        $permisosAsignados = $user->getDirectPermissions()->pluck('name')->values()->toArray();
+        $assignedPermissions = $user->getDirectPermissions()->pluck('name')->values()->toArray();
         AuditLogService::log(
             'asignar_permisos',
-            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados),
+            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $assignedPermissions),
             'Usuarios'
         );
         
@@ -185,7 +185,7 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
-            'granted' => $permisosAsignados, 
+            'granted' => $assignedPermissions, 
         ], 200);
     }
 
