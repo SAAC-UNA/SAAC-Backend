@@ -9,6 +9,7 @@ use App\Http\Requests\AccreditationCycleRequest;
 use App\Http\Resources\AccreditationCycleResource;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AccreditationCycleController extends Controller
 {
@@ -108,9 +109,9 @@ class AccreditationCycleController extends Controller
 
         $this->authorize('delete', $cycle);
 
-        $confirmacion = $request->input('confirmacion', '');
+        $confirmation = $request->input('confirmacion', '');
 
-        if ($confirmacion !== $cycle->nombre) {
+        if ($confirmation !== $cycle->nombre) {
             return response()->json([
                 'message'       => 'Confirmación incorrecta. Envíe el nombre exacto del ciclo en el campo "confirmacion" para confirmar la eliminación.',
                 'ciclo_nombre'  => $cycle->nombre,
@@ -123,7 +124,7 @@ class AccreditationCycleController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            \Log::error('Error al eliminar ciclo de acreditación', ['cycle_id' => $id, 'error' => $e->getMessage()]);
+            Log::error('Error deleting accreditation cycle', ['cycle_id' => $id, 'error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al eliminar el ciclo de acreditación.'], 500);
         }
 
@@ -156,12 +157,12 @@ class AccreditationCycleController extends Controller
         }
 
         // AC-6: verificar que no haya otro activo en la misma carrera+sede
-        $conflicto = AccreditationCycle::where('carrera_sede_id', $cycle->carrera_sede_id)
+        $hasConflict = AccreditationCycle::where('carrera_sede_id', $cycle->carrera_sede_id)
             ->where('estado', AccreditationCycle::STATUS_ACTIVE)
             ->where('ciclo_acreditacion_id', '!=', $cycle->ciclo_acreditacion_id)
             ->exists();
 
-        if ($conflicto) {
+        if ($hasConflict) {
             return response()->json([
                 'errors' => [
                     'carrera_sede_id' => ['Ya existe un ciclo activo para esta carrera en esta sede.'],
