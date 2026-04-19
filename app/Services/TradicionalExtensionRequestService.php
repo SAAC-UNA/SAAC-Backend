@@ -20,6 +20,32 @@ use Illuminate\Support\Facades\Notification;
 class TradicionalExtensionRequestService extends AbstractExtensionRequestService
 {
     /**
+     * Obtener solicitudes de ampliación del modelo tradicional (solo evidencia_asignacion_id).
+     *
+     * Sobrescribe el método base para excluir solicitudes del modelo flexible,
+     * garantizando que solo se retornen registros tradicionales.
+     */
+    public function getAll(array $filters = []): mixed
+    {
+        $perPage      = min($filters['per_page'] ?? 15, 100);
+        $estado       = $filters['estado'] ?? null;
+        $usuarioId    = $filters['usuario_id'] ?? null;
+        $asignacionId = $filters['evidencia_asignacion_id'] ?? null;
+        $fechaDesde   = $filters['fecha_desde'] ?? null;
+        $fechaHasta   = $filters['fecha_hasta'] ?? null;
+
+        return ExtensionRequest::with(static::WITH_BASE)
+            ->whereNull('elemento_asignacion_id')
+            ->when($estado,       fn($q) => $q->where('estado', $estado))
+            ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
+            ->when($asignacionId, fn($q) => $q->where('evidencia_asignacion_id', $asignacionId))
+            ->when($fechaDesde,   fn($q) => $q->where('created_at', '>=', $fechaDesde))
+            ->when($fechaHasta,   fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
      * Crear una nueva solicitud de ampliación para el modelo tradicional.
      *
      * Notifica por email a los encargados de acreditación de la carrera.
