@@ -166,11 +166,8 @@ class ImprovementCommitmentController extends Controller
                 ], 409);
             }
 
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al crear el compromiso de mejora.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            \Log::error('Error de base de datos al crear compromiso de mejora', ['error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al crear el compromiso de mejora.'], 500);
         }
     }
 
@@ -224,11 +221,8 @@ class ImprovementCommitmentController extends Controller
             ], 422);
 
         } catch (QueryException $exception) {
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al actualizar el compromiso de mejora.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            \Log::error('Error de base de datos al actualizar compromiso de mejora', ['error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar el compromiso de mejora.'], 500);
         }
     }
 
@@ -290,11 +284,8 @@ class ImprovementCommitmentController extends Controller
             ], 200);
 
         } catch (QueryException $exception) {
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al actualizar el estado del compromiso.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            \Log::error('Error de base de datos al actualizar estado de compromiso', ['id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar el estado del compromiso.'], 500);
         }
     }
 }

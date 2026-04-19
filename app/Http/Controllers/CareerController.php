@@ -90,7 +90,8 @@ class CareerController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
+            \Log::error('Error al eliminar carrera', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**

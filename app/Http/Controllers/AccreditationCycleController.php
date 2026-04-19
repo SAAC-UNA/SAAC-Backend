@@ -120,8 +120,11 @@ class AccreditationCycleController extends Controller
 
         try {
             $this->service->delete($cycle);
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar ciclo de acreditación', ['cycle_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar el ciclo de acreditación.'], 500);
         }
 
         AuditLogService::log(

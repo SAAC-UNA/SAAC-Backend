@@ -60,10 +60,8 @@ class EvidenceAssignmentController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al procesar las asignaciones.',
-                'error' => $e->getMessage()
-            ], 500);
+            \Log::error('Error al procesar asignaciones de evidencia', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al procesar las asignaciones.'], 500);
         }
     }
 

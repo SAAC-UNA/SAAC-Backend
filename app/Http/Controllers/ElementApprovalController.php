@@ -38,11 +38,8 @@ class ElementApprovalController extends Controller
             ], 200);
 
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las aprobaciones.',
-                'error'   => $e->getMessage(),
-            ], 500);
+            \Log::error('Error al listar aprobaciones de elementos', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones.'], 500);
         }
     }
 
@@ -66,16 +63,10 @@ class ElementApprovalController extends Controller
             ], 200);
 
         } catch (AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta accion.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener la aprobacion.',
-                'error'   => $e->getMessage(),
-            ], 500);
+            \Log::error('Error al obtener aprobación de elemento', ['aprobacion_id' => $aprobacionId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener la aprobacion.'], 500);
         }
     }
 
@@ -100,20 +91,14 @@ class ElementApprovalController extends Controller
             ], 201);
 
         } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\LogicException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         } catch (AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta accion.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
+            \Log::error('Error al aprobar elemento', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
 
@@ -139,20 +124,14 @@ class ElementApprovalController extends Controller
             ], 201);
 
         } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\LogicException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         } catch (AuthorizationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta accion.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
+            \Log::error('Error al rechazar elemento', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
 

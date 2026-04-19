@@ -46,11 +46,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las aprobaciones.',
-                'error' => $exception->getMessage()
-            ], 500);
+            \Log::error('Error al obtener aprobaciones de criterios', ['error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones.'], 500);
         }
     }
 
@@ -80,11 +77,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener la aprobación.',
-                'error' => $exception->getMessage()
-            ], 500);
+            \Log::error('Error al obtener aprobación de criterio', ['approval_id' => $approvalId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener la aprobación.'], 500);
         }
     }
 
@@ -135,20 +129,15 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage()
-            ], 400);
+            \Log::error('Error al aprobar criterio', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
-    }
-
-    /**
-     * Rechazar un criterio (bloque de evidencias).
      *
      * @param CriterionApprovalRequest $request Datos validados del rechazo.
      * @param int $criterioId Identificador del criterio a rechazar.
@@ -193,15 +182,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage()
-            ], 400);
+            \Log::error('Error al rechazar criterio', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
 
@@ -238,11 +226,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las aprobaciones de evidencias.',
-                'error'   => $exception->getMessage(),
-            ], 500);
+            \Log::error('Error al listar aprobaciones de evidencias', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones de evidencias.'], 500);
         }
     }
 
@@ -294,15 +279,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 400);
+            \Log::error('Error al aprobar evidencia individual', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
 
@@ -356,15 +340,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 400);
+            \Log::error('Error al rechazar evidencia individual', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
 

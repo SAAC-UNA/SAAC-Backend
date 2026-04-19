@@ -96,7 +96,8 @@ class EvidenceController extends Controller
                     'code'    => 'FK_CONSTRAINT',
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $qe->getMessage()], 500);
+            \Log::error('Error al eliminar evidencia', ['error' => $qe->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**

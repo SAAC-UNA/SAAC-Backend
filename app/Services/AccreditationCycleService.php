@@ -82,7 +82,7 @@ class AccreditationCycleService
     public function delete(AccreditationCycle $cycle): void
     {
         if ($cycle->processes()->exists()) {
-            throw new \Exception('No se puede eliminar un ciclo que tiene procesos asociados.');
+            throw new \InvalidArgumentException('No se puede eliminar un ciclo que tiene procesos asociados.');
         }
 
         $cycle->delete();
