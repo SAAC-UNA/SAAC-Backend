@@ -11,6 +11,7 @@ use App\Services\ImprovementCommitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador que gestiona las operaciones relacionadas con los Compromisos de Mejora.
@@ -166,7 +167,7 @@ class ImprovementCommitmentController extends Controller
                 ], 409);
             }
 
-            \Log::error('Error de base de datos al crear compromiso de mejora', ['error' => $exception->getMessage()]);
+            Log::error('Database error creating improvement commitment', ['error' => $exception->getMessage()]);
             return response()->json(['message' => 'Error al crear el compromiso de mejora.'], 500);
         }
     }
@@ -221,7 +222,7 @@ class ImprovementCommitmentController extends Controller
             ], 422);
 
         } catch (QueryException $exception) {
-            \Log::error('Error de base de datos al actualizar compromiso de mejora', ['error' => $exception->getMessage()]);
+            Log::error('Database error updating improvement commitment', ['error' => $exception->getMessage()]);
             return response()->json(['message' => 'Error al actualizar el compromiso de mejora.'], 500);
         }
     }
@@ -284,7 +285,7 @@ class ImprovementCommitmentController extends Controller
             ], 200);
 
         } catch (QueryException $exception) {
-            \Log::error('Error de base de datos al actualizar estado de compromiso', ['id' => $id, 'error' => $exception->getMessage()]);
+            Log::error('Database error updating commitment status', ['id' => $id, 'error' => $exception->getMessage()]);
             return response()->json(['message' => 'Error al actualizar el estado del compromiso.'], 500);
         }
     }

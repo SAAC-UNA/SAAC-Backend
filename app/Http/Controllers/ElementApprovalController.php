@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Auth\Access\AuthorizationException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador de aprobaciones de Elements � modelo flexible (HU-010).
@@ -38,7 +39,7 @@ class ElementApprovalController extends Controller
             ], 200);
 
         } catch (Exception $e) {
-            \Log::error('Error al listar aprobaciones de elementos', ['error' => $e->getMessage()]);
+            Log::error('Error listing element approvals', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones.'], 500);
         }
     }
@@ -65,7 +66,7 @@ class ElementApprovalController extends Controller
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            \Log::error('Error al obtener aprobación de elemento', ['aprobacion_id' => $aprobacionId, 'error' => $e->getMessage()]);
+            Log::error('Error fetching element approval', ['aprobacion_id' => $aprobacionId, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al obtener la aprobacion.'], 500);
         }
     }
@@ -97,7 +98,7 @@ class ElementApprovalController extends Controller
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            \Log::error('Error al aprobar elemento', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
+            Log::error('Error approving element', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
@@ -130,7 +131,7 @@ class ElementApprovalController extends Controller
         } catch (AuthorizationException $e) {
             return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta accion.'], 403);
         } catch (Exception $e) {
-            \Log::error('Error al rechazar elemento', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
+            Log::error('Error rejecting element', ['elemento_id' => $elementoId, 'error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }

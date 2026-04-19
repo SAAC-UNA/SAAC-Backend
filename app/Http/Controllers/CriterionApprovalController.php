@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Auth\Access\AuthorizationException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador que gestiona las operaciones relacionadas con Aprobaciones de Criterios.
@@ -46,7 +47,7 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            \Log::error('Error al obtener aprobaciones de criterios', ['error' => $exception->getMessage()]);
+            Log::error('Error fetching criterion approvals', ['error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones.'], 500);
         }
     }
@@ -77,7 +78,7 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            \Log::error('Error al obtener aprobación de criterio', ['approval_id' => $approvalId, 'error' => $exception->getMessage()]);
+            Log::error('Error fetching criterion approval', ['approval_id' => $approvalId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al obtener la aprobación.'], 500);
         }
     }
@@ -135,10 +136,12 @@ class CriterionApprovalController extends Controller
         } catch (\LogicException $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            \Log::error('Error al aprobar criterio', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
+            Log::error('Error approving criterion', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
-     *
+    }
+
+    /**
      * @param CriterionApprovalRequest $request Datos validados del rechazo.
      * @param int $criterioId Identificador del criterio a rechazar.
      * @return JsonResponse
@@ -188,7 +191,7 @@ class CriterionApprovalController extends Controller
         } catch (\LogicException $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            \Log::error('Error al rechazar criterio', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
+            Log::error('Error rejecting criterion', ['criterio_id' => $criterioId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
@@ -201,7 +204,7 @@ class CriterionApprovalController extends Controller
      * Listar el estado de aprobación individual de cada evidencia activa de un criterio.
      * Query param: proceso_id (requerido).
      *
-     * @param int $criterioId
+     * @param int $criterionId
      * @return JsonResponse
      */
     public function listEvidenceApprovals(int $criterionId): JsonResponse
@@ -226,7 +229,7 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            \Log::error('Error al listar aprobaciones de evidencias', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
+            Log::error('Error listing evidence approvals', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones de evidencias.'], 500);
         }
     }
@@ -236,8 +239,8 @@ class CriterionApprovalController extends Controller
      * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
      *
      * @param CriterionApprovalRequest $request
-     * @param int $criterioId
-     * @param int $evidenciaId
+     * @param int $criterionId
+     * @param int $evidenceId
      * @return JsonResponse
      */
     public function approveIndividualEvidence(
@@ -285,7 +288,7 @@ class CriterionApprovalController extends Controller
         } catch (\LogicException $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            \Log::error('Error al aprobar evidencia individual', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            Log::error('Error approving individual evidence', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
@@ -295,8 +298,8 @@ class CriterionApprovalController extends Controller
      * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
      *
      * @param CriterionApprovalRequest $request
-     * @param int $criterioId
-     * @param int $evidenciaId
+     * @param int $criterionId
+     * @param int $evidenceId
      * @return JsonResponse
      */
     public function rejectIndividualEvidence(
@@ -346,7 +349,7 @@ class CriterionApprovalController extends Controller
         } catch (\LogicException $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            \Log::error('Error al rechazar evidencia individual', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            Log::error('Error rejecting individual evidence', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }

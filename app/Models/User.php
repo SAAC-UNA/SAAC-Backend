@@ -20,6 +20,14 @@ use Laravel\Sanctum\HasApiTokens; // Sanctum para autenticación API
  */
 use Spatie\Permission\Traits\HasRoles; //  importa el trait correcto
 
+/**
+ * @property int         $usuario_id
+ * @property string      $cedula
+ * @property string      $nombre
+ * @property string      $email
+ * @property string      $status
+ * @property \Illuminate\Database\Eloquent\Collection $roles
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles, HasApiTokens; //  incluye los traits necesarios

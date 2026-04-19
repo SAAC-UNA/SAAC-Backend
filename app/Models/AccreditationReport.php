@@ -11,6 +11,15 @@ use Illuminate\Database\Eloquent\Model;
  * HU-028: Publicación de informe de acreditación aprobado.
  * Representa la resolución oficial de SINAES que certifica
  * que una carrera está acreditada dentro de un ciclo dado.
+ *
+ * @property \Carbon\Carbon $fecha_resolucion
+ * @property \Carbon\Carbon $vigencia_desde
+ * @property \Carbon\Carbon $vigencia_hasta
+ * @property \Carbon\Carbon $fecha_publicacion
+ * @property string         $numero_resolucion
+ * @property string         $estado
+ * @property int            $informe_acreditacion_id
+ * @property int            $ciclo_acreditacion_id
  */
 class AccreditationReport extends Model
 {

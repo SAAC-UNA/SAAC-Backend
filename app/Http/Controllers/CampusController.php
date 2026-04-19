@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\QueryException;
 use App\Services\CampusService;
 use App\Http\Requests\CampusRequest;
+use Illuminate\Support\Facades\Log;
 
 class CampusController extends Controller
 {
@@ -24,11 +25,11 @@ class CampusController extends Controller
     public function index(Request $request)
     {
         // Delegar al service no directo  (mismo comportamiento)
-        $universidadId = $request->filled('universidad_id')
+        $universityId = $request->filled('universidad_id')
             ? (int) $request->input('universidad_id')
             : null;
 
-        $items = $this->service->getAll($universidadId);
+        $items = $this->service->getAll($universityId);
         return response()->json($items, 200);
     }
 
@@ -100,7 +101,7 @@ class CampusController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            \Log::error('Error al eliminar campus', ['error' => $e->getMessage()]);
+            Log::error('Error deleting campus', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }

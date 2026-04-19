@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use App\Services\UniversityService;
 use App\Http\Requests\UniversityRequest;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Log;
 
 
 class UniversityController extends Controller
@@ -126,13 +127,13 @@ class UniversityController extends Controller
                 ? ' Elementos hijos activados en cascada.' 
                 : ' Elementos hijos desactivados en cascada.';
             // Construcción de texto descriptivo 
-        $estadoAnterior = $previousState ? 'ACTIVA' : 'INACTIVA';
-        $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+        $previousStatus = $previousState ? 'ACTIVA' : 'INACTIVA';
+        $newStatus      = $newActiveState ? 'ACTIVA' : 'INACTIVA';
 
         AuditLogService::log(
             'editar',
             "Se actualizó el estado de la universidad \"{$university->nombre}\" (ID: {$university->universidad_id}). " .
-            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}. " .
+            "Estado anterior: {$previousStatus}. Estado actual: {$newStatus}. " .
             "El cambio se aplicó también a sus campus asociados.",
             'Universidad'
         );
@@ -173,7 +174,7 @@ class UniversityController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            \Log::error('Error al eliminar universidad', ['error' => $e->getMessage()]);
+            Log::error('Error deleting university', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
