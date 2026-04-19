@@ -16,7 +16,9 @@ return new class extends Migration
             $table->id()->name('solicitud_ampliacion_id');
             
             // Relación con evidencia_asignacion (restrict: no borrar asignación si tiene solicitudes)
+            // Nullable para permitir patrón XOR con elemento_asignacion_id
             $table->foreignId('evidencia_asignacion_id')
+                ->nullable()
                 ->constrained('EVIDENCIA_ASIGNACION', 'evidencia_asignacion_id')
                 ->onDelete('restrict');
             

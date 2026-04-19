@@ -55,10 +55,10 @@ class CriterionApprovalService
     /**
      * Obtener una aprobacion especifica por criterio y proceso.
      */
-    public function getApprovalByCriterionAndProcess(int $criterioId, int $procesoId): ?CriterionApproval
+    public function getApprovalByCriterionAndProcess(int $criterionId, int $processId): ?CriterionApproval
     {
-        return CriterionApproval::where('criterio_id', $criterioId)
-            ->where('proceso_id', $procesoId)
+        return CriterionApproval::where('criterio_id', $criterionId)
+            ->where('proceso_id', $processId)
             ->first();
     }
 
@@ -66,22 +66,22 @@ class CriterionApprovalService
      * Aprobar un criterio (crea o actualiza la aprobacion) y aprueba cada evidencia.
      */
     public function approveCriterion(
-        int $criterioId,
-        int $procesoId,
-        int $usuarioId,
-        ?string $comentario = null
+        int $criterionId,
+        int $processId,
+        int $userId,
+        ?string $comment = null
     ): array {
-        $result = DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario) {
+        $result = DB::transaction(function () use ($criterionId, $processId, $userId, $comment) {
             $approval = CriterionApproval::updateOrCreate(
-                ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
-                ['usuario_id'  => $usuarioId, 'estado' => 'aprobado', 'comentario' => $comentario]
+                ['criterio_id' => $criterionId, 'proceso_id' => $processId],
+                ['usuario_id'  => $userId, 'estado' => 'aprobado', 'comentario' => $comment]
             );
 
-            $evidencias = [];
-            Evidence::where('criterio_id', $criterioId)->active()->each(
-                function ($evidencia) use ($procesoId, $approval, $usuarioId, &$evidencias) {
-                    $targetUserIds = EvidenceAssignment::where('evidencia_id', $evidencia->evidencia_id)
-                        ->where('proceso_id', $procesoId)
+            $evidences = [];
+            Evidence::where('criterio_id', $criterionId)->active()->each(
+                function ($evidence) use ($processId, $approval, $userId, &$evidences) {
+                    $targetUserIds = EvidenceAssignment::where('evidencia_id', $evidence->evidencia_id)
+                        ->where('proceso_id', $processId)
                         ->pluck('usuario_id')
                         ->map(fn($id) => (int) $id)
                         ->unique()
@@ -89,14 +89,14 @@ class CriterionApprovalService
                         ->toArray();
 
                     if (empty($targetUserIds)) {
-                        $targetUserIds = [(int) $usuarioId];
+                        $targetUserIds = [(int) $userId];
                     }
 
                     foreach ($targetUserIds as $targetUserId) {
-                        $evidencias[] = EvidenceApproval::updateOrCreate(
+                        $evidences[] = EvidenceApproval::updateOrCreate(
                             [
-                                'evidencia_id' => $evidencia->evidencia_id,
-                                'proceso_id'   => $procesoId,
+                                'evidencia_id' => $evidence->evidencia_id,
+                                'proceso_id'   => $processId,
                                 'usuario_id'   => $targetUserId,
                             ],
                             [
@@ -110,43 +110,43 @@ class CriterionApprovalService
             );
 
             return [
-                'raiz'      => $approval->load(['process', 'user']),
-                'evidencias' => $evidencias,
+                'root'      => $approval->load(['process', 'user']),
+                'evidences' => $evidences,
             ];
         });
 
         // Notificar por cada evidencia aprobada individualmente — fuera de la transacción para que
         // un error de correo nunca revierta la aprobación. Cada profesor recibe la notificación
         // de la evidencia que tiene asignada, no un mensaje genérico del criterio.
-        collect($result['evidencias'])
+        collect($result['evidences'])
             ->groupBy('evidencia_id')
-            ->each(function ($group) use ($procesoId, $criterioId) {
+            ->each(function ($group) use ($processId, $criterionId) {
                 $evidenceApproval = $group->first();
             try {
                 $assignedUserIds = EvidenceAssignment::where('evidencia_id', $evidenceApproval->evidencia_id)
-                    ->where('proceso_id', $procesoId)
+                    ->where('proceso_id', $processId)
                     ->pluck('usuario_id')
                     ->unique()
                     ->values()
                     ->toArray();
 
                 if (!empty($assignedUserIds)) {
-                    $evidencia = $evidenceApproval->evidence;
+                    $evidence = $evidenceApproval->evidence;
                     NotificationService::createMany(
                         $assignedUserIds,
                         [
                             'tipo_evento' => Notification::TIPO_APROBACION_EVIDENCIA,
-                            'titulo'      => "Evidencia {$evidencia->nomenclatura} aprobada",
-                            'mensaje'     => "La evidencia {$evidencia->nomenclatura} — {$evidencia->descripcion} ha sido aprobada para el proceso #{$procesoId}.",
-                            'enlace'      => "/criterios/{$criterioId}/evidencias/aprobaciones",
+                            'titulo'      => "Evidencia {$evidence->nomenclatura} aprobada",
+                            'mensaje'     => "La evidencia {$evidence->nomenclatura} — {$evidence->descripcion} ha sido aprobada para el proceso #{$processId}.",
+                            'enlace'      => "/criterios/{$criterionId}/evidencias/aprobaciones",
                         ]
                     );
                 }
-            } catch (\Throwable $excepcion) {
+            } catch (\Throwable $exception) {
                 logger()->error('BlockApproval evidence notification failed', [
                     'evidencia_id' => $evidenceApproval->evidencia_id,
-                    'criterio_id'  => $criterioId,
-                    'error'        => $excepcion->getMessage(),
+                    'criterio_id'  => $criterionId,
+                    'error'        => $exception->getMessage(),
                 ]);
             }
             });
@@ -158,25 +158,25 @@ class CriterionApprovalService
      * Rechazar un criterio y rechazar cada evidencia del criterio.
      */
     public function rejectCriterion(
-        int $criterioId,
-        int $procesoId,
-        int $usuarioId,
-        ?string $comentario = null,
-        ?string $nuevaFechaLimite = null
+        int $criterionId,
+        int $processId,
+        int $userId,
+        ?string $comment = null,
+        ?string $newDeadline = null
     ): array {
-        $result = DB::transaction(function () use ($criterioId, $procesoId, $usuarioId, $comentario, $nuevaFechaLimite) {
+        $result = DB::transaction(function () use ($criterionId, $processId, $userId, $comment, $newDeadline) {
             $approval = CriterionApproval::updateOrCreate(
-                ['criterio_id' => $criterioId, 'proceso_id' => $procesoId],
-                ['usuario_id'  => $usuarioId, 'estado' => 'rechazado', 'comentario' => $comentario, 'nueva_fecha_limite' => $nuevaFechaLimite]
+                ['criterio_id' => $criterionId, 'proceso_id' => $processId],
+                ['usuario_id'  => $userId, 'estado' => 'rechazado', 'comentario' => $comment, 'nueva_fecha_limite' => $newDeadline]
             );
 
-            $evidencias   = [];
-            $evidenciaIds = [];
-            Evidence::where('criterio_id', $criterioId)->active()->each(
-                function ($evidencia) use ($procesoId, $approval, $usuarioId, $comentario, $nuevaFechaLimite, &$evidencias, &$evidenciaIds) {
-                    $evidenciaIds[] = $evidencia->evidencia_id;
-                    $targetUserIds = EvidenceAssignment::where('evidencia_id', $evidencia->evidencia_id)
-                        ->where('proceso_id', $procesoId)
+            $evidences   = [];
+            $evidenceIds = [];
+            Evidence::where('criterio_id', $criterionId)->active()->each(
+                function ($evidence) use ($processId, $approval, $userId, $comment, $newDeadline, &$evidences, &$evidenceIds) {
+                    $evidenceIds[] = $evidence->evidencia_id;
+                    $targetUserIds = EvidenceAssignment::where('evidencia_id', $evidence->evidencia_id)
+                        ->where('proceso_id', $processId)
                         ->pluck('usuario_id')
                         ->map(fn($id) => (int) $id)
                         ->unique()
@@ -184,23 +184,23 @@ class CriterionApprovalService
                         ->toArray();
 
                     if (empty($targetUserIds)) {
-                        $targetUserIds = [(int) $usuarioId];
+                        $targetUserIds = [(int) $userId];
                     }
 
                     foreach ($targetUserIds as $targetUserId) {
                         $evidenceUpdate = [
                             'criterio_aprobacion_id' => $approval->aprobacion_criterio_id,
                             'estado'                 => 'rechazado',
-                            'nueva_fecha_limite'     => $nuevaFechaLimite,
+                            'nueva_fecha_limite'     => $newDeadline,
                         ];
-                        if ($comentario !== null) {
-                            $evidenceUpdate['comentario'] = $comentario;
+                        if ($comment !== null) {
+                            $evidenceUpdate['comentario'] = $comment;
                         }
 
-                        $evidencias[] = EvidenceApproval::updateOrCreate(
+                        $evidences[] = EvidenceApproval::updateOrCreate(
                             [
-                                'evidencia_id' => $evidencia->evidencia_id,
-                                'proceso_id'   => $procesoId,
+                                'evidencia_id' => $evidence->evidencia_id,
+                                'proceso_id'   => $processId,
                                 'usuario_id'   => $targetUserId,
                             ],
                             $evidenceUpdate
@@ -211,57 +211,57 @@ class CriterionApprovalService
 
             // Resetear asignaciones a Pendiente para que los profesores reenvíen
             $assignmentUpdate = ['estado' => EvidenceAssignment::ESTADO_PENDIENTE];
-            if ($comentario !== null) {
-                $assignmentUpdate['comentario'] = $comentario;
+            if ($comment !== null) {
+                $assignmentUpdate['comentario'] = $comment;
             }
-            if ($nuevaFechaLimite !== null) {
-                $assignmentUpdate['fecha_limite'] = $nuevaFechaLimite;
+            if ($newDeadline !== null) {
+                $assignmentUpdate['fecha_limite'] = $newDeadline;
             }
-            EvidenceAssignment::where('proceso_id', $procesoId)
-                ->whereIn('evidencia_id', $evidenciaIds)
+            EvidenceAssignment::where('proceso_id', $processId)
+                ->whereIn('evidencia_id', $evidenceIds)
                 ->update($assignmentUpdate);
 
             return [
-                'raiz'      => $approval->load(['process', 'user']),
-                'evidencias' => $evidencias,
+                'root'      => $approval->load(['process', 'user']),
+                'evidences' => $evidences,
             ];
         });
 
         // Notificar por cada evidencia rechazada individualmente — fuera de la transacción para que
         // un error de correo nunca revierta el rechazo. Cada profesor recibe la notificación
         // de la evidencia que tiene asignada, no un mensaje genérico del criterio.
-        $deadlineMessage = $nuevaFechaLimite ? " Nueva fecha límite: {$nuevaFechaLimite}." : '';
-        $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+        $deadlineMessage = $newDeadline ? " Nueva fecha límite: {$newDeadline}." : '';
+        $reviewerComment = $comment ? " Observación del evaluador: {$comment}." : '';
 
-        collect($result['evidencias'])
+        collect($result['evidences'])
             ->groupBy('evidencia_id')
-            ->each(function ($group) use ($procesoId, $criterioId, $reviewerComment, $deadlineMessage) {
+            ->each(function ($group) use ($processId, $criterionId, $reviewerComment, $deadlineMessage) {
                 $evidenceApproval = $group->first();
             try {
                 $assignedUserIds = EvidenceAssignment::where('evidencia_id', $evidenceApproval->evidencia_id)
-                    ->where('proceso_id', $procesoId)
+                    ->where('proceso_id', $processId)
                     ->pluck('usuario_id')
                     ->unique()
                     ->values()
                     ->toArray();
 
                 if (!empty($assignedUserIds)) {
-                    $evidencia = $evidenceApproval->evidence;
+                    $evidence = $evidenceApproval->evidence;
                     NotificationService::createMany(
                         $assignedUserIds,
                         [
                             'tipo_evento' => Notification::TIPO_RECHAZO_EVIDENCIA,
-                            'titulo'      => "Evidencia {$evidencia->nomenclatura} rechazada — se requieren correcciones",
-                            'mensaje'     => "La evidencia {$evidencia->nomenclatura} — {$evidencia->descripcion} ha sido rechazada para el proceso #{$procesoId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
-                            'enlace'      => "/criterios/{$criterioId}/evidencias/aprobaciones",
+                            'titulo'      => "Evidencia {$evidence->nomenclatura} rechazada — se requieren correcciones",
+                            'mensaje'     => "La evidencia {$evidence->nomenclatura} — {$evidence->descripcion} ha sido rechazada para el proceso #{$processId}.{$reviewerComment}{$deadlineMessage} Por favor revisa y reenvía.",
+                            'enlace'      => "/criterios/{$criterionId}/evidencias/aprobaciones",
                         ]
                     );
                 }
-            } catch (\Throwable $excepcion) {
+            } catch (\Throwable $exception) {
                 logger()->error('BlockRejection evidence notification failed', [
                     'evidencia_id' => $evidenceApproval->evidencia_id,
-                    'criterio_id'  => $criterioId,
-                    'error'        => $excepcion->getMessage(),
+                    'criterio_id'  => $criterionId,
+                    'error'        => $exception->getMessage(),
                 ]);
             }
             });
@@ -463,11 +463,11 @@ class CriterionApprovalService
         int $evidenceId,
         int $processId,
         int $userId,
-        ?int $responsableUsuarioId = null
+        ?int $responsibleUserId = null
     ): array {
         $targetUserIds = [];
 
-        $result = DB::transaction(function () use ($criterionId, $evidenceId, $processId, $userId, $responsableUsuarioId, &$targetUserIds) {
+        $result = DB::transaction(function () use ($criterionId, $evidenceId, $processId, $userId, $responsibleUserId, &$targetUserIds) {
             $evidence = Evidence::where('evidencia_id', $evidenceId)
                 ->where('criterio_id', $criterionId)
                 ->active()
@@ -485,7 +485,7 @@ class CriterionApprovalService
                 ['usuario_id' => $userId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
-            $targetUserIds = $this->getTargetAssigneeIds($evidenceId, $processId, $responsableUsuarioId);
+            $targetUserIds = $this->getTargetAssigneeIds($evidenceId, $processId, $responsibleUserId);
             if (empty($targetUserIds)) {
                 $targetUserIds = [(int) $userId];
             }
@@ -548,10 +548,10 @@ class CriterionApprovalService
                     ]
                 );
             }
-        } catch (\Throwable $excepcion) {
+        } catch (\Throwable $exception) {
             logger()->error('EvidenceApproved notification failed', [
                 'evidencia_id' => $evidenceId,
-                'error'        => $excepcion->getMessage(),
+                'error'        => $exception->getMessage(),
             ]);
         }
 
@@ -578,14 +578,14 @@ class CriterionApprovalService
         int $evidenceId,
         int $processId,
         int $userId,
-        ?string $comentario = null,
-        ?string $nuevaFechaLimite = null,
-        ?int $responsableUsuarioId = null
+        ?string $comment = null,
+        ?string $newDeadline = null,
+        ?int $responsibleUserId = null
     ): array {
         $targetUserIds = [];
 
         $result = DB::transaction(function () use (
-            $criterionId, $evidenceId, $processId, $userId, $comentario, $nuevaFechaLimite, $responsableUsuarioId, &$targetUserIds
+            $criterionId, $evidenceId, $processId, $userId, $comment, $newDeadline, $responsibleUserId, &$targetUserIds
         ) {
             $evidence = Evidence::where('evidencia_id', $evidenceId)
                 ->where('criterio_id', $criterionId)
@@ -604,7 +604,7 @@ class CriterionApprovalService
                 ['usuario_id' => $userId, 'estado' => 'pendiente', 'comentario' => null]
             );
 
-            $targetUserIds = $this->getTargetAssigneeIds($evidenceId, $processId, $responsableUsuarioId);
+            $targetUserIds = $this->getTargetAssigneeIds($evidenceId, $processId, $responsibleUserId);
             if (empty($targetUserIds)) {
                 $targetUserIds = [(int) $userId];
             }
@@ -634,19 +634,19 @@ class CriterionApprovalService
                     [
                         'criterio_aprobacion_id' => $criterionApproval->aprobacion_criterio_id,
                         'estado'                 => 'rechazado',
-                        'comentario'             => $comentario,
-                        'nueva_fecha_limite'     => $nuevaFechaLimite,
+                        'comentario'             => $comment,
+                        'nueva_fecha_limite'     => $newDeadline,
                     ]
                 )->load(['evidence']);
             }
 
             // Devolver la asignación al responsable: resetear estado + guardar observación + nueva fecha
             $assignmentUpdate = ['estado' => EvidenceAssignment::ESTADO_PENDIENTE];
-            if ($comentario !== null) {
-                $assignmentUpdate['comentario'] = $comentario;
+            if ($comment !== null) {
+                $assignmentUpdate['comentario'] = $comment;
             }
-            if ($nuevaFechaLimite !== null) {
-                $assignmentUpdate['fecha_limite'] = $nuevaFechaLimite;
+            if ($newDeadline !== null) {
+                $assignmentUpdate['fecha_limite'] = $newDeadline;
             }
 
             $assignmentQuery = EvidenceAssignment::where('evidencia_id', $evidenceId)
@@ -677,8 +677,8 @@ class CriterionApprovalService
                 if (!$evidence) {
                     return $result;
                 }
-                $deadlineMessage  = $nuevaFechaLimite ? " Nueva fecha límite: {$nuevaFechaLimite}." : '';
-                $reviewerComment = $comentario ? " Observación del evaluador: {$comentario}." : '';
+                $deadlineMessage  = $newDeadline ? " Nueva fecha límite: {$newDeadline}." : '';
+                $reviewerComment = $comment ? " Observación del evaluador: {$comment}." : '';
                 NotificationService::createMany(
                     $assignedUserIds,
                     [
@@ -689,10 +689,10 @@ class CriterionApprovalService
                     ]
                 );
             }
-        } catch (\Throwable $excepcion) {
+        } catch (\Throwable $exception) {
             logger()->error('EvidenceRejected notification failed', [
                 'evidencia_id' => $evidenceId,
-                'error'        => $excepcion->getMessage(),
+                'error'        => $exception->getMessage(),
             ]);
         }
 

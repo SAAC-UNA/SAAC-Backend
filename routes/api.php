@@ -377,8 +377,8 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])
 Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
     Route::get('aprobaciones-criterios', [CriterionApprovalController::class, 'listApprovals']);
     Route::get('aprobaciones-criterios/{approvalId}', [CriterionApprovalController::class, 'showApproval']);
-    Route::post('criterios/{criterioId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
-    Route::post('criterios/{criterioId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterionId}/aprobar', [CriterionApprovalController::class, 'approveCriterion'])->middleware('throttle:10,1');
+    Route::post('criterios/{criterionId}/rechazar', [CriterionApprovalController::class, 'rejectCriterion'])->middleware('throttle:10,1');
     // Aprobación individual de evidencias dentro de un bloque de criterio
     Route::get('criterios/{criterionId}/evidencias/aprobaciones', [CriterionApprovalController::class, 'listEvidenceApprovals']);
     Route::post('criterios/{criterionId}/evidencias/{evidenceId}/aprobar', [CriterionApprovalController::class, 'approveIndividualEvidence'])->middleware('throttle:10,1');
@@ -391,8 +391,8 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(f
 Route::middleware(['auth:sanctum', 'refresh.session', 'throttle:60,1'])->group(function () {
     Route::get('aprobaciones-elementos', [ElementApprovalController::class, 'listApprovals']);
     Route::get('aprobaciones-elementos/{aprobacionId}', [ElementApprovalController::class, 'showApproval']);
-    Route::post('elementos/{elementoId}/aprobar', [ElementApprovalController::class, 'approveElemento'])->middleware('throttle:10,1');
-    Route::post('elementos/{elementoId}/rechazar', [ElementApprovalController::class, 'rejectElemento'])->middleware('throttle:10,1');
+    Route::post('elementos/{elementoId}/aprobar', [ElementApprovalController::class, 'approveElement'])->middleware('throttle:10,1');
+    Route::post('elementos/{elementoId}/rechazar', [ElementApprovalController::class, 'rejectElement'])->middleware('throttle:10,1');
     // Aprobación individual de hijos dentro de un bloque de elemento
     Route::post('elementos/{padreId}/hijos/{hijoId}/aprobar', [ElementApprovalController::class, 'approveIndividualChild'])->middleware('throttle:10,1');
     Route::post('elementos/{padreId}/hijos/{hijoId}/rechazar', [ElementApprovalController::class, 'rejectIndividualChild'])->middleware('throttle:10,1');

@@ -27,10 +27,10 @@ class ImprovementCommitmentService
     public function listCommitments(int $perPage = 10, array $filters = [])
     {
         $search    = $filters['search']    ?? null;
-        $estado    = $filters['estado']    ?? null;
+        $status    = $filters['estado']    ?? null;
         $cycleId   = $filters['ciclo_acreditacion_id'] ?? null;
-        $procesoId = $filters['proceso_id'] ?? null;
-        $usuarioId = $filters['usuario_id'] ?? null;
+        $processId = $filters['proceso_id'] ?? null;
+        $userId    = $filters['usuario_id'] ?? null;
 
         return ImprovementCommitment::with([
             'process.accreditationCycle.careerCampus.career',
@@ -40,11 +40,11 @@ class ImprovementCommitmentService
                 'assignedEvidences.evidence',
                 'assignedEvidences.user',
             ])
-            ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
-            ->when($estado, fn($q) => $q->where('estado', $estado))
-            ->when($cycleId, fn($q) => $q->whereHas('process', fn($processQuery) => $processQuery->where('ciclo_acreditacion_id', $cycleId)))
-            ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
-            ->when($usuarioId, fn($q) => $q->whereHas('assignedEvidences', fn($sub) => $sub->where('usuario_id', $usuarioId)))
+            ->when($search, fn($query) => $query->where('descripcion', 'like', "%{$search}%"))
+            ->when($status, fn($query) => $query->where('estado', $status))
+            ->when($cycleId, fn($query) => $query->whereHas('process', fn($processQuery) => $processQuery->where('ciclo_acreditacion_id', $cycleId)))
+            ->when($processId, fn($query) => $query->where('proceso_id', $processId))
+            ->when($userId, fn($query) => $query->whereHas('assignedEvidences', fn($subQuery) => $subQuery->where('usuario_id', $userId)))
             ->paginate($perPage);
     }
 
@@ -69,21 +69,21 @@ class ImprovementCommitmentService
     /**
      * Obtener compromisos de mejora donde un usuario especifico tiene asignaciones.
      *
-     * @param int $usuarioId ID del usuario.
+     * @param int $userId ID del usuario.
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getCommitmentsByUser(int $usuarioId)
+    public function getCommitmentsByUser(int $userId)
     {
-        return $this->listCommitments(100, ['usuario_id' => $usuarioId]);
+        return $this->listCommitments(100, ['usuario_id' => $userId]);
     }
 
     /**
      * Obtener compromisos de mejora donde una evidencia especifica esta asignada.
      *
-     * @param int $evidenciaId ID de la evidencia.
+     * @param int $evidenceId ID de la evidencia.
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getCommitmentsByEvidence(int $evidenciaId)
+    public function getCommitmentsByEvidence(int $evidenceId)
     {
         return ImprovementCommitment::with([
                 'process',
@@ -92,7 +92,7 @@ class ImprovementCommitmentService
                 'assignedEvidences.evidence',
                 'assignedEvidences.user',
             ])
-            ->whereHas('evidences', fn($q) => $q->where('evidencia_id', $evidenciaId))
+            ->whereHas('evidences', fn($query) => $query->where('EVIDENCIA.evidencia_id', $evidenceId))
             ->paginate(15);
     }
 
@@ -130,10 +130,10 @@ class ImprovementCommitmentService
             $allNewEvidenceIds = [];
 
             // Procesar cada seleccion y obtener sus evidencias
-            foreach ($data['selecciones'] as $seleccion) {
+            foreach ($data['selecciones'] as $selection) {
                 $evidenceIds = $this->getEvidencesByEntity(
-                    $seleccion['entidad_tipo'],
-                    $seleccion['entidad_id'],
+                    $selection['entidad_tipo'],
+                    $selection['entidad_id'],
                     $processId
                 );
                 $allNewEvidenceIds = array_merge($allNewEvidenceIds, $evidenceIds);
@@ -180,7 +180,7 @@ class ImprovementCommitmentService
             // Detectar cambios en campos basicos
             $descripcion = null;
             $fechaFin    = null;
-            $estado      = null;
+            $statusValue = null;
 
             if (isset($data['descripcion']) && $data['descripcion'] !== $commitment->descripcion) {
                 $descripcion = $data['descripcion'];
@@ -192,17 +192,17 @@ class ImprovementCommitmentService
                 $hasChanges = true;
             }
             if (isset($data['estado']) && $data['estado'] !== $commitment->estado) {
-                $estado     = $data['estado'];
+                $statusValue = $data['estado'];
                 $hasChanges = true;
             }
 
             // Procesar selecciones nuevas (reemplazar completamente las evidencias existentes)
             if (isset($data['selecciones'])) {
                 $newEvidenceIds = [];
-                foreach ($data['selecciones'] as $seleccion) {
+                foreach ($data['selecciones'] as $selection) {
                     $evidenceIds = $this->getEvidencesByEntity(
-                        $seleccion['entidad_tipo'],
-                        $seleccion['entidad_id'],
+                        $selection['entidad_tipo'],
+                        $selection['entidad_id'],
                         $processId
                     );
                     $newEvidenceIds = array_merge($newEvidenceIds, $evidenceIds);
@@ -243,8 +243,8 @@ class ImprovementCommitmentService
                 'proceso_id'  => $processId !== $commitment->proceso_id ? $processId : null,
                 'descripcion' => $descripcion,
                 'fecha_fin'   => $fechaFin,
-                'estado'      => $estado,
-            ], fn($v) => $v !== null);
+                'estado'      => $statusValue,
+            ], fn($value) => $value !== null);
             if (!empty($changes)) {
                 $commitment->update($changes);
             }
@@ -262,12 +262,12 @@ class ImprovementCommitmentService
      * Activar o desactivar un compromiso de mejora.
      *
      * @param ImprovementCommitment $commitment Compromiso a modificar.
-     * @param bool $activo True para activar, false para desactivar.
+     * @param bool $isActive True para activar, false para desactivar.
      * @return ImprovementCommitment Compromiso actualizado.
      */
-    public function setActive(ImprovementCommitment $commitment, bool $activo): ImprovementCommitment
+    public function setActive(ImprovementCommitment $commitment, bool $isActive): ImprovementCommitment
     {
-        $commitment->update(['activo' => $activo ? 1 : 0]);
+        $commitment->update(['activo' => $isActive ? 1 : 0]);
         $commitment->refresh();
         return $commitment;
     }
@@ -275,18 +275,18 @@ class ImprovementCommitmentService
     /**
      * Obtener IDs de evidencias vinculadas a un compromiso
      */
-    private function getCommitmentEvidenceIds(int $compromisoId): array
+    private function getCommitmentEvidenceIds(int $commitmentId): array
     {
-        return ImprovementCommitment::find($compromisoId)
+        return ImprovementCommitment::find($commitmentId)
             ?->evidences()->pluck('EVIDENCIA.evidencia_id')->toArray() ?? [];
     }
 
     /**
      * Obtener IDs de asignaciones vinculadas a un compromiso
      */
-    private function getCommitmentAssignmentIds(int $compromisoId): array
+    private function getCommitmentAssignmentIds(int $commitmentId): array
     {
-        return ImprovementCommitment::find($compromisoId)
+        return ImprovementCommitment::find($commitmentId)
             ?->assignedEvidences()->pluck('evidencia_asignacion_id')->toArray() ?? [];
     }
 
@@ -312,36 +312,36 @@ class ImprovementCommitmentService
                 ]);
             }
 
-            $evidenciaId  = $assignment['evidencia_id'];
-            $usuarios     = $assignment['usuarios'] ?? [];
-            $roles        = $assignment['roles']    ?? [];
-            $fechaLimite  = $assignment['fecha_limite'] ?? null;
-            $comentario   = $assignment['comentario']   ?? null;
-            $fechaAsignacion = $assignment['fecha_asignacion'] ?? now()->toDateTimeString();
+            $evidenceId      = $assignment['evidencia_id'];
+            $users           = $assignment['usuarios'] ?? [];
+            $roles           = $assignment['roles']    ?? [];
+            $deadline        = $assignment['fecha_limite'] ?? null;
+            $comment         = $assignment['comentario']   ?? null;
+            $assignmentDate  = $assignment['fecha_asignacion'] ?? now()->toDateTimeString();
 
             // Asignar a usuarios directamente
-            foreach ($usuarios as $usuarioId) {
+            foreach ($users as $userId) {
                 if (EvidenceAssignment::where('proceso_id', $processId)
-                        ->where('evidencia_id', $evidenciaId)
-                        ->where('usuario_id', $usuarioId)
+                        ->where('evidencia_id', $evidenceId)
+                        ->where('usuario_id', $userId)
                         ->exists()) {
                     throw ValidationException::withMessages([
-                        'evidencias_asignar' => "La evidencia con ID {$evidenciaId} ya esta asignada al usuario con ID {$usuarioId}.",
+                        'evidencias_asignar' => "La evidencia con ID {$evidenceId} ya esta asignada al usuario con ID {$userId}.",
                     ]);
                 }
 
                 $newAssignment = EvidenceAssignment::create([
                     'proceso_id'       => $processId,
-                    'evidencia_id'     => $evidenciaId,
-                    'usuario_id'       => $usuarioId,
+                    'evidencia_id'     => $evidenceId,
+                    'usuario_id'       => $userId,
                     'estado'           => 'Pendiente',
-                    'fecha_asignacion' => $fechaAsignacion,
-                    'fecha_limite'     => $fechaLimite,
-                    'comentario'       => $comentario,
+                    'fecha_asignacion' => $assignmentDate,
+                    'fecha_limite'     => $deadline,
+                    'comentario'       => $comment,
                 ]);
 
                 $commitment->assignedEvidences()->attach($newAssignment->evidencia_asignacion_id, [
-                    'comentario' => $comentario,
+                    'comentario' => $comment,
                 ]);
             }
 
@@ -354,28 +354,28 @@ class ImprovementCommitmentService
                     ]);
                 }
 
-                $usuariosConRol = User::role($role->name)->active()->get();
+                $usersWithRole = User::role($role->name)->active()->get();
 
-                foreach ($usuariosConRol as $usuario) {
+                foreach ($usersWithRole as $user) {
                     if (EvidenceAssignment::where('proceso_id', $processId)
-                            ->where('evidencia_id', $evidenciaId)
-                            ->where('usuario_id', $usuario->usuario_id)
+                            ->where('evidencia_id', $evidenceId)
+                            ->where('usuario_id', $user->usuario_id)
                             ->exists()) {
                         continue;
                     }
 
                     $newAssignment = EvidenceAssignment::create([
                         'proceso_id'       => $processId,
-                        'evidencia_id'     => $evidenciaId,
-                        'usuario_id'       => $usuario->usuario_id,
+                        'evidencia_id'     => $evidenceId,
+                        'usuario_id'       => $user->usuario_id,
                         'estado'           => 'Pendiente',
-                        'fecha_asignacion' => $fechaAsignacion,
-                        'fecha_limite'     => $fechaLimite,
-                        'comentario'       => $comentario,
+                        'fecha_asignacion' => $assignmentDate,
+                        'fecha_limite'     => $deadline,
+                        'comentario'       => $comment,
                     ]);
 
                     $commitment->assignedEvidences()->attach($newAssignment->evidencia_asignacion_id, [
-                        'comentario' => $comentario,
+                        'comentario' => $comment,
                     ]);
                 }
             }
@@ -430,35 +430,35 @@ class ImprovementCommitmentService
                 ]);
             }
 
-            $evidenciaId  = $assignment['evidencia_id'];
-            $usuarios     = $assignment['usuarios'] ?? [];
-            $roles        = $assignment['roles']    ?? [];
-            $fechaLimite  = $assignment['fecha_limite'] ?? null;
-            $comentario   = $assignment['comentario']   ?? null;
-            $fechaAsignacion = $assignment['fecha_asignacion'] ?? now()->toDateTimeString();
+            $evidenceId      = $assignment['evidencia_id'];
+            $users           = $assignment['usuarios'] ?? [];
+            $roles           = $assignment['roles']    ?? [];
+            $deadline        = $assignment['fecha_limite'] ?? null;
+            $comment         = $assignment['comentario']   ?? null;
+            $assignmentDate  = $assignment['fecha_asignacion'] ?? now()->toDateTimeString();
 
-            foreach ($usuarios as $usuarioId) {
+            foreach ($users as $userId) {
                 $existing = EvidenceAssignment::where('proceso_id', $processId)
-                    ->where('evidencia_id', $evidenciaId)
-                    ->where('usuario_id', $usuarioId)
+                    ->where('evidencia_id', $evidenceId)
+                    ->where('usuario_id', $userId)
                     ->first();
 
                 if (!$existing) {
                     $existing = EvidenceAssignment::create([
                         'proceso_id'       => $processId,
-                        'evidencia_id'     => $evidenciaId,
-                        'usuario_id'       => $usuarioId,
+                        'evidencia_id'     => $evidenceId,
+                        'usuario_id'       => $userId,
                         'estado'           => 'Pendiente',
-                        'fecha_asignacion' => $fechaAsignacion,
-                        'fecha_limite'     => $fechaLimite,
-                        'comentario'       => $comentario,
+                        'fecha_asignacion' => $assignmentDate,
+                        'fecha_limite'     => $deadline,
+                        'comentario'       => $comment,
                     ]);
                 } elseif (isset($assignment['fecha_limite'])) {
-                    $existing->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                    $existing->update(['fecha_limite' => $deadline, 'comentario' => $comment]);
                 }
 
                 $commitment->assignedEvidences()->attach($existing->evidencia_asignacion_id, [
-                    'comentario' => $comentario,
+                    'comentario' => $comment,
                 ]);
             }
 
@@ -470,30 +470,30 @@ class ImprovementCommitmentService
                     ]);
                 }
 
-                $usuariosConRol = User::role($role->name)->active()->get();
+                $usersWithRole = User::role($role->name)->active()->get();
 
-                foreach ($usuariosConRol as $usuario) {
+                foreach ($usersWithRole as $user) {
                     $existing = EvidenceAssignment::where('proceso_id', $processId)
-                        ->where('evidencia_id', $evidenciaId)
-                        ->where('usuario_id', $usuario->usuario_id)
+                        ->where('evidencia_id', $evidenceId)
+                        ->where('usuario_id', $user->usuario_id)
                         ->first();
 
                     if (!$existing) {
                         $existing = EvidenceAssignment::create([
                             'proceso_id'       => $processId,
-                            'evidencia_id'     => $evidenciaId,
-                            'usuario_id'       => $usuario->usuario_id,
+                            'evidencia_id'     => $evidenceId,
+                            'usuario_id'       => $user->usuario_id,
                             'estado'           => 'Pendiente',
-                            'fecha_asignacion' => $fechaAsignacion,
-                            'fecha_limite'     => $fechaLimite,
-                            'comentario'       => $comentario,
+                            'fecha_asignacion' => $assignmentDate,
+                            'fecha_limite'     => $deadline,
+                            'comentario'       => $comment,
                         ]);
                     } elseif (isset($assignment['fecha_limite'])) {
-                        $existing->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                        $existing->update(['fecha_limite' => $deadline, 'comentario' => $comment]);
                     }
 
                     $commitment->assignedEvidences()->attach($existing->evidencia_asignacion_id, [
-                        'comentario' => $comentario,
+                        'comentario' => $comment,
                     ]);
                 }
             }
@@ -503,33 +503,33 @@ class ImprovementCommitmentService
     /**
      * Valida las selecciones antes de crear o actualizar un compromiso.
      *
-     * @param array $selecciones
+     * @param array $selections
      * @throws ValidationException
      */
-    private function validateSelections(array $selecciones): void
+    private function validateSelections(array $selections): void
     {
         // Validar duplicados en selecciones
         $seen = [];
-        foreach ($selecciones as $seleccion) {
-            $key = $seleccion['entidad_tipo'] . '_' . $seleccion['entidad_id'];
+        foreach ($selections as $selection) {
+            $key = $selection['entidad_tipo'] . '_' . $selection['entidad_id'];
             if (in_array($key, $seen)) {
                 throw ValidationException::withMessages([
-                    'selecciones' => "La seleccion {$seleccion['entidad_tipo']} con ID {$seleccion['entidad_id']} esta duplicada.",
+                    'selecciones' => "La seleccion {$selection['entidad_tipo']} con ID {$selection['entidad_id']} esta duplicada.",
                 ]);
             }
             $seen[] = $key;
         }
 
         // Validar que cada seleccion tenga evidencias
-        foreach ($selecciones as $seleccion) {
+        foreach ($selections as $selection) {
             $evidenceIds = $this->getEvidencesByEntity(
-                $seleccion['entidad_tipo'],
-                $seleccion['entidad_id'],
+                $selection['entidad_tipo'],
+                $selection['entidad_id'],
                 0
             );
             if (empty($evidenceIds)) {
                 throw ValidationException::withMessages([
-                    'selecciones' => "La seleccion {$seleccion['entidad_tipo']} con ID {$seleccion['entidad_id']} no tiene evidencias asociadas.",
+                    'selecciones' => "La seleccion {$selection['entidad_tipo']} con ID {$selection['entidad_id']} no tiene evidencias asociadas.",
                 ]);
             }
         }
@@ -557,17 +557,17 @@ class ImprovementCommitmentService
 
     private function getEvidencesByStandard(int $standardId): array
     {
-        $criterioId = Standard::where('estandar_id', $standardId)->value('criterio_id');
-        if (!$criterioId) {
+        $criterionId = Standard::where('estandar_id', $standardId)->value('criterio_id');
+        if (!$criterionId) {
             return [];
         }
-        return Evidence::where('criterio_id', $criterioId)->pluck('evidencia_id')->toArray();
+        return Evidence::where('criterio_id', $criterionId)->pluck('evidencia_id')->toArray();
     }
 
     private function getEvidencesByDimension(int $dimensionId): array
     {
         return Evidence::active()
-            ->whereHas('criterion.component', fn($q) => $q->where('dimension_id', $dimensionId))
+            ->whereHas('criterion.component', fn($query) => $query->where('dimension_id', $dimensionId))
             ->pluck('evidencia_id')
             ->toArray();
     }
@@ -575,7 +575,7 @@ class ImprovementCommitmentService
     private function getEvidencesByComponent(int $componentId): array
     {
         return Evidence::active()
-            ->whereHas('criterion', fn($q) => $q->where('componente_id', $componentId))
+            ->whereHas('criterion', fn($query) => $query->where('componente_id', $componentId))
             ->pluck('evidencia_id')
             ->toArray();
     }

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -89,9 +91,24 @@ class Handler extends ExceptionHandler
             }
         });
 
-        // 500 - Error de base de datos: nunca exponer SQL ni esquema, sin importar APP_DEBUG
+        // 500 - Error de base de datos: NUNCA exponer SQL ni esquema, sin importar APP_DEBUG
+        // Logging interno para debug sin exponer al frontend
         $this->renderable(function (QueryException $exception, $request) {
             if ($request->expectsJson()) {
+                // Log completo para debug interno (solo visible en logs)
+                Log::error('Database Error', [
+                    'message' => $exception->getMessage(),
+                    'sql' => $exception->getSql() ?? 'N/A',
+                    'bindings' => $exception->getBindings() ?? [],
+                    'code' => $exception->getCode(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'url' => $request->fullUrl(),
+                    'ip' => $request->ip(),
+                ]);
+
+                // Respuesta genérica al frontend (sin detalles técnicos)
                 return $this->jsonError(
                     'Error al procesar la solicitud. Contacte al administrador del sistema.',
                     500
@@ -100,22 +117,77 @@ class Handler extends ExceptionHandler
         });
 
         // 500 - Error interno del servidor
+        // NOTA: Incluso con APP_DEBUG=true, NO se exponen detalles de BD
         $this->renderable(function (Throwable $exception, $request) {
             if ($request->expectsJson()) {
-                $debug = config('app.debug');
+                // Log completo para debug interno
+                Log::error('Internal Server Error', [
+                    'type' => get_class($exception),
+                    'message' => $exception->getMessage(),
+                    'code' => $exception->getCode(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                    'trace' => $exception->getTraceAsString(),
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'url' => $request->fullUrl(),
+                    'ip' => $request->ip(),
+                ]);
 
-                return $this->jsonError(
-                    $debug
-                        ? ($exception->getMessage() ?: 'Error interno del servidor.')
-                        : 'Error interno del servidor. Contacte al administrador del sistema.',
-                    500,
-                    $debug ? [
-                        'type' => class_basename($exception),
-                        'trace' => $exception->getTraceAsString(),
-                    ] : null
-                );
+                // Solo mensajes seguros al frontend (sin SQL, sin rutas de archivo)
+                $safeMessage = $this->getSafeErrorMessage($exception);
+
+                return $this->jsonError($safeMessage, 500);
             }
         });
+    }
+
+    /**
+     * Obtiene un mensaje de error seguro para mostrar al frontend.
+     * Filtra información sensible como SQL, rutas de archivos, nombres de tablas.
+     */
+    private function getSafeErrorMessage(Throwable $exception): string
+    {
+        $message = $exception->getMessage();
+
+        // Lista de palabras/patrones peligrosos que indican información de BD
+        $dangerousPatterns = [
+            'SQLSTATE',
+            'SQL:',
+            'PDOException',
+            'QueryException',
+            'Illuminate\\Database',
+            'vendor/',
+            'app/',
+            'database/',
+            'CONSTRAINT',
+            'FOREIGN KEY',
+            'INSERT INTO',
+            'UPDATE',
+            'DELETE FROM',
+            'SELECT',
+            'Table',
+            'Column',
+            'Field',
+            'doesn\'t have a default value',
+            'Duplicate entry',
+            'Unknown column',
+            'Unknown database',
+        ];
+
+        // Si el mensaje contiene información peligrosa, usar mensaje genérico
+        foreach ($dangerousPatterns as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                return 'Error interno del servidor. Contacte al administrador del sistema.';
+            }
+        }
+
+        // Si el mensaje es muy largo (probablemente contiene stack trace), usar mensaje genérico
+        if (strlen($message) > 200) {
+            return 'Error interno del servidor. Contacte al administrador del sistema.';
+        }
+
+        // Si pasa los filtros, el mensaje es relativamente seguro
+        return $message ?: 'Error interno del servidor. Contacte al administrador del sistema.';
     }
 
     /**

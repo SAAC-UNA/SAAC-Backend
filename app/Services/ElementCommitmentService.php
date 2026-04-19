@@ -38,24 +38,24 @@ class ElementCommitmentService
     public function listCommitments(int $perPage = 10, array $filters = [])
     {
         $search     = $filters['search']     ?? null;
-        $estado     = $filters['estado']     ?? null;
-        $procesoId  = $filters['proceso_id'] ?? null;
-        $elementoId = $filters['elemento_id'] ?? null;
-        $usuarioId  = $filters['usuario_id'] ?? null;
+        $status     = $filters['estado']     ?? null;
+        $processId  = $filters['proceso_id'] ?? null;
+        $elementId  = $filters['elemento_id'] ?? null;
+        $userId     = $filters['usuario_id'] ?? null;
 
         return ElementCommitment::with(['process', 'assignedElements.element', 'assignedElements.user'])
-            ->when($search, fn($q) => $q->where('descripcion', 'like', "%{$search}%"))
-            ->when($estado, fn($q) => $q->where('estado', $estado))
-            ->when($procesoId, fn($q) => $q->where('proceso_id', $procesoId))
-            ->when($elementoId, function ($q) use ($elementoId) {
+            ->when($search, fn($query) => $query->where('descripcion', 'like', "%{$search}%"))
+            ->when($status, fn($query) => $query->where('estado', $status))
+            ->when($processId, fn($query) => $query->where('proceso_id', $processId))
+            ->when($elementId, function ($query) use ($elementId) {
                 // Compromisos que tienen asignaciones del elemento o sus descendientes
-                $allIds = $this->collectDescendantIds($elementoId);
-                $q->whereHas('assignedElements', fn($sub) =>
-                    $sub->whereIn('ELEMENTO_ASIGNACION.elemento_id', $allIds)
+                $allIds = $this->collectDescendantIds($elementId);
+                $query->whereHas('assignedElements', fn($subQuery) =>
+                    $subQuery->whereIn('ELEMENTO_ASIGNACION.elemento_id', $allIds)
                 );
             })
-            ->when($usuarioId, fn($q) => $q->whereHas('assignedElements', fn($sub) =>
-                $sub->where('ELEMENTO_ASIGNACION.usuario_id', $usuarioId)
+            ->when($userId, fn($query) => $query->whereHas('assignedElements', fn($subQuery) =>
+                $subQuery->where('ELEMENTO_ASIGNACION.usuario_id', $userId)
             ))
             ->paginate($perPage);
     }
@@ -75,21 +75,21 @@ class ElementCommitmentService
     /**
      * Compromisos donde un usuario tiene asignaciones vinculadas.
      */
-    public function getCommitmentsByUser(int $usuarioId)
+    public function getCommitmentsByUser(int $userId)
     {
-        return $this->listCommitments(100, ['usuario_id' => $usuarioId]);
+        return $this->listCommitments(100, ['usuario_id' => $userId]);
     }
 
     /**
      * Compromisos vinculados a un elemento (o cualquiera de sus descendientes).
      */
-    public function getCommitmentsByElemento(int $elementoId)
+    public function getCommitmentsByElement(int $elementId)
     {
-        $allIds = $this->collectDescendantIds($elementoId);
+        $allIds = $this->collectDescendantIds($elementId);
 
         return ElementCommitment::with(['process', 'assignedElements.element'])
-            ->whereHas('assignedElements', fn($q) =>
-                $q->whereIn('ELEMENTO_ASIGNACION.elemento_id', $allIds)
+            ->whereHas('assignedElements', fn($query) =>
+                $query->whereIn('ELEMENTO_ASIGNACION.elemento_id', $allIds)
             )
             ->paginate(15);
     }
@@ -106,23 +106,23 @@ class ElementCommitmentService
     public function createCommitment(array $data): ElementCommitment
     {
         return DB::transaction(function () use ($data) {
-            $procesoId  = $data['proceso_id'];
-            $elementoId = $data['elemento_id'];
+            $processId  = $data['proceso_id'];
+            $elementId  = $data['elemento_id'];
 
-            if (!Process::find($procesoId)) {
+            if (!Process::find($processId)) {
                 throw ValidationException::withMessages([
                     'proceso_id' => 'El proceso especificado no existe.',
                 ]);
             }
 
-            if (!StructureElement::find($elementoId)) {
+            if (!StructureElement::find($elementId)) {
                 throw ValidationException::withMessages([
                     'elemento_id' => 'El elemento especificado no existe.',
                 ]);
             }
 
             $commitment = ElementCommitment::create([
-                'proceso_id'   => $procesoId,
+                'proceso_id'   => $processId,
                 'descripcion'  => $data['descripcion'],
                 'fecha_inicio' => $data['fecha_inicio'],
                 'fecha_fin'    => $data['fecha_fin'],
@@ -131,8 +131,8 @@ class ElementCommitmentService
             ]);
 
             if (!empty($data['elementos_asignar'])) {
-                $arbolIds = $this->collectDescendantIds($elementoId);
-                $this->createElementAssignments($commitment, $data['elementos_asignar'], $arbolIds, $procesoId);
+                $descendantIds = $this->collectDescendantIds($elementId);
+                $this->createElementAssignments($commitment, $data['elementos_asignar'], $descendantIds, $processId);
             }
 
             return $this->getCommitment($commitment->compromiso_elemento_id);
@@ -177,10 +177,10 @@ class ElementCommitmentService
             }
 
             if (isset($data['elementos_asignar'])) {
-                $procesoId  = $data['proceso_id'] ?? $commitment->proceso_id;
-                $elementoId = $data['elemento_id'] ?? null;
-                $arbolIds   = $elementoId ? $this->collectDescendantIds($elementoId) : [];
-                $this->syncElementAssignments($commitment, $data['elementos_asignar'], $arbolIds, $procesoId);
+                $processId     = $data['proceso_id'] ?? $commitment->proceso_id;
+                $elementId     = $data['elemento_id'] ?? null;
+                $descendantIds = $elementId ? $this->collectDescendantIds($elementId) : [];
+                $this->syncElementAssignments($commitment, $data['elementos_asignar'], $descendantIds, $processId);
                 $hasChanges = true;
             }
 
@@ -197,9 +197,9 @@ class ElementCommitmentService
     }
 
 
-    public function setActive(ElementCommitment $commitment, bool $activo): ElementCommitment
+    public function setActive(ElementCommitment $commitment, bool $isActive): ElementCommitment
     {
-        $commitment->update(['activo' => $activo ? 1 : 0]);
+        $commitment->update(['activo' => $isActive ? 1 : 0]);
         $commitment->refresh();
         return $commitment;
     }
@@ -209,13 +209,13 @@ class ElementCommitmentService
      * Recolecta recursivamente el ID del elemento raíz + todos sus descendientes activos.
      * Reutiliza la misma lógica de ElementApprovalService.
      *
-     * @param int $elementoId
+     * @param int $elementId
      * @return int[]
      */
-    private function collectDescendantIds(int $elementoId): array
+    private function collectDescendantIds(int $elementId): array
     {
-        $ids      = [$elementoId];
-        $children = StructureElement::where('padre_id', $elementoId)
+        $ids      = [$elementId];
+        $children = StructureElement::where('padre_id', $elementId)
             ->where('activo', true)
             ->pluck('elemento_id');
 
@@ -233,47 +233,47 @@ class ElementCommitmentService
     private function createElementAssignments(
         ElementCommitment $commitment,
         array $assignmentsData,
-        array $arbolElementIds,
-        int $procesoId
+        array $treeElementIds,
+        int $processId
     ): void {
         foreach ($assignmentsData as $assignment) {
-            $elementoId  = $assignment['elemento_id'];
-            $fechaLimite = $assignment['fecha_limite'] ?? null;
-            $comentario  = $assignment['comentario']   ?? null;
-            $usuarios    = $assignment['usuarios']     ?? [];
+            $elementId  = $assignment['elemento_id'];
+            $deadline   = $assignment['fecha_limite'] ?? null;
+            $comment    = $assignment['comentario']   ?? null;
+            $users      = $assignment['usuarios']     ?? [];
 
-            if (!empty($arbolElementIds) && !in_array($elementoId, $arbolElementIds)) {
+            if (!empty($treeElementIds) && !in_array($elementId, $treeElementIds)) {
                 throw ValidationException::withMessages([
-                    'elementos_asignar' => "El elemento con ID {$elementoId} no pertenece al árbol del elemento raíz.",
+                    'elementos_asignar' => "El elemento con ID {$elementId} no pertenece al árbol del elemento raíz.",
                 ]);
             }
 
-            foreach ($usuarios as $usuarioId) {
-                $newAssignment = ElementAssignment::where('proceso_id', $procesoId)
-                    ->where('elemento_id', $elementoId)
-                    ->where('usuario_id', $usuarioId)
+            foreach ($users as $userId) {
+                $newAssignment = ElementAssignment::where('proceso_id', $processId)
+                    ->where('elemento_id', $elementId)
+                    ->where('usuario_id', $userId)
                     ->first();
 
                 if (!$newAssignment) {
                     $newAssignment = ElementAssignment::create([
-                        'elemento_id'  => $elementoId,
-                        'usuario_id'   => $usuarioId,
-                        'proceso_id'   => $procesoId,
+                        'elemento_id'  => $elementId,
+                        'usuario_id'   => $userId,
+                        'proceso_id'   => $processId,
                         'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
-                        'fecha_limite' => $fechaLimite,
-                        'comentario'   => $comentario,
+                        'fecha_limite' => $deadline,
+                        'comentario'   => $comment,
                     ]);
 
                     $this->emitElementAssignedEvent($newAssignment);
-                } elseif ($fechaLimite) {
-                    $newAssignment->update(['fecha_limite' => $fechaLimite, 'comentario' => $comentario]);
+                } elseif ($deadline) {
+                    $newAssignment->update(['fecha_limite' => $deadline, 'comentario' => $comment]);
                 }
 
                 $this->clearElementAssignmentCaches($newAssignment);
 
                 $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
-                    'comentario' => $comentario,
+                    'comentario' => $comment,
                 ]);
             }
 
@@ -290,28 +290,28 @@ class ElementCommitmentService
                 $usersWithRole = User::role($role->name)->active()->get();
 
                 foreach ($usersWithRole as $userObj) {
-                    if (ElementAssignment::where('proceso_id', $procesoId)
-                            ->where('elemento_id', $elementoId)
+                    if (ElementAssignment::where('proceso_id', $processId)
+                            ->where('elemento_id', $elementId)
                             ->where('usuario_id', $userObj->usuario_id)
                             ->exists()) {
                         continue; // Duplicado — saltar sin error
                     }
 
                     $newAssignment = ElementAssignment::create([
-                        'elemento_id'  => $elementoId,
+                        'elemento_id'  => $elementId,
                         'usuario_id'   => $userObj->usuario_id,
-                        'proceso_id'   => $procesoId,
+                        'proceso_id'   => $processId,
                         'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
-                        'fecha_limite' => $fechaLimite,
-                        'comentario'   => $comentario,
+                        'fecha_limite' => $deadline,
+                        'comentario'   => $comment,
                     ]);
 
                     $this->emitElementAssignedEvent($newAssignment);
                     $this->clearElementAssignmentCaches($newAssignment);
 
                     $commitment->assignedElements()->attach($newAssignment->elemento_asignacion_id, [
-                        'comentario' => $comentario,
+                        'comentario' => $comment,
                     ]);
                 }
             }
@@ -325,8 +325,8 @@ class ElementCommitmentService
     private function syncElementAssignments(
         ElementCommitment $commitment,
         array $assignmentsData,
-        array $arbolElementIds,
-        int $procesoId
+        array $treeElementIds,
+        int $processId
     ): void {
         // VALIDACIÓN 1: No permitir quitar elementos con asignaciones activas
         $currentElementIds = $commitment->assignedElements()
@@ -354,7 +354,7 @@ class ElementCommitmentService
 
         // VALIDACIÓN 2: No permitir quitar asignaciones individuales (usuario+elemento) en estado activo
         $currentAssignmentIds = $commitment->assignedElements()->pluck('elemento_asignacion_id')->toArray();
-        $newAssignmentIds = $this->collectNewAssignmentIds($assignmentsData, $procesoId);
+        $newAssignmentIds = $this->collectNewAssignmentIds($assignmentsData, $processId);
         $assignmentsToRemove = array_diff($currentAssignmentIds, $newAssignmentIds);
 
         if (!empty($assignmentsToRemove)) {
@@ -381,43 +381,43 @@ class ElementCommitmentService
         }
 
         foreach ($assignmentsData as $assignment) {
-            $elementoId  = $assignment['elemento_id'];
-            $fechaLimite = $assignment['fecha_limite'] ?? null;
-            $comentario  = $assignment['comentario']   ?? null;
-            $usuarios    = $assignment['usuarios']     ?? [];
+            $elementId  = $assignment['elemento_id'];
+            $deadline   = $assignment['fecha_limite'] ?? null;
+            $comment    = $assignment['comentario']   ?? null;
+            $users      = $assignment['usuarios']     ?? [];
 
-            if (!empty($arbolElementIds) && !in_array($elementoId, $arbolElementIds)) {
+            if (!empty($treeElementIds) && !in_array($elementId, $treeElementIds)) {
                 throw ValidationException::withMessages([
-                    'elementos_asignar' => "El elemento con ID {$elementoId} no pertenece al árbol del elemento raíz.",
+                    'elementos_asignar' => "El elemento con ID {$elementId} no pertenece al árbol del elemento raíz.",
                 ]);
             }
 
-            foreach ($usuarios as $usuarioId) {
-                $existing = ElementAssignment::where('proceso_id', $procesoId)
-                    ->where('elemento_id', $elementoId)
-                    ->where('usuario_id', $usuarioId)
+            foreach ($users as $userId) {
+                $existing = ElementAssignment::where('proceso_id', $processId)
+                    ->where('elemento_id', $elementId)
+                    ->where('usuario_id', $userId)
                     ->first();
 
                 if (!$existing) {
                     $existing = ElementAssignment::create([
-                        'elemento_id'  => $elementoId,
-                        'usuario_id'   => $usuarioId,
-                        'proceso_id'   => $procesoId,
+                        'elemento_id'  => $elementId,
+                        'usuario_id'   => $userId,
+                        'proceso_id'   => $processId,
                         'asignado_por' => Auth::id(),
                         'estado'       => ElementAssignment::ESTADO_PENDIENTE,
-                        'fecha_limite' => $fechaLimite,
-                        'comentario'   => $comentario,
+                        'fecha_limite' => $deadline,
+                        'comentario'   => $comment,
                     ]);
 
                     $this->emitElementAssignedEvent($existing);
-                } elseif ($fechaLimite) {
-                    $existing->update(['fecha_limite' => $fechaLimite]);
+                } elseif ($deadline) {
+                    $existing->update(['fecha_limite' => $deadline]);
                 }
 
                 $this->clearElementAssignmentCaches($existing);
 
                 $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
-                    'comentario' => $comentario,
+                    'comentario' => $comment,
                 ]);
             }
 
@@ -434,31 +434,31 @@ class ElementCommitmentService
                 $usersWithRole = User::role($role->name)->active()->get();
 
                 foreach ($usersWithRole as $userObj) {
-                    $existing = ElementAssignment::where('proceso_id', $procesoId)
-                        ->where('elemento_id', $elementoId)
+                    $existing = ElementAssignment::where('proceso_id', $processId)
+                        ->where('elemento_id', $elementId)
                         ->where('usuario_id', $userObj->usuario_id)
                         ->first();
 
                     if (!$existing) {
                         $existing = ElementAssignment::create([
-                            'elemento_id'  => $elementoId,
+                            'elemento_id'  => $elementId,
                             'usuario_id'   => $userObj->usuario_id,
-                            'proceso_id'   => $procesoId,
+                            'proceso_id'   => $processId,
                             'asignado_por' => Auth::id(),
                             'estado'       => ElementAssignment::ESTADO_PENDIENTE,
-                            'fecha_limite' => $fechaLimite,
-                            'comentario'   => $comentario,
-                        ]);
+                            'fecha_limite' => $deadline,
+                        'comentario'   => $comment,
+                    ]);
 
-                        $this->emitElementAssignedEvent($existing);
-                    } elseif ($fechaLimite) {
-                        $existing->update(['fecha_limite' => $fechaLimite]);
+                    $this->emitElementAssignedEvent($existing);
+                    } elseif ($deadline) {
+                        $existing->update(['fecha_limite' => $deadline]);
                     }
 
                     $this->clearElementAssignmentCaches($existing);
 
                     $commitment->assignedElements()->attach($existing->elemento_asignacion_id, [
-                        'comentario' => $comentario,
+                        'comentario' => $comment,
                     ]);
                 }
             }

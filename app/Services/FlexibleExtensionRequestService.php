@@ -29,19 +29,19 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
     {
         $filters['_scope'] = 'flexible';
         $perPage    = min($filters['per_page'] ?? 15, 100);
-        $estado     = $filters['estado']    ?? null;
-        $usuarioId  = $filters['usuario_id'] ?? null;
-        $asigId     = $filters['elemento_asignacion_id'] ?? null;
-        $fechaDesde = $filters['fecha_desde'] ?? null;
-        $fechaHasta = $filters['fecha_hasta'] ?? null;
+        $status     = $filters['estado']    ?? null;
+        $userId     = $filters['usuario_id'] ?? null;
+        $assignmentId = $filters['elemento_asignacion_id'] ?? null;
+        $dateFrom   = $filters['fecha_desde'] ?? null;
+        $dateTo     = $filters['fecha_hasta'] ?? null;
 
         return \App\Models\ExtensionRequest::with(static::WITH_BASE)
             ->whereNotNull('elemento_asignacion_id')
-            ->when($estado,     fn($q) => $q->where('estado', $estado))
-            ->when($usuarioId,  fn($q) => $q->where('usuario_id', $usuarioId))
-            ->when($asigId,     fn($q) => $q->where('elemento_asignacion_id', $asigId))
-            ->when($fechaDesde, fn($q) => $q->where('created_at', '>=', $fechaDesde))
-            ->when($fechaHasta, fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->when($status,       fn($query) => $query->where('estado', $status))
+            ->when($userId,       fn($query) => $query->where('usuario_id', $userId))
+            ->when($assignmentId, fn($query) => $query->where('elemento_asignacion_id', $assignmentId))
+            ->when($dateFrom,     fn($query) => $query->where('created_at', '>=', $dateFrom))
+            ->when($dateTo,       fn($query) => $query->where('created_at', '<=', $dateTo))
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
@@ -62,37 +62,36 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
                 );
             }
 
-            $tienePendiente = ExtensionRequest::where('elemento_asignacion_id', $assignment->elemento_asignacion_id)
+            $hasPendingRequest = ExtensionRequest::where('elemento_asignacion_id', $assignment->elemento_asignacion_id)
                 ->where('estado', ExtensionRequest::ESTADO_PENDIENTE)
                 ->exists();
 
-            if ($tienePendiente) {
+            if ($hasPendingRequest) {
                 throw new \InvalidArgumentException(
                     'Ya existe una solicitud de ampliación pendiente para esta asignación.'
                 );
             }
 
             if ($assignment->fecha_limite) {
-                $fechaLimite = \Carbon\Carbon::parse($assignment->fecha_limite);
-                $sugerida    = \Carbon\Carbon::parse($data['fecha_sugerida']);
+                $deadlineDate = \Carbon\Carbon::parse($assignment->fecha_limite);
+                $suggestedDate = \Carbon\Carbon::parse($data['fecha_sugerida']);
 
-                if ($sugerida->lte($fechaLimite)) {
+                if ($suggestedDate->lte($deadlineDate)) {
                     throw new \InvalidArgumentException(
                         'La fecha sugerida debe ser posterior a la fecha límite actual ('
-                        . $fechaLimite->format('d/m/Y') . ').'
+                        . $deadlineDate->format('d/m/Y') . ').'
                     );
                 }
 
-                if ($fechaLimite->diffInDays($sugerida) > 30) {
+                if ($deadlineDate->diffInDays($suggestedDate) > 30) {
                     throw new \InvalidArgumentException(
                         'La ampliación no puede exceder 30 días desde la fecha límite actual.'
                     );
                 }
             }
 
-            $solicitud = ExtensionRequest::create([
+            $extensionRequest = ExtensionRequest::create([
                 'elemento_asignacion_id'  => $assignment->elemento_asignacion_id,
-                'evidencia_asignacion_id' => null,
                 'usuario_id'              => $userId,
                 'motivo'                  => $data['motivo'],
                 'fecha_sugerida'          => $data['fecha_sugerida'],
@@ -104,25 +103,25 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
                 $proceso  = $assignment->proceso ?? \App\Models\Process::find($assignment->proceso_id);
                 $careerId = $proceso?->accreditationCycle?->careerCampus?->carrera_id ?? null;
 
-                $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))
-                    ->when($careerId, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('carrera_id', $careerId)))
+                $managers = User::whereHas('roles', fn($query) => $query->where('name', 'Encargado de Acreditacion'))
+                    ->when($careerId, fn($query) => $query->whereHas('careers', fn($subQuery) => $subQuery->where('carrera_id', $careerId)))
                     ->get();
 
                 if ($managers->isEmpty() && $careerId) {
-                    $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))->get();
+                    $managers = User::whereHas('roles', fn($query) => $query->where('name', 'Encargado de Acreditacion'))->get();
                 }
 
                 if ($managers->count() > 0) {
-                    Notification::send($managers, new ExtensionRequestCreated($solicitud->load('user')));
+                    Notification::send($managers, new ExtensionRequestCreated($extensionRequest->load('user')));
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception $exception) {
                 Log::warning('[Flexible] No se pudo enviar email de solicitud de ampliacion', [
-                    'solicitud_id' => $solicitud->solicitud_ampliacion_id,
-                    'error'        => $e->getMessage(),
+                    'solicitud_id' => $extensionRequest->solicitud_ampliacion_id,
+                    'error'        => $exception->getMessage(),
                 ]);
             }
 
-            return $solicitud->load(static::WITH_BASE);
+            return $extensionRequest->load(static::WITH_BASE);
         });
     }
 }

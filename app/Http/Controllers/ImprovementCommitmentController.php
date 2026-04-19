@@ -78,16 +78,16 @@ class ImprovementCommitmentController extends Controller
     /**
      * Obtener compromisos de mejora filtrados por usuario.
      *
-     * @param int $usuarioId ID del usuario.
+     * @param int $userId ID del usuario.
      * @return JsonResponse Respuesta JSON con los compromisos donde el usuario tiene asignaciones.
      */
-    public function getByUser(int $usuarioId): JsonResponse
+    public function getByUser(int $userId): JsonResponse
     {
-        $commitments = $this->commitmentService->getCommitmentsByUser($usuarioId);
+        $commitments = $this->commitmentService->getCommitmentsByUser($userId);
 
         AuditLogService::log(
             'consultar',
-            "Consulta de compromisos de mejora por usuario {$usuarioId}",
+            "Consulta de compromisos de mejora por usuario {$userId}",
             'Compromisos de mejora'
         );
 
@@ -99,16 +99,16 @@ class ImprovementCommitmentController extends Controller
     /**
      * Obtener compromisos de mejora filtrados por evidencia.
      *
-     * @param int $evidenciaId ID de la evidencia.
+     * @param int $evidenceId ID de la evidencia.
      * @return JsonResponse Respuesta JSON con los compromisos donde la evidencia está asignada.
      */
-    public function getByEvidence(int $evidenciaId): JsonResponse
+    public function getByEvidence(int $evidenceId): JsonResponse
     {
-        $commitments = $this->commitmentService->getCommitmentsByEvidence($evidenciaId);
+        $commitments = $this->commitmentService->getCommitmentsByEvidence($evidenceId);
 
         AuditLogService::log(
             'consultar',
-            "Consulta de compromisos de mejora por evidencia {$evidenciaId}",
+            "Consulta de compromisos de mejora por evidencia {$evidenceId}",
             'Compromisos de mejora'
         );
 
@@ -256,9 +256,9 @@ class ImprovementCommitmentController extends Controller
         }
 
         // Validar que se envió el campo 'activo'
-        $activo = request()->input('activo');
+        $isActive = request()->input('activo');
         
-        if ($activo === null) {
+        if ($isActive === null) {
             return response()->json([
                 'error' => 'Validation Error',
                 'message' => 'El campo "activo" es requerido.',
@@ -269,7 +269,7 @@ class ImprovementCommitmentController extends Controller
         }
 
         try {
-            $updated = $this->commitmentService->setActive($commitment, (bool) $activo);
+            $updated = $this->commitmentService->setActive($commitment, (bool) $isActive);
             $updated = $updated->refresh()->load([
                 'process.accreditationCycle.careerCampus.career',
                 'process.accreditationCycle.careerCampus.campus',
@@ -279,7 +279,7 @@ class ImprovementCommitmentController extends Controller
                 'assignedEvidences.user'
             ]);
             
-            $message = $activo 
+            $message = $isActive 
                 ? 'Compromiso de mejora activado con éxito.'
                 : 'Compromiso de mejora desactivado con éxito.';
 

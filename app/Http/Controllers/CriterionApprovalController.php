@@ -93,15 +93,15 @@ class CriterionApprovalController extends Controller
      * Permite la aprobación independientemente del estado de completitud de las evidencias.
      *
      * @param CriterionApprovalRequest $request Datos validados de la aprobación.
-     * @param int $criterioId Identificador del criterio a aprobar.
+     * @param int $criterionId Identificador del criterio a aprobar.
      * @return JsonResponse
      */
-    public function approveCriterion(CriterionApprovalRequest $request, int $criterioId): JsonResponse
+    public function approveCriterion(CriterionApprovalRequest $request, int $criterionId): JsonResponse
     {
         try {
             $this->authorize('approve', \App\Models\CriterionApproval::class);
             // Validar que el criterio existe
-            $criterion = Criterion::find($criterioId);
+            $criterion = Criterion::find($criterionId);
             if (!$criterion) {
                 return response()->json([
                     'success' => false,
@@ -109,19 +109,19 @@ class CriterionApprovalController extends Controller
                 ], 404);
             }
 
-            $usuarioId = Auth::id();
+            $userId = Auth::id();
 
             $result = $this->approvalService->approveCriterion(
-                $criterioId,
+                $criterionId,
                 $request->proceso_id,
-                $usuarioId,
+                $userId,
                 $request->comentario
             );
 
             // Registrar en bitácora
             AuditLogService::log(
                 'aprobar',
-                "Criterio aprobado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                "Criterio aprobado: {$criterion->nomenclatura} (ID: {$criterionId})",
                 'Aprobación Criterios'
             );
 
@@ -129,8 +129,8 @@ class CriterionApprovalController extends Controller
                 'success' => true,
                 'message' => 'Criterio aprobado exitosamente.',
                 'data' => [
-                    'raiz'      => $result['raiz'],
-                    'evidencias' => $result['evidencias'],
+                    'root'      => $result['root'],
+                    'evidences' => $result['evidences'],
                 ],
             ], 201);
 
@@ -151,27 +151,27 @@ class CriterionApprovalController extends Controller
      * Rechazar un criterio (bloque de evidencias).
      *
      * @param CriterionApprovalRequest $request Datos validados del rechazo.
-     * @param int $criterioId Identificador del criterio a rechazar.
+     * @param int $criterionId Identificador del criterio a rechazar.
      * @return JsonResponse
      */
-    public function rejectCriterion(CriterionApprovalRequest $request, int $criterioId): JsonResponse
+    public function rejectCriterion(CriterionApprovalRequest $request, int $criterionId): JsonResponse
     {
         try {
             $this->authorize('reject', \App\Models\CriterionApproval::class);
             // Validar que el criterio existe
-            $criterion = Criterion::find($criterioId);
+            $criterion = Criterion::find($criterionId);
             if (!$criterion) {
                 return response()->json([
                     'success' => false,
                     'message' => 'El criterio especificado no existe.'
                 ], 404);
             }
-            $usuarioId = Auth::id();
+            $userId = Auth::id();
 
             $result = $this->approvalService->rejectCriterion(
-                $criterioId,
+                $criterionId,
                 $request->proceso_id,
-                $usuarioId,
+                $userId,
                 $request->comentario,
                 $request->nueva_fecha_limite
             );
@@ -179,7 +179,7 @@ class CriterionApprovalController extends Controller
             // Registrar en bitácora
             AuditLogService::log(
                 'rechazar',
-                "Criterio rechazado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                "Criterio rechazado: {$criterion->nomenclatura} (ID: {$criterionId})",
                 'Aprobación Criterios'
             );
 
@@ -187,8 +187,8 @@ class CriterionApprovalController extends Controller
                 'success' => true,
                 'message' => 'Criterio rechazado exitosamente.',
                 'data' => [
-                    'raiz'      => $result['raiz'],
-                    'evidencias' => $result['evidencias'],
+                    'root'      => $result['root'],
+                    'evidences' => $result['evidences'],
                 ],
             ], 201);
 
@@ -213,7 +213,7 @@ class CriterionApprovalController extends Controller
      * Listar el estado de aprobación individual de cada evidencia activa de un criterio.
      * Query param: proceso_id (requerido).
      *
-     * @param int $criterioId
+     * @param int $criterionId
      * @return JsonResponse
      */
     public function listEvidenceApprovals(int $criterionId): JsonResponse
@@ -251,8 +251,8 @@ class CriterionApprovalController extends Controller
      * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
      *
      * @param CriterionApprovalRequest $request
-     * @param int $criterioId
-     * @param int $evidenciaId
+     * @param int $criterionId
+     * @param int $evidenceId
      * @return JsonResponse
      */
     public function approveIndividualEvidence(
@@ -311,8 +311,8 @@ class CriterionApprovalController extends Controller
      * Si no existe aprobación de bloque, se crea en estado 'pendiente'.
      *
      * @param CriterionApprovalRequest $request
-     * @param int $criterioId
-     * @param int $evidenciaId
+     * @param int $criterionId
+     * @param int $evidenceId
      * @return JsonResponse
      */
     public function rejectIndividualEvidence(

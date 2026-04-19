@@ -26,9 +26,9 @@ class ElementApproval extends Model
     ];
 
     /**
-     * Elemento que fue aprobado/rechazado.
+     * Element that was approved/rejected.
      */
-    public function elemento()
+    public function element()
     {
         return $this->belongsTo(StructureElement::class, 'elemento_id', 'elemento_id');
     }

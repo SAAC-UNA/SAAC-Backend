@@ -34,7 +34,7 @@ class ElementApprovalService
      */
     public function listApprovals(?string $status = null)
     {
-        $query = ElementApproval::with(['elemento', 'process', 'user']);
+        $query = ElementApproval::with(['element', 'process', 'user']);
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -42,7 +42,7 @@ class ElementApprovalService
         if ($user && $user->hasRole('Profesor')) {
             $query->whereHas(
                 'elemento.assignments',
-                fn($q) => $q->where('usuario_id', $user->usuario_id)
+                fn($query) => $query->where('usuario_id', $user->usuario_id)
             );
         }
 
@@ -63,11 +63,11 @@ class ElementApprovalService
      */
     public function getApproval(int $approvalId): ?ElementApproval
     {
-        $approval = ElementApproval::with(['elemento', 'process', 'user'])->find($approvalId);
+        $approval = ElementApproval::with(['element', 'process', 'user'])->find($approvalId);
 
         if ($approval) {
-            $childIds = $approval->elemento->children->pluck('elemento_id');
-            $approval->children = ElementApproval::with(['elemento'])
+            $childIds = $approval->element->children->pluck('elemento_id');
+            $approval->children = ElementApproval::with(['element'])
                 ->whereIn('elemento_id', $childIds)
                 ->where('proceso_id', $approval->proceso_id)
                 ->get();
@@ -118,7 +118,7 @@ class ElementApprovalService
         }
 
         $userIds = $query->pluck('usuario_id')
-            ->map(fn($id) => (int) $id)
+            ->map(fn($userId) => (int) $userId)
             ->unique()
             ->values()
             ->toArray();
@@ -244,7 +244,7 @@ class ElementApprovalService
             $assigneeIds = $assignmentsByElementId
                 ->get($childId, collect())
                 ->pluck('usuario_id')
-                ->map(fn($id) => (int) $id)
+                ->map(fn($userId) => (int) $userId)
                 ->unique()
                 ->values()
                 ->toArray();
@@ -292,7 +292,7 @@ class ElementApprovalService
      *
      * Devuelve la aprobación del elemento raíz solicitado.
      */
-    public function approveElemento(
+    public function approveElement(
         int $elementId,
         int $processId,
         ?string $comment = null
@@ -313,10 +313,10 @@ class ElementApprovalService
         $result = DB::transaction(function () use ($allIds, $elementId, $processId, $userId, $comment) {
             $root     = null;
             $cascade  = [];
-            foreach ($allIds as $id) {
-                $targetUserIds = $id === $elementId
+            foreach ($allIds as $currentId) {
+                $targetUserIds = $currentId === $elementId
                     ? [(int) $userId]
-                    : $this->getTargetAssigneeIds($id, $processId, null);
+                    : $this->getTargetAssigneeIds($currentId, $processId, null);
 
                 if (empty($targetUserIds)) {
                     $targetUserIds = [(int) $userId];
@@ -325,24 +325,24 @@ class ElementApprovalService
                 foreach ($targetUserIds as $targetUserId) {
                     $approval = ElementApproval::updateOrCreate(
                         [
-                            'elemento_id' => $id,
+                            'elemento_id' => $currentId,
                             'proceso_id'  => $processId,
                             'usuario_id'  => $targetUserId,
                         ],
                         ['estado' => 'aprobado', 'comentario' => $comment]
-                    )->load(['elemento', 'process', 'user']);
+                    )->load(['element', 'process', 'user']);
 
-                    if ($id === $elementId) {
+                    if ($currentId === $elementId) {
                         $root = $approval;
                     } else {
                         $cascade[] = $approval;
                     }
                 }
             }
-            return ['raiz' => $root, 'cascada' => $cascade];
+            return ['root' => $root, 'cascade' => $cascade];
         });
 
-        event(new ElementApproved($result['raiz']));
+        event(new ElementApproved($result['root']));
         $total = count($allIds);
         $description  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
@@ -396,7 +396,7 @@ class ElementApprovalService
      * Devuelve el rechazo del elemento raíz solicitado.
      * TODO HU-009: también actualizará ELEMENTO_ASIGNACION a estado Rechazado.
      */
-    public function rejectElemento(
+    public function rejectElement(
         int $elementId,
         int $processId,
         ?string $comment = null,
@@ -418,10 +418,10 @@ class ElementApprovalService
         $result = DB::transaction(function () use ($allIds, $elementId, $processId, $userId, $comment, $deadline) {
             $root    = null;
             $cascade = [];
-            foreach ($allIds as $id) {
-                $targetUserIds = $id === $elementId
+            foreach ($allIds as $currentId) {
+                $targetUserIds = $currentId === $elementId
                     ? [(int) $userId]
-                    : $this->getTargetAssigneeIds($id, $processId, null);
+                    : $this->getTargetAssigneeIds($currentId, $processId, null);
 
                 if (empty($targetUserIds)) {
                     $targetUserIds = [(int) $userId];
@@ -430,7 +430,7 @@ class ElementApprovalService
                 foreach ($targetUserIds as $targetUserId) {
                     $approval = ElementApproval::updateOrCreate(
                         [
-                            'elemento_id' => $id,
+                            'elemento_id' => $currentId,
                             'proceso_id'  => $processId,
                             'usuario_id'  => $targetUserId,
                         ],
@@ -439,9 +439,9 @@ class ElementApprovalService
                             'comentario'         => $comment,
                             'nueva_fecha_limite' => $deadline,
                         ]
-                    )->load(['elemento', 'process', 'user']);
+                    )->load(['element', 'process', 'user']);
 
-                    if ($id === $elementId) {
+                    if ($currentId === $elementId) {
                         $root = $approval;
                     } else {
                         $cascade[] = $approval;
@@ -461,10 +461,10 @@ class ElementApprovalService
                 ->where('proceso_id', $processId)
                 ->update($assignmentUpdate);
 
-            return ['raiz' => $root, 'cascada' => $cascade];
+            return ['root' => $root, 'cascade' => $cascade];
         });
 
-        event(new ElementRejected($result['raiz']));
+        event(new ElementRejected($result['root']));
         $total = count($allIds);
         $description  = $total > 1 ? " (+ {$total} nodos en cascada)" : '';
         AuditLogService::log(
@@ -585,7 +585,7 @@ class ElementApprovalService
                         'estado'     => 'aprobado',
                         'comentario' => null,
                     ]
-                )->load(['elemento']);
+                )->load(['element']);
             }
 
             $this->recalculateParentState($parentId, $processId);
@@ -598,9 +598,9 @@ class ElementApprovalService
             );
 
             return [
-                'padre_approval' => $parentApproval->fresh()->load(['elemento', 'process', 'user']),
-                'hijo_approval'  => $childApprovals[0] ?? null,
-                'hijo_approvals' => $childApprovals,
+                'parent_approval' => $parentApproval->fresh()->load(['element', 'process', 'user']),
+                'child_approval'  => $childApprovals[0] ?? null,
+                'child_approvals' => $childApprovals,
             ];
         });
 
@@ -610,7 +610,7 @@ class ElementApprovalService
             $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $childElement = $result['hijo_approval']?->elemento;
+                $childElement = $result['child_approval']?->element;
                 if (!$childElement) {
                     return $result;
                 }
@@ -711,7 +711,7 @@ class ElementApprovalService
                         'comentario'         => $comment,
                         'nueva_fecha_limite' => $newDeadline,
                     ]
-                )->load(['elemento']);
+                )->load(['element']);
             }
 
             // Devolver la asignación al responsable: resetear estado + guardar observación + nueva fecha
@@ -742,9 +742,9 @@ class ElementApprovalService
             );
 
             return [
-                'padre_approval' => $parentApproval->fresh()->load(['elemento', 'process', 'user']),
-                'hijo_approval'  => $childApprovals[0] ?? null,
-                'hijo_approvals' => $childApprovals,
+                'parent_approval' => $parentApproval->fresh()->load(['element', 'process', 'user']),
+                'child_approval'  => $childApprovals[0] ?? null,
+                'child_approvals' => $childApprovals,
             ];
         });
 
@@ -754,7 +754,7 @@ class ElementApprovalService
             $assignedUserIds = array_values(array_unique($targetUserIds));
 
             if (!empty($assignedUserIds)) {
-                $childElement = $result['hijo_approval']?->elemento;
+                $childElement = $result['child_approval']?->element;
                 if (!$childElement) {
                     return $result;
                 }

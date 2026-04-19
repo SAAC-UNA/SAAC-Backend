@@ -37,8 +37,8 @@ class ElementCommitmentController extends Controller
 
         AuditLogService::log(
             'consultar',
-            'Listado de compromisos de mejora (Elements)',
-            'Compromisos Elements'
+            'Listado de compromisos de mejora (Elementos)',
+            'Compromisos Elementos'
         );
 
         return response()->json([
@@ -63,7 +63,7 @@ class ElementCommitmentController extends Controller
         AuditLogService::log(
             'consultar',
             "Consulta de compromiso de mejora (elemento) ID {$id}",
-            'Compromisos Elements'
+            'Compromisos Elementos'
         );
 
         return response()->json([
@@ -77,14 +77,14 @@ class ElementCommitmentController extends Controller
      * GET /api/compromisos-Elements/usuario/{usuarioId}
      * Compromisos donde el usuario tiene asignaciones vinculadas.
      */
-    public function getByUser(int $usuarioId): JsonResponse
+    public function getByUser(int $userId): JsonResponse
     {
-        $commitments = $this->service->getCommitmentsByUser($usuarioId);
+        $commitments = $this->service->getCommitmentsByUser($userId);
 
         AuditLogService::log(
             'consultar',
-            "Compromisos de mejora (Elements) por usuario {$usuarioId}",
-            'Compromisos Elements'
+            "Compromisos de mejora por usuario {$userId}",
+            'Compromisos Elementos'
         );
 
         return response()->json([
@@ -95,17 +95,17 @@ class ElementCommitmentController extends Controller
 
    
     /**
-     * GET /api/compromisos-Elements/elemento/{elementoId}
+     * GET /api/compromisos-Elements/elemento/{elementId}
      * Compromisos vinculados al elemento o cualquiera de sus descendientes.
      */
-    public function getByElemento(int $elementoId): JsonResponse
+    public function getByElement(int $elementId): JsonResponse
     {
-        $commitments = $this->service->getCommitmentsByElemento($elementoId);
+        $commitments = $this->service->getCommitmentsByElement($elementId);
 
         AuditLogService::log(
             'consultar',
-            "Compromisos de mejora (Elements) por elemento {$elementoId}",
-            'Compromisos Elements'
+            "Compromisos de mejora (Elementos) por elemento {$elementId}",
+            'Compromisos Elementos'
         );
 
         return response()->json([
@@ -127,7 +127,7 @@ class ElementCommitmentController extends Controller
             AuditLogService::log(
                 'crear',
                 'Compromiso de mejora (elemento) creado ID ' . $commitment->compromiso_elemento_id,
-                'Compromisos Elements'
+                'Compromisos Elementos'
             );
 
             return response()->json([
@@ -136,15 +136,15 @@ class ElementCommitmentController extends Controller
                 'data'    => $commitment,
             ], 201);
 
-        } catch (ValidationException $e) {
+        } catch (ValidationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación.',
-                'errors'  => $e->errors(),
+                'errors'  => $exception->errors(),
             ], 422);
 
-        } catch (QueryException $e) {
-            $errorCode = (int) ($e->errorInfo[1] ?? 0);
+        } catch (QueryException $exception) {
+            $errorCode = (int) ($exception->errorInfo[1] ?? 0);
 
             if ($errorCode === 1062) {
                 return response()->json([
@@ -190,7 +190,7 @@ class ElementCommitmentController extends Controller
             AuditLogService::log(
                 'editar',
                 "Compromiso de mejora (elemento) ID {$id} actualizado. Campos: {$changedKeys}",
-                'Compromisos Elements'
+                'Compromisos Elementos'
             );
 
             return response()->json([
@@ -237,19 +237,19 @@ class ElementCommitmentController extends Controller
             ], 404);
         }
 
-        $activo = filter_var($request->input('activo', true), FILTER_VALIDATE_BOOLEAN);
-        $updated = $this->service->setActive($commitment, $activo);
+        $isActive = filter_var($request->input('activo', true), FILTER_VALIDATE_BOOLEAN);
+        $updated = $this->service->setActive($commitment, $isActive);
 
-        $estado = $activo ? 'activado' : 'desactivado';
+        $statusText = $isActive ? 'activado' : 'desactivado';
         AuditLogService::log(
             'editar',
-            "Compromiso de mejora (elemento) ID {$id} {$estado}",
-            'Compromisos Elements'
+            "Compromiso de mejora (elemento) ID {$id} {$statusText}",
+            'Compromisos Elementos'
         );
 
         return response()->json([
             'success' => true,
-            'message' => "Compromiso de mejora {$estado} exitosamente.",
+            'message' => "Compromiso de mejora {$statusText} exitosamente.",
             'data'    => $updated,
         ], 200);
     }

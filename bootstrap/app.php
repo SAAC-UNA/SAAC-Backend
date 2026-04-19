@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class, // NECESARIO para enviar cookies
             \App\Http\Middleware\AddTokenFromCookie::class, // Extraer token de cookie httpOnly
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SanitizeErrorResponses::class, // SEGURIDAD: Sanitizar errores de BD
         ]);
 
         // Alias de middlewares personalizados

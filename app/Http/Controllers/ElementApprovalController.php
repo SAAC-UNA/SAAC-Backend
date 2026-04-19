@@ -37,19 +37,19 @@ class ElementApprovalController extends Controller
                 'data'    => $approvals,
             ], 200);
 
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener las aprobaciones.',
-                'error'   => $e->getMessage(),
+                'error'   => $exception->getMessage(),
             ], 500);
         }
     }
 
-    public function showApproval(int $aprobacionId): JsonResponse
+    public function showApproval(int $approvalId): JsonResponse
     {
         try {
-            $approval = $this->approvalService->getApproval($aprobacionId);
+            $approval = $this->approvalService->getApproval($approvalId);
 
             if (!$approval) {
                 return response()->json([
@@ -65,27 +65,27 @@ class ElementApprovalController extends Controller
                 'data'    => $approval,
             ], 200);
 
-        } catch (AuthorizationException $e) {
+        } catch (AuthorizationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para realizar esta accion.',
             ], 403);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener la aprobacion.',
-                'error'   => $e->getMessage(),
+                'error'   => $exception->getMessage(),
             ], 500);
         }
     }
 
-    public function approveElemento(ElementApprovalRequest $request, int $elementoId): JsonResponse
+    public function approveElement(ElementApprovalRequest $request, int $elementId): JsonResponse
     {
         try {
             $this->authorize('approve', \App\Models\ElementApproval::class);
 
-            $result = $this->approvalService->approveElemento(
-                $elementoId,
+            $result = $this->approvalService->approveElement(
+                $elementId,
                 $request->proceso_id,
                 $request->comentario
             );
@@ -94,36 +94,36 @@ class ElementApprovalController extends Controller
                 'success' => true,
                 'message' => 'Elemento aprobado exitosamente.',
                 'data'    => [
-                    'raiz'    => $result['raiz'],
-                    'cascada' => $result['cascada'],
+                    'root'    => $result['root'],
+                    'cascade' => $result['cascade'],
                 ],
             ], 201);
 
-        } catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $exception) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ], 422);
-        } catch (AuthorizationException $e) {
+        } catch (AuthorizationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para realizar esta accion.',
             ], 403);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ], 400);
         }
     }
 
-    public function rejectElemento(ElementApprovalRequest $request, int $elementoId): JsonResponse
+    public function rejectElement(ElementApprovalRequest $request, int $elementId): JsonResponse
     {
         try {
             $this->authorize('reject', \App\Models\ElementApproval::class);
 
-            $result = $this->approvalService->rejectElemento(
-                $elementoId,
+            $result = $this->approvalService->rejectElement(
+                $elementId,
                 $request->proceso_id,
                 $request->comentario,
                 $request->fecha_limite
@@ -133,36 +133,36 @@ class ElementApprovalController extends Controller
                 'success' => true,
                 'message' => 'Elemento rechazado exitosamente.',
                 'data'    => [
-                    'raiz'    => $result['raiz'],
-                    'cascada' => $result['cascada'],
+                    'root'    => $result['root'],
+                    'cascade' => $result['cascade'],
                 ],
             ], 201);
 
-        } catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $exception) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ], 422);
-        } catch (AuthorizationException $e) {
+        } catch (AuthorizationException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para realizar esta accion.',
             ], 403);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ], 400);
         }
     }
 
-    public function approveIndividualChild(ElementApprovalRequest $request, int $padreId, int $hijoId): JsonResponse
+    public function approveIndividualChild(ElementApprovalRequest $request, int $parentId, int $childId): JsonResponse
     {
         $this->authorize('approve', \App\Models\ElementApproval::class);
 
         $result = $this->approvalService->approveIndividualChild(
-            $padreId,
-            $hijoId,
+            $parentId,
+            $childId,
             $request->proceso_id,
             $request->responsable_usuario_id
         );
@@ -174,13 +174,13 @@ class ElementApprovalController extends Controller
         ], 201);
     }
 
-    public function rejectIndividualChild(ElementApprovalRequest $request, int $padreId, int $hijoId): JsonResponse
+    public function rejectIndividualChild(ElementApprovalRequest $request, int $parentId, int $childId): JsonResponse
     {
         $this->authorize('reject', \App\Models\ElementApproval::class);
 
         $result = $this->approvalService->rejectIndividualChild(
-            $padreId,
-            $hijoId,
+            $parentId,
+            $childId,
             $request->proceso_id,
             $request->comentario,
             $request->nueva_fecha_limite,

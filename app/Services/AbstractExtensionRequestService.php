@@ -32,18 +32,18 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
     public function getAll(array $filters = []): mixed
     {
         $perPage      = min($filters['per_page'] ?? 15, 100);
-        $estado       = $filters['estado'] ?? null;
-        $usuarioId    = $filters['usuario_id'] ?? null;
-        $asignacionId = $filters['evidencia_asignacion_id'] ?? null;
-        $fechaDesde   = $filters['fecha_desde'] ?? null;
-        $fechaHasta   = $filters['fecha_hasta'] ?? null;
+        $status       = $filters['estado'] ?? null;
+        $userId       = $filters['usuario_id'] ?? null;
+        $assignmentId = $filters['evidencia_asignacion_id'] ?? null;
+        $dateFrom     = $filters['fecha_desde'] ?? null;
+        $dateTo       = $filters['fecha_hasta'] ?? null;
 
         return ExtensionRequest::with(static::WITH_BASE)
-            ->when($estado,       fn($q) => $q->where('estado', $estado))
-            ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
-            ->when($asignacionId, fn($q) => $q->where('evidencia_asignacion_id', $asignacionId))
-            ->when($fechaDesde,   fn($q) => $q->where('created_at', '>=', $fechaDesde))
-            ->when($fechaHasta,   fn($q) => $q->where('created_at', '<=', $fechaHasta))
+            ->when($status,       fn($query) => $query->where('estado', $status))
+            ->when($userId,       fn($query) => $query->where('usuario_id', $userId))
+            ->when($assignmentId, fn($query) => $query->where('evidencia_asignacion_id', $assignmentId))
+            ->when($dateFrom,     fn($query) => $query->where('created_at', '>=', $dateFrom))
+            ->when($dateTo,       fn($query) => $query->where('created_at', '<=', $dateTo))
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
@@ -60,9 +60,9 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
     /**
      * Obtener solicitudes de un usuario específico.
      */
-    public function getByUser(int $usuarioId, array $filters = []): mixed
+    public function getByUser(int $userId, array $filters = []): mixed
     {
-        $filters['usuario_id'] = $usuarioId;
+        $filters['usuario_id'] = $userId;
         return $this->getAll($filters);
     }
 
@@ -81,37 +81,37 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
      * O en ElementAssignment (flexible), según cuál FK tenga la solicitud.
      * Las notificaciones las maneja el controller vía event(ExtensionRequestApproved).
      */
-    public function approve(int $solicitudId, int $resolutorId, ?string $justificacion = null): ExtensionRequest
+    public function approve(int $requestId, int $resolverUserId, ?string $justification = null): ExtensionRequest
     {
-        return DB::transaction(function () use ($solicitudId, $resolutorId, $justificacion) {
-            $solicitud = ExtensionRequest::with(['evidenceAssignment', 'elementAssignment'])->find($solicitudId);
-            if (!$solicitud) {
+        return DB::transaction(function () use ($requestId, $resolverUserId, $justification) {
+            $extensionRequest = ExtensionRequest::with(['evidenceAssignment', 'elementAssignment'])->find($requestId);
+            if (!$extensionRequest) {
                 throw new \Exception('La solicitud no existe.');
             }
 
-            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
+            if ($extensionRequest->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
                 throw new \Exception('Solo se pueden aprobar solicitudes pendientes.');
             }
 
-            $solicitud->update([
+            $extensionRequest->update([
                 'estado'               => ExtensionRequest::ESTADO_APROBADA,
-                'usuario_resolutor_id' => $resolutorId,
-                'justificacion'        => $justificacion,
+                'usuario_resolutor_id' => $resolverUserId,
+                'justificacion'        => $justification,
                 'fecha_resolucion'     => now(),
             ]);
 
             // Propagar nueva fecha al modelo correspondiente (patrón XOR)
-            if ($solicitud->evidenceAssignment) {
-                $solicitud->evidenceAssignment->update([
-                    'fecha_limite' => $solicitud->fecha_sugerida,
+            if ($extensionRequest->evidenceAssignment) {
+                $extensionRequest->evidenceAssignment->update([
+                    'fecha_limite' => $extensionRequest->fecha_sugerida,
                 ]);
-            } elseif ($solicitud->elementAssignment) {
-                $solicitud->elementAssignment->update([
-                    'fecha_limite' => $solicitud->fecha_sugerida,
+            } elseif ($extensionRequest->elementAssignment) {
+                $extensionRequest->elementAssignment->update([
+                    'fecha_limite' => $extensionRequest->fecha_sugerida,
                 ]);
             }
 
-            return $solicitud->load(static::WITH_BASE);
+            return $extensionRequest->load(static::WITH_BASE);
         });
     }
 
@@ -121,26 +121,26 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
      * No toca ninguna asignación — la fecha_limite permanece sin cambios.
      * Las notificaciones las maneja el controller vía event(ExtensionRequestRejected).
      */
-    public function reject(int $solicitudId, int $resolutorId, string $justificacion): ExtensionRequest
+    public function reject(int $requestId, int $resolverUserId, string $justification): ExtensionRequest
     {
-        return DB::transaction(function () use ($solicitudId, $resolutorId, $justificacion) {
-            $solicitud = ExtensionRequest::find($solicitudId);
-            if (!$solicitud) {
+        return DB::transaction(function () use ($requestId, $resolverUserId, $justification) {
+            $extensionRequest = ExtensionRequest::find($requestId);
+            if (!$extensionRequest) {
                 throw new \Exception('La solicitud no existe.');
             }
 
-            if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
+            if ($extensionRequest->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
                 throw new \Exception('Solo se pueden rechazar solicitudes pendientes.');
             }
 
-            $solicitud->update([
+            $extensionRequest->update([
                 'estado'               => ExtensionRequest::ESTADO_RECHAZADA,
-                'usuario_resolutor_id' => $resolutorId,
-                'justificacion'        => $justificacion,
+                'usuario_resolutor_id' => $resolverUserId,
+                'justificacion'        => $justification,
                 'fecha_resolucion'     => now(),
             ]);
 
-            return $solicitud->load(static::WITH_BASE);
+            return $extensionRequest->load(static::WITH_BASE);
         });
     }
 }
