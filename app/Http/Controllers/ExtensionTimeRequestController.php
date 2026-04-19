@@ -139,11 +139,9 @@ class ExtensionTimeRequestController extends Controller
             $extensionRequest = $this->service->createRequest($request->validated(), $userId);
 
             // Registro en bitácora
-            $tipoAsignacion = "evidencia asignación {$extensionRequest->evidencia_asignacion_id}";
-
             AuditLogService::log(
                 'crear',
-                "Solicitud de ampliación creada (ID: {$extensionRequest->solicitud_ampliacion_id}) para {$tipoAsignacion}",
+                "Solicitud de ampliación de tiempo creada exitosamente.",
                 'Solicitudes Ampliación'
             );
 
@@ -195,7 +193,7 @@ class ExtensionTimeRequestController extends Controller
 
             AuditLogService::log(
                 'cancelar',
-                "Solicitud de ampliación cancelada (ID: {$id})",
+                "Solicitud de ampliación cancelada exitosamente.",
                 'Solicitudes Ampliación'
             );
 

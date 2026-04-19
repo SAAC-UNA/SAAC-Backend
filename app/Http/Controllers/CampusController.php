@@ -157,7 +157,7 @@ class CampusController extends Controller
 
         AuditLogService::log(
             'editar',
-            "Se actualizó el estado del campus \"{$campus->nombre}\" (ID: {$campus->campus_id}). " .
+            "Se actualizó el estado del campus \"{$campus->nombre}\". " .
             "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}. " .
             "El cambio se aplicó también a sus facultades y carreras asociadas.",
             'Campus'

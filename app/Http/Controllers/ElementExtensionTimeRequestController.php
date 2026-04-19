@@ -101,7 +101,7 @@ class ElementExtensionTimeRequestController extends Controller
 
             AuditLogService::log(
                 'crear',
-                "Solicitud de ampliación (elemento) creada (ID: {$solicitud->solicitud_ampliacion_elemento_id}) para elemento asignación {$solicitud->elemento_asignacion_id}",
+                "Solicitud de ampliación de elemento creada exitosamente.",
                 'Solicitudes Ampliación Elemento'
             );
 
@@ -136,7 +136,7 @@ class ElementExtensionTimeRequestController extends Controller
 
             $this->service->cancelRequest((int)$id, Auth::id());
 
-            AuditLogService::log('cancelar', "Solicitud de ampliación (elemento) cancelada (ID: {$id})", 'Solicitudes Ampliación Elemento');
+            AuditLogService::log('cancelar', "Solicitud de ampliación de elemento cancelada exitosamente.", 'Solicitudes Ampliación Elemento');
 
             return response()->json(['message' => 'Solicitud cancelada exitosamente.'], 200);
 

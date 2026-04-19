@@ -123,7 +123,7 @@ class CareerController extends Controller
         // Registro en el log de bitácora
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}). ".
+    "Se actualizó el estado de la carrera \"{$career->nombre}\". ".
             "Estado anterior: {$previousStatus}. Estado actual: {$newStatus}.",
     'Carrera'
         );

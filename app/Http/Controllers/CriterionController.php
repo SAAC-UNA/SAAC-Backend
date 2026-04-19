@@ -132,7 +132,7 @@ class CriterionController extends Controller
 
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado del criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}). ".
+    "Se actualizó el estado del criterio \"{$criterion->nombre}\". ".
             "Estado anterior: {$previousStatus}. Estado nuevo: {$newStatus}. ".
             "Se aplicó cambio en cascada a estándares y evidencias.",
     'Criterio'

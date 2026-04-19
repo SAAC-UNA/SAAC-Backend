@@ -146,7 +146,7 @@ class DimensionController extends Controller
 
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la dimensión \"{$dimension->nombre}\" (ID: {$dimension->dimension_id}). ".
+    "Se actualizó el estado de la dimensión \"{$dimension->nombre}\". ".
             "Estado anterior: {$previousStatus}. Estado nuevo: {$newStatus}. ".
             "Se aplicó cambio en cascada a hijos.",
     'Dimensión'

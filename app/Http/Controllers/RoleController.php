@@ -68,7 +68,7 @@ class RoleController extends Controller
         // Registrar en bitácora la creación del rol
         AuditLogService::log(
             'crear',
-            "Rol creado: {$role->name} (ID: {$role->id})",
+            "Rol \"{$role->name}\" creado.",
             'Roles'
         );
         return response()->json([
@@ -141,7 +141,7 @@ class RoleController extends Controller
         // Registrar en bitácora los cambios realizados
         AuditLogService::log(
     'editar',
-        "Rol actualizado: {$updatedRole->name} (ID: {$updatedRole->id})",
+        "Rol \"{$updatedRole->name}\" actualizado.",
         'Roles'
         );
 
@@ -201,7 +201,7 @@ class RoleController extends Controller
         if ($result) {
             AuditLogService::log(
                 'eliminar',
-                "Rol eliminado: {$role->name} (ID: {$role->id})",
+                "Rol \"{$role->name}\" eliminado.",
                 'Roles'
             );
         }
@@ -239,7 +239,7 @@ class RoleController extends Controller
         $state = $result['role']->is_active ? 'activado' : 'desactivado';
         AuditLogService::log(
             $state,
-            "Rol {$state}: {$result['role']->name} (ID: {$result['role']->id})",
+            "Rol \"{$result['role']->name}\" {$state}.",
             'Roles'
         );
 

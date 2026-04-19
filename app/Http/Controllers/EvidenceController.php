@@ -156,7 +156,7 @@ class EvidenceController extends Controller
         $newStatus      = $validated['active'] ? 'ACTIVA' : 'INACTIVA';
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la evidencia \"{$evidence->nombre}\" (ID: {$evidence->evidencia_id}). ".
+    "Se actualizó el estado de la evidencia \"{$evidence->nombre}\". ".
             "Estado anterior: {$previousStatus}. Estado actual: {$newStatus}.",
     'Evidencia'
         );

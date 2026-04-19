@@ -116,7 +116,7 @@ class CriterionApprovalController extends Controller
             // Registrar en bitácora
             AuditLogService::log(
                 'aprobar',
-                "Criterio aprobado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                "Criterio \"{$criterion->nomenclatura}\" aprobado.",
                 'Aprobación Criterios'
             );
 
@@ -171,7 +171,7 @@ class CriterionApprovalController extends Controller
             // Registrar en bitácora
             AuditLogService::log(
                 'rechazar',
-                "Criterio rechazado: {$criterion->nomenclatura} (ID: {$criterioId})",
+                "Criterio \"{$criterion->nomenclatura}\" rechazado.",
                 'Aprobación Criterios'
             );
 
@@ -271,7 +271,7 @@ class CriterionApprovalController extends Controller
 
             AuditLogService::log(
                 'aprobar',
-                "Evidencia {$evidenceId} aprobada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                "Evidencia aprobada individualmente en criterio \"{$criterion->nomenclatura}\".",
                 'Aprobación Criterios'
             );
 
@@ -332,7 +332,7 @@ class CriterionApprovalController extends Controller
 
             AuditLogService::log(
                 'rechazar',
-                "Evidencia {$evidenceId} rechazada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                "Evidencia rechazada individualmente en criterio \"{$criterion->nomenclatura}\".",
                 'Aprobación Criterios'
             );
 

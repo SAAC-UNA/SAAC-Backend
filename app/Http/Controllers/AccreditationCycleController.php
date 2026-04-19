@@ -130,7 +130,7 @@ class AccreditationCycleController extends Controller
 
         AuditLogService::log(
             'eliminar',
-            "Se eliminó el ciclo de acreditación \"{$cycle->nombre}\" (ID: {$id}).",
+            "Se eliminó el ciclo de acreditación \"{$cycle->nombre}\".",
             'Ciclo Acreditación'
         );
 
