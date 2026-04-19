@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AccreditationCycle;
 use App\Models\AccreditationReport;
 use App\Models\File;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -102,6 +103,66 @@ class AccreditationReportService
 
             return $report->load(['accreditationCycle', 'file', 'publishedBy']);
         });
+    }
+
+    /**
+     * Notifica a los usuarios de la carrera cuando se publica un informe.
+     */
+    public function notifyPublication(AccreditationCycle $cycle, AccreditationReport $report, User $publisher): void
+    {
+        try {
+            $carreraId    = $cycle->loadMissing('careerCampus')->careerCampus->carrera_id;
+            $recipientIds = User::whereHas('careers', fn($careerQuery) => $careerQuery->where('CARRERA.carrera_id', $carreraId))
+                ->where('status', User::STATUS_ACTIVE)
+                ->where('usuario_id', '!=', $publisher->usuario_id)
+                ->pluck('usuario_id')
+                ->toArray();
+
+            if (!empty($recipientIds)) {
+                NotificationService::createMany($recipientIds, [
+                    'tipo_evento' => Notification::TIPO_PUBLICACION_INFORME,
+                    'titulo'      => 'Nuevo informe de acreditación publicado',
+                    'mensaje'     => "Se ha publicado el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion}).",
+                    'enlace'      => '/informes-acreditacion',
+                    'relacionado' => $report,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Error al enviar notificaciones de publicación de informe', [
+                'informe_id' => $report->informe_acreditacion_id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notifica a los usuarios de la carrera cuando se despublica un informe.
+     */
+    public function notifyUnpublication(AccreditationReport $report, User $actor): void
+    {
+        try {
+            $carreraId    = $report->accreditationCycle->loadMissing('careerCampus')->careerCampus->carrera_id;
+            $recipientIds = User::whereHas('careers', fn($careerQuery) => $careerQuery->where('CARRERA.carrera_id', $carreraId))
+                ->where('status', User::STATUS_ACTIVE)
+                ->where('usuario_id', '!=', $actor->usuario_id)
+                ->pluck('usuario_id')
+                ->toArray();
+
+            if (!empty($recipientIds)) {
+                NotificationService::createMany($recipientIds, [
+                    'tipo_evento' => Notification::TIPO_DESPUBLICACION_INFORME,
+                    'titulo'      => 'Informe de acreditación despublicado',
+                    'mensaje'     => "El informe de acreditación del ciclo \"{$report->accreditationCycle->nombre}\" (resolución: {$report->numero_resolucion}) ha sido despublicado.",
+                    'enlace'      => '/informes-acreditacion',
+                    'relacionado' => $report,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Error al enviar notificaciones de despublicación de informe', [
+                'informe_id' => $report->informe_acreditacion_id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

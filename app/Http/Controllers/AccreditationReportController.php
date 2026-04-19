@@ -8,13 +8,9 @@ use App\Http\Requests\UnpublishAccreditationReportRequest;
 use App\Http\Resources\AccreditationReportResource;
 use App\Models\AccreditationCycle;
 use App\Models\AccreditationReport;
-use App\Models\Notification;
-use App\Models\User;
 use App\Services\AccreditationReportService;
 use App\Services\AuditLogService;
-use App\Services\NotificationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador de Informes de Acreditación.
@@ -108,29 +104,7 @@ class AccreditationReportController extends Controller
             'Informe Acreditación'
         );
 
-        try {
-            $carreraId    = $cycle->loadMissing('careerCampus')->careerCampus->carrera_id;
-            $recipientIds = User::whereHas('careers', fn($q) => $q->where('carrera_id', $carreraId))
-                ->where('status', User::STATUS_ACTIVE)
-                ->where('usuario_id', '!=', $request->user()->usuario_id)
-                ->pluck('usuario_id')
-                ->toArray();
-
-            if (!empty($recipientIds)) {
-                NotificationService::createMany($recipientIds, [
-                    'tipo_evento' => Notification::TIPO_PUBLICACION_INFORME,
-                    'titulo'      => 'Nuevo informe de acreditación publicado',
-                    'mensaje'     => "Se ha publicado el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion}).",
-                    'enlace'      => '/informes-acreditacion',
-                    'relacionado' => $report,
-                ]);
-            }
-        } catch (\Throwable $notifEx) {
-            Log::warning('Error al enviar notificaciones de publicación de informe', [
-                'informe_id' => $report->informe_acreditacion_id,
-                'error'      => $notifEx->getMessage(),
-            ]);
-        }
+        $this->service->notifyPublication($cycle, $report, $request->user());
 
         return AccreditationReportResource::make(
             $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
@@ -161,29 +135,7 @@ class AccreditationReportController extends Controller
             'Informe Acreditación'
         );
 
-        try {
-            $carreraId    = $updated->accreditationCycle->loadMissing('careerCampus')->careerCampus->carrera_id;
-            $recipientIds = User::whereHas('careers', fn($q) => $q->where('carrera_id', $carreraId))
-                ->where('status', User::STATUS_ACTIVE)
-                ->where('usuario_id', '!=', $request->user()->usuario_id)
-                ->pluck('usuario_id')
-                ->toArray();
-
-            if (!empty($recipientIds)) {
-                NotificationService::createMany($recipientIds, [
-                    'tipo_evento' => Notification::TIPO_DESPUBLICACION_INFORME,
-                    'titulo'      => 'Informe de acreditación despublicado',
-                    'mensaje'     => "El informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}) ha sido despublicado.",
-                    'enlace'      => '/informes-acreditacion',
-                    'relacionado' => $updated,
-                ]);
-            }
-        } catch (\Throwable $notifEx) {
-            Log::warning('Error al enviar notificaciones de despublicación de informe', [
-                'informe_id' => $updated->informe_acreditacion_id,
-                'error'      => $notifEx->getMessage(),
-            ]);
-        }
+        $this->service->notifyUnpublication($updated, $request->user());
 
         return new AccreditationReportResource(
             $updated->loadMissing(['accreditationCycle', 'file', 'publishedBy'])
