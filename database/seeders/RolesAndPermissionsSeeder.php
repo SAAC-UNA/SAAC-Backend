@@ -67,6 +67,21 @@ class RolesAndPermissionsSeeder extends Seeder
         $encargado = Role::firstOrCreate(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
         $asistente = Role::firstOrCreate(['name' => 'Asistente de Acreditación', 'guard_name' => 'api']);
 
+        // Asignar permisos al rol "Administrador"
+        $administrador->givePermissionTo([
+            // Informes de Acreditación (HU-028)
+            'informes_acreditacion.view',
+            'informes_acreditacion.publish',
+            'informes_acreditacion.download',
+        ]);
+
+        // Asignar permisos al rol "Profesor"
+        $profesor->givePermissionTo([
+            // Informes de Acreditación (HU-028): solo lectura y descarga
+            'informes_acreditacion.view',
+            'informes_acreditacion.download',
+        ]);
+
         // Asignar permisos de HU-016 al rol "Encargado de Acreditación"
         $encargado->givePermissionTo([
             'solicitudes_ampliacion.view',
