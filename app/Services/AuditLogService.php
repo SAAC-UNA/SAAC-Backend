@@ -113,7 +113,13 @@ class AuditLogService
      */
     public function getActionTypes()
     {
-        return ActionType::orderBy('descripcion')->get();
+        return ActionType::orderBy('descripcion')->get()->map(function ($type) {
+            return [
+                'tipo_accion_id' => $type->tipo_accion_id,
+                'descripcion'    => $type->descripcion,
+                'label'          => ucfirst(str_replace('_', ' ', $type->descripcion)),
+            ];
+        });
     }
 
     /**
