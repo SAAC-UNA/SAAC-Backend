@@ -47,14 +47,9 @@ class Handler extends ExceptionHandler
         // 404 - Modelo no encontrado (por ejemplo, findOrFail())
         $this->renderable(function (ModelNotFoundException $exception, $request) {
             if ($request->expectsJson()) {
-                $model = $exception->getModel()
-                    ? class_basename($exception->getModel())
-                    : 'Desconocido';
-
                 return $this->jsonError(
-                    'Recurso no encontrado en la base de datos.',
-                    404,
-                    ['model' => $model]
+                    'Recurso no encontrado.',
+                    404
                 );
             }
         });
@@ -83,7 +78,7 @@ class Handler extends ExceptionHandler
         $this->renderable(function (AuthorizationException $exception, $request) {
             if ($request->expectsJson()) {
                 return $this->jsonError(
-                    $exception->getMessage() ?: 'Acción no autorizada. No tiene permisos suficientes.',
+                    'Acción no autorizada. No tiene permisos suficientes.',
                     403
                 );
             }
