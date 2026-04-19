@@ -285,12 +285,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($solicitud)
             ], 201);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar cualquier error de negocio y retornar 400
-            return response()->json([
-                'message' => 'Error al crear la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error al crear solicitud de ampliacion', ['usuario_id' => Auth::id(), 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -368,12 +367,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($solicitudAprobada)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al aprobar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error al aprobar solicitud de ampliacion', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -451,12 +449,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($solicitudRechazada)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al rechazar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error al rechazar solicitud de ampliacion', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 }

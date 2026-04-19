@@ -175,10 +175,8 @@ class FlexibleExtensionRequestController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al crear la solicitud.',
-                'error'   => $e->getMessage(),
-            ], 400);
+            Log::error('Error al crear solicitud flexible', ['usuario_id' => Auth::id(), 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -212,11 +210,11 @@ class FlexibleExtensionRequestController extends Controller
                 'data'    => new ExtensionRequestResource($aprobada),
             ], 200);
 
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al aprobar la solicitud.',
-                'error'   => $e->getMessage(),
-            ], 400);
+            Log::error('Error al aprobar solicitud flexible', ['solicitud_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -246,11 +244,11 @@ class FlexibleExtensionRequestController extends Controller
                 'data'    => new ExtensionRequestResource($rechazada),
             ], 200);
 
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al rechazar la solicitud.',
-                'error'   => $e->getMessage(),
-            ], 400);
+            Log::error('Error al rechazar solicitud flexible', ['solicitud_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 }
