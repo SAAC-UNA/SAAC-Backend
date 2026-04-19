@@ -214,6 +214,57 @@ El componente `AuditLogDetailModal.tsx` usa este mapa para renderizar el **badge
 ```tsx
 <StatusBadge
   label={AUDIT_ACTION_BADGE[log.tipo_accion.descripcion.toLowerCase()]?.label
+
+---
+
+## Barrido de seguridad — eliminación de fuga de mensajes de excepción
+
+**Commit:** `63e2458`  
+**Fecha:** 2026-04-18
+
+### Problema
+
+Múltiples controladores devolvían `$e->getMessage()` / `$qe->getMessage()` directamente en la respuesta JSON de errores 500, exponiendo trazas SQL internas, nombres de tablas, columnas y mensajes de excepción del servidor al cliente.
+
+### Archivos corregidos (14)
+
+| Archivo | Cambios |
+|---------|---------|
+| `app/Services/AccreditationCycleService.php` | `throw new \Exception(...)` → `throw new \InvalidArgumentException(...)` para regla de negocio |
+| `app/Http/Controllers/AccreditationCycleController.php` | Catch 3 niveles: `\InvalidArgumentException` → 422, `\Exception` → `Log::error` + 500 genérico |
+| `app/Http/Controllers/CampusController.php` | Elimina `'error' => $e->getMessage()` del fallback 500 de `QueryException`; agrega `Log::error` |
+| `app/Http/Controllers/CareerController.php` | Ídem |
+| `app/Http/Controllers/DimensionController.php` | Ídem |
+| `app/Http/Controllers/CriterionController.php` | Ídem |
+| `app/Http/Controllers/ComponentController.php` | Ídem |
+| `app/Http/Controllers/UniversityController.php` | Ídem |
+| `app/Http/Controllers/ImprovementCommitmentController.php` | Elimina `'details' => $exception->getMessage()` de 3 bloques `QueryException` |
+| `app/Http/Controllers/CriterionApprovalController.php` | 7 bloques catch: agrega `\InvalidArgumentException` + `\LogicException` → 422, `\Exception` → `Log::error` + 500 genérico |
+| `app/Http/Controllers/ElementApprovalController.php` | Ídem — 4 bloques catch corregidos |
+| `app/Http/Controllers/EvidenceAssignmentController.php` | Elimina `'error' => $e->getMessage()` del catch genérico |
+| `app/Http/Controllers/EvidenceController.php` | Elimina `'error' => $qe->getMessage()` del fallback 500 de `QueryException` |
+| `app/Http/Controllers/FileController.php` | Loops de upload: split `\InvalidArgumentException` (mensaje de negocio → visible) / `\Exception` genérico (→ `Log::error` + mensaje genérico) |
+
+### Patrón aplicado
+
+```php
+} catch (\InvalidArgumentException $e) {
+    // Mensaje de negocio controlado — seguro exponerlo
+    return response()->json(['message' => $e->getMessage()], 422);
+} catch (\LogicException $e) {
+    return response()->json(['message' => $e->getMessage()], 422);
+} catch (\Exception $e) {
+    // Traza interna → solo al log, nunca al cliente
+    \Log::error('Descripción del contexto', ['error' => $e->getMessage()]);
+    return response()->json(['message' => 'Mensaje genérico para el usuario.'], 500);
+}
+```
+
+### Resultado
+
+- Ya no hay ningún `$e->getMessage()` filtrándose en respuestas 500 del API.
+- Los errores de negocio (validaciones, reglas de dominio) siguen siendo legibles por el frontend vía 422.
+- Los errores inesperados quedan registrados internamente (Laravel Log) sin exponer detalles al cliente.
          ?? log.tipo_accion.descripcion}
   colorClasses={AUDIT_ACTION_BADGE[log.tipo_accion.descripcion.toLowerCase()]?.colorClasses
                 ?? 'bg-slate-light text-slate'}
@@ -278,3 +329,19 @@ CREATE DATABASE IF NOT EXISTS saac_testing CHARACTER SET utf8mb4 COLLATE utf8mb4
 | `app/Policies/AccreditationReportPolicy.php` | `unpublish()` verificaba `!$report->isPublished()` en la Policy (responsabilidad del Service) → bloqueaba el test de unpublish con 403 | Se eliminó la verificación de estado de la Policy; solo verifica permiso |
 | `app/Http/Requests/PublishAccreditationReportRequest.php` | `$file->process` retornaba `null` por `BaseCareer` global scope → error 500 en validación | Se agregó `!$file->process` en el guard del método `validateFileBelongsToCycle()` |
 | `tests/Feature/AccreditationReportFeatureTest.php` (publishPayload) | File creado con `tipo_mime=null` → fallaba validación MIME en `PublishAccreditationReportRequest` | Se fijó `tipo_mime='application/pdf'` y `nombre_original='resolucion-sinaes.pdf'` en el helper |
+
+---
+
+## Pendiente — Frontend
+
+### `src/Constants/StatusBadges.ts`
+
+Los cambios descritos en la sección "Cambios en el Frontend" están preparados localmente en la rama `development` pero **aún no se han commiteado**. El equipo frontend aún no ha iniciado la integración de HU-028; los badges se commitearán cuando el frontend arranque ese trabajo formalmente.
+
+| Tipo de acción | Label | Color | Estado |
+|----------------|-------|-------|--------|
+| `notificar` | Notificar | Info/azul | ⏳ Pendiente commit |
+| `notificar_fallido` | Notif. fallida | Rose | ⏳ Pendiente commit |
+| `retroalimentar` | Retroalimentar | Morado | ⏳ Pendiente commit |
+| `publicar` | Publicar | Verde | ⏳ Pendiente commit |
+| `despublicar` | Despublicar | Warning | ⏳ Pendiente commit |
