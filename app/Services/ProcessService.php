@@ -21,7 +21,7 @@ class ProcessService
         return Process::with([
             'accreditationCycle.careerCampus.career',
             'accreditationCycle.careerCampus.campus',
-            'accreditationCycle.modeloEstructura',
+            'accreditationCycle.structureModel',
         ])->get();
     }
 

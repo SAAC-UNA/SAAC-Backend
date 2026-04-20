@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\ElementAssignment;
-use App\Models\ExtensionRequest;
 use App\Models\StructureElement;
 use App\Models\StructureModel;
 use App\Models\Process;
@@ -146,7 +145,7 @@ class ElementAssignmentService
 
             // Guard Arquitectura B: solo se puede asignar elementos en ciclos de modelo flexible
             $tipoModelo = optional(
-                optional($process->accreditationCycle)->modeloEstructura
+                optional($process->accreditationCycle)->structureModel
             )->tipo;
 
             if ($tipoModelo === StructureModel::TIPO_TRADICIONAL) {
@@ -162,7 +161,7 @@ class ElementAssignmentService
             }
 
             // Guard Estrategia 3: el modelo define qué tipos de nodo pueden recibir asignaciones
-            $tiposAsignables = optional($element->modeloEstructura)->tipos_asignables;
+            $tiposAsignables = optional($element->structureModel)->tipos_asignables;
             if (!empty($tiposAsignables) && !in_array($element->tipo, $tiposAsignables)) {
                 throw new \InvalidArgumentException(
                     "El elemento de tipo '{$element->tipo}' no acepta asignaciones en este modelo. " .

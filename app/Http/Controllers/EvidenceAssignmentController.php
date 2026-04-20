@@ -311,14 +311,14 @@ class EvidenceAssignmentController extends Controller
         $userId = (int) $usuarioId;
 
         $traditionalCycles = EvidenceAssignment::where('usuario_id', $userId)
-            ->with('process.accreditationCycle.modeloEstructura')
+            ->with('process.accreditationCycle.structureModel')
             ->get()
             ->pluck('process.accreditationCycle')
             ->filter()
             ->unique('ciclo_acreditacion_id');
 
         $flexibleCycles = ElementAssignment::where('usuario_id', $userId)
-            ->with('process.accreditationCycle.modeloEstructura')
+            ->with('process.accreditationCycle.structureModel')
             ->get()
             ->pluck('process.accreditationCycle')
             ->filter()
@@ -329,7 +329,7 @@ class EvidenceAssignmentController extends Controller
             ->map(fn ($cycle) => [
                 'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
                 'nombre'               => $cycle->nombre,
-                'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'tradicional',
+                'tipo_modelo'          => $cycle->structureModel?->tipo ?? 'tradicional',
             ])
             ->values();
 

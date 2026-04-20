@@ -40,7 +40,7 @@ class StructureModel extends Model
     /**
      * Procesos que usan este modelo
      */
-    public function ciclosAcreditacion(): HasMany
+    public function accreditationCycles(): HasMany
     {
         return $this->hasMany(AccreditationCycle::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
@@ -48,7 +48,7 @@ class StructureModel extends Model
     /**
      * Verificar si es modelo tradicional
      */
-    public function esTradicional(): bool
+    public function isTraditional(): bool
     {
         return $this->tipo === self::TIPO_TRADICIONAL;
     }
@@ -56,7 +56,7 @@ class StructureModel extends Model
     /**
      * Verificar si es modelo de jerarquía flexible
      */
-    public function esElementFlexible(): bool
+    public function isFlexibleElement(): bool
     {
         return $this->tipo === self::TIPO_ELEMENTO_FLEXIBLE;
     }
@@ -82,7 +82,7 @@ class StructureModel extends Model
     /**
      * Scope para modelos activos
      */
-    public function scopeActivos($query)
+    public function scopeActive($query)
     {
         return $query->where('activo', true);
     }
@@ -90,8 +90,8 @@ class StructureModel extends Model
     /**
      * Scope por tipo
      */
-    public function scopeTipo($query, string $tipo)
+    public function scopeByType($query, string $type)
     {
-        return $query->where('tipo', $tipo);
+        return $query->where('tipo', $type);
     }
 }

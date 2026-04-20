@@ -104,7 +104,7 @@ class AccreditationCycle extends BaseCareer
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function modeloEstructura()
+    public function structureModel()
     {
         return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }

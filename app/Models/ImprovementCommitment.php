@@ -135,40 +135,40 @@ class ImprovementCommitment extends Model
         $selecciones = [];
 
         // Agrupar evidencias por criterio_id
-        $evidenciasPorCriterio = $this->evidences->groupBy('criterio_id');
+        $evidencesByCriterion = $this->evidences->groupBy('criterio_id');
 
-        foreach ($evidenciasPorCriterio as $criterioId => $evidencias) {
-            $primeraEvidencia = $evidencias->first();
+        foreach ($evidencesByCriterion as $criterionId => $evidences) {
+            $firstEvidence = $evidences->first();
             
             // Cargar relación criterion si existe
-            if ($primeraEvidencia && $primeraEvidencia->relationLoaded('criterion')) {
-                $criterio = $primeraEvidencia->criterion;
+            if ($firstEvidence && $firstEvidence->relationLoaded('criterion')) {
+                $criterion = $firstEvidence->criterion;
                 
                 $selecciones[] = [
                     'tipo' => 'CRITERIO',
                     'criterio' => [
-                        'criterio_id' => $criterio->criterio_id,
-                        'nomenclatura' => $criterio->nomenclatura,
-                        'descripcion' => $criterio->descripcion,
+                        'criterio_id' => $criterion->criterio_id,
+                        'nomenclatura' => $criterion->nomenclatura,
+                        'descripcion' => $criterion->descripcion,
                     ],
-                    'componente' => $criterio->relationLoaded('component') ? [
-                        'componente_id' => $criterio->component->componente_id,
-                        'nombre' => $criterio->component->nombre,
-                        'nomenclatura' => $criterio->component->nomenclatura,
+                    'componente' => $criterion->relationLoaded('component') ? [
+                        'componente_id' => $criterion->component->componente_id,
+                        'nombre' => $criterion->component->nombre,
+                        'nomenclatura' => $criterion->component->nomenclatura,
                     ] : null,
-                    'dimension' => $criterio->relationLoaded('component') && $criterio->component->relationLoaded('dimension') ? [
-                        'dimension_id' => $criterio->component->dimension->dimension_id,
-                        'nombre' => $criterio->component->dimension->nombre,
-                        'nomenclatura' => $criterio->component->dimension->nomenclatura,
+                    'dimension' => $criterion->relationLoaded('component') && $criterion->component->relationLoaded('dimension') ? [
+                        'dimension_id' => $criterion->component->dimension->dimension_id,
+                        'nombre' => $criterion->component->dimension->nombre,
+                        'nomenclatura' => $criterion->component->dimension->nomenclatura,
                     ] : null,
-                    'estandares' => $criterio->relationLoaded('standards') ? $criterio->standards->map(fn($std) => [
-                        'estandar_id' => $std->estandar_id,
-                        'descripcion' => $std->descripcion,
+                    'estandares' => $criterion->relationLoaded('standards') ? $criterion->standards->map(fn($standard) => [
+                        'estandar_id' => $standard->estandar_id,
+                        'descripcion' => $standard->descripcion,
                     ])->toArray() : [],
-                    'evidencias' => $evidencias->map(fn($e) => [
-                        'evidencia_id' => $e->evidencia_id,
-                        'nomenclatura' => $e->nomenclatura,
-                        'descripcion' => $e->descripcion,
+                    'evidencias' => $evidences->map(fn($evidencia) => [
+                        'evidencia_id' => $evidencia->evidencia_id,
+                        'nomenclatura' => $evidencia->nomenclatura,
+                        'descripcion' => $evidencia->descripcion,
                     ])->values()->toArray(),
                 ];
             }

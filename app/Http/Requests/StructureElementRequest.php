@@ -33,7 +33,7 @@ class StructureElementRequest extends FormRequest
      */
     public function rules(): array
     {
-        $elementoId = $this->route('id');
+        $elementId = $this->route('id');
         $isUpdate = $this->isMethod('put') || $this->isMethod('patch');
 
         return [
@@ -43,10 +43,10 @@ class StructureElementRequest extends FormRequest
                     'required',
                     'exists:MODELO_ESTRUCTURA,modelo_estructura_id',
                     function ($attribute, $value, $fail) {
-                        $tipo = DB::table('MODELO_ESTRUCTURA')
+                        $type = DB::table('MODELO_ESTRUCTURA')
                             ->where('modelo_estructura_id', $value)
                             ->value('tipo');
-                        if ($tipo !== 'elemento_flexible') {
+                        if ($type !== 'elemento_flexible') {
                             $fail('El modelo de estructura debe ser de tipo elemento_flexible para crear Elements.');
                         }
                     },
@@ -55,28 +55,28 @@ class StructureElementRequest extends FormRequest
                 'nullable',
                 'exists:ELEMENTO,elemento_id',
                 // Evitar que un elemento sea su propio padre en UPDATE
-                $isUpdate ? Rule::notIn([$elementoId]) : '',
+                $isUpdate ? Rule::notIn([$elementId]) : '',
                 // El padre debe pertenecer al mismo modelo_estructura_id
-                function ($attribute, $value, $fail) use ($isUpdate, $elementoId) {
+                function ($attribute, $value, $fail) use ($isUpdate, $elementId) {
                     if ($value === null) {
                         return; // raíz, sin padre, válido
                     }
 
                     // Obtener el modelo del padre
-                    $modeloPadre = DB::table('ELEMENTO')
+                    $parentModel = DB::table('ELEMENTO')
                         ->where('elemento_id', $value)
                         ->value('modelo_estructura_id');
 
                     // Obtener el modelo del elemento actual
                     if ($isUpdate) {
                         // En update, modelo_estructura_id puede venir en el body o se toma del elemento existente
-                        $modeloActual = $this->input('modelo_estructura_id')
-                            ?? DB::table('ELEMENTO')->where('elemento_id', $elementoId)->value('modelo_estructura_id');
+                        $currentModel = $this->input('modelo_estructura_id')
+                            ?? DB::table('ELEMENTO')->where('elemento_id', $elementId)->value('modelo_estructura_id');
                     } else {
-                        $modeloActual = $this->input('modelo_estructura_id');
+                        $currentModel = $this->input('modelo_estructura_id');
                     }
 
-                    if ($modeloPadre !== $modeloActual) {
+                    if ($parentModel !== $currentModel) {
                         $fail('El elemento padre debe pertenecer al mismo modelo de estructura.');
                     }
                 },

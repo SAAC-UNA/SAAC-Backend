@@ -127,19 +127,19 @@ class ProcessController extends Controller
             ], 422);
         }
 
-        $procesoId   = $process->proceso_id;
-        $tipoProceso = $process->tipo_proceso;
+        $processId   = $process->proceso_id;
+        $processType = $process->tipo_proceso;
 
         $this->service->delete($process);
 
         AuditLogService::log(
             'eliminar',
-            "Se eliminó el proceso ID {$procesoId} (Tipo: {$tipoProceso}).",
+            "Se eliminó el proceso ID {$processId} (Tipo: {$processType}).",
             'Proceso'
         );
 
         return response()->json([
-            'message'          => "Proceso \"{$tipoProceso}\" eliminado exitosamente.",
+            'message'          => "Proceso \"{$processType}\" eliminado exitosamente.",
             'datos_eliminados' => $summary,
         ]);
     }

@@ -29,7 +29,7 @@ class StructureModelController extends Controller
     /**
      * Obtener solo modelos activos
      */
-    public function activos(): JsonResponse
+    public function active(): JsonResponse
     {
         $models = $this->service->getActive();
         return response()->json($models);
@@ -146,7 +146,7 @@ class StructureModelController extends Controller
             ], 404);
         }
 
-        if ($model->esTradicional()) {
+        if ($model->isTraditional()) {
             return response()->json([
                 'message' => 'El modelo tradicional del sistema no puede ser eliminado.',
             ], 422);
@@ -154,9 +154,9 @@ class StructureModelController extends Controller
 
         // Mostrar advertencia de todo lo que se eliminará con el modelo
         $summary      = $this->service->getDeleteSummary($model);
-        $confirmacion = $request->input('confirmacion', '');
+        $confirmation = $request->input('confirmacion', '');
 
-        if ($confirmacion !== $model->nombre) {
+        if ($confirmation !== $model->nombre) {
             return response()->json([
                 'message'          => 'Confirmación incorrecta. Envíe el nombre exacto del modelo en el campo "confirmacion" para confirmar la eliminación.',
                 'modelo_nombre'    => $model->nombre,

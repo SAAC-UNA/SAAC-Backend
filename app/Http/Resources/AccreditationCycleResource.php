@@ -26,11 +26,11 @@ class AccreditationCycleResource extends JsonResource
             'updated_at'            => optional($this->updated_at)->toISOString(),
 
             // Relación con modelo de estructura (cuando está cargada)
-            'modelo_estructura' => $this->whenLoaded('modeloEstructura', fn() => [
-                'modelo_estructura_id' => $this->modeloEstructura?->modelo_estructura_id,
-                'nombre'               => $this->modeloEstructura?->nombre,
-                'tipo'                 => $this->modeloEstructura?->tipo,
-                'version'              => $this->modeloEstructura?->version,
+            'modelo_estructura' => $this->whenLoaded('structureModel', fn() => [
+                'modelo_estructura_id' => $this->structureModel?->modelo_estructura_id,
+                'nombre'               => $this->structureModel?->nombre,
+                'tipo'                 => $this->structureModel?->tipo,
+                'version'              => $this->structureModel?->version,
             ]),
 
             // Relación con carrera sede (cuando está cargada)

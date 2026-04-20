@@ -26,14 +26,14 @@ class StructureModelRequest extends FormRequest
     {
         $isUpdate = $this->isMethod('put') || $this->isMethod('patch');
 
-        $modeloId = $this->route('id');
+        $modelId = $this->route('id');
 
         if ($isUpdate) {
             // tipo  → NO editable: cambiar tradicional⇔elemento_flexible rompe la estructura asociada
             // activo → NO editable aquí: usar PATCH /active
             return [
                 'nombre'      => ['sometimes', 'string', 'max:100', 'regex:/^[A-Za-z\xC0-\xFF0-9 .\-]+$/u',
-                                  Rule::unique('MODELO_ESTRUCTURA', 'nombre')->ignore($modeloId, 'modelo_estructura_id')],
+                                  Rule::unique('MODELO_ESTRUCTURA', 'nombre')->ignore($modelId, 'modelo_estructura_id')],
                 'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
                 'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z\xC0-\xFF0-9.\-]+$/u'],
                 'tipos_jerarquia' => ['nullable', 'array'],

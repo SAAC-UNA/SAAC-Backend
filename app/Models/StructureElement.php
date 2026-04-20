@@ -78,7 +78,7 @@ class StructureElement extends Model
      * Relación: El modelo de estructura al que pertenece este elemento.
      * Necesaria para verificar tipos_asignables (Estrategia 3).
      */
-    public function modeloEstructura()
+    public function structureModel()
     {
         return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
     }
@@ -132,9 +132,9 @@ class StructureElement extends Model
     /**
      * Scope: Hijos de un padre específico
      */
-    public function scopeChildrenOf($query, int $padreId)
+    public function scopeChildrenOf($query, int $parentId)
     {
-        return $query->where('padre_id', $padreId);
+        return $query->where('padre_id', $parentId);
     }
 
     // ===== MÉTODOS DE UTILIDAD =====

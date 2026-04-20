@@ -69,7 +69,7 @@ class EvidenceAssignmentService
         DB::beginTransaction();
         try {
             // Verificar existencia con Eloquent (evita N+1 si se reutiliza)
-            $proceso = Process::with('accreditationCycle.modeloEstructura')->find($procesoId);
+            $proceso = Process::with('accreditationCycle.structureModel')->find($procesoId);
             if (!$proceso) {
                 throw new \Exception('El proceso especificado no existe.');
             }
@@ -82,7 +82,7 @@ class EvidenceAssignmentService
             // MODELO FLEXIBLE (HU-007 / Arquitectura B): el flujo flexible es
             // PROCESO → ELEMENTO → ELEMENTO_ASIGNACION → ARCHIVO(elemento_id).
             // EVIDENCIA_ASIGNACION solo existe en el modelo tradicional.
-            $tipoModelo = $proceso->accreditationCycle?->modeloEstructura?->tipo;
+            $tipoModelo = $proceso->accreditationCycle?->structureModel?->tipo;
             if ($tipoModelo === StructureModel::TIPO_ELEMENTO_FLEXIBLE) {
                 throw new \InvalidArgumentException(
                     'El proceso pertenece a un ciclo con modelo flexible. '

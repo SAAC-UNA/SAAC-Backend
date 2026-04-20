@@ -72,23 +72,23 @@ class ProcessRequest extends FormRequest
             $processId = $this->route('id');
             $currentProcess = $processId ? Process::find($processId) : null;
 
-            $cicloId = $this->input('ciclo_acreditacion_id')
+            $cycleId = $this->input('ciclo_acreditacion_id')
                 ?? $currentProcess?->ciclo_acreditacion_id;
 
-            $tipoProceso = $this->input('tipo_proceso')
+            $processType = $this->input('tipo_proceso')
                 ?? $currentProcess?->tipo_proceso;
 
-            $activo = $this->has('activo')
+            $active = $this->has('activo')
                 ? (bool) $this->input('activo')
                 : ($currentProcess?->activo ?? true);
 
             // Si no quedará activo, no aplica la restricción.
-            if (!$activo || !$cicloId || !$tipoProceso) {
+            if (!$active || !$cycleId || !$processType) {
                 return;
             }
 
-            $conflictQuery = Process::where('ciclo_acreditacion_id', $cicloId)
-                ->where('tipo_proceso', $tipoProceso)
+            $conflictQuery = Process::where('ciclo_acreditacion_id', $cycleId)
+                ->where('tipo_proceso', $processType)
                 ->where('activo', true);
 
             if ($currentProcess) {

@@ -4,33 +4,32 @@ namespace App\Services;
 
 use App\Models\StructureElement;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class StructureElementService
 {
     /**
      * Obtener todos los Elements, opcionalmente filtrados por tipo y/o modelo
      */
-    public function getAll(?string $tipo = null, ?int $modeloEstructuraId = null)
+    public function getAll(?string $type = null, ?int $modelId = null)
     {
-        $cacheKey = "Elements.tipo.{$tipo}.modelo.{$modeloEstructuraId}";
+        $cacheKey = "elements.type.{$type}.model.{$modelId}";
 
-        return Cache::remember($cacheKey, 300, function () use ($tipo, $modeloEstructuraId) {
+        return Cache::remember($cacheKey, 300, function () use ($type, $modelId) {
             $query = StructureElement::orderBy('elemento_id');
 
             // Al consultar por modelo específico (vista de gestión) se devuelven todos los
             // Elements sin importar si están activos o no.
             // Al consultar sin modelo (selectores/lookups) solo se devuelven activos.
-            if ($modeloEstructuraId === null) {
+            if ($modelId === null) {
                 $query->where('activo', true);
             }
 
-            if ($tipo !== null) {
-                $query->where('tipo', $tipo);
+            if ($type !== null) {
+                $query->where('tipo', $type);
             }
 
-            if ($modeloEstructuraId !== null) {
-                $query->where('modelo_estructura_id', $modeloEstructuraId);
+            if ($modelId !== null) {
+                $query->where('modelo_estructura_id', $modelId);
             }
 
             return $query->get();
@@ -38,38 +37,29 @@ class StructureElementService
     }
 
     /**
-     * Buscar por ID, incluyendo sus evidencias si las tiene.
+     * Buscar por ID.
      *
-     * HU-012 (escritura flexible) — Gap 5a:
-     * ANTES: retornaba el ELEMENTO crudo sin relaciones.
-     * DESPUÉS: carga 'evidencias' en eager-load para que GET /Elements/{id}
-     *          muestre los documentos requeridos asociados al nodo.
-     *          En Elements del modelo tradicional la colección llega vacía
-     *          (correcto — sus evidencias pertenecen a CRITERIO, no a ELEMENTO).
+     * NOTA ARQUITECTURA B:
+     * El modelo flexible NO usa la tabla EVIDENCIA.
+     * ELEMENTO apunta directamente a ARCHIVO (tabla ARCHIVO tiene elemento_id).
+     * La tabla EVIDENCIA solo pertenece al modelo tradicional (CRITERIO → EVIDENCIA).
      */
     public function findById(int $id): ?StructureElement
     {
-        return StructureElement::with('evidencias')->find($id);
+        return StructureElement::find($id);
     }
 
     /**
      * Crear nuevo elemento. El orden de listado es por elemento_id (orden de creación).
      *
-     * HU-012 (escritura flexible) — Gap 5b:
-     * ANTES: solo creaba el ELEMENTO sin soporte para evidencias.
-     * DESPUÉS: si el request incluye 'evidencias[]' (campo opcional del modelo flexible),
-     *          todo se ejecuta en una transacción SQL atómica:
-     *            1. INSERT en ELEMENTO
-     *            2. INSERT en EVIDENCIA (una por cada item de evidencias[])
-     *          Si cualquier INSERT falla, rollback completo — no quedan Elements
-     *          huérfanos ni evidencias sin elemento.
-     *
-     * La transacción no cambia el comportamiento para el modelo tradicional
-     * (create sigue funcionando igual cuando 'evidencias' no viene).
+     * NOTA ARQUITECTURA B:
+     * El modelo flexible NO crea evidencias asociadas al elemento.
+     * Si se necesitan documentos requeridos, se usan asignaciones directas a ARCHIVO
+     * con elemento_id (no evidencia_id).
      */
     public function create(array $data): StructureElement
     {
-        $elemento = StructureElement::create([
+        $element = StructureElement::create([
             'modelo_estructura_id' => $data['modelo_estructura_id'],
             'padre_id'             => $data['padre_id'] ?? null,
             'tipo'                 => $data['tipo'],
@@ -82,38 +72,38 @@ class StructureElementService
 
         $this->clearCache($data['tipo'] ?? null, $data['modelo_estructura_id'] ?? null);
 
-        return $elemento;
+        return $element;
     }
 
     /**
      * Actualizar elemento existente
      */
-    public function update(StructureElement $elemento, array $data): StructureElement
+    public function update(StructureElement $element, array $data): StructureElement
     {
-        $elemento->update([
-            'padre_id' => $data['padre_id'] ?? $elemento->padre_id,
-            'tipo' => $data['tipo'] ?? $elemento->tipo,
-            'nombre' => array_key_exists('nombre', $data) ? $data['nombre'] : $elemento->nombre,
-            'categoria' => $data['categoria'] ?? $elemento->categoria,
-            'nomenclatura' => $data['nomenclatura'] ?? $elemento->nomenclatura,
-            'descripcion' => $data['descripcion'] ?? $elemento->descripcion,
-            'activo' => $data['activo'] ?? $elemento->activo,
+        $element->update([
+            'padre_id' => $data['padre_id'] ?? $element->padre_id,
+            'tipo' => $data['tipo'] ?? $element->tipo,
+            'nombre' => array_key_exists('nombre', $data) ? $data['nombre'] : $element->nombre,
+            'categoria' => $data['categoria'] ?? $element->categoria,
+            'nomenclatura' => $data['nomenclatura'] ?? $element->nomenclatura,
+            'descripcion' => $data['descripcion'] ?? $element->descripcion,
+            'activo' => $data['activo'] ?? $element->activo,
         ]);
 
-        $this->clearCache($elemento->tipo, $elemento->modelo_estructura_id);
+        $this->clearCache($element->tipo, $element->modelo_estructura_id);
 
-        return $elemento->fresh();
+        return $element->fresh();
     }
 
     /**
      * Eliminar elemento
      */
-    public function delete(StructureElement $elemento): void
+    public function delete(StructureElement $element): void
     {
-        $tipo = $elemento->tipo;
-        $modeloId = $elemento->modelo_estructura_id;
-        $elemento->delete();
-        $this->clearCache($tipo, $modeloId);
+        $type = $element->tipo;
+        $modelId = $element->modelo_estructura_id;
+        $element->delete();
+        $this->clearCache($type, $modelId);
     }
 
     /**
@@ -122,13 +112,13 @@ class StructureElementService
      * - Al ACTIVAR: activa en cascada todos los hijos recursivamente
      * - Al DESACTIVAR: desactiva en cascada todos los hijos recursivamente
      */
-    public function setActiveWithCascade(StructureElement $elemento, bool $active): void
+    public function setActiveWithCascade(StructureElement $element, bool $active): void
     {
-        $elemento->activo = $active;
-        $elemento->saveQuietly();
-        $this->clearCache($elemento->tipo, $elemento->modelo_estructura_id);
+        $element->activo = $active;
+        $element->saveQuietly();
+        $this->clearCache($element->tipo, $element->modelo_estructura_id);
 
-        foreach ($elemento->children as $child) {
+        foreach ($element->children as $child) {
             $this->setActiveWithCascade($child, $active);
         }
     }
@@ -139,12 +129,12 @@ class StructureElementService
      * El frontend maneja jerarquías como lista plana con parent_id
      * Descomentar si se implementa visualización tipo árbol en el futuro
      */
-    // public function getTree(?int $rootId = null, ?int $modeloEstructuraId = null)
+    // public function getTree(?int $rootId = null, ?int $structureModelId = null)
     // {
-    //     $cacheKey = "jerarquia.tree.{$rootId}.modelo.{$modeloEstructuraId}";
+    //     $cacheKey = "elements.tree.{$rootId}.model.{$structureModelId}";
     //
-    //     return Cache::remember($cacheKey, 300, function () use ($rootId, $modeloEstructuraId) {
-    //         $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $modeloEstructuraId]);
+    //     return Cache::remember($cacheKey, 300, function () use ($rootId, $structureModelId) {
+    //         $rows = DB::select('CALL SP_OBTENER_ARBOL_JERARQUIA(?, ?)', [$rootId, $structureModelId]);
     //         return array_map(fn($r) => (array) $r, $rows);
     //     });
     // }
@@ -152,22 +142,22 @@ class StructureElementService
     /**
      * Limpiar caché
      */
-    private function clearCache(?string $tipo = null, ?int $modeloEstructuraId = null): void
+    private function clearCache(?string $type = null, ?int $modelId = null): void
     {
-        Cache::forget('Elements.all');
-        Cache::forget('elemento.tree.all');
+        Cache::forget('elements.all');
+        Cache::forget('elements.tree.all');
         // Llave sin modelo (tipo solamente)
-        Cache::forget("Elements.tipo.{$tipo}.modelo.");
+        Cache::forget("elements.type.{$type}.model.");
 
-        if ($tipo) {
-            Cache::forget("Elements.tipo.{$tipo}");
+        if ($type) {
+            Cache::forget("elements.type.{$type}");
         }
 
         // Llave con modelo específico
-        if ($modeloEstructuraId) {
-            Cache::forget("Elements.tipo..modelo.{$modeloEstructuraId}");
-            if ($tipo) {
-                Cache::forget("Elements.tipo.{$tipo}.modelo.{$modeloEstructuraId}");
+        if ($modelId) {
+            Cache::forget("elements.type..model.{$modelId}");
+            if ($type) {
+                Cache::forget("elements.type.{$type}.model.{$modelId}");
             }
         }
     }
