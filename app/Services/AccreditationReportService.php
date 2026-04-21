@@ -7,8 +7,11 @@ use App\Models\AccreditationReport;
 use App\Models\File;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Servicio de Informes de Acreditación
@@ -64,7 +67,7 @@ class AccreditationReportService
         User $publisher
     ): AccreditationReport {
         return DB::transaction(function () use ($cycle, $data, $publisher) {
-            $file = File::findOrFail($data['archivo_id']);
+            $file = $this->storeReportFile($data['archivo'], $publisher);
             // Un ciclo solo puede tener un informe (publicado o despublicado).
             // Si ya existe, se debe despublicar primero o corregir los datos antes
             // de volver a publicar mediante republishReport().
@@ -212,6 +215,81 @@ class AccreditationReportService
         });
     }
 
+    /**
+     * Editar los datos de un informe de acreditación (publicado o despublicado).
+     *
+     * Permite corregir campos como numero_resolucion, fechas o archivo PDF.
+     * Si se cambia el archivo, se revoca el token del archivo anterior y se
+     * genera uno nuevo para el archivo nuevo (si el informe está publicado).
+     *
+     * @param  AccreditationReport $report Informe a editar.
+     * @param  array               $data   Campos a actualizar (todos opcionales).
+     * @return AccreditationReport         Informe actualizado con relaciones.
+     */
+    public function updateReport(AccreditationReport $report, array $data, User $editor): AccreditationReport
+    {
+        return DB::transaction(function () use ($report, $data, $editor) {
+            $archivoChanged = isset($data['archivo']); // UploadedFile presente
+
+            if ($archivoChanged) {
+                // Revocar el token público del archivo anterior
+                if ($report->file) {
+                    $this->fileService->revokePublicAccess($report->file);
+                }
+
+                // Almacenar el nuevo archivo y registrarlo en ARCHIVO
+                $newFile = $this->storeReportFile($data['archivo'], $editor);
+                $data['archivo_id'] = $newFile->archivo_id;
+
+                // Si el informe está publicado, hacer público el nuevo archivo
+                if ($report->isPublished()) {
+                    $vigenciaHasta = new \DateTime($data['vigencia_hasta'] ?? $report->vigencia_hasta->format('Y-m-d') . ' 23:59:59');
+                    $this->fileService->makePublic($newFile, $vigenciaHasta);
+                }
+            }
+
+            // Eliminar 'archivo' del array antes de actualizar el modelo
+            unset($data['archivo']);
+
+            $report->update(array_filter($data, fn($v) => $v !== null || array_key_exists('observaciones', $data)));
+
+            Log::info('Informe de acreditación editado', [
+                'informe_id'        => $report->informe_acreditacion_id,
+                'campos_modificados' => array_keys($data),
+            ]);
+
+            return $report->fresh(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy']);
+        });
+    }
+
+    /**
+     * Eliminar físicamente un informe de acreditación.
+     *
+     * Revoca el acceso público al PDF antes de eliminar el registro.
+     * Solo debe usarse para corregir errores de publicación (Superusuario).
+     * Libera la constraint UNIQUE del ciclo, permitiendo volver a publicar.
+     *
+     * @param  AccreditationReport $report Informe a eliminar.
+     * @return void
+     */
+    public function deleteReport(AccreditationReport $report): void
+    {
+        DB::transaction(function () use ($report) {
+            // Revocar token público del PDF si existe
+            if ($report->file) {
+                $this->fileService->revokePublicAccess($report->file);
+            }
+
+            Log::info('Informe de acreditación eliminado', [
+                'informe_id'        => $report->informe_acreditacion_id,
+                'numero_resolucion' => $report->numero_resolucion,
+                'ciclo_id'          => $report->ciclo_acreditacion_id,
+            ]);
+
+            $report->delete();
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Consultas
     // -----------------------------------------------------------------------
@@ -236,14 +314,14 @@ class AccreditationReportService
         if (!empty($filters['carrera_id'])) {
             $query->whereHas(
                 'accreditationCycle.careerCampus',
-                fn($q) => $q->where('carrera_id', $filters['carrera_id'])
+                fn($consultaCarrera) => $consultaCarrera->where('carrera_id', $filters['carrera_id'])
             );
         }
 
         if (!empty($filters['sede_id'])) {
             $query->whereHas(
                 'accreditationCycle.careerCampus',
-                fn($q) => $q->where('sede_id', $filters['sede_id'])
+                fn($consultaSede) => $consultaSede->where('sede_id', $filters['sede_id'])
             );
         }
 
@@ -274,5 +352,45 @@ class AccreditationReportService
     {
         return AccreditationReport::with(['accreditationCycle', 'file', 'publishedBy'])
             ->find($id);
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers privados
+    // -----------------------------------------------------------------------
+
+    /**
+     * Almacena el PDF de un informe de acreditación en el disco configurado
+     * y crea el registro correspondiente en la tabla ARCHIVO.
+     *
+     * A diferencia de las evidencias, un informe no pertenece a ningún elemento
+     * ni proceso de autoevaluación, por lo que esos campos se almacenan como null.
+     *
+     * @param  UploadedFile $uploadedFile  Archivo subido desde la petición HTTP.
+     * @param  User         $uploader      Usuario que realiza la subida.
+     * @return File                        Registro ARCHIVO recién creado.
+     */
+    private function storeReportFile(UploadedFile $uploadedFile, User $uploader): File
+    {
+        $disk      = config('saac.storage_disk', 'simulated_nas');
+        $extension = $uploadedFile->getClientOriginalExtension();
+        $uuid      = (string) Str::uuid();
+        $filename  = "{$uuid}.{$extension}";
+
+        $path = Storage::disk($disk)->putFileAs('', $uploadedFile, $filename);
+
+        return File::create([
+            'evidencia_id'    => null,
+            'elemento_id'     => null,
+            'usuario_id'      => $uploader->usuario_id,
+            'proceso_id'      => null,
+            'fecha_subida'    => now(),
+            'tipo'            => 'archivo',
+            'path'            => $path,
+            'url'             => null,
+            'nombre_original' => $uploadedFile->getClientOriginalName(),
+            'tamanio'         => $uploadedFile->getSize(),
+            'tipo_mime'       => $uploadedFile->getMimeType(),
+            'is_publico'      => false,
+        ]);
     }
 }

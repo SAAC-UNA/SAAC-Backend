@@ -476,6 +476,12 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
     Route::post('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'publish'])
         ->middleware('permission:informes_acreditacion.publish');
 
+    Route::put('informes-acreditacion/{report}', [AccreditationReportController::class, 'update'])
+        ->middleware('permission:informes_acreditacion.publish');
+
+    Route::delete('informes-acreditacion/{report}', [AccreditationReportController::class, 'destroy'])
+        ->middleware('role:Superusuario|Administrador');
+
     Route::patch('informes-acreditacion/{report}/despublicar', [AccreditationReportController::class, 'unpublish'])
         ->middleware('permission:informes_acreditacion.unpublish');
 });

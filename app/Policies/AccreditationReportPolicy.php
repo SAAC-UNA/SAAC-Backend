@@ -46,6 +46,15 @@ class AccreditationReportPolicy
     }
 
     /**
+     * Editar un informe (publicado o despublicado).
+     * Superusuario, Administrador y Encargado de Acreditación (permiso informes_acreditacion.publish).
+     */
+    public function update(User $user, AccreditationReport $report): bool
+    {
+        return $user->hasRole('Superusuario') || $user->can('informes_acreditacion.publish');
+    }
+
+    /**
      * Despublicar un informe ya publicado.
      * Solo usuarios con permiso informes_acreditacion.unpublish.
      * La validación de estado (ya despublicado) es responsabilidad del servicio.
@@ -53,6 +62,15 @@ class AccreditationReportPolicy
     public function unpublish(User $user, AccreditationReport $report): bool
     {
         return $user->can('informes_acreditacion.unpublish');
+    }
+
+    /**
+     * Eliminar un informe físicamente del sistema.
+     * Superusuario y Administrador pueden eliminar; Encargado solo despublica.
+     */
+    public function delete(User $user, AccreditationReport $report): bool
+    {
+        return $user->hasRole('Superusuario') || $user->hasRole('Administrador');
     }
 
     /**

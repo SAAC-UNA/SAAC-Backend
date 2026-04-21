@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListAccreditationReportsRequest;
 use App\Http\Requests\PublishAccreditationReportRequest;
 use App\Http\Requests\UnpublishAccreditationReportRequest;
+use App\Http\Requests\UpdateAccreditationReportRequest;
 use App\Http\Resources\AccreditationReportResource;
 use App\Models\AccreditationCycle;
 use App\Models\AccreditationReport;
@@ -89,9 +90,11 @@ class AccreditationReportController extends Controller
         $this->authorize('publish', [AccreditationReport::class, $cycle]);
 
         try {
+            $data = $request->validated();
+            $data['archivo'] = $request->file('archivo');
             $report = $this->service->publishReport(
                 $cycle,
-                $request->validated(),
+                $data,
                 $request->user()
             );
         } catch (\InvalidArgumentException $exception) {
@@ -109,6 +112,53 @@ class AccreditationReportController extends Controller
         return AccreditationReportResource::make(
             $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
         )->response()->setStatusCode(201);
+    }
+
+    /**
+     * PUT /api/informes-acreditacion/{report}
+     * Edita los datos de un informe (publicado o despublicado).
+     * Permite corregir número de resolución, fechas, archivo o reeemplazar el PDF.
+     */
+    public function update(UpdateAccreditationReportRequest $request, AccreditationReport $report)
+    {
+        $this->authorize('update', $report);
+
+        $data = $request->validated();
+        if ($request->hasFile('archivo')) {
+            $data['archivo'] = $request->file('archivo');
+        }
+        $updated = $this->service->updateReport($report, $data, $request->user());
+
+        AuditLogService::log(
+            'editar',
+            "Se editó el informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}).",
+            'Informe Acreditación'
+        );
+
+        return new AccreditationReportResource($updated);
+    }
+
+    /**
+     * DELETE /api/informes-acreditacion/{report}
+     * Elimina físicamente el informe. Solo Superusuario.
+     * Libera la restricción UNIQUE del ciclo para poder volver a publicar.
+     */
+    public function destroy(AccreditationReport $report)
+    {
+        $this->authorize('delete', $report);
+
+        $cicloNombre      = $report->accreditationCycle->nombre;
+        $numeroResolucion = $report->numero_resolucion;
+
+        $this->service->deleteReport($report);
+
+        AuditLogService::log(
+            'eliminar',
+            "Se eliminó el informe de acreditación del ciclo \"{$cicloNombre}\" (resolución: {$numeroResolucion}).",
+            'Informe Acreditación'
+        );
+
+        return response()->json(['message' => 'Informe eliminado correctamente.']);
     }
 
     /**
