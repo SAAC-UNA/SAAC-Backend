@@ -31,12 +31,12 @@ class PublishAccreditationReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Archivo PDF de la resolución oficial de SINAES (hasta 50 MB)
+            // Archivo PDF de la resolución SINAES (se sube junto con el formulario)
             'archivo' => [
                 'required',
                 'file',
                 'mimes:pdf',
-                'max:51200',
+                'max:20480', // 20 MB
             ],
 
             // Número de resolución oficial de SINAES (único en todo el sistema)
@@ -45,14 +45,6 @@ class PublishAccreditationReportRequest extends FormRequest
                 'string',
                 'max:100',
                 Rule::unique('INFORME_ACREDITACION', 'numero_resolucion'),
-            ],
-
-            // Fecha en que SINAES emitió la resolución
-            'fecha_resolucion' => [
-                'required',
-                'date',
-                'date_format:Y-m-d',
-                'before_or_equal:today',
             ],
 
             // Inicio de la vigencia de la acreditación
@@ -75,6 +67,12 @@ class PublishAccreditationReportRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:500',
+            ],
+
+            // Indica si la resolución acredita o no la carrera
+            'esta_acreditada' => [
+                'required',
+                'boolean',
             ],
         ];
     }
@@ -160,30 +158,25 @@ class PublishAccreditationReportRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'archivo.required' => 'El archivo PDF de la resolución es obligatorio.',
-            'archivo.file'     => 'El campo archivo debe ser un archivo válido.',
-            'archivo.mimes'    => 'El informe de acreditación debe ser un archivo PDF.',
-            'archivo.max'      => 'El archivo PDF no puede superar los 50 MB.',
+            'archivo.required'             => 'El archivo PDF de la resolución es obligatorio.',
+            'archivo.file'                 => 'El campo archivo debe ser un archivo válido.',
+            'archivo.mimes'                => 'El informe de acreditación debe ser un archivo PDF.',
+            'archivo.max'                  => 'El archivo no puede superar los 20 MB',
 
-            'numero_resolucion.required'       => 'El número de resolución es obligatorio.',
-            'numero_resolucion.max'            => 'El número de resolución no puede superar los 100 caracteres.',
-            'numero_resolucion.unique'         => 'Este número de resolución ya está registrado en otro informe.',
+            'numero_resolucion.required'   => 'El número de resolución es obligatorio.',
+            'numero_resolucion.max'        => 'El número de resolución no puede superar los 100 caracteres.',
+            'numero_resolucion.unique'     => 'Este número de resolución ya está registrado en otro informe.',
 
-            'fecha_resolucion.required'        => 'La fecha de resolución es obligatoria.',
-            'fecha_resolucion.date'            => 'La fecha de resolución no tiene un formato válido.',
-            'fecha_resolucion.date_format'     => 'La fecha de resolución debe tener el formato AAAA-MM-DD.',
-            'fecha_resolucion.before_or_equal' => 'La fecha de resolución no puede ser una fecha futura.',
+            'vigencia_desde.required'     => 'La fecha de inicio de vigencia es obligatoria.',
+            'vigencia_desde.date'         => 'La fecha de inicio de vigencia no tiene un formato válido.',
+            'vigencia_desde.date_format'  => 'La fecha de inicio de vigencia debe tener el formato AAAA-MM-DD.',
 
-            'vigencia_desde.required'          => 'La fecha de inicio de vigencia es obligatoria.',
-            'vigencia_desde.date'              => 'La fecha de inicio de vigencia no tiene un formato válido.',
-            'vigencia_desde.date_format'       => 'La fecha de inicio de vigencia debe tener el formato AAAA-MM-DD.',
+            'vigencia_hasta.required'     => 'La fecha de fin de vigencia es obligatoria.',
+            'vigencia_hasta.date'         => 'La fecha de fin de vigencia no tiene un formato válido.',
+            'vigencia_hasta.date_format'  => 'La fecha de fin de vigencia debe tener el formato AAAA-MM-DD.',
+            'vigencia_hasta.after'        => 'La fecha de fin de vigencia debe ser posterior a la fecha de inicio.',
 
-            'vigencia_hasta.required'          => 'La fecha de fin de vigencia es obligatoria.',
-            'vigencia_hasta.date'              => 'La fecha de fin de vigencia no tiene un formato válido.',
-            'vigencia_hasta.date_format'       => 'La fecha de fin de vigencia debe tener el formato AAAA-MM-DD.',
-            'vigencia_hasta.after'             => 'La fecha de fin de vigencia debe ser posterior a la fecha de inicio.',
-
-            'observaciones.max'                => 'Las observaciones no pueden superar los 500 caracteres.',
+            'observaciones.max'           => 'Las observaciones no pueden superar los 500 caracteres',
         ];
     }
 }
