@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Request para listar informes de acreditación publicados (endpoint público).
  *
- * HU-028: parámetros de filtrado y paginación del índice público.
+ * HU-027: parámetros de filtrado y paginación del índice público.
  */
 class ListAccreditationReportsRequest extends FormRequest
 {

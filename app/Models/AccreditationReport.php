@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Modelo del informe de acreditación aprobado.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  * Representa la resolución oficial de SINAES que certifica
  * que una carrera está acreditada dentro de un ciclo dado.
  *

@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * Resource para serializar el informe de acreditación.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  */
 class AccreditationReportResource extends JsonResource
 {

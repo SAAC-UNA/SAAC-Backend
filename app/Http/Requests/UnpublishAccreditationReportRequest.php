@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Request para despublicar un informe de acreditación.
  *
- * HU-028: Solo se permite si el informe está actualmente publicado.
+ * HU-027: Solo se permite si el informe está actualmente publicado.
  * La autorización de rol se delega a AccreditationReportPolicy::unpublish().
  *
  * El único campo del body es el motivo (opcional).

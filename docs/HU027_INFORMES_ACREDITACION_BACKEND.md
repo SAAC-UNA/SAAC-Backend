@@ -1,4 +1,4 @@
-# HU-028 — Publicación de Informe de Acreditación (Backend)
+# HU-027 — Publicación de Informe de Acreditación (Backend)
 
 ## Endpoints
 
@@ -118,7 +118,7 @@ Base URL: `http://localhost:8000/api`
 | `app/Policies/AccreditationReportPolicy.php` | Creado | Autorización (view / publish / unpublish / download) |
 | `app/Services/AccreditationReportService.php` | Creado | Lógica de negocio (publish / unpublish / queries) |
 | `config/permissions.php` | Modificado | Módulo `informes_acreditacion` con 4 permisos |
-| `routes/api.php` | Modificado | 4 rutas HU-028 registradas |
+| `routes/api.php` | Modificado | 4 rutas HU-027 registradas |
 
 ---
 
@@ -156,9 +156,9 @@ Si el log estuviera dentro del try, cualquier excepción del service interrumpir
 
 El campo `detalle` del log se muestra tal cual en el modal de bitácora del frontend (`AuditLogDetailModal.tsx`). El `numero_resolucion` (ej. `R-2026-045`) es un identificador **legible para humanos** que los coordinadores reconocen directamente. Usar el ID de BD (`uuid` o entero) sería correcto técnicamente pero oscuro para el usuario administrador que revisa la bitácora.
 
-El patrón del proyecto sí incluye IDs en el detalle (ej. `"Se eliminó el ciclo... (ID: {$id})"`), lo cual es válido para trazabilidad interna — la bitácora solo es accesible para usuarios con `bitacora.view`. Para HU-028 se optó por resolución porque aporta más contexto sin sacrificar trazabilidad.
+El patrón del proyecto sí incluye IDs en el detalle (ej. `"Se eliminó el ciclo... (ID: {$id})"`), lo cual es válido para trazabilidad interna — la bitácora solo es accesible para usuarios con `bitacora.view`. Para HU-027 se optó por resolución porque aporta más contexto sin sacrificar trazabilidad.
 
-### Tipos de acción en BD (post HU-028)
+### Tipos de acción en BD (post HU-027)
 
 | Descripción | Badge frontend | Color |
 |-------------|---------------|-------|
@@ -178,8 +178,8 @@ El patrón del proyecto sí incluye IDs en el detalle (ej. `"Se eliminó el cicl
 | `notificar` | Notificar | Info |
 | `notificar_fallido` | Notif. fallida | Rose |
 | `retroalimentar` | Retroalimentar | Morado |
-| `publicar` *(HU-028)* | Publicar | Verde |
-| `despublicar` *(HU-028)* | Despublicar | Warning |
+| `publicar` *(HU-027)* | Publicar | Verde |
+| `despublicar` *(HU-027)* | Despublicar | Warning |
 
 ---
 
@@ -273,7 +273,7 @@ Múltiples controladores devolvían `$e->getMessage()` / `$qe->getMessage()` dir
 
 Si un tipo de acción **no está en el mapa**, el componente tiene un fallback: muestra el string crudo de la BD con el color por defecto (`bg-slate-light text-slate`). Funciona, pero todos los tipos no mapeados se ven idénticos sin distinción visual.
 
-**El problema concreto:** al agregar HU-028, los tipos `publicar` y `despublicar` se crearían en la BD pero el frontend no los conocía — ambos aparecerían con badge gris genérico. Lo mismo ocurría con `notificar`, `notificar_fallido` y `retroalimentar`, que ya existían en BD (agregados en HU-013/HU-018) pero nunca se mapearon en el frontend.
+**El problema concreto:** al agregar HU-027, los tipos `publicar` y `despublicar` se crearían en la BD pero el frontend no los conocía — ambos aparecerían con badge gris genérico. Lo mismo ocurría con `notificar`, `notificar_fallido` y `retroalimentar`, que ya existían en BD (agregados en HU-013/HU-018) pero nunca se mapearon en el frontend.
 
 **La solución:** agregar todos los tipos faltantes al mapa con colores semánticamente coherentes:
 - `publicar` → verde (acción de activación/disponibilidad)
@@ -336,7 +336,7 @@ CREATE DATABASE IF NOT EXISTS saac_testing CHARACTER SET utf8mb4 COLLATE utf8mb4
 
 ### `src/Constants/StatusBadges.ts`
 
-Los cambios descritos en la sección "Cambios en el Frontend" están preparados localmente en la rama `development` pero **aún no se han commiteado**. El equipo frontend aún no ha iniciado la integración de HU-028; los badges se commitearán cuando el frontend arranque ese trabajo formalmente.
+Los cambios descritos en la sección "Cambios en el Frontend" están preparados localmente en la rama `development` pero **aún no se han commiteado**. El equipo frontend aún no ha iniciado la integración de HU-027; los badges se commitearán cuando el frontend arranque ese trabajo formalmente.
 
 | Tipo de acción | Label | Color | Estado |
 |----------------|-------|-------|--------|

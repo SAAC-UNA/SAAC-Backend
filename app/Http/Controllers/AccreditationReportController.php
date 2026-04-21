@@ -15,7 +15,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 /**
  * Controlador de Informes de Acreditación.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  *
  * Rutas:
  *   GET    /api/informes-acreditacion              → index()         (público)
@@ -65,7 +65,7 @@ class AccreditationReportController extends Controller
         }
 
         // Solo requiere autorización si el informe no está publicado
-        // Un informe publicado es de acceso libre (HU-028)
+        // Un informe publicado es de acceso libre (HU-027)
         if (!$report->isPublished()) {
             $this->authorize('view', $report);
         }

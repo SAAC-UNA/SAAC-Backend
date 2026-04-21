@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Agrega los tipos de acción 'publicar' y 'despublicar' al catálogo TIPO_ACCION.
- * Requeridos por HU-028 para registrar publicación/despublicación de informes de acreditación.
+ * Requeridos por HU-027 para registrar publicación/despublicación de informes de acreditación.
  */
 return new class extends Migration
 {

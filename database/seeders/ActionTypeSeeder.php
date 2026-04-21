@@ -45,7 +45,7 @@ class ActionTypeSeeder extends Seeder
             // Se usa cuando un Encargado de Acreditación observa o valida una evidencia
             ['descripcion' => 'retroalimentar'],
 
-            // Acciones de informes de acreditación (HU-028)
+            // Acciones de informes de acreditación (HU-027)
             ['descripcion' => 'publicar'],
             ['descripcion' => 'despublicar'],
         ];

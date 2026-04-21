@@ -9,7 +9,7 @@ use App\Models\User;
 /**
  * Policy para autorización de Informes de Acreditación.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  */
 class AccreditationReportPolicy
 {

@@ -12,7 +12,7 @@ use Tests\TestCase;
 /**
  * Tests unitarios para AccreditationReport.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  *
  * Verifica:
  *  - Creación y persistencia del modelo.

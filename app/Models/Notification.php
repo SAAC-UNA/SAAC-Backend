@@ -43,7 +43,7 @@ class Notification extends Model
     public const TIPO_RESPUESTA_AMPLIACION = 'respuesta_ampliacion';
     public const TIPO_COMENTARIO_NUEVO = 'comentario_nuevo';
     public const TIPO_ACTUALIZACION_SISTEMA = 'actualizacion_sistema';
-    // Acciones de informes de acreditación (HU-028)
+    // Acciones de informes de acreditación (HU-027)
     public const TIPO_PUBLICACION_INFORME    = 'publicacion_informe';
     public const TIPO_DESPUBLICACION_INFORME = 'despublicacion_informe';
 

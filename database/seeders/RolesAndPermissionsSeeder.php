@@ -69,7 +69,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Asignar permisos al rol "Administrador"
         $administrador->givePermissionTo([
-            // Informes de Acreditación (HU-028)
+            // Informes de Acreditación (HU-027)
             'informes_acreditacion.view',
             'informes_acreditacion.publish',
             'informes_acreditacion.download',
@@ -77,7 +77,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Asignar permisos al rol "Profesor"
         $profesor->givePermissionTo([
-            // Informes de Acreditación (HU-028): solo lectura y descarga
+            // Informes de Acreditación (HU-027): solo lectura y descarga
             'informes_acreditacion.view',
             'informes_acreditacion.download',
         ]);
@@ -88,7 +88,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'solicitudes_ampliacion.create',
             'solicitudes_ampliacion.approve',
             'solicitudes_ampliacion.reject',
-            // Informes de Acreditación (HU-028)
+            // Informes de Acreditación (HU-027)
             'informes_acreditacion.view',
             'informes_acreditacion.publish',
             'informes_acreditacion.download',

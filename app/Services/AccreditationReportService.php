@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Servicio de Informes de Acreditación
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  *
  * Responsabilidades:
  * - Publicar la resolución oficial de SINAES en un ciclo de acreditación.
@@ -220,7 +220,7 @@ class AccreditationReportService
      * Listar los informes publicados actualmente (acceso público sin autenticación).
      *
      * Usado por el endpoint público /api/accreditation-reports
-     * que no requiere Sanctum token (HU-028 acceso libre).
+     * que no requiere Sanctum token (HU-027 acceso libre).
      *
      * @param  array $filters  Claves opcionales: carrera_id, sede_id, per_page.
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator

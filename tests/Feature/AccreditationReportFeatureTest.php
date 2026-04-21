@@ -14,7 +14,7 @@ use Tests\TestCase;
 /**
  * Tests de integración para los endpoints de Informes de Acreditación.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  *
  * Endpoints cubiertos:
  *   GET  /api/informes-acreditacion                              → index()

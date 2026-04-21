@@ -73,7 +73,7 @@ Los mensajes deben responder a: *"¿Qué acción se realizó sobre qué recurso?
 
 ## Nota
 
-Los logs del **AccreditationReportController (HU-028)** fueron escritos directamente con el patrón correcto — no incluyen IDs:
+Los logs del **AccreditationReportController (HU-027)** fueron escritos directamente con el patrón correcto — no incluyen IDs:
 ```php
 "Se publicó el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion})."
 "Se despublicó el informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion})."

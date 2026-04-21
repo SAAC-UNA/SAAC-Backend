@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Crea la tabla INFORME_ACREDITACION.
      *
-     * HU-028: Publicación de informe de acreditación aprobado.
+     * HU-027: Publicación de informe de acreditación aprobado.
      * Almacena la resolución oficial de SINAES que certifica
      * la acreditación de una carrera en un ciclo dado.
      */

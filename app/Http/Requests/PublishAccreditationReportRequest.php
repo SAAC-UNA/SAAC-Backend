@@ -12,7 +12,7 @@ use App\Models\File;
 /**
  * Request para publicar el informe de acreditación de un ciclo.
  *
- * HU-028: Publicación de informe de acreditación aprobado.
+ * HU-027: Publicación de informe de acreditación aprobado.
  *
  * Valida que:
  * - El ciclo exista y esté en estado completado (proceso de evaluación cerrado por el Administrador).
