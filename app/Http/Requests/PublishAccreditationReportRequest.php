@@ -7,7 +7,6 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use App\Models\AccreditationCycle;
-use App\Models\File;
 
 /**
  * Request para publicar el informe de acreditación de un ciclo.
@@ -32,11 +31,12 @@ class PublishAccreditationReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // ID del archivo PDF ya subido al sistema (debe existir en ARCHIVO)
-            'archivo_id' => [
+            // Archivo PDF de la resolución SINAES (se sube junto con el formulario)
+            'archivo' => [
                 'required',
-                'integer',
-                Rule::exists('ARCHIVO', 'archivo_id'),
+                'file',
+                'mimes:pdf',
+                'max:20480', // 20 MB
             ],
 
             // Número de resolución oficial de SINAES (único en todo el sistema)
@@ -86,9 +86,7 @@ class PublishAccreditationReportRequest extends FormRequest
         $validator->after(function (Validator $v) {
             $this->validateCycleIsCompleted($v);
             $this->validateCycleHasNoReport($v);
-            $this->validateFileIsPdf($v);
             $this->validateVigenciaCoherence($v);
-            $this->validateFilebelongsToCycle($v);
         });
     }
 
@@ -136,41 +134,6 @@ class PublishAccreditationReportRequest extends FormRequest
     }
 
     /**
-     * El archivo adjunto debe ser un PDF.
-     * Se valida tanto el MIME type como la extensión del nombre original.
-     * El sistema acepta otros formatos para evidencias, pero la resolución
-     * oficial de SINAES solo se acepta en PDF.
-     */
-    private function validateFileIsPdf(Validator $v): void
-    {
-        $archivoId = $this->input('archivo_id');
-
-        if (!$archivoId) {
-            return; // La regla 'required' ya lo captura
-        }
-
-        $file = File::find($archivoId);
-
-        if (!$file) {
-            return; // La regla 'exists' ya lo captura
-        }
-
-        // Verificar MIME type
-        $mimeInvalido = $file->tipo_mime !== 'application/pdf';
-
-        // Verificar extensión del nombre original (defensa en profundidad)
-        $extension = strtolower(pathinfo($file->nombre_original ?? '', PATHINFO_EXTENSION));
-        $extensionInvalida = $extension !== 'pdf';
-
-        if ($mimeInvalido || $extensionInvalida) {
-            $v->errors()->add(
-                'archivo_id',
-                'El informe de acreditación debe ser un archivo PDF.'
-            );
-        }
-    }
-
-    /**
      * La vigencia_desde no puede ser anterior a la fecha_resolucion.
      * SINAES no puede otorgar vigencia retroactiva previa a la resolución.
      */
@@ -191,61 +154,29 @@ class PublishAccreditationReportRequest extends FormRequest
         }
     }
 
-    /**
-     * El archivo debe pertenecer al mismo ciclo de acreditación.
-     * Previene que un usuario malicioso referencie un archivo de otra carrera.
-     * La cadena de verificación: ARCHIVO → proceso_id → PROCESO → ciclo_acreditacion_id.
-     */
-    private function validateFilebelongsToCycle(Validator $v): void
-    {
-        $archivoId = $this->input('archivo_id');
-        $cycle     = $this->route('cycle');
-
-        if (!$archivoId || !$cycle instanceof AccreditationCycle) {
-            return;
-        }
-
-        $file = File::with('process')->find($archivoId);
-
-        if (!$file || !$file->proceso_id || !$file->process) {
-            return; // Archivo sin proceso accesible (caso borde): se permite, se delega a la Policy
-        }
-
-        if ((int) $file->process->ciclo_acreditacion_id !== (int) $cycle->ciclo_acreditacion_id) {
-            $v->errors()->add(
-                'archivo_id',
-                'El archivo no pertenece a este ciclo de acreditación.'
-            );
-        }
-    }
-
     // Mensajes de error en español
     public function messages(): array
     {
         return [
-            'archivo_id.required'              => 'El archivo PDF de la resolución es obligatorio.',
-            'archivo_id.integer'               => 'El identificador del archivo no es válido.',
-            'archivo_id.exists'                => 'El archivo indicado no existe en el sistema.',
+            'archivo.required'             => 'El archivo PDF de la resolución es obligatorio.',
+            'archivo.file'                 => 'El campo archivo debe ser un archivo válido.',
+            'archivo.mimes'                => 'El archivo debe ser un PDF.',
+            'archivo.max'                  => 'El archivo no puede superar los 20 MB.',
 
-            'numero_resolucion.required'       => 'El número de resolución es obligatorio.',
-            'numero_resolucion.max'            => 'El número de resolución no puede superar los 100 caracteres.',
-            'numero_resolucion.unique'         => 'Este número de resolución ya está registrado en otro informe.',
+            'numero_resolucion.required'   => 'El número de resolución es obligatorio.',
+            'numero_resolucion.max'        => 'El número de resolución no puede superar los 100 caracteres.',
+            'numero_resolucion.unique'     => 'Este número de resolución ya está registrado en otro informe.',
 
-            'fecha_resolucion.required'        => 'La fecha de resolución es obligatoria.',
-            'fecha_resolucion.date'            => 'La fecha de resolución no tiene un formato válido.',
-            'fecha_resolucion.date_format'     => 'La fecha de resolución debe tener el formato AAAA-MM-DD.',
-            'fecha_resolucion.before_or_equal' => 'La fecha de resolución no puede ser una fecha futura.',
+            'vigencia_desde.required'     => 'La fecha de inicio de vigencia es obligatoria.',
+            'vigencia_desde.date'         => 'La fecha de inicio de vigencia no tiene un formato válido.',
+            'vigencia_desde.date_format'  => 'La fecha de inicio de vigencia debe tener el formato AAAA-MM-DD.',
 
-            'vigencia_desde.required'          => 'La fecha de inicio de vigencia es obligatoria.',
-            'vigencia_desde.date'              => 'La fecha de inicio de vigencia no tiene un formato válido.',
-            'vigencia_desde.date_format'       => 'La fecha de inicio de vigencia debe tener el formato AAAA-MM-DD.',
+            'vigencia_hasta.required'     => 'La fecha de fin de vigencia es obligatoria.',
+            'vigencia_hasta.date'         => 'La fecha de fin de vigencia no tiene un formato válido.',
+            'vigencia_hasta.date_format'  => 'La fecha de fin de vigencia debe tener el formato AAAA-MM-DD.',
+            'vigencia_hasta.after'        => 'La fecha de fin de vigencia debe ser posterior a la fecha de inicio.',
 
-            'vigencia_hasta.required'          => 'La fecha de fin de vigencia es obligatoria.',
-            'vigencia_hasta.date'              => 'La fecha de fin de vigencia no tiene un formato válido.',
-            'vigencia_hasta.date_format'       => 'La fecha de fin de vigencia debe tener el formato AAAA-MM-DD.',
-            'vigencia_hasta.after'             => 'La fecha de fin de vigencia debe ser posterior a la fecha de inicio.',
-
-            'observaciones.max'                => 'Las observaciones no pueden superar los 1000 caracteres.',
+            'observaciones.max'           => 'Las observaciones no pueden superar los 1000 caracteres.',
         ];
     }
 }

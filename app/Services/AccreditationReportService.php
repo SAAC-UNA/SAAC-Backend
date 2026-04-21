@@ -7,8 +7,11 @@ use App\Models\AccreditationReport;
 use App\Models\File;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Servicio de Informes de Acreditación
@@ -39,6 +42,38 @@ class AccreditationReportService
     ) {}
 
     // -----------------------------------------------------------------------
+    // Almacenamiento de archivos de resolución
+    // -----------------------------------------------------------------------
+
+    /**
+     * Almacena el PDF de la resolución SINAES en disco y crea el registro ARCHIVO.
+     * No asocia el archivo a ninguna evidencia ni proceso (son resoluciones institucionales).
+     */
+    private function storeReportFile(UploadedFile $uploadedFile, User $publisher): File
+    {
+        $disk      = config('saac.storage_disk', 'simulated_nas');
+        $extension = $uploadedFile->getClientOriginalExtension();
+        $uuid      = (string) Str::uuid();
+        $filename  = "{$uuid}.{$extension}";
+        $path      = Storage::disk($disk)->putFileAs('', $uploadedFile, $filename);
+
+        return File::create([
+            'evidencia_id'    => null,
+            'elemento_id'     => null,
+            'proceso_id'      => null,
+            'usuario_id'      => $publisher->usuario_id,
+            'fecha_subida'    => now(),
+            'tipo'            => 'archivo',
+            'path'            => $path,
+            'url'             => null,
+            'nombre_original' => $uploadedFile->getClientOriginalName(),
+            'tamanio'         => $uploadedFile->getSize(),
+            'tipo_mime'       => $uploadedFile->getMimeType(),
+            'is_publico'      => false,
+        ]);
+    }
+
+    // -----------------------------------------------------------------------
     // Publicación
     // -----------------------------------------------------------------------
 
@@ -64,10 +99,12 @@ class AccreditationReportService
         User $publisher
     ): AccreditationReport {
         return DB::transaction(function () use ($cycle, $data, $publisher) {
-            $file = File::findOrFail($data['archivo_id']);
+            // El archivo llega como UploadedFile desde el request
+            /** @var UploadedFile $uploadedFile */
+            $uploadedFile = $data['archivo'];
+            $file = $this->storeReportFile($uploadedFile, $publisher);
+
             // Un ciclo solo puede tener un informe (publicado o despublicado).
-            // Si ya existe, se debe despublicar primero o corregir los datos antes
-            // de volver a publicar mediante republishReport().
             if ($cycle->accreditationReport()->exists()) {
                 throw new \InvalidArgumentException(
                     'Este ciclo ya tiene un informe de acreditación registrado. ' .
@@ -245,6 +282,13 @@ class AccreditationReportService
             $query->whereHas(
                 'accreditationCycle.careerCampus',
                 fn($q) => $q->where('sede_id', $filters['sede_id'])
+            );
+        }
+
+        if (!empty($filters['carrera_campus_id'])) {
+            $query->whereHas(
+                'accreditationCycle.careerCampus',
+                fn($q) => $q->where('carrera_sede_id', $filters['carrera_campus_id'])
             );
         }
 

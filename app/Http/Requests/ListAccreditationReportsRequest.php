@@ -19,9 +19,10 @@ class ListAccreditationReportsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'carrera_id' => ['sometimes', 'integer', 'min:1'],
-            'sede_id'    => ['sometimes', 'integer', 'min:1'],
-            'per_page'   => ['sometimes', 'integer', 'min:1'],
+            'carrera_id'        => ['sometimes', 'integer', 'min:1'],
+            'sede_id'           => ['sometimes', 'integer', 'min:1'],
+            'carrera_campus_id' => ['sometimes', 'integer', 'min:1'],
+            'per_page'          => ['sometimes', 'integer', 'min:1'],
         ];
     }
 }
