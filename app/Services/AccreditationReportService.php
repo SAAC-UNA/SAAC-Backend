@@ -42,38 +42,6 @@ class AccreditationReportService
     ) {}
 
     // -----------------------------------------------------------------------
-    // Almacenamiento de archivos de resolución
-    // -----------------------------------------------------------------------
-
-    /**
-     * Almacena el PDF de la resolución SINAES en disco y crea el registro ARCHIVO.
-     * No asocia el archivo a ninguna evidencia ni proceso (son resoluciones institucionales).
-     */
-    private function storeReportFile(UploadedFile $uploadedFile, User $publisher): File
-    {
-        $disk      = config('saac.storage_disk', 'simulated_nas');
-        $extension = $uploadedFile->getClientOriginalExtension();
-        $uuid      = (string) Str::uuid();
-        $filename  = "{$uuid}.{$extension}";
-        $path      = Storage::disk($disk)->putFileAs('', $uploadedFile, $filename);
-
-        return File::create([
-            'evidencia_id'    => null,
-            'elemento_id'     => null,
-            'proceso_id'      => null,
-            'usuario_id'      => $publisher->usuario_id,
-            'fecha_subida'    => now(),
-            'tipo'            => 'archivo',
-            'path'            => $path,
-            'url'             => null,
-            'nombre_original' => $uploadedFile->getClientOriginalName(),
-            'tamanio'         => $uploadedFile->getSize(),
-            'tipo_mime'       => $uploadedFile->getMimeType(),
-            'is_publico'      => false,
-        ]);
-    }
-
-    // -----------------------------------------------------------------------
     // Publicación
     // -----------------------------------------------------------------------
 
