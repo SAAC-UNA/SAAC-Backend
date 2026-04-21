@@ -19,6 +19,7 @@ class AccreditationReportResource extends JsonResource
             'informe_acreditacion_id' => $this->informe_acreditacion_id,
             'estado'                  => $this->estado,
             'is_vigente'              => $this->isCurrentlyValid(),
+            'esta_acreditada'         => (bool) $this->esta_acreditada,
 
             // Datos de la resolución SINAES
             'numero_resolucion' => $this->numero_resolucion,
@@ -55,6 +56,7 @@ class AccreditationReportResource extends JsonResource
                 'archivo_id'      => $this->file?->archivo_id,
                 'nombre_original' => $this->file?->nombre_original,
                 'tipo_mime'       => $this->file?->tipo_mime,
+                'tamanio'         => $this->file?->tamanio,
                 'is_publico'      => $this->file?->is_publico,
                 'url_publica'     => $this->when(
                     $this->file?->isPubliclyAccessible(),

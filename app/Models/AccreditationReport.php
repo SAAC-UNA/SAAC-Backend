@@ -48,6 +48,7 @@ class AccreditationReport extends Model
         'vigencia_hasta',
         'fecha_publicacion',
         'observaciones',
+        'esta_acreditada',
     ];
 
     // Cast de tipos
@@ -56,6 +57,7 @@ class AccreditationReport extends Model
         'vigencia_desde'    => 'date:Y-m-d',
         'vigencia_hasta'    => 'date:Y-m-d',
         'fecha_publicacion' => 'datetime',
+        'esta_acreditada'   => 'boolean',
     ];
 
     // --- Helpers de dominio ---

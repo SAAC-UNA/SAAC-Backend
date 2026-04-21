@@ -82,11 +82,12 @@ class AccreditationReportService
                 'usuario_publicacion_id' => $publisher->usuario_id,
                 'estado'                 => AccreditationReport::STATUS_PUBLISHED,
                 'numero_resolucion'      => $data['numero_resolucion'],
-                'fecha_resolucion'       => $data['fecha_resolucion'],
+                'fecha_resolucion'       => now()->toDateString(),
                 'vigencia_desde'         => $data['vigencia_desde'],
                 'vigencia_hasta'         => $data['vigencia_hasta'],
                 'fecha_publicacion'      => now(),
                 'observaciones'          => $data['observaciones'] ?? null,
+                'esta_acreditada'        => $data['esta_acreditada'],
             ]);
 
             // Hacer el PDF públicamente accesible vía token HU-023.

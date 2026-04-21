@@ -47,14 +47,6 @@ class PublishAccreditationReportRequest extends FormRequest
                 Rule::unique('INFORME_ACREDITACION', 'numero_resolucion'),
             ],
 
-            // Fecha en que SINAES emitió la resolución
-            'fecha_resolucion' => [
-                'required',
-                'date',
-                'date_format:Y-m-d',
-                'before_or_equal:today',
-            ],
-
             // Inicio de la vigencia de la acreditación
             'vigencia_desde' => [
                 'required',
@@ -75,6 +67,12 @@ class PublishAccreditationReportRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:1000',
+            ],
+
+            // Indica si la resolución acredita o no la carrera
+            'esta_acreditada' => [
+                'required',
+                'boolean',
             ],
         ];
     }
