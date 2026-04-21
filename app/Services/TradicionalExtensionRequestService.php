@@ -57,7 +57,7 @@ class TradicionalExtensionRequestService extends AbstractExtensionRequestService
         return DB::transaction(function () use ($data, $usuarioId) {
             $asignacion = EvidenceAssignment::find($data['evidencia_asignacion_id']);
             if (!$asignacion) {
-                throw new \Exception('La asignacion de evidencia no existe.');
+                throw new \InvalidArgumentException('La asignacion de evidencia no existe.');
             }
 
             $tienePendiente = ExtensionRequest::where('evidencia_asignacion_id', $data['evidencia_asignacion_id'])
@@ -65,7 +65,7 @@ class TradicionalExtensionRequestService extends AbstractExtensionRequestService
                 ->exists();
 
             if ($tienePendiente) {
-                throw new \Exception('Ya existe una solicitud pendiente para esta asignacion.');
+                throw new \InvalidArgumentException('Ya existe una solicitud pendiente para esta asignacion.');
             }
 
             $solicitud = ExtensionRequest::create([

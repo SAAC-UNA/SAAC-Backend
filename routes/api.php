@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccreditationCycleController;
+use App\Http\Controllers\AccreditationReportController;
 use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\AuditLogController;
 // Models
@@ -463,6 +464,23 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
 });
 
 // ============================================
+// Informes de Acreditación (HU-028)
+// ============================================
+
+// Lectura pública: no requieren autenticación
+Route::get('informes-acreditacion', [AccreditationReportController::class, 'index']);
+Route::get('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'showByCycle']);
+
+// Escritura: requieren autenticación
+Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::post('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'publish'])
+        ->middleware('permission:informes_acreditacion.publish');
+
+    Route::patch('informes-acreditacion/{report}/despublicar', [AccreditationReportController::class, 'unpublish'])
+        ->middleware('permission:informes_acreditacion.unpublish');
+});
+
+// ============================================
 // Rutas de Gestión de Usuarios (HU-002)
 // ============================================
 // Protegidas con:
@@ -602,34 +620,6 @@ if (App::environment('local')) {
         Route::post('/login', [\App\Http\Controllers\DevAuthController::class, 'login']);
         Route::post('/logout', [\App\Http\Controllers\DevAuthController::class, 'logout'])->middleware('auth:sanctum');
         Route::get('/me', [\App\Http\Controllers\DevAuthController::class, 'me'])->middleware('auth:sanctum');
-
-        // Ver bitácora sin autenticación (SOLO PARA PRUEBAS)
-        Route::get('/bitacora', function () {
-            try {
-                $logs = \DB::table('BITACORA')
-                    ->join('TIPO_ACCION', 'BITACORA.tipo_accion_id', '=', 'TIPO_ACCION.tipo_accion_id')
-                    ->leftJoin('USUARIO', 'BITACORA.usuario_id', '=', 'USUARIO.usuario_id')
-                    ->select(
-                        'BITACORA.bitacora_id',
-                        'USUARIO.nombre as usuario',
-                        'TIPO_ACCION.descripcion as accion',
-                        'BITACORA.modulo',
-                        'BITACORA.detalle',
-                        'BITACORA.fecha_hora'
-                    )
-                    ->orderBy('BITACORA.fecha_hora', 'desc')
-                    ->limit(10)
-                    ->get();
-
-                return response()->json($logs);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                ], 500);
-            }
-        })->middleware('auth:sanctum');
     });
 }
 

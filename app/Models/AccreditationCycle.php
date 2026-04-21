@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 
-// Hereda de BaseCareer para aplicar automáticamente filtros
+/**
+ * @property int    $ciclo_acreditacion_id
+ * @property int    $carrera_sede_id
+ * @property int|null $modelo_estructura_id
+ * @property string $nombre
+ * @property string $estado
+ */
 class AccreditationCycle extends BaseCareer
 {
     // Habilita la generación de instancias mediante la factory correspondiente.
@@ -107,5 +113,16 @@ class AccreditationCycle extends BaseCareer
     public function modeloEstructura()
     {
         return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
+    }
+
+    /**
+     * Relación: Un ciclo de acreditación puede tener un informe de acreditación publicado.
+     * Un ciclo solo puede tener un informe (restricción unique en BD).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function accreditationReport()
+    {
+        return $this->hasOne(AccreditationReport::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
     }
 }

@@ -7,6 +7,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class AuditLogResource extends JsonResource
 {
+    public function __construct(mixed $resource)
+    {
+        parent::__construct($resource);
+    }
+
     /**
      * Transformar el recurso en un array.
      *

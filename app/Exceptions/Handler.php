@@ -2,13 +2,14 @@
 
 namespace App\Exceptions;
 
-use App\Models\User;
 use Throwable;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -47,14 +48,9 @@ class Handler extends ExceptionHandler
         // 404 - Modelo no encontrado (por ejemplo, findOrFail())
         $this->renderable(function (ModelNotFoundException $exception, $request) {
             if ($request->expectsJson()) {
-                $model = $exception->getModel()
-                    ? class_basename($exception->getModel())
-                    : 'Desconocido';
-
                 return $this->jsonError(
-                    'Recurso no encontrado en la base de datos.',
-                    404,
-                    ['model' => $model]
+                    'Recurso no encontrado.',
+                    404
                 );
             }
         });
@@ -83,7 +79,7 @@ class Handler extends ExceptionHandler
         $this->renderable(function (AuthorizationException $exception, $request) {
             if ($request->expectsJson()) {
                 return $this->jsonError(
-                    $exception->getMessage() ?: 'Acción no autorizada. No tiene permisos suficientes.',
+                    'Acción no autorizada. No tiene permisos suficientes.',
                     403
                 );
             }
@@ -92,6 +88,18 @@ class Handler extends ExceptionHandler
         // 500 - Error de base de datos: nunca exponer SQL ni esquema, sin importar APP_DEBUG
         $this->renderable(function (QueryException $exception, $request) {
             if ($request->expectsJson()) {
+                Log::error('Database Error', [
+                    'message'  => $exception->getMessage(),
+                    'sql'      => $exception->getSql() ?? 'N/A',
+                    'bindings' => $exception->getBindings() ?? [],
+                    'code'     => $exception->getCode(),
+                    'file'     => $exception->getFile(),
+                    'line'     => $exception->getLine(),
+                    'user_id'  => Auth::check() ? Auth::id() : null,
+                    'url'      => $request->fullUrl(),
+                    'ip'       => $request->ip(),
+                ]);
+
                 return $this->jsonError(
                     'Error al procesar la solicitud. Contacte al administrador del sistema.',
                     500
@@ -102,20 +110,53 @@ class Handler extends ExceptionHandler
         // 500 - Error interno del servidor
         $this->renderable(function (Throwable $exception, $request) {
             if ($request->expectsJson()) {
-                $debug = config('app.debug');
+                Log::error('Internal Server Error', [
+                    'type'    => get_class($exception),
+                    'message' => $exception->getMessage(),
+                    'code'    => $exception->getCode(),
+                    'file'    => $exception->getFile(),
+                    'line'    => $exception->getLine(),
+                    'trace'   => $exception->getTraceAsString(),
+                    'user_id' => Auth::check() ? Auth::id() : null,
+                    'url'     => $request->fullUrl(),
+                    'ip'      => $request->ip(),
+                ]);
 
                 return $this->jsonError(
-                    $debug
-                        ? ($exception->getMessage() ?: 'Error interno del servidor.')
-                        : 'Error interno del servidor. Contacte al administrador del sistema.',
-                    500,
-                    $debug ? [
-                        'type' => class_basename($exception),
-                        'trace' => $exception->getTraceAsString(),
-                    ] : null
+                    $this->getSafeErrorMessage($exception),
+                    500
                 );
             }
         });
+    }
+
+    /**
+     * Obtiene un mensaje de error seguro para mostrar al frontend.
+     * Filtra información sensible como SQL, rutas de archivos, nombres de tablas.
+     */
+    private function getSafeErrorMessage(Throwable $exception): string
+    {
+        $message = $exception->getMessage();
+
+        $dangerousPatterns = [
+            'SQLSTATE', 'SQL:', 'PDOException', 'QueryException',
+            'Illuminate\\Database', 'vendor/', 'app/', 'database/',
+            'CONSTRAINT', 'FOREIGN KEY', 'INSERT INTO', 'DELETE FROM',
+            'doesn\'t have a default value', 'Duplicate entry',
+            'Unknown column', 'Unknown database',
+        ];
+
+        foreach ($dangerousPatterns as $pattern) {
+            if (stripos($message, $pattern) !== false) {
+                return 'Error interno del servidor. Contacte al administrador del sistema.';
+            }
+        }
+
+        if (strlen($message) > 200) {
+            return 'Error interno del servidor. Contacte al administrador del sistema.';
+        }
+
+        return $message ?: 'Error interno del servidor. Contacte al administrador del sistema.';
     }
 
     /**
