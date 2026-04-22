@@ -473,6 +473,9 @@ Route::get('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationRepor
 
 // Escritura: requieren autenticación
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::get('admin/informes-acreditacion', [AccreditationReportController::class, 'indexAdmin'])
+        ->middleware('permission:informes_acreditacion.view');
+
     Route::post('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'publish'])
         ->middleware('permission:informes_acreditacion.publish');
 

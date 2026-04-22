@@ -52,6 +52,23 @@ class AccreditationReportController extends Controller
     }
 
     /**
+     * GET /api/admin/informes-acreditacion
+     * Lista administrativa de informes.
+     *
+     * Permite incluir informes despublicados mediante include_unpublished=true.
+     * Requiere autenticación y permiso informes_acreditacion.view.
+     */
+    public function indexAdmin(ListAccreditationReportsRequest $request)
+    {
+        $filters = $request->validated();
+        $filters['per_page'] = min((int) ($filters['per_page'] ?? 15), 50);
+
+        $reports = $this->service->getAdminReports($filters);
+
+        return AccreditationReportResource::collection($reports);
+    }
+
+    /**
      * GET /api/ciclos/{cycle}/informe
      * Devuelve el informe del ciclo indicado.
      * Si el informe está publicado, es accesible sin autenticación.

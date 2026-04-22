@@ -76,7 +76,7 @@ class AccreditationReportService
             if ($cycle->accreditationReport()->exists()) {
                 throw new \InvalidArgumentException(
                     'Este ciclo ya tiene un informe de acreditación registrado. ' .
-                    'Despublíquelo primero si necesita corregir los datos.'
+                    'Para cargar uno nuevo, edite o elimine el informe existente.'
                 );
             }
 
@@ -313,6 +313,53 @@ class AccreditationReportService
         $query = AccreditationReport::published()
             ->with(['accreditationCycle.careerCampus.career', 'file'])
             ->latest('fecha_publicacion');
+
+        if (!empty($filters['carrera_id'])) {
+            $query->whereHas(
+                'accreditationCycle.careerCampus',
+                fn($consultaCarrera) => $consultaCarrera->where('carrera_id', $filters['carrera_id'])
+            );
+        }
+
+        if (!empty($filters['sede_id'])) {
+            $query->whereHas(
+                'accreditationCycle.careerCampus',
+                fn($consultaSede) => $consultaSede->where('sede_id', $filters['sede_id'])
+            );
+        }
+
+        if (!empty($filters['carrera_campus_id'])) {
+            $query->whereHas(
+                'accreditationCycle.careerCampus',
+                fn($q) => $q->where('carrera_sede_id', $filters['carrera_campus_id'])
+            );
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Listar informes para panel administrativo.
+     *
+     * A diferencia del listado público, este endpoint puede incluir informes
+     * despublicados cuando include_unpublished = true.
+     *
+     * @param  array $filters  Claves opcionales: carrera_id, sede_id,
+     *                         carrera_campus_id, per_page, include_unpublished.
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function getAdminReports(array $filters = [])
+    {
+        $perPage = $filters['per_page'] ?? 15;
+        $includeUnpublished = (bool) ($filters['include_unpublished'] ?? false);
+
+        $query = AccreditationReport::query()
+            ->with(['accreditationCycle.careerCampus.career', 'file', 'publishedBy'])
+            ->latest('fecha_publicacion');
+
+        if (!$includeUnpublished) {
+            $query->where('estado', AccreditationReport::STATUS_PUBLISHED);
+        }
 
         if (!empty($filters['carrera_id'])) {
             $query->whereHas(

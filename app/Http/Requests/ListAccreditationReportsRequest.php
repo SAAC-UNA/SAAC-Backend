@@ -11,6 +11,21 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class ListAccreditationReportsRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('include_unpublished')) {
+            $value = $this->input('include_unpublished');
+
+            if ($value === 'true') {
+                $this->merge(['include_unpublished' => true]);
+            }
+
+            if ($value === 'false') {
+                $this->merge(['include_unpublished' => false]);
+            }
+        }
+    }
+
     public function authorize(): bool
     {
         return true; // endpoint público, sin restricción de autenticación
@@ -23,6 +38,7 @@ class ListAccreditationReportsRequest extends FormRequest
             'sede_id'           => ['sometimes', 'integer', 'min:1'],
             'carrera_campus_id' => ['sometimes', 'integer', 'min:1'],
             'per_page'          => ['sometimes', 'integer', 'min:1'],
+            'include_unpublished' => ['sometimes', 'boolean'],
         ];
     }
 }
