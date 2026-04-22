@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class TradicionalEvidenceFilterService
 {
-    private const WITH_BASE = ['criterion.component.dimension'];
+    private const WITH_BASE = ['criterion.component.dimension', 'assignments.user.roles', 'files'];
     private const CACHE_TTL = 60;
 
     /**

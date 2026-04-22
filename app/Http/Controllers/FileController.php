@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class FileController extends Controller
 {
@@ -533,6 +534,10 @@ class FileController extends Controller
             ];
         });
 
+        $elementTypeLabel = $archivoBase->elemento?->tipo
+            ? Str::of((string) $archivoBase->elemento->tipo)->replace('_', ' ')->headline()->toString()
+            : 'Fuente de información';
+
         $contexto = $esEvidencia
             ? [
                 'tipo' => 'Evidencia',
@@ -541,8 +546,8 @@ class FileController extends Controller
                 'descripcion' => $archivoBase->evidence?->descripcion,
             ]
             : [
-                'tipo' => 'Fuente de información',
-                'titulo' => 'Fuente de información',
+                'tipo' => $elementTypeLabel,
+                'titulo' => $elementTypeLabel,
                 'nomenclatura' => $archivoBase->elemento?->nomenclatura,
                 'descripcion' => $archivoBase->elemento?->descripcion,
             ];
