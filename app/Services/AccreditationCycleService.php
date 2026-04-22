@@ -53,9 +53,9 @@ class AccreditationCycleService
      */
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
-        $nuevoModelo = $data['modelo_estructura_id'] ?? null;
+        $newModel = $data['modelo_estructura_id'] ?? null;
 
-        if ($nuevoModelo && (int)$nuevoModelo !== (int)$cycle->modelo_estructura_id) {
+        if ($newModel && (int)$newModel !== (int)$cycle->modelo_estructura_id) {
             if ($cycle->processes()->exists()) {
                 throw new \InvalidArgumentException(
                     'No se puede cambiar el modelo de estructura de un ciclo que ya tiene procesos asociados. ' .
@@ -66,7 +66,7 @@ class AccreditationCycleService
 
         $cycle->update([
             'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
-            'modelo_estructura_id' => $nuevoModelo                  ?? $cycle->modelo_estructura_id,
+            'modelo_estructura_id' => $newModel                     ?? $cycle->modelo_estructura_id,
             'nombre'               => $data['nombre']               ?? $cycle->nombre,
             'estado'               => $data['estado']               ?? $cycle->estado,
         ]);
@@ -82,7 +82,7 @@ class AccreditationCycleService
     public function delete(AccreditationCycle $cycle): void
     {
         if ($cycle->processes()->exists()) {
-            throw new \Exception('No se puede eliminar un ciclo que tiene procesos asociados.');
+            throw new \InvalidArgumentException('No se puede eliminar un ciclo que tiene procesos asociados.');
         }
 
         $cycle->delete();

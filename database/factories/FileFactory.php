@@ -19,8 +19,8 @@ class FileFactory extends Factory
         return [
             'evidencia_id'  => null,
             'elemento_id'   => null,
-            'usuario_id'    => 1,
-            'proceso_id'    => 1,
+            'usuario_id'    => \App\Models\User::factory(),
+            'proceso_id'    => \App\Models\Process::factory(),
             'fecha_subida'  => now(),
             'tipo'          => 'archivo',
             'path'          => $this->faker->filePath(),

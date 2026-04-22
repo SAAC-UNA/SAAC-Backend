@@ -84,15 +84,15 @@ class EvidenceService
         // 'pendiente' significa que aún no fue enviada — no hay nada que revisar.
         // 'vencido' NO se bloquea: existe una HU de ampliación de plazo que permite
         //  gestionar evidencias vencidas, por lo que el evaluador sí puede retroalimentarlas.
-        $estadosNoRevisables = ['Pendiente'];
-        if (in_array($evidence->estado, $estadosNoRevisables)) {
+        $nonReviewableStates = ['Pendiente'];
+        if (in_array($evidence->estado, $nonReviewableStates)) {
             throw new \InvalidArgumentException(
                 "No se puede retroalimentar una evidencia en estado \"{$evidence->estado}\". ".
                 "Debe estar en proceso, completada, aprobada, rechazada, observada, validada o vencida."
             );
         }
 
-        $evidenceActualizada = DB::transaction(function () use ($evidence, $data, $reviewer) {
+        $updatedEvidence = DB::transaction(function () use ($evidence, $data, $reviewer) {
             // 1. Cambia el estado ('observada' o 'validada')
             $evidence->update(['estado' => $data['estado']]);
 
@@ -125,22 +125,22 @@ class EvidenceService
         //    El try/catch aísla cualquier fallo de SMTP o de carga de relaciones — el
         //    endpoint ya respondió con 200; el error queda solo en el log.
         try {
-            $evidenceActualizada->loadMissing('activeAssignments.user');
-            $responsables = $evidenceActualizada->activeAssignments
+            $updatedEvidence->loadMissing('activeAssignments.user');
+            $assignedUsers = $updatedEvidence->activeAssignments
                 ->map(fn($assignment) => $assignment->user)
                 ->filter(); // descarta asignaciones sin usuario
 
-            if ($responsables->isNotEmpty()) {
+            if ($assignedUsers->isNotEmpty()) {
                 NotificationService::createMany(
-                    $responsables->pluck('usuario_id')->toArray(),
+                    $assignedUsers->pluck('usuario_id')->toArray(),
                     [
                         'tipo_evento'  => $data['estado'] === 'Observada'
                             ? \App\Models\Notification::TIPO_DEVOLUCION_OBSERVACION
                             : \App\Models\Notification::TIPO_APROBACION_EVIDENCIA,
-                        'titulo'       => "Evidencia {$evidenceActualizada->nomenclatura} — " . strtoupper($data['estado']),
+                        'titulo'       => "Evidencia {$updatedEvidence->nomenclatura} — " . strtoupper($data['estado']),
                         'mensaje'      => "El evaluador {$reviewer->nombre} marcó la evidencia como \"{$data['estado']}\". Comentario: {$data['comentario']}",
-                        'relacionado'  => $evidenceActualizada,
-                        'enlace'       => "/evidencias/{$evidenceActualizada->evidencia_id}",
+                        'relacionado'  => $updatedEvidence,
+                        'enlace'       => "/evidencias/{$updatedEvidence->evidencia_id}",
                         'forzar_email' => true,
                     ]
                 );
@@ -148,12 +148,12 @@ class EvidenceService
         } catch (\Throwable $e) {
             // Loguear el fallo sin interrumpir la respuesta al cliente
             logger()->error('EvidenciaRetroalimentada notification failed', [
-                'evidencia_id' => $evidenceActualizada->evidencia_id,
+                'evidencia_id' => $updatedEvidence->evidencia_id,
                 'error'        => $e->getMessage(),
             ]);
         }
 
-        return $evidenceActualizada;
+        return $updatedEvidence;
     }
 
     /**

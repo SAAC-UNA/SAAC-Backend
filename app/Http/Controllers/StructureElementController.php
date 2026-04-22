@@ -41,9 +41,9 @@ class StructureElementController extends Controller
      */
     public function index(Request $request)
     {
-        $tipo = $request->query('tipo');
-        $modeloId = $request->query('modelo_estructura_id') ? (int)$request->query('modelo_estructura_id') : null;
-        $items = $this->service->getAll($tipo, $modeloId);
+        $type = $request->query('tipo');
+        $modelId = $request->query('modelo_estructura_id') ? (int)$request->query('modelo_estructura_id') : null;
+        $items = $this->service->getAll($type, $modelId);
         return response()->json($items, 200);
     }
 

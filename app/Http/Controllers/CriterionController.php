@@ -8,6 +8,7 @@ use App\Http\Resources\CriterionResource;
 use App\Services\CriterionService;
 use App\Http\Requests\CriterionRequest;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Log;
 
 
 class CriterionController extends Controller
@@ -85,7 +86,8 @@ class CriterionController extends Controller
                     'code'    => 'FK_CONSTRAINT',
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
+            Log::error('Error deleting criterion', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**
@@ -104,7 +106,7 @@ class CriterionController extends Controller
         ]);
 
         $newActiveState = $validated['active'];
-        $estadoAnterior = $criterion->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
+        $previousStatus = $criterion->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
 
         // Actualizar el estado del criterio (saveQuietly: el log manual cubre esta acción)
         $criterion->activo = $newActiveState;
@@ -126,12 +128,12 @@ class CriterionController extends Controller
         $cascadeMessage = $newActiveState
             ? ' Elements hijos activados en cascada.'
             : ' Elements hijos desactivados en cascada.';
-        $estadoNuevo = $newActiveState ? 'ACTIVO' : 'INACTIVO';
+        $newStatus = $newActiveState ? 'ACTIVO' : 'INACTIVO';
 
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado del criterio \"{$criterion->nombre}\" (ID: {$criterion->criterio_id}). ".
-            "Estado anterior: {$estadoAnterior}. Estado nuevo: {$estadoNuevo}. ".
+    "Se actualizó el estado del criterio \"{$criterion->nombre}\". ".
+            "Estado anterior: {$previousStatus}. Estado nuevo: {$newStatus}. ".
             "Se aplicó cambio en cascada a estándares y evidencias.",
     'Criterio'
         );

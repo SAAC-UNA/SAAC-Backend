@@ -47,6 +47,7 @@ class RoleController extends Controller
                 'users_count' => $role->users()->count(),
                 'is_protected' => $this->roleService->isProtectedRole($role),
                 'can_delete' => $this->roleService->canDeleteRole($role)['can_delete'],
+                'is_active' => $role->is_active ?? true,
                 'created_at' => $role->created_at,
                 'updated_at' => $role->updated_at,
             ];
@@ -67,7 +68,7 @@ class RoleController extends Controller
         // Registrar en bitácora la creación del rol
         AuditLogService::log(
             'crear',
-            "Rol creado: {$role->name} (ID: {$role->id})",
+            "Rol \"{$role->name}\" creado.",
             'Roles'
         );
         return response()->json([
@@ -140,7 +141,7 @@ class RoleController extends Controller
         // Registrar en bitácora los cambios realizados
         AuditLogService::log(
     'editar',
-        "Rol actualizado: {$updatedRole->name} (ID: {$updatedRole->id})",
+        "Rol \"{$updatedRole->name}\" actualizado.",
         'Roles'
         );
 
@@ -200,12 +201,52 @@ class RoleController extends Controller
         if ($result) {
             AuditLogService::log(
                 'eliminar',
-                "Rol eliminado: {$role->name} (ID: {$role->id})",
+                "Rol \"{$role->name}\" eliminado.",
                 'Roles'
             );
         }
 
         return response()->json(['message' => 'Rol eliminado con éxito'], 200);
+    }
+
+    /**
+     * Alterna el estado activo/inactivo de un rol.
+     * Solo aplica a roles no protegidos del sistema.
+     *
+     * @param int $id Identificador del rol.
+     * @return JsonResponse
+     */
+    public function toggleRole(int $id): JsonResponse
+    {
+        $role = $this->roleService->getRole($id);
+
+        if (!$role) {
+            return response()->json([
+                'error'   => 'Not Found',
+                'message' => 'Rol no encontrado',
+            ], 404);
+        }
+
+        $result = $this->roleService->toggleRoleStatus($role);
+
+        if (!$result['success']) {
+            return response()->json([
+                'error'   => 'Forbidden',
+                'message' => $result['message'],
+            ], 403);
+        }
+
+        $state = $result['role']->is_active ? 'activado' : 'desactivado';
+        AuditLogService::log(
+            $state,
+            "Rol \"{$result['role']->name}\" {$state}.",
+            'Roles'
+        );
+
+        return response()->json([
+            'message'   => $result['message'],
+            'is_active' => $result['role']->is_active,
+        ], 200);
     }
 
     /**

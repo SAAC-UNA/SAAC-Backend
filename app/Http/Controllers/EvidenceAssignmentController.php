@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Log;
 
 class EvidenceAssignmentController extends Controller
 {
@@ -41,15 +42,15 @@ class EvidenceAssignmentController extends Controller
     public function store(EvidenceAssignmentRequest $request): JsonResponse
     {
         try {
-            $resultado = $this->service->assignEvidence($request->validated());
+            $result = $this->service->assignEvidence($request->validated());
             
             return response()->json([
                 'message' => 'Asignaciones procesadas correctamente.',
                 'data' => [
-                    'total_asignaciones' => $resultado['total_asignaciones'],
-                    'total_errores' => $resultado['total_errores'],
-                    'asignaciones' => EvidenceAssignmentResource::collection($resultado['asignaciones']),
-                    'errores' => $resultado['errores']
+                    'total_asignaciones' => $result['total_asignaciones'],
+                    'total_errores' => $result['total_errores'],
+                    'asignaciones' => EvidenceAssignmentResource::collection($result['asignaciones']),
+                    'errores' => $result['errores']
                 ]
             ], 201);
 
@@ -60,10 +61,8 @@ class EvidenceAssignmentController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al procesar las asignaciones.',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('Error processing evidence assignments', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al procesar las asignaciones.'], 500);
         }
     }
 

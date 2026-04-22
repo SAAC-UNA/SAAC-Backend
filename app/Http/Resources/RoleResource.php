@@ -24,6 +24,7 @@ class RoleResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
+            'is_active'   => $this->is_active ?? true,
             // Permisos con estructura completa para el frontend (id, name, label)
             'permissions' => $this->permissions->map(function ($permission) {
                 $descriptions = config('permissions.descriptions', []);

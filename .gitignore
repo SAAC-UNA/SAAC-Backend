@@ -5,6 +5,7 @@
 .env.production
 .env.xampp
 .env.docker
+.env.testing
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -27,5 +28,8 @@ Thumbs.db
 
 # Testing Coverage Reports
 /tests/coverage-html/
+
+# Thunder Client (herramienta local de cada desarrollador)
+/thunder-tests/
 /tests/coverage.txt
 /tests/report.junit.xml

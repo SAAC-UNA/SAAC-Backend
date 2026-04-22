@@ -257,4 +257,31 @@ class RoleService
             return $role;
         });
     }
+
+    /**
+     * Alternar el estado activo/inactivo de un rol.
+     * Solo se permite en roles no protegidos.
+     *
+     * @param Role $role Rol a modificar.
+     * @return array ['success' => bool, 'role' => Role, 'message' => string]
+     */
+    public function toggleRoleStatus(Role $role): array
+    {
+        if ($this->isProtectedRole($role)) {
+            return [
+                'success' => false,
+                'message' => 'Los roles del sistema no pueden ser modificados.',
+            ];
+        }
+
+        $role->update(['is_active' => !$role->is_active]);
+
+        $state = $role->is_active ? 'activado' : 'desactivado';
+
+        return [
+            'success' => true,
+            'role'    => $role->refresh(),
+            'message' => "Rol {$state} con éxito",
+        ];
+    }
 }

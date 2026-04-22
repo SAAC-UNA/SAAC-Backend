@@ -17,7 +17,7 @@ class AuditLogService
     public static function log(
         string $actionName,
         ?string $detail = null,
-        ?string $modulo = null,
+        ?string $module = null,
         ?int $userId = null
     ): bool {
         try {
@@ -28,26 +28,26 @@ class AuditLogService
                 ActionType::pluck('tipo_accion_id', 'descripcion')->all()
             );
 
-            $tipoAccionId = $actionTypes[$actionName] ?? null;
+            $actionTypeId = $actionTypes[$actionName] ?? null;
 
-            if (!$tipoAccionId) {
-                Log::warning("Tipo de accion '{$actionName}' no encontrado en catalogo");
+            if (!$actionTypeId) {
+                Log::warning("Action type '{$actionName}' not found in catalog");
                 return false;
             }
 
             AuditLog::create([
                 'usuario_id'     => $userId,
-                'tipo_accion_id' => $tipoAccionId,
-                'modulo'         => $modulo,
+                'tipo_accion_id' => $actionTypeId,
+                'modulo'         => $module,
                 'detalle'        => $detail,
                 'fecha_hora'     => now(),
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Error al registrar en bitacora', [
+            Log::error('Error logging to audit trail', [
                 'action' => $actionName,
-                'module' => $modulo,
+                'module' => $module,
                 'error'  => $e->getMessage(),
                 'user'   => Auth::id(),
             ]);
@@ -60,25 +60,25 @@ class AuditLogService
      */
     public function list(array $filters = [])
     {
-        $perPage    = $filters['per_page'] ?? 15;
-        $usuarioId  = $filters['usuario_id'] ?? null;
-        $modulo      = $filters['modulo'] ?? null;
-        $fechaDesde  = $filters['fecha_desde'] ?? null;
-        $fechaHasta  = $filters['fecha_hasta'] ?? null;
-        $search      = $filters['search'] ?? null;
+        $perPage      = $filters['per_page'] ?? 15;
+        $userId       = $filters['usuario_id'] ?? null;
+        $module       = $filters['modulo'] ?? null;
+        $dateFrom     = $filters['fecha_desde'] ?? null;
+        $dateTo       = $filters['fecha_hasta'] ?? null;
+        $search       = $filters['search'] ?? null;
 
-        $tipoAccionId = $filters['tipo_accion_id'] ?? null;
-        if (!$tipoAccionId && !empty($filters['tipo_accion'])) {
-            $tipoAccionId = ActionType::where('descripcion', $filters['tipo_accion'])
+        $actionTypeId = $filters['tipo_accion_id'] ?? null;
+        if (!$actionTypeId && !empty($filters['tipo_accion'])) {
+            $actionTypeId = ActionType::where('descripcion', $filters['tipo_accion'])
                 ->value('tipo_accion_id');
         }
 
         return AuditLog::with(['user.roles', 'actionType'])
-            ->when($usuarioId,    fn($q) => $q->where('usuario_id', $usuarioId))
-            ->when($tipoAccionId, fn($q) => $q->where('tipo_accion_id', $tipoAccionId))
-            ->when($modulo,       fn($q) => $q->where('modulo', 'like', "%{$modulo}%"))
-            ->when($fechaDesde,   fn($q) => $q->where('fecha_hora', '>=', $fechaDesde))
-            ->when($fechaHasta,   fn($q) => $q->where('fecha_hora', '<=', $fechaHasta))
+            ->when($userId,       fn($q) => $q->where('usuario_id', $userId))
+            ->when($actionTypeId, fn($q) => $q->where('tipo_accion_id', $actionTypeId))
+            ->when($module,       fn($q) => $q->where('modulo', 'like', "%{$module}%"))
+            ->when($dateFrom,     fn($q) => $q->where('fecha_hora', '>=', $dateFrom))
+            ->when($dateTo,       fn($q) => $q->where('fecha_hora', '<=', $dateTo))
             ->when($search,        fn($q) => $q->where(fn($inner) =>
                 $inner->whereHas('user', fn($u) =>
                     $u->where('nombre', 'like', "%{$search}%")
@@ -99,7 +99,7 @@ class AuditLogService
      */
     public function getModules()
     {
-        return Cache::remember('bitacora_modulos', 300, fn() =>
+        return Cache::remember('audit_log_modules', 300, fn() =>
             AuditLog::select('modulo')
                 ->whereNotNull('modulo')
                 ->distinct()
@@ -113,17 +113,23 @@ class AuditLogService
      */
     public function getActionTypes()
     {
-        return ActionType::orderBy('descripcion')->get();
+        return ActionType::orderBy('descripcion')->get()->map(function ($type) {
+            return [
+                'tipo_accion_id' => $type->tipo_accion_id,
+                'descripcion'    => $type->descripcion,
+                'label'          => ucfirst(str_replace('_', ' ', $type->descripcion)),
+            ];
+        });
     }
 
     /**
      * Obtener registros de bitacora para exportacion en un rango de fechas.
      */
-    public function getForExport(string $desde, string $hasta)
+    public function getForExport(string $from, string $to)
     {
         $exportSafetyLimit = config('saac.export_limit', 20000);
 
-        $count = AuditLog::whereBetween('fecha_hora', [$desde, $hasta])->count();
+        $count = AuditLog::whereBetween('fecha_hora', [$from, $to])->count();
 
         if ($count > $exportSafetyLimit) {
             throw new \Exception(
@@ -134,7 +140,7 @@ class AuditLogService
         }
 
         return AuditLog::with(['user.roles', 'actionType'])
-            ->whereBetween('fecha_hora', [$desde, $hasta])
+            ->whereBetween('fecha_hora', [$from, $to])
             ->orderBy('fecha_hora', 'desc')
             ->get();
     }

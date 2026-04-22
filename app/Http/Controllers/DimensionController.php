@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use App\Services\DimensionService;
 use App\Http\Requests\DimensionRequest;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Log;
 
 
 class DimensionController extends Controller
@@ -88,7 +89,8 @@ class DimensionController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
+            Log::error('Error deleting dimension', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**
@@ -107,7 +109,7 @@ class DimensionController extends Controller
         ]);
 
         $newActiveState = $validated['active'];
-        $estadoAnterior = $dimension->activo ? 'ACTIVA' : 'INACTIVA'; // capturar ANTES de modificar
+        $previousStatus = $dimension->activo ? 'ACTIVA' : 'INACTIVA'; // capturar ANTES de modificar
 
         // Actualizar estado (saveQuietly: el log manual de abajo cubre esta acción)
         $dimension->activo = $newActiveState;
@@ -140,12 +142,12 @@ class DimensionController extends Controller
         $cascadeMessage = $newActiveState
             ? ' Elementos hijos activados en cascada.'
             : ' Elementos hijos desactivados en cascada.';
-        $estadoNuevo = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+        $newStatus = $newActiveState ? 'ACTIVA' : 'INACTIVA';
 
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la dimensión \"{$dimension->nombre}\" (ID: {$dimension->dimension_id}). ".
-            "Estado anterior: {$estadoAnterior}. Estado nuevo: {$estadoNuevo}. ".
+    "Se actualizó el estado de la dimensión \"{$dimension->nombre}\". ".
+            "Estado anterior: {$previousStatus}. Estado nuevo: {$newStatus}. ".
             "Se aplicó cambio en cascada a hijos.",
     'Dimensión'
         );

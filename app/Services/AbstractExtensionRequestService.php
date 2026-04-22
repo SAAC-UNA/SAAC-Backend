@@ -86,11 +86,11 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
         return DB::transaction(function () use ($solicitudId, $resolutorId, $justificacion) {
             $solicitud = ExtensionRequest::with(['evidenceAssignment', 'elementAssignment'])->find($solicitudId);
             if (!$solicitud) {
-                throw new \Exception('La solicitud no existe.');
+                throw new \InvalidArgumentException('La solicitud no existe.');
             }
 
             if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
-                throw new \Exception('Solo se pueden aprobar solicitudes pendientes.');
+                throw new \InvalidArgumentException('Solo se pueden aprobar solicitudes pendientes.');
             }
 
             $solicitud->update([
@@ -126,11 +126,11 @@ abstract class AbstractExtensionRequestService implements ExtensionRequestContra
         return DB::transaction(function () use ($solicitudId, $resolutorId, $justificacion) {
             $solicitud = ExtensionRequest::find($solicitudId);
             if (!$solicitud) {
-                throw new \Exception('La solicitud no existe.');
+                throw new \InvalidArgumentException('La solicitud no existe.');
             }
 
             if ($solicitud->estado !== ExtensionRequest::ESTADO_PENDIENTE) {
-                throw new \Exception('Solo se pueden rechazar solicitudes pendientes.');
+                throw new \InvalidArgumentException('Solo se pueden rechazar solicitudes pendientes.');
             }
 
             $solicitud->update([

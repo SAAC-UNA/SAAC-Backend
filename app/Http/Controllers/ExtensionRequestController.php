@@ -10,6 +10,7 @@ use App\Services\TradicionalExtensionRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 use App\Events\ExtensionRequestCreated;
@@ -98,10 +99,10 @@ class ExtensionRequestController extends Controller
         $filters = $request->only(['estado', 'usuario_id', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
         
         // Delegar consulta al service (quien maneja la lógica de filtrado)
-        $solicitudes = $this->service->getAll($filters);
+        $extensionRequests = $this->service->getAll($filters);
         
         // Retornar respuesta paginada con formato consistente
-        return $this->paginatedResponse($solicitudes);
+        return $this->paginatedResponse($extensionRequests);
     }
 
     /**
@@ -137,10 +138,10 @@ class ExtensionRequestController extends Controller
         $filters = $request->only(['usuario_id', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
         
         // Delegar consulta al service (quien aplica filtro estado='pendiente' automáticamente)
-        $solicitudes = $this->service->getPending($filters);
+        $extensionRequests = $this->service->getPending($filters);
         
         // Retornar respuesta paginada con formato consistente
-        return $this->paginatedResponse($solicitudes);
+        return $this->paginatedResponse($extensionRequests);
     }
 
     /**
@@ -171,16 +172,16 @@ class ExtensionRequestController extends Controller
     public function mySolicitudes(Request $request): JsonResponse
     {
         // Obtener ID del usuario autenticado (fallback temporal para testing sin LDAP)
-        $usuarioId = Auth::id() ?? 1;
+        $userId = Auth::id() ?? 1;
         
         // Extraer filtros del request (solo los permitidos)
         $filters = $request->only(['estado', 'evidencia_asignacion_id', 'fecha_desde', 'fecha_hasta', 'per_page']);
         
         // Delegar consulta al service (filtra automáticamente por usuario_id)
-        $solicitudes = $this->service->getByUser($usuarioId, $filters);
+        $extensionRequests = $this->service->getByUser($userId, $filters);
         
         // Retornar respuesta paginada con formato consistente
-        return $this->paginatedResponse($solicitudes);
+        return $this->paginatedResponse($extensionRequests);
     }
 
     /**
@@ -210,21 +211,21 @@ class ExtensionRequestController extends Controller
     public function show(string $id): JsonResponse
     {
         // Buscar solicitud por ID (delega al service)
-        $solicitud = $this->service->findById((int)$id);
+        $extensionRequest = $this->service->findById((int)$id);
         
         // Si no existe, retornar 404
-        if (!$solicitud) {
+        if (!$extensionRequest) {
             return response()->json([
                 'message' => 'Solicitud no encontrada.'
             ], 404);
         }
 
         // Autorización: Solo dueño o encargado pueden ver (403 si falla)
-        $this->authorize('view', $solicitud);
+        $this->authorize('view', $extensionRequest);
 
         // Retornar solicitud completa con relaciones
         return response()->json([
-            'data' => new ExtensionRequestResource($solicitud)
+            'data' => new ExtensionRequestResource($extensionRequest)
         ], 200);
     }
 
@@ -268,29 +269,28 @@ class ExtensionRequestController extends Controller
 
         try {
             // Obtener ID del usuario autenticado (fallback temporal para testing)
-            $usuarioId = Auth::id() ?? 1;
+            $userId = Auth::id() ?? 1;
             
             // Delegar al service la creación completa (incluye notificaciones)
-            $solicitud = $this->service->createRequest(
+            $extensionRequest = $this->service->createRequest(
                 $request->validated(), 
-                $usuarioId
+                $userId
             );
 
             // Disparar evento para notificaciones
-            event(new ExtensionRequestCreated($solicitud));
+            event(new ExtensionRequestCreated($extensionRequest));
 
             // Retornar 201 (created) con la solicitud creada
             return response()->json([
                 'message' => 'Solicitud de ampliación creada correctamente.',
-                'data' => new ExtensionRequestResource($solicitud)
+                'data' => new ExtensionRequestResource($extensionRequest)
             ], 201);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar cualquier error de negocio y retornar 400
-            return response()->json([
-                'message' => 'Error al crear la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error creating extension request', ['usuario_id' => Auth::id(), 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -333,47 +333,46 @@ class ExtensionRequestController extends Controller
     public function approve(ReviewExtensionRequestRequest $request, string $id): JsonResponse
     {
         // Buscar solicitud por ID
-        $solicitud = $this->service->findById((int)$id);
+        $extensionRequest = $this->service->findById((int)$id);
         
         // Si no existe, retornar 404
-        if (!$solicitud) {
+        if (!$extensionRequest) {
             return response()->json([
                 'message' => 'Solicitud no encontrada.'
             ], 404);
         }
 
         // Autorización: Solo encargados pueden aprobar (403 si falla)
-        $this->authorize('approve', $solicitud);
+        $this->authorize('approve', $extensionRequest);
 
         try {
             // Obtener ID del encargado que aprueba (fallback temporal)
-            $resolutorId = Auth::id() ?? 1;
+            $reviewerId = Auth::id() ?? 1;
             
             // Obtener justificación opcional del encargado
-            $justificacion = $request->input('justificacion');
+            $justification = $request->input('justificacion');
             
             // Delegar al service la aprobación completa (incluye actualizar evidencia y notificar)
-            $solicitudAprobada = $this->service->approve(
+            $approvedRequest = $this->service->approve(
                 (int)$id, 
-                $resolutorId, 
-                $justificacion
+                $reviewerId, 
+                $justification
             );
 
             // Disparar evento para notificaciones
-            event(new ExtensionRequestApproved($solicitudAprobada, $justificacion ?? ''));
+            event(new ExtensionRequestApproved($approvedRequest, $justification ?? ''));
 
             // Retornar 200 con solicitud aprobada
             return response()->json([
                 'message' => 'Solicitud aprobada correctamente.',
-                'data' => new ExtensionRequestResource($solicitudAprobada)
+                'data' => new ExtensionRequestResource($approvedRequest)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al aprobar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error approving extension request', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -416,47 +415,46 @@ class ExtensionRequestController extends Controller
     public function reject(ReviewExtensionRequestRequest $request, string $id): JsonResponse
     {
         // Buscar solicitud por ID
-        $solicitud = $this->service->findById((int)$id);
+        $extensionRequest = $this->service->findById((int)$id);
         
         // Si no existe, retornar 404
-        if (!$solicitud) {
+        if (!$extensionRequest) {
             return response()->json([
                 'message' => 'Solicitud no encontrada.'
             ], 404);
         }
 
         // Autorización: Solo encargados pueden rechazar (403 si falla)
-        $this->authorize('reject', $solicitud);
+        $this->authorize('reject', $extensionRequest);
 
         try {
             // Obtener ID del encargado que rechaza (fallback temporal)
-            $resolutorId = Auth::id() ?? 1;
+            $reviewerId = Auth::id() ?? 1;
             
             // Obtener justificación opcional del encargado
-            $justificacion = $request->input('justificacion');
+            $justification = $request->input('justificacion');
             
             // Delegar al service el rechazo completo (incluye notificar, NO actualiza fecha)
-            $solicitudRechazada = $this->service->reject(
+            $rejectedRequest = $this->service->reject(
                 (int)$id, 
-                $resolutorId, 
-                $justificacion
+                $reviewerId, 
+                $justification
             );
 
             // Disparar evento para notificaciones
-            event(new ExtensionRequestRejected($solicitudRechazada, $justificacion ?? 'Sin justificación proporcionada'));
+            event(new ExtensionRequestRejected($rejectedRequest, $justification ?? 'Sin justificación proporcionada'));
 
             // Retornar 200 con solicitud rechazada
             return response()->json([
                 'message' => 'Solicitud rechazada correctamente.',
-                'data' => new ExtensionRequestResource($solicitudRechazada)
+                'data' => new ExtensionRequestResource($rejectedRequest)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al rechazar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error rejecting extension request', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 }

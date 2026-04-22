@@ -121,11 +121,18 @@ class FileController extends Controller
 
                     $archivoGuardado->load(['evidence', 'user', 'process']);
                     $archivos[] = new FileResource($archivoGuardado);
-                } catch (\Exception $e) {
+                } catch (\InvalidArgumentException $e) {
                     $errores[] = [
                         'indice' => $index,
                         'nombre' => $archivo->getClientOriginalName(),
                         'error'  => $e->getMessage(),
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('Error al subir archivo', ['index' => $index, 'error' => $e->getMessage()]);
+                    $errores[] = [
+                        'indice' => $index,
+                        'nombre' => $archivo->getClientOriginalName(),
+                        'error'  => 'Error al procesar el archivo.',
                     ];
                 }
             }
@@ -148,11 +155,18 @@ class FileController extends Controller
 
                     $enlaceGuardado->load(['evidence', 'user', 'process']);
                     $archivos[] = new FileResource($enlaceGuardado);
-                } catch (\Exception $e) {
+                } catch (\InvalidArgumentException $e) {
                     $errores[] = [
                         'indice' => $index,
                         'url'    => $url,
                         'error'  => $e->getMessage(),
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('Error al guardar enlace', ['index' => $index, 'error' => $e->getMessage()]);
+                    $errores[] = [
+                        'indice' => $index,
+                        'url'    => $url,
+                        'error'  => 'Error al procesar el enlace.',
                     ];
                 }
             }
