@@ -236,6 +236,7 @@ class NotificationService
             Notification::TIPO_RECHAZO_CRITERIO,
             Notification::TIPO_RECHAZO_EVIDENCIA,
             Notification::TIPO_RECHAZO_ELEMENTO,
+            Notification::TIPO_PUBLICACION_INFORME,   // HU-027: email + notificación interna
         ];
 
         if (in_array($tipoEvento, $eventosCriticos) || $forzarEmail) {

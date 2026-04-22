@@ -94,6 +94,9 @@ return [
 
         // Bitácora (HU-005)
         'bitacora' => ['view', 'export'],
+
+        // Informes de Acreditación (HU-028)
+        'informes_acreditacion' => ['view', 'publish', 'unpublish', 'download'],
     ],
 
     /*
@@ -206,7 +209,11 @@ return [
             // Notificaciones (solo lectura)
             'notificaciones.view',
 
-
+            // Informes de Acreditación (HU-028)
+            'informes_acreditacion.view',
+            'informes_acreditacion.publish',
+            'informes_acreditacion.unpublish',
+            'informes_acreditacion.download',
         ],
 
         'Encargado de Acreditación' => [
@@ -276,6 +283,11 @@ return [
 
             // Notificaciones
             'notificaciones.view',
+
+            // Informes de Acreditación (HU-028)
+            'informes_acreditacion.view',
+            'informes_acreditacion.publish',
+            'informes_acreditacion.download',
         ],
 
         'Asistente de Acreditación' => [
@@ -319,6 +331,10 @@ return [
 
             // Notificaciones
             'notificaciones.view',
+
+            // Informes de Acreditación (HU-028 - solo ver y descargar)
+            'informes_acreditacion.view',
+            'informes_acreditacion.download',
         ],
 
         'Profesor' => [
@@ -357,6 +373,10 @@ return [
 
             // Notificaciones (solo lectura)
             'notificaciones.view',
+
+            // Informes de Acreditación (HU-028 - solo ver y descargar)
+            'informes_acreditacion.view',
+            'informes_acreditacion.download',
         ],
     ],
 
@@ -504,6 +524,12 @@ return [
         // Bitácora
         'bitacora.view' => 'Ver bitácora del sistema',
         'bitacora.export' => 'Exportar bitácora',
+
+        // Informes de Acreditación (HU-028)
+        'informes_acreditacion.view'      => 'Ver informes de acreditación publicados',
+        'informes_acreditacion.publish'   => 'Publicar informe de acreditación aprobado',
+        'informes_acreditacion.unpublish' => 'Despublicar informe de acreditación',
+        'informes_acreditacion.download'  => 'Descargar PDF de resolución SINAES',
     ],
 
 ];

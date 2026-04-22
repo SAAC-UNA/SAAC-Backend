@@ -106,7 +106,7 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'activar',
-            "Usuario activado: {$user->nombre} (ID: {$user->usuario_id})",
+            "Usuario \"{$user->nombre}\" activado.",
             'Usuarios'
         );
         
@@ -131,7 +131,7 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'desactivar',
-            "Usuario desactivado: {$user->nombre} (ID: {$user->usuario_id})",
+            "Usuario \"{$user->nombre}\" desactivado.",
             'Usuarios'
         );
         
@@ -151,7 +151,7 @@ class UserController extends Controller
         // Registrar en bitácora
         AuditLogService::log(
             'asignar_rol',
-            "Rol '{$roleName}' asignado a: {$user->nombre} (ID: {$user->usuario_id})",
+            "Rol '{$roleName}' asignado a \"{$user->nombre}\".",
             'Usuarios'
         );
     
@@ -173,10 +173,10 @@ class UserController extends Controller
         $this->userAdmin->setModulePermissions($user, $modules);
         
         // Registrar en bitácora
-        $permisosAsignados = $user->getDirectPermissions()->pluck('name')->values()->toArray();
+        $assignedPermissions = $user->getDirectPermissions()->pluck('name')->values()->toArray();
         AuditLogService::log(
             'asignar_permisos',
-            "Permisos actualizados para: {$user->nombre} (ID: {$user->usuario_id}). Permisos: " . implode(', ', $permisosAsignados),
+            "Permisos actualizados para \"{$user->nombre}\". Permisos: " . implode(', ', $assignedPermissions),
             'Usuarios'
         );
         
@@ -185,7 +185,7 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Permisos actualizados correctamente',
             'user_id' => $user->usuario_id,
-            'granted' => $permisosAsignados, 
+            'granted' => $assignedPermissions, 
         ], 200);
     }
 
@@ -201,7 +201,7 @@ class UserController extends Controller
 
         AuditLogService::log(
             'asignar_carreras',
-            "Carreras actualizadas para: {$updatedUser->nombre} (ID: {$updatedUser->usuario_id}).",
+            "Carreras actualizadas para \"{$updatedUser->nombre}\".",
             'Usuarios'
         );
 

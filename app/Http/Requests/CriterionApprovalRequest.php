@@ -6,6 +6,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
+/**
+ * @property int         $proceso_id
+ * @property string|null $comentario
+ * @property string|null $nueva_fecha_limite
+ * @property int|null    $responsable_usuario_id
+ */
 class CriterionApprovalRequest extends FormRequest
 {
     /**

@@ -2,15 +2,14 @@
 
 namespace App\Exceptions;
 
-use App\Models\User;
 use Throwable;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -49,14 +48,9 @@ class Handler extends ExceptionHandler
         // 404 - Modelo no encontrado (por ejemplo, findOrFail())
         $this->renderable(function (ModelNotFoundException $exception, $request) {
             if ($request->expectsJson()) {
-                $model = $exception->getModel()
-                    ? class_basename($exception->getModel())
-                    : 'Desconocido';
-
                 return $this->jsonError(
-                    'Recurso no encontrado en la base de datos.',
-                    404,
-                    ['model' => $model]
+                    'Recurso no encontrado.',
+                    404
                 );
             }
         });
@@ -85,7 +79,7 @@ class Handler extends ExceptionHandler
         $this->renderable(function (AuthorizationException $exception, $request) {
             if ($request->expectsJson()) {
                 return $this->jsonError(
-                    $exception->getMessage() ?: 'Acción no autorizada. No tiene permisos suficientes.',
+                    'Acción no autorizada. No tiene permisos suficientes.',
                     403
                 );
             }
@@ -97,15 +91,15 @@ class Handler extends ExceptionHandler
             if ($request->expectsJson()) {
                 // Log completo para debug interno (solo visible en logs)
                 Log::error('Database Error', [
-                    'message' => $exception->getMessage(),
-                    'sql' => $exception->getSql() ?? 'N/A',
+                    'message'  => $exception->getMessage(),
+                    'sql'      => $exception->getSql() ?? 'N/A',
                     'bindings' => $exception->getBindings() ?? [],
-                    'code' => $exception->getCode(),
-                    'file' => $exception->getFile(),
-                    'line' => $exception->getLine(),
-                    'user_id' => Auth::check() ? Auth::id() : null,
-                    'url' => $request->fullUrl(),
-                    'ip' => $request->ip(),
+                    'code'     => $exception->getCode(),
+                    'file'     => $exception->getFile(),
+                    'line'     => $exception->getLine(),
+                    'user_id'  => Auth::check() ? Auth::id() : null,
+                    'url'      => $request->fullUrl(),
+                    'ip'       => $request->ip(),
                 ]);
 
                 // Respuesta genérica al frontend (sin detalles técnicos)
@@ -122,21 +116,22 @@ class Handler extends ExceptionHandler
             if ($request->expectsJson()) {
                 // Log completo para debug interno
                 Log::error('Internal Server Error', [
-                    'type' => get_class($exception),
+                    'type'    => get_class($exception),
                     'message' => $exception->getMessage(),
-                    'code' => $exception->getCode(),
-                    'file' => $exception->getFile(),
-                    'line' => $exception->getLine(),
-                    'trace' => $exception->getTraceAsString(),
+                    'code'    => $exception->getCode(),
+                    'file'    => $exception->getFile(),
+                    'line'    => $exception->getLine(),
+                    'trace'   => $exception->getTraceAsString(),
                     'user_id' => Auth::check() ? Auth::id() : null,
-                    'url' => $request->fullUrl(),
-                    'ip' => $request->ip(),
+                    'url'     => $request->fullUrl(),
+                    'ip'      => $request->ip(),
                 ]);
 
                 // Solo mensajes seguros al frontend (sin SQL, sin rutas de archivo)
-                $safeMessage = $this->getSafeErrorMessage($exception);
-
-                return $this->jsonError($safeMessage, 500);
+                return $this->jsonError(
+                    $this->getSafeErrorMessage($exception),
+                    500
+                );
             }
         });
     }
@@ -151,27 +146,12 @@ class Handler extends ExceptionHandler
 
         // Lista de palabras/patrones peligrosos que indican información de BD
         $dangerousPatterns = [
-            'SQLSTATE',
-            'SQL:',
-            'PDOException',
-            'QueryException',
-            'Illuminate\\Database',
-            'vendor/',
-            'app/',
-            'database/',
-            'CONSTRAINT',
-            'FOREIGN KEY',
-            'INSERT INTO',
-            'UPDATE',
-            'DELETE FROM',
-            'SELECT',
-            'Table',
-            'Column',
-            'Field',
-            'doesn\'t have a default value',
-            'Duplicate entry',
-            'Unknown column',
-            'Unknown database',
+            'SQLSTATE', 'SQL:', 'PDOException', 'QueryException',
+            'Illuminate\\Database', 'vendor/', 'app/', 'database/',
+            'CONSTRAINT', 'FOREIGN KEY', 'INSERT INTO', 'UPDATE',
+            'DELETE FROM', 'SELECT', 'Table', 'Column', 'Field',
+            'doesn\'t have a default value', 'Duplicate entry',
+            'Unknown column', 'Unknown database',
         ];
 
         // Si el mensaje contiene información peligrosa, usar mensaje genérico

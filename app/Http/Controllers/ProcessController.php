@@ -34,7 +34,7 @@ class ProcessController extends Controller
 
         AuditLogService::log(
             'crear',
-            "Se creó el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
+            "Se creó el proceso de tipo \"{$process->tipo_proceso}\".",
             'Proceso'
         );
 
@@ -64,7 +64,7 @@ class ProcessController extends Controller
 
         AuditLogService::log(
             'editar',
-            "Se actualizó el proceso ID {$updated->proceso_id} (Tipo: {$updated->tipo_proceso}).",
+            "Se actualizó el proceso de tipo \"{$updated->tipo_proceso}\".",
             'Proceso'
         );
 
@@ -96,7 +96,7 @@ class ProcessController extends Controller
 
         AuditLogService::log(
             'editar',
-            "Se {$statusText} el proceso ID {$process->proceso_id} (Tipo: {$process->tipo_proceso}).",
+            "Se {$statusText} el proceso de tipo \"{$process->tipo_proceso}\".",
             'Proceso'
         );
 

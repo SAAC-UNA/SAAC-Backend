@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use App\Services\CareerService;
 use App\Http\Requests\CareerRequest;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Log;
 
 
 class CareerController extends Controller
@@ -90,7 +91,8 @@ class CareerController extends Controller
                     'code'    => 'FK_CONSTRAINT'
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $e->getMessage()], 500);
+            Log::error('Error deleting career', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**
@@ -100,11 +102,11 @@ class CareerController extends Controller
     public function setActive(Request $request, $id)
     {
         $career = Career::find($id);
-        //agregar para log
-        $previousState = $career->activo;
         if (!$career) {
             return response()->json(['message' => 'Carrera no encontrada.'], 404);
         }
+        //agregar para log
+        $previousState = $career->activo;
 
         $validated = $request->validate([
             'active' => ['required', 'boolean'],
@@ -116,13 +118,13 @@ class CareerController extends Controller
         $career->activo = $newActiveState;
         $career->saveQuietly(); // observer omitido: el log manual de abajo cubre esta acción
         //agregar para log
-        $estadoAnterior = $previousState ? 'ACTIVA' : 'INACTIVA';
-        $estadoNuevo    = $newActiveState ? 'ACTIVA' : 'INACTIVA';
+        $previousStatus = $previousState ? 'ACTIVA' : 'INACTIVA';
+        $newStatus      = $newActiveState ? 'ACTIVA' : 'INACTIVA';
         // Registro en el log de bitácora
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la carrera \"{$career->nombre}\" (ID: {$career->carrera_id}). ".
-            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}.",
+    "Se actualizó el estado de la carrera \"{$career->nombre}\". ".
+            "Estado anterior: {$previousStatus}. Estado actual: {$newStatus}.",
     'Carrera'
         );
         // Nota: Career no tiene elementos hijos en la jerarquía actual

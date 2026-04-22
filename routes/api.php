@@ -23,6 +23,7 @@ use App\Http\Controllers\ElementFileController;
 use App\Http\Controllers\EvidenceAssignmentController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\ExtensionRequestController;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ExtensionTimeRequestController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FlexibleExtensionRequestController;
@@ -40,7 +41,6 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 // Dev Controllers (solo para pruebas)
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 // ============================================

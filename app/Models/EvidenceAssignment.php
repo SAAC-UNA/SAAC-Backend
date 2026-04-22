@@ -6,6 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\File;
 
+/**
+ * @property int    $evidencia_asignacion_id
+ * @property int    $proceso_id
+ * @property int    $evidencia_id
+ * @property int    $usuario_id
+ * @property string $estado
+ */
 class EvidenceAssignment extends Model
 {
     use HasFactory;

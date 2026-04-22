@@ -2,8 +2,8 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -16,31 +16,14 @@ class ErrorHelper
      * Patrones peligrosos que indican información de BD que no debe exponerse.
      */
     private const DANGEROUS_PATTERNS = [
-        'SQLSTATE',
-        'SQL:',
-        'PDOException',
-        'QueryException',
-        'Illuminate\\Database',
-        'vendor/',
-        'app/',
-        'database/',
-        'CONSTRAINT',
-        'FOREIGN KEY',
-        'INSERT INTO',
-        'UPDATE',
-        'DELETE FROM',
-        'SELECT',
-        'Table',
-        'Column',
-        'Field',
-        'doesn\'t have a default value',
-        'Duplicate entry',
-        'Unknown column',
-        'Unknown database',
-        'Connection',
-        'mysql',
-        'pgsql',
-        'sqlsrv',
+        'SQLSTATE', 'SQL:', 'PDOException', 'QueryException',
+        'Illuminate\\Database', 'vendor/', 'app/', 'database/',
+        'CONSTRAINT', 'FOREIGN KEY', 'INSERT INTO', 'UPDATE', 'DELETE FROM', 'SELECT',
+        'Table', 'Column', 'Field',
+        'doesn\'t have a default value', 'Duplicate entry',
+        'Unknown column', 'Unknown database',
+        'Connection', 'Connection refused', 'Access denied',
+        'mysql', 'pgsql', 'sqlsrv',
     ];
 
     /**
@@ -71,7 +54,7 @@ class ErrorHelper
     }
 
     /**
-     * Loguea el error completo para debug sin exponerlo al frontend.
+     * Loguea el error completo para debug interno sin exponerlo al frontend.
      * 
      * @param string $context Contexto del error (ej: "Error al crear usuario")
      * @param Throwable $exception La excepción
@@ -81,18 +64,19 @@ class ErrorHelper
     public static function logError(string $context, Throwable $exception, array $extraData = []): void
     {
         Log::error($context, array_merge([
-            'type' => get_class($exception),
+            'type'    => get_class($exception),
             'message' => $exception->getMessage(),
-            'code' => $exception->getCode(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
-            'trace' => $exception->getTraceAsString(),
+            'code'    => $exception->getCode(),
+            'file'    => $exception->getFile(),
+            'line'    => $exception->getLine(),
+            'trace'   => $exception->getTraceAsString(),
             'user_id' => Auth::check() ? Auth::id() : null,
         ], $extraData));
     }
 
     /**
-     * Retorna una respuesta JSON de error segura.
+     * Loguea el error y retorna una respuesta JSON segura.
+     * Uso típico en controladores: return ErrorHelper::jsonResponse($e, 'Error al crear usuario');
      * 
      * @param Throwable $exception La excepción original
      * @param string $logContext Contexto para el log

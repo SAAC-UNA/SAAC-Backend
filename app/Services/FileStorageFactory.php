@@ -40,10 +40,18 @@ class FileStorageFactory
      * Resuelve la estrategia inspeccionando un archivo ya persistido.
      * Útil en makePublic, delete, download donde no tenemos el request original.
      *
-     * @throws \InvalidArgumentException si el archivo no tiene referencia válida
+     * Caso especial: archivos de informes de acreditación (HU-027) no tienen
+     * evidencia_id ni elemento_id. Se usa FlexibleFileService como fallback
+     * ya que comparte el mismo disco (simulated_nas) y las operaciones model-agnostic
+     * (getDisk, makePublic, revokePublicAccess, deleteFile) son idénticas en ambos.
      */
     public function makeFromFile(File $archivo): FileStorageContract
     {
+        if ($archivo->evidencia_id === null && $archivo->elemento_id === null) {
+            // Informe de acreditación: sin evidencia ni elemento asignado.
+            return app(FlexibleFileService::class);
+        }
+
         return $this->make($archivo->evidencia_id, $archivo->elemento_id);
     }
 }

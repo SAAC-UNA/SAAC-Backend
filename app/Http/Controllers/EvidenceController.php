@@ -13,6 +13,7 @@ use App\Http\Requests\RetroalimentacionRequest;
 use App\Services\AuditLogService;
 use App\Exports\EvidencesExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 
 class EvidenceController extends Controller
@@ -96,7 +97,8 @@ class EvidenceController extends Controller
                     'code'    => 'FK_CONSTRAINT',
                 ], 409);
             }
-            return response()->json(['message' => 'Error al eliminar.', 'error' => $qe->getMessage()], 500);
+            Log::error('Error deleting evidence', ['error' => $qe->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**
@@ -150,12 +152,12 @@ class EvidenceController extends Controller
         $evidence->activo = $validated['active'];
         $evidence->saveQuietly(); // observer omitido: el log manual cubre esta acción
         // Registro en el log de bitácora
-        $estadoAnterior = $validated['active'] ? 'INACTIVA' : 'ACTIVA';
-        $estadoNuevo    = $validated['active'] ? 'ACTIVA' : 'INACTIVA';
+        $previousStatus = $validated['active'] ? 'INACTIVA' : 'ACTIVA';
+        $newStatus      = $validated['active'] ? 'ACTIVA' : 'INACTIVA';
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado de la evidencia \"{$evidence->nombre}\" (ID: {$evidence->evidencia_id}). ".
-            "Estado anterior: {$estadoAnterior}. Estado actual: {$estadoNuevo}.",
+    "Se actualizó el estado de la evidencia \"{$evidence->nombre}\". ".
+            "Estado anterior: {$previousStatus}. Estado actual: {$newStatus}.",
     'Evidencia'
         );
 

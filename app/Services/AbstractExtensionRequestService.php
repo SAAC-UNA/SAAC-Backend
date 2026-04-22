@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Contracts\ExtensionRequestContract;
 use App\Models\ExtensionRequest;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Implementación base compartida para solicitudes de ampliación de plazo.

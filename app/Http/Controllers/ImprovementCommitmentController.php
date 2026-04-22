@@ -11,6 +11,7 @@ use App\Services\ImprovementCommitmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador que gestiona las operaciones relacionadas con los Compromisos de Mejora.
@@ -166,11 +167,8 @@ class ImprovementCommitmentController extends Controller
                 ], 409);
             }
 
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al crear el compromiso de mejora.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            Log::error('Database error creating improvement commitment', ['error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al crear el compromiso de mejora.'], 500);
         }
     }
 
@@ -229,11 +227,8 @@ class ImprovementCommitmentController extends Controller
             ], 422);
 
         } catch (QueryException $exception) {
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al actualizar el compromiso de mejora.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            Log::error('Database error updating improvement commitment', ['error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar el compromiso de mejora.'], 500);
         }
     }
 
@@ -295,11 +290,8 @@ class ImprovementCommitmentController extends Controller
             ], 200);
 
         } catch (QueryException $exception) {
-            return response()->json([
-                'error' => 'Database Error',
-                'message' => 'Error al actualizar el estado del compromiso.',
-                'details' => $exception->getMessage(),
-            ], 500);
+            Log::error('Database error updating commitment status', ['id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar el estado del compromiso.'], 500);
         }
     }
 }

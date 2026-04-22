@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use App\Services\ComponentService;
 use App\Http\Requests\ComponentRequest;
 use App\Services\AuditLogService;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -96,10 +97,8 @@ class ComponentController extends Controller
                 ], 409);
             }
 
-            return response()->json([
-                'message' => 'Error al eliminar.',
-                'error'   => $e->getMessage(),
-            ], 500);
+            Log::error('Error deleting component', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al eliminar.'], 500);
         }
     }
     /**
@@ -118,7 +117,7 @@ class ComponentController extends Controller
         ]);
 
         $newActiveState = $validated['active'];
-        $estadoAnterior = $component->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
+        $previousStatus = $component->activo ? 'ACTIVO' : 'INACTIVO'; // capturar ANTES de modificar
 
         // Actualizar estado (saveQuietly: el log manual de abajo cubre esta acción)
         $component->activo = $newActiveState;
@@ -147,12 +146,12 @@ class ComponentController extends Controller
             : ' Elementos hijos desactivados en cascada.';
 
         // Registro en el log de bitácora
-        $estadoNuevo = $newActiveState ? 'ACTIVO' : 'INACTIVO';
+        $newStatus = $newActiveState ? 'ACTIVO' : 'INACTIVO';
 
         AuditLogService::log(
 'editar',
     "Se actualizó el estado del componente \"{$component->nombre}\" (ID: {$component->componente_id}). ".
-            "Estado anterior: {$estadoAnterior}. Estado nuevo: {$estadoNuevo}. ".
+            "Estado anterior: {$previousStatus}. Estado nuevo: {$newStatus}. ".
             "Se aplicó cambio en cascada a hijos (criterios, estándares, evidencias).",
     'Componente'
         );

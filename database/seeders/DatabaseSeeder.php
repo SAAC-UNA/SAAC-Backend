@@ -49,7 +49,8 @@ class DatabaseSeeder extends Seeder
             // === CICLOS Y PROCESOS ===
             AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
             ProcessSeeder::class,               // 15. Procesos (dependen de ciclos)
-            AutoevaluationSeeder::class,        // 16. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
+            AccreditationReportSeeder::class,   // 16. Informes de acreditación SINAES (HU-027)
+            AutoevaluationSeeder::class,        // 17. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
             ImprovementCommitmentSeeder::class, // 17. Compromisos de mejora (dependen de procesos tipo "Compromiso de mejora")
 
             // === ASIGNACIONES DE EVIDENCIAS ===

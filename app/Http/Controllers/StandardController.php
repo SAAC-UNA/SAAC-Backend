@@ -111,7 +111,7 @@ class StandardController extends Controller
 
         AuditLogService::log(
 'editar',
-    "Se actualizó el estado del estándar \"{$standar->nombre}\" (ID: {$standar->estandar_id}). ".
+    "Se actualizó el estado del estándar \"{$standar->nombre}\". ".
             "Estado anterior: {$estadoAnterior}. Estado nuevo: {$estadoNuevo}.",
     'Estándar'
         );

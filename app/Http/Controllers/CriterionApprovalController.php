@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Auth\Access\AuthorizationException;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controlador que gestiona las operaciones relacionadas con Aprobaciones de Criterios.
@@ -46,11 +47,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las aprobaciones.',
-                'error' => $exception->getMessage()
-            ], 500);
+            Log::error('Error fetching criterion approvals', ['error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones.'], 500);
         }
     }
 
@@ -80,11 +78,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener la aprobación.',
-                'error' => $exception->getMessage()
-            ], 500);
+            Log::error('Error fetching criterion approval', ['approval_id' => $approvalId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener la aprobación.'], 500);
         }
     }
 
@@ -135,21 +130,18 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage()
-            ], 400);
+            Log::error('Error approving criterion', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
 
     /**
-     * Rechazar un criterio (bloque de evidencias).
-     *
      * @param CriterionApprovalRequest $request Datos validados del rechazo.
      * @param int $criterionId Identificador del criterio a rechazar.
      * @return JsonResponse
@@ -193,15 +185,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.'
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage()
-            ], 400);
+            Log::error('Error rejecting criterion', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
 
@@ -238,11 +229,8 @@ class CriterionApprovalController extends Controller
             ], 200);
 
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las aprobaciones de evidencias.',
-                'error'   => $exception->getMessage(),
-            ], 500);
+            Log::error('Error listing evidence approvals', ['criterio_id' => $criterionId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al obtener las aprobaciones de evidencias.'], 500);
         }
     }
 
@@ -283,7 +271,7 @@ class CriterionApprovalController extends Controller
 
             AuditLogService::log(
                 'aprobar',
-                "Evidencia {$evidenceId} aprobada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                "Evidencia aprobada individualmente en criterio \"{$criterion->nomenclatura}\".",
                 'Aprobación Criterios'
             );
 
@@ -294,15 +282,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 400);
+            Log::error('Error approving individual evidence', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar la aprobación.'], 500);
         }
     }
 
@@ -345,7 +332,7 @@ class CriterionApprovalController extends Controller
 
             AuditLogService::log(
                 'rechazar',
-                "Evidencia {$evidenceId} rechazada individualmente en criterio {$criterion->nomenclatura} (ID: {$criterionId})",
+                "Evidencia rechazada individualmente en criterio \"{$criterion->nomenclatura}\".",
                 'Aprobación Criterios'
             );
 
@@ -356,15 +343,14 @@ class CriterionApprovalController extends Controller
             ], 201);
 
         } catch (AuthorizationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No tienes permiso para realizar esta acción.',
-            ], 403);
+            return response()->json(['success' => false, 'message' => 'No tienes permiso para realizar esta acción.'], 403);
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+        } catch (\LogicException $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
         } catch (Exception $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 400);
+            Log::error('Error rejecting individual evidence', ['criterio_id' => $criterionId, 'evidencia_id' => $evidenceId, 'error' => $exception->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al procesar el rechazo.'], 500);
         }
     }
 

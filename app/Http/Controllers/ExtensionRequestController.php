@@ -10,6 +10,7 @@ use App\Services\TradicionalExtensionRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 use App\Events\ExtensionRequestCreated;
@@ -285,12 +286,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($extensionRequest)
             ], 201);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar cualquier error de negocio y retornar 400
-            return response()->json([
-                'message' => 'Error al crear la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error creating extension request', ['usuario_id' => Auth::id(), 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -368,12 +368,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($approved)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al aprobar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error approving extension request', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 
@@ -451,12 +450,11 @@ class ExtensionRequestController extends Controller
                 'data' => new ExtensionRequestResource($rejected)
             ], 200);
             
+        } catch (\InvalidArgumentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
-            // Capturar errores de negocio (ej: solicitud ya resuelta)
-            return response()->json([
-                'message' => 'Error al rechazar la solicitud.',
-                'error' => $exception->getMessage()
-            ], 400);
+            Log::error('Error rejecting extension request', ['solicitud_id' => $id, 'error' => $exception->getMessage()]);
+            return response()->json(['message' => 'Error al procesar la solicitud.'], 500);
         }
     }
 }
