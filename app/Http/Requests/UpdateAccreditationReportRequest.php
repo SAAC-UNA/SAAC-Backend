@@ -26,11 +26,6 @@ class UpdateAccreditationReportRequest extends FormRequest
 
     public function rules(): array
     {
-        $report = $this->route('report');
-        $reportId = $report instanceof AccreditationReport
-            ? $report->informe_acreditacion_id
-            : null;
-
         return [
             // Archivo PDF de reemplazo (opcional — solo si se reemplaza el PDF actual)
             'archivo' => [
@@ -38,38 +33,6 @@ class UpdateAccreditationReportRequest extends FormRequest
                 'file',
                 'mimes:pdf',
                 'max:51200',
-            ],
-
-            // Número de resolución — único excepto para este mismo informe
-            'numero_resolucion' => [
-                'sometimes',
-                'string',
-                'max:100',
-                Rule::unique('INFORME_ACREDITACION', 'numero_resolucion')
-                    ->ignore($reportId, 'informe_acreditacion_id'),
-            ],
-
-            // Fecha en que SINAES emitió la resolución
-            'fecha_resolucion' => [
-                'sometimes',
-                'date',
-                'date_format:Y-m-d',
-                'before_or_equal:today',
-            ],
-
-            // Inicio de la vigencia
-            'vigencia_desde' => [
-                'sometimes',
-                'date',
-                'date_format:Y-m-d',
-            ],
-
-            // Fin de la vigencia
-            'vigencia_hasta' => [
-                'sometimes',
-                'date',
-                'date_format:Y-m-d',
-                'after:vigencia_desde',
             ],
 
             // Observaciones
@@ -86,30 +49,20 @@ class UpdateAccreditationReportRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validador) {
-            $this->validateVigenciaCoherence($validador);
-        });
+        // No hay validaciones adicionales por ahora
     }
 
     /**
-     * Si se envía vigencia_hasta, debe ser posterior a vigencia_desde
-     * (tomando vigencia_desde del request o del informe existente).
+     * Mensajes de error en español.
      */
-    private function validateVigenciaCoherence(Validator $validador): void
+    public function messages(): array
     {
-        if ($validador->errors()->any()) {
-            return;
-        }
-
-        $report = $this->route('report');
-        $desde  = $this->input('vigencia_desde')
-            ?? ($report instanceof AccreditationReport ? $report->vigencia_desde?->format('Y-m-d') : null);
-        $hasta  = $this->input('vigencia_hasta')
-            ?? ($report instanceof AccreditationReport ? $report->vigencia_hasta?->format('Y-m-d') : null);
-
-        if ($desde && $hasta && $hasta <= $desde) {
-            $validador->errors()->add('vigencia_hasta', 'La vigencia hasta debe ser posterior a la vigencia desde.');
-        }
+        return [
+            'archivo.file'  => 'El campo archivo debe ser un archivo válido.',
+            'archivo.mimes' => 'El informe de acreditación debe ser un archivo PDF.',
+            'archivo.max'   => 'El archivo no puede superar los 50 MB.',
+            'observaciones.max' => 'Las observaciones no pueden superar los 500 caracteres.',
+        ];
     }
 
     protected function failedValidation(Validator $validator): void

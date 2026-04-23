@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\AccreditationCycle;
 use App\Models\AccreditationReport;
-use App\Models\File;
+use App\Models\SelfEvaluationProcess;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -29,7 +30,7 @@ class AccreditationReportFeatureTest extends TestCase
     private User $superusuario;
     private User $encargado;
     private User $profesor;
-    private AccreditationCycle $cycle;
+    private SelfEvaluationProcess $process;
 
     protected function setUp(): void
     {
@@ -46,11 +47,11 @@ class AccreditationReportFeatureTest extends TestCase
         $this->profesor = User::factory()->create();
         $this->profesor->assignRole(Role::where('name', 'Profesor')->first());
 
-        $this->cycle = AccreditationCycle::factory()->create(['estado' => 'completado']);
+        $this->process = SelfEvaluationProcess::factory()->create(['estado' => 'completado']);
 
         // Asociar encargado y profesor con la carrera del ciclo para que el
         // global scope BaseCareer (byCareerCampus) no filtre el ciclo fuera.
-        $carreraId = $this->cycle->careerCampus->carrera_id;
+        $carreraId = $this->process->cycle->careerCampus->carrera_id;
         $this->encargado->careers()->attach($carreraId);
         $this->profesor->careers()->attach($carreraId);
     }
@@ -59,17 +60,13 @@ class AccreditationReportFeatureTest extends TestCase
 
     private function publishPayload(array $overrides = []): array
     {
-        $file = File::factory()->create([
-            'tipo_mime'      => 'application/pdf',
-            'nombre_original' => 'resolucion-sinaes.pdf',
-        ]);
+        Storage::fake('simulated_nas');
+        $file = UploadedFile::fake()->create('resolucion-sinaes.pdf', 100, 'application/pdf');
 
         return array_merge([
-            'archivo_id'        => $file->archivo_id,
-            'numero_resolucion' => 'RES-2026-TEST-001',
-            'fecha_resolucion'  => '2026-01-15',
-            'vigencia_desde'    => '2026-01-15',
-            'vigencia_hasta'    => '2030-01-15',
+            'archivo'       => $file,
+            'proceso_id'    => $this->process->proceso_id,
+            'observaciones' => 'Test Observaciones',
         ], $overrides);
     }
 
@@ -100,13 +97,13 @@ class AccreditationReportFeatureTest extends TestCase
         $reportEnCarrera = AccreditationReport::factory()->published()->create();
         AccreditationReport::factory()->published()->count(3)->create();
 
-        $carreraId = $reportEnCarrera->accreditationCycle->careerCampus->carrera_id;
+        $carreraId = $reportEnCarrera->process->cycle->careerCampus->carrera_id;
 
         $response = $this->getJson("/api/informes-acreditacion?carrera_id={$carreraId}")
             ->assertStatus(200);
 
         foreach ($response->json('data') as $item) {
-            $this->assertEquals($carreraId, $item['ciclo']['carrera_sede']['carrera_id'] ?? $carreraId);
+            $this->assertEquals($carreraId, $item['proceso']['ciclo']['carrera_sede']['carrera_id'] ?? $carreraId);
         }
     }
 
@@ -114,40 +111,40 @@ class AccreditationReportFeatureTest extends TestCase
 
     public function test_show_by_cycle_retorna_404_sin_informe(): void
     {
-        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe")
+        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe")
             ->assertStatus(404);
     }
 
     public function test_show_by_cycle_retorna_informe_publicado_sin_autenticacion(): void
     {
         $report = AccreditationReport::factory()->published()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
-        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe")
+        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe")
             ->assertStatus(200)
-            ->assertJsonPath('data.numero_resolucion', $report->numero_resolucion);
+            ->assertJsonPath('data.observaciones', $report->observaciones);
     }
 
     public function test_show_by_cycle_informe_despublicado_retorna_403_sin_auth(): void
     {
         AccreditationReport::factory()->unpublished()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
-        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe")
+        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe")
             ->assertStatus(403);
     }
 
     public function test_show_by_cycle_informe_despublicado_visible_con_permiso(): void
     {
         AccreditationReport::factory()->unpublished()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
         Sanctum::actingAs($this->superusuario);
 
-        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe")
+        $this->getJson("/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe")
             ->assertStatus(200);
     }
 
@@ -156,7 +153,7 @@ class AccreditationReportFeatureTest extends TestCase
     public function test_publish_retorna_401_sin_token(): void
     {
         $this->postJson(
-            "/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe",
+            "/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe",
             $this->publishPayload()
         )->assertStatus(401);
     }
@@ -166,7 +163,7 @@ class AccreditationReportFeatureTest extends TestCase
         Sanctum::actingAs($this->profesor);
 
         $this->postJson(
-            "/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe",
+            "/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe",
             $this->publishPayload()
         )->assertStatus(403);
     }
@@ -176,30 +173,30 @@ class AccreditationReportFeatureTest extends TestCase
         Sanctum::actingAs($this->encargado);
 
         $response = $this->postJson(
-            "/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe",
+            "/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe",
             $this->publishPayload()
         )->assertStatus(201);
 
-        $response->assertJsonPath('data.numero_resolucion', 'RES-2026-TEST-001');
+        $response->assertJsonPath('data.observaciones', 'Test Observaciones');
         $response->assertJsonPath('data.estado', AccreditationReport::STATUS_PUBLISHED);
 
-        $this->assertDatabaseHas('INFORME_ACREDITACION', [
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
-            'numero_resolucion'     => 'RES-2026-TEST-001',
-            'estado'                => AccreditationReport::STATUS_PUBLISHED,
+        $this->assertDatabaseHas('INFORME_ARCHIVO', [
+            'proceso_id'    => $this->process->proceso_id,
+            'observaciones' => 'Test Observaciones',
+            'estado'        => AccreditationReport::STATUS_PUBLISHED,
         ]);
     }
 
     public function test_publish_retorna_422_si_ciclo_ya_tiene_informe(): void
     {
         AccreditationReport::factory()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
         Sanctum::actingAs($this->encargado);
 
         $this->postJson(
-            "/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe",
+            "/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe",
             $this->publishPayload()
         )->assertStatus(422);
     }
@@ -209,10 +206,10 @@ class AccreditationReportFeatureTest extends TestCase
         Sanctum::actingAs($this->encargado);
 
         $this->postJson(
-            "/api/estructura/ciclos-acreditacion/{$this->cycle->ciclo_acreditacion_id}/informe",
+            "/api/estructura/ciclos-acreditacion/{$this->process->ciclo_acreditacion_id}/informe",
             []
         )->assertStatus(422)
-         ->assertJsonValidationErrors(['archivo_id', 'numero_resolucion', 'fecha_resolucion', 'vigencia_desde', 'vigencia_hasta']);
+         ->assertJsonValidationErrors(['archivo', 'proceso_id']);
     }
 
     // ─── PATCH /api/informes-acreditacion/{report}/despublicar ───────────────
@@ -221,7 +218,7 @@ class AccreditationReportFeatureTest extends TestCase
     {
         $report = AccreditationReport::factory()->published()->create();
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar")
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar")
             ->assertStatus(401);
     }
 
@@ -231,7 +228,7 @@ class AccreditationReportFeatureTest extends TestCase
 
         Sanctum::actingAs($this->encargado);
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar")
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar")
             ->assertStatus(403);
     }
 
@@ -241,26 +238,26 @@ class AccreditationReportFeatureTest extends TestCase
 
         Sanctum::actingAs($this->profesor);
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar")
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar")
             ->assertStatus(403);
     }
 
     public function test_unpublish_cambia_estado_a_despublicado(): void
     {
         $report = AccreditationReport::factory()->published()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
         Sanctum::actingAs($this->superusuario);
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar", [
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar", [
             'motivo' => 'Corrección de datos',
         ])->assertStatus(200)
           ->assertJsonPath('data.estado', AccreditationReport::STATUS_UNPUBLISHED);
 
-        $this->assertDatabaseHas('INFORME_ACREDITACION', [
-            'informe_acreditacion_id' => $report->informe_acreditacion_id,
-            'estado'                  => AccreditationReport::STATUS_UNPUBLISHED,
+        $this->assertDatabaseHas('INFORME_ARCHIVO', [
+            'informe_archivo_id' => $report->informe_archivo_id,
+            'estado'             => AccreditationReport::STATUS_UNPUBLISHED,
         ]);
     }
 
@@ -270,19 +267,19 @@ class AccreditationReportFeatureTest extends TestCase
 
         Sanctum::actingAs($this->superusuario);
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar")
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar")
             ->assertStatus(422);
     }
 
     public function test_unpublish_sin_motivo_es_valido(): void
     {
         $report = AccreditationReport::factory()->published()->create([
-            'ciclo_acreditacion_id' => $this->cycle->ciclo_acreditacion_id,
+            'proceso_id' => $this->process->proceso_id,
         ]);
 
         Sanctum::actingAs($this->superusuario);
 
-        $this->patchJson("/api/informes-acreditacion/{$report->informe_acreditacion_id}/despublicar")
+        $this->patchJson("/api/informes-acreditacion/{$report->informe_archivo_id}/despublicar")
             ->assertStatus(200);
     }
 }

@@ -17,20 +17,21 @@ class AccreditationReportFactory extends Factory
 
     public function definition(): array
     {
-        $desde = $this->faker->dateTimeBetween('-2 years', '-1 year');
-        $hasta = $this->faker->dateTimeBetween('+1 year', '+5 years');
-
         return [
-            'ciclo_acreditacion_id'  => AccreditationCycle::factory(),
-            'archivo_id'             => File::factory(),
+            'proceso_id'             => \App\Models\Process::factory(),
+            'usuario_id'             => User::factory(),
             'usuario_publicacion_id' => User::factory(),
             'estado'                 => AccreditationReport::STATUS_PUBLISHED,
-            'numero_resolucion'      => 'RES-' . $this->faker->unique()->numerify('####-####'),
-            'fecha_resolucion'       => $desde->format('Y-m-d'),
-            'vigencia_desde'         => $desde->format('Y-m-d'),
-            'vigencia_hasta'         => $hasta->format('Y-m-d'),
             'fecha_publicacion'      => now(),
             'observaciones'          => null,
+            'fecha_subida'           => now(),
+            'tipo'                   => 'archivo',
+            'path'                   => 'reports/' . $this->faker->uuid() . '.pdf',
+            'nombre_original'        => $this->faker->word() . '.pdf',
+            'tamanio'                => $this->faker->numberBetween(1000, 5000000),
+            'tipo_mime'              => 'application/pdf',
+            'is_publico'             => true,
+            'token_publico'          => $this->faker->uuid(),
         ];
     }
 

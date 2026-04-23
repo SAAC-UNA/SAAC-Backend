@@ -89,7 +89,7 @@ class AccreditationReportController extends Controller
         }
 
         return new AccreditationReportResource(
-            $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
+            $report->loadMissing(['process.cycle.careerCampus.career', 'process.cycle.careerCampus.campus', 'publishedBy'])
         );
     }
 
@@ -120,14 +120,14 @@ class AccreditationReportController extends Controller
 
         AuditLogService::log(
             'publicar',
-            "Se publicó el informe de acreditación del ciclo \"{$cycle->nombre}\" (resolución: {$report->numero_resolucion}).",
+            "Se publicó el informe de acreditación del ciclo \"{$cycle->nombre}\".",
             'Informe Acreditación'
         );
 
         $this->service->notifyPublication($cycle, $report, $request->user());
 
         return AccreditationReportResource::make(
-            $report->loadMissing(['accreditationCycle.careerCampus.career', 'accreditationCycle.careerCampus.campus', 'file', 'publishedBy'])
+            $report->loadMissing(['process.cycle.careerCampus.career', 'process.cycle.careerCampus.campus', 'publishedBy'])
         )->response()->setStatusCode(201);
     }
 
@@ -148,7 +148,7 @@ class AccreditationReportController extends Controller
 
         AuditLogService::log(
             'editar',
-            "Se editó el informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}).",
+            "Se editó el informe de acreditación del ciclo \"{$updated->process->cycle->nombre}\".",
             'Informe Acreditación'
         );
 
@@ -164,14 +164,14 @@ class AccreditationReportController extends Controller
     {
         $this->authorize('delete', $report);
 
-        $cicloNombre      = $report->accreditationCycle->nombre;
-        $numeroResolucion = $report->numero_resolucion;
+        $report->loadMissing('process.cycle');
+        $cicloNombre = $report->process?->cycle?->nombre ?? 'N/A';
 
         $this->service->deleteReport($report);
 
         AuditLogService::log(
             'eliminar',
-            "Se eliminó el informe de acreditación del ciclo \"{$cicloNombre}\" (resolución: {$numeroResolucion}).",
+            "Se eliminó el informe de acreditación del ciclo \"{$cicloNombre}\".",
             'Informe Acreditación'
         );
 
@@ -198,14 +198,14 @@ class AccreditationReportController extends Controller
 
         AuditLogService::log(
             'despublicar',
-            "Se despublicó el informe de acreditación del ciclo \"{$updated->accreditationCycle->nombre}\" (resolución: {$updated->numero_resolucion}).",
+            "Se despublicó el informe de acreditación del ciclo \"{$updated->process->cycle->nombre}\".",
             'Informe Acreditación'
         );
 
         $this->service->notifyUnpublication($updated, $request->user());
 
         return new AccreditationReportResource(
-            $updated->loadMissing(['accreditationCycle', 'file', 'publishedBy'])
+            $updated->loadMissing(['process.cycle', 'publishedBy'])
         );
     }
 }

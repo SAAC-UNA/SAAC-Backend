@@ -25,6 +25,9 @@ return [
     */
     'storage_disk' => env('STORAGE_DISK', 'simulated_nas'),
 
+    // Disco dedicado para archivos de informes (separado de evidencias)
+    'report_storage_disk' => env('REPORT_STORAGE_DISK', 'simulated_nas_reports'),
+
     'export_limit' => 20000,
 
 ];

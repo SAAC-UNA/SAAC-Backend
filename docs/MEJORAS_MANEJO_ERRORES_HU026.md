@@ -1,4 +1,4 @@
-# Mejoras al Manejo de Errores — HU-027
+# Mejoras al Manejo de Errores — HU-026
 
 **Rama:** `Hu_028_Publicación-de-informe-de-acreditación-aprobado`  
 **Archivos modificados/creados:**

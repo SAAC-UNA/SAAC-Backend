@@ -55,6 +55,13 @@ return [
             'throw' => true,
         ],
 
+        // Carpeta NAS separada para archivos de informes
+        'simulated_nas_reports' => [
+            'driver' => 'local',
+            'root' => storage_path('app/simulated_nas/informes'),
+            'throw' => true,
+        ],
+
         // Disk de producción para el NAS de la universidad (SFTP)
         // Configurar las credenciales en .env cuando esté disponible
         'production_nas' => [
