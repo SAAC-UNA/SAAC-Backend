@@ -1,0 +1,2868 @@
+{
+  "dimensions": [
+    {
+      "code": "D0",
+      "name": "Transversal",
+      "description": "Criterios transversales de admisibilidad y sostenibilidad."
+    },
+    {
+      "code": "D1",
+      "name": "Relación con el contexto",
+      "description": "Dimensión 1 del Manual SINAES 2009."
+    },
+    {
+      "code": "D2",
+      "name": "Recursos",
+      "description": "Dimensión 2 del Manual SINAES 2009."
+    },
+    {
+      "code": "D3",
+      "name": "Proceso educativo",
+      "description": "Dimensión 3 del Manual SINAES 2009."
+    },
+    {
+      "code": "D4",
+      "name": "Resultados",
+      "description": "Dimensión 4 del Manual SINAES 2009."
+    }
+  ],
+  "standards": [
+    {
+      "num": 1,
+      "component": "1.1",
+      "description": "La carrera debe contar al menos con un material informativo."
+    },
+    {
+      "num": 2,
+      "component": "1.1",
+      "description": "Al menos un 70% de los estudiantes debe reportar que recibe la información necesaria para su vida académica."
+    },
+    {
+      "num": 3,
+      "component": "1.3",
+      "description": "Se debe contar con al menos un convenio y relaciones de coordinación académica –nacional o internacional– con otras disciplinas o unidades académicas, intercambio de que y experiencias profesores la realización estudiantes, así como tengan conjunta de acciones que relevancia e la carrera."
+    },
+    {
+      "num": 4,
+      "component": "2.1",
+      "description": "Todos los cursos 100%- -el deben contar con sus respectivos programas y éstos deben estar completos."
+    },
+    {
+      "num": 5,
+      "component": "2.2",
+      "description": "El 100% del personal académico deberá poseer como mínimo el grado de Licenciatura. (Cuando este estándar no se cumpla en su totalidad, deberán indicarse las razones)."
+    },
+    {
+      "num": 6,
+      "component": "2.2",
+      "description": "Al menos un 25% del personal académico asociado a asignaturas propias de la carrera, debe contar con grados superiores a la licenciatura."
+    },
+    {
+      "num": 7,
+      "component": "2.2",
+      "description": "Al menos un 50% del personal académico de cursos propios de la carrera, debe tener como mínimo tres años de experiencia académica universitaria."
+    },
+    {
+      "num": 8,
+      "component": "2.2",
+      "description": "Al menos un 30% del personal académico debe tener como mínimo tres años de experiencia profesional, según la naturaleza de la carrera."
+    },
+    {
+      "num": 9,
+      "component": "2.2",
+      "description": "Al menos un 25 % del personal académico deberá haberse graduado, en el nivel de grado o de posgrado, en otras instituciones universitarias nacionales o extranjeras."
+    },
+    {
+      "num": 10,
+      "component": "2.2",
+      "description": "Al menos un 70% del personal académico debe tener una relación contractual estable."
+    },
+    {
+      "num": 11,
+      "component": "2.2",
+      "description": "Al menos el 70% del personal académico de la carrera deberá haber participado en procesos de capacitación o actualización relacionados con la competencia docente planeamiento, metodología, recursos para el aprendizaje, evaluación y otros."
+    },
+    {
+      "num": 12,
+      "component": "2.4",
+      "description": "Al menos un 80% académico, de personal técnico, de administrativo, apoyo y estudiantes, deben opinar que con buenas condiciones de higiene, seguridad y salud ocupacional en todos los tipos de planta física que utiliza la carrera."
+    },
+    {
+      "num": 13,
+      "component": "2.5",
+      "description": "Al menos un 70% del personal académico y de los estudiantes debe mostrarse satisfecho con los del diferentes aspectos centro de información y recursos."
+    },
+    {
+      "num": 14,
+      "component": "2.5",
+      "description": "El centro de información y recursos al que carrera debe accede contar, al menos, con un ejemplar de cada uno de los libros o documentos que bibliografía incluye obligatoria de los programas de los cursos; la bibliografía obligatoria de los programas con un cursos; de ejemplar, al menos, de cada los trabajos que ha uno personal el producido académico, así como de los informes finales de proyectos académicos."
+    },
+    {
+      "num": 15,
+      "component": "2.6",
+      "description": "Al menos un personal 70 % del académico, del administrativo y del técnico deben reportar satisfacción con el estado del equipo de cómputo y multimedia, y con su acceso a éste."
+    },
+    {
+      "num": 16,
+      "component": "2.6",
+      "description": "El 100% de los estudiantes debe tener acceso pleno al laboratorio de informática."
+    },
+    {
+      "num": 17,
+      "component": "3.1",
+      "description": "Los instrumentos de evaluación del personal académico serán administrados a todos los estudiantes y en todos los cursos."
+    },
+    {
+      "num": 18,
+      "component": "3.2",
+      "description": "Durante las dos primeras semanas de clase, el 100% de los estudiantes de cada curso debe ser informado sobre de evaluación y recibir una clara explicación acerca de ésta."
+    },
+    {
+      "num": 19,
+      "component": "3.3",
+      "description": "Al menos un 70% del personal que labora en la carrera debe reportar la existencia de un trabajo que clima de propicie el los logro de objetivos educativos de la carrera."
+    },
+    {
+      "num": 20,
+      "component": "3.3",
+      "description": "La persona que ocupe la dirección de la carrera debe dedicar al menos medio tiempo a las labores de dirección."
+    },
+    {
+      "num": 21,
+      "component": "3.3",
+      "description": "El 100% de los debe cursos ofrecerse de acuerdo la programación con establecida en el plan de estudios, al menos una vez al año."
+    },
+    {
+      "num": 22,
+      "component": "3.4",
+      "description": "La carrera debe ejecutar al menos un proyecto de investigación en áreas propias de su disciplina."
+    },
+    {
+      "num": 23,
+      "component": "3.5",
+      "description": ". La"
+    },
+    {
+      "num": 24,
+      "component": "3.6",
+      "description": "Se debe contar, al menos, con un reglamento de régimen estudiantil o con normativa que regule los deberes y derechos, la los libertad la representación y la participación, así como la revisión de las decisiones que afecten a los estudiantes."
+    },
+    {
+      "num": 25,
+      "component": "3.6",
+      "description": "Al menos un 70% los estudiantes se deben de mostrar con el satisfechos horario de los servicios ofrecidos dependencias por administrativas los con y servicios académicos."
+    },
+    {
+      "num": 26,
+      "component": "3.6",
+      "description": "La carrera debe contar años de experiencia, al menos, en el ofrecimiento asesoría académica curricular."
+    },
+    {
+      "num": 27,
+      "component": "4.2",
+      "description": "Todos los estudiantes, para obtener el grado de licenciatura, deben realizar un trabajo final de graduación o su equivalente, de acuerdo con la carrera."
+    },
+    {
+      "num": 28,
+      "component": "4.2",
+      "description": "Todos los estudiantes, antes de graduarse, deben cumplir con al menos 150 horas de Trabajo Comunal, o su equivalente en acciones de proyección relacionadas estrechamente con la carrera."
+    },
+    {
+      "num": 29,
+      "component": "4.2",
+      "description": "Al menos un 70% de una muestra representativa de graduados de los últimos cuatro años opina que la carrera lo facultó para continuar aprendiendo en el campo de su especialidad."
+    },
+    {
+      "num": 30,
+      "component": "4.2",
+      "description": "Al menos un 70% de una muestra representativa de graduados debe opinar que la preparación recibida durante le permite desempeñarse satisfactoriamente en su trabajo."
+    },
+    {
+      "num": 31,
+      "component": "4.2",
+      "description": "Al menos un 70% de una muestra representativa de empleadores de graduados de la carrera han de mostrarse satisfechos con el desempeño y con el perfil profesional de salida de los graduados de la carrera."
+    },
+    {
+      "num": 32,
+      "component": "4.3",
+      "description": "Al menos un 50% del personal tiempo completo debe contar con producción académica indexada anualmente."
+    },
+    {
+      "num": 33,
+      "component": "4.3",
+      "description": "Al menos un 25% del personal a tiempo parcial debe contar con producción académica indexada anualmente."
+    },
+    {
+      "num": 34,
+      "component": "4.3",
+      "description": "Al menos cada dos años, el personal académico de la carrera a tiempo completo debe participar con ponencias o conferencias en foros nacionales o internacionales."
+    }
+  ],
+  "evidences": [
+    {
+      "num": 1,
+      "criterion": "A.1",
+      "description": "Total de años de funcionamiento efectivo de la carrera o"
+    },
+    {
+      "num": 2,
+      "criterion": "A.1",
+      "description": "Año de graduación del primer grupo de estudiantes admitido en la carrera o programa."
+    },
+    {
+      "num": 3,
+      "criterion": "A.1",
+      "description": "Serie histórica de las matrículas y de los graduados de los últimos cinco años."
+    },
+    {
+      "num": 4,
+      "criterion": "A.2",
+      "description": "Lista de cursos, con indicación del número de créditos de cada uno, horas semanales de lecciones, horas semanales de trabajo del estudiante y semanas durante las cuales se imparte."
+    },
+    {
+      "num": 5,
+      "criterion": "A.3",
+      "description": "Duración del ciclo lectivo en semanas."
+    },
+    {
+      "num": 6,
+      "criterion": "A.3",
+      "description": "Justificación de la duración del ciclo y los créditos cuando la"
+    },
+    {
+      "num": 7,
+      "criterion": "A.4",
+      "description": "Descripción del grado de cumplimiento con la normativa de grados y títulos de la educación superior en Costa Rica."
+    },
+    {
+      "num": 8,
+      "criterion": "A.5",
+      "description": "Lista de estudiantes procedentes de otras universidades a quienes se les reconocieron o equipararon cursos, según universidad, carrera de procedencia y cursos reconocidos."
+    },
+    {
+      "num": 9,
+      "criterion": "A.6",
+      "description": "Descripción del mecanismo que se sigue en la carrera para resolver las solicitudes de reconocimiento, y normativa que rige la decisión."
+    },
+    {
+      "num": 10,
+      "criterion": "A.6",
+      "description": "Lista de cursos reconocidos y no reconocidos, según institución de procedencia."
+    },
+    {
+      "num": 11,
+      "criterion": "A.7",
+      "description": "Porcentaje máximo de créditos que se puede equiparar al"
+    },
+    {
+      "num": 12,
+      "criterion": "A.7",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 13,
+      "criterion": "A.8",
+      "description": "Certificación, emitida por la instancia universitaria competente, de que el 100% de los estudiantes procedentes de la secundaria cumple con la presentación del título de Bachiller de Enseñanza Media debidamente certificado. 45 Criterios Evidencias A.9 La equiparación de grados procederá solamente entre instituciones debidamente autorizadas por la entidad competente. A.10 Todo reconocimiento de un tramo cursado en una institución paraun"
+    },
+    {
+      "num": 14,
+      "criterion": "A.9",
+      "description": "Total de estudiantes a los que se les ha reconocido un tramo de carrera de una institución parauniversitaria en los últimos cuatro años, según procedencia."
+    },
+    {
+      "num": 15,
+      "criterion": "A.10",
+      "description": "Lista de convenios existentes con instituciones parauniversitarias."
+    },
+    {
+      "num": 16,
+      "criterion": "A.10",
+      "description": "Total de estudiantes a los que se les ha reconocido un tramo de carrera de una institución parauniversitaria en los últimos cuatro años, según procedencia."
+    },
+    {
+      "num": 17,
+      "criterion": "A.11",
+      "description": "Lista de cursos, con indicación del número de créditos de cada uno, horas semanales de lecciones, horas semanales de trabajo del estudiante y semanas durante las cuales se imparte."
+    },
+    {
+      "num": 18,
+      "criterion": "A.12",
+      "description": "Descripción de la normativa que regula los plazos de entrega de los resultados obtenidos por los estudiantes en los cursos."
+    },
+    {
+      "num": 19,
+      "criterion": "A.12",
+      "description": "Número de estudiantes a quienes se han reconocido aprendizajes por experiencia, y porcentaje de cursos del plan de estudios que tales aprendizajes sustituyen, por cada estudiante. 4.2 DIMENSIÓN 1: Relación con el contexto Criterios y estándares del componente: 1.1.Información y promoción Criterios y estándares Evidencias"
+    },
+    {
+      "num": 20,
+      "criterion": "1.1.1",
+      "description": "Lista descriptiva de los materiales informativos disponibles impresos, audiovisuales o electrónicos según temas que trata cada uno y medios de publicación impresos, Internet, prensa, televisión, actividades de divulgación como ferias y otros. Debe haber muestras disponibles."
+    },
+    {
+      "num": 21,
+      "criterion": "1.1.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 22,
+      "criterion": "1.1.2",
+      "description": "Porcentaje de estudiantes y profesores que opinan que, en los cursos, se utilizan con frecuencia y pertinencia las tecnologías de información. 49 Criterios y estándares Evidencias 2.1.13 El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina. aprender, deben de"
+    },
+    {
+      "num": 23,
+      "criterion": "1.1.2",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 24,
+      "criterion": "1.2.1",
+      "description": "Normativa y lista de trámites y requisitos de ingreso, para estudiantes"
+    },
+    {
+      "num": 25,
+      "criterion": "1.2.1",
+      "description": "Medios de difusión de trámites y requisitos de ingreso. 1.2.2 Debe promoverse el acceso a la carrera o programa en igualdad de oportunidades, sin discriminación y con respeto por la diversidad."
+    },
+    {
+      "num": 26,
+      "criterion": "1.2.2",
+      "description": "Descripción de las políticas y mecanismos institucionales que garantizan el acceso de estudiantes en igualdad de oportunidades."
+    },
+    {
+      "num": 27,
+      "criterion": "1.2.2",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 28,
+      "criterion": "1.2.2",
+      "description": "Descripción de las condiciones de la infraestructura, de los materiales, del equipo y humanas que permiten el acceso, en igualdad de oportunidades, a personas con discapacidad. Criterios y estándares del componente: 1.3 Correspondencia con el contexto Criterios y estándares Evidencias 1.3.1 El plan de estudios debe responder al estado actual de avance o desarrollo de la disciplina –estado del arte– y a la realidad del contexto nacional e internacional, así como"
+    },
+    {
+      "num": 29,
+      "criterion": "1.3.1",
+      "description": "Descripción que justifique que el plan de"
+    },
+    {
+      "num": 30,
+      "criterion": "1.3.2",
+      "description": "Descripción de las políticas correspondientes a la participación de estudiantes en la atención de necesidades del contexto."
+    },
+    {
+      "num": 31,
+      "criterion": "1.3.2",
+      "description": "Total de estudiantes a los que se les ha reconocido un tramo de carrera de una institución parauniversitaria en los últimos cuatro años, según procedencia."
+    },
+    {
+      "num": 32,
+      "criterion": "1.3.3",
+      "description": "Descripción de actividades o contenidos de los cursos, del plan de estudios, que reflejan el análisis de problemas del contexto, y propuestas de solución planteadas por la carrera."
+    },
+    {
+      "num": 33,
+      "criterion": "1.3.4",
+      "description": "Lista y desc ripción de convenios y redes"
+    },
+    {
+      "num": 34,
+      "criterion": "1.3.4",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 35,
+      "criterion": "1.3.4",
+      "description": "Total de estudiantes a los que se les ha reconocido un tramo de carrera de una institución parauniversitaria en los últimos cuatro años, según procedencia."
+    },
+    {
+      "num": 36,
+      "criterion": "1.3.5",
+      "description": "Lista de empresas o instituciones con las que"
+    },
+    {
+      "num": 37,
+      "criterion": "1.3.5",
+      "description": "Enumeración de las experiencias, con"
+    },
+    {
+      "num": 38,
+      "criterion": "1.3.6",
+      "description": "Porcentaje de empleadores que se muestran satisfechos con el desempeño los y con el perfil de salida de graduados de la carrera. Criterios y estándares del componente: 4.3. Proyección de la carrera Criterios y estándares Evidencias"
+    },
+    {
+      "num": 39,
+      "criterion": "1.3.6",
+      "description": "Percepción de los graduados sobre la formación recibida en los aspectos cognitivos, actitudinales, de destrezas y de competencias generales."
+    },
+    {
+      "num": 40,
+      "criterion": "2.1.1",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 41,
+      "criterion": "2.1.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 42,
+      "criterion": "2.1.2",
+      "description": "Justificación de la congruencia de los fines y objetivos de la"
+    },
+    {
+      "num": 43,
+      "criterion": "2.1.2",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 44,
+      "criterion": "2.1.3",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 45,
+      "criterion": "2.1.3",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 46,
+      "criterion": "2.1.4",
+      "description": "Documento en que se especifica el perfil de entrada, con los conocimientos, habilidades y actitudes establecidos."
+    },
+    {
+      "num": 47,
+      "criterion": "2.1.4",
+      "description": "Porcentajes del personal académico y de los estudiantes que considera que hay congruencia entre el perfil de entrada y las habilidades, las actitudes y los conocimientos requeridos. 48 Criterios y estándares Evidencias 2.1.5 La carrera debe contar con un perfil profesional de salida claramente establecido, congruente con el ejercicio de la profesión y con los su contenidos fundamento. curriculares que constituyen 2.1.6 Se debe contar con una m"
+    },
+    {
+      "num": 48,
+      "criterion": "2.1.5",
+      "description": "Documento en el que se describe un perfil profesional de"
+    },
+    {
+      "num": 49,
+      "criterion": "2.1.5",
+      "description": "Porcentajes de personal académico, empleadores y graduados que opinan que hay congruencia entre el perfil profesional de salida y el ejercicio de la profesión."
+    },
+    {
+      "num": 50,
+      "criterion": "2.1.6",
+      "description": "Existencia de una malla curricular con la duración de la carrera en años y ciclos."
+    },
+    {
+      "num": 51,
+      "criterion": "2.1.6",
+      "description": "Porcentajes de personal académico, empleadores y graduados que opinan que hay congruencia entre el perfil profesional de salida y el ejercicio de la profesión."
+    },
+    {
+      "num": 52,
+      "criterion": "2.1.6",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 53,
+      "criterion": "2.1.7",
+      "description": "Justificación de la distribución porcentual de los cursos del"
+    },
+    {
+      "num": 54,
+      "criterion": "2.1.8",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 55,
+      "criterion": "2.1.8",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 56,
+      "criterion": "2.1.9",
+      "description": "Lista de contenidos, temas, actividades académicas u otras"
+    },
+    {
+      "num": 57,
+      "criterion": "2.1.10",
+      "description": "Explicación de cómo la ética se incorpora en el plan de"
+    },
+    {
+      "num": 58,
+      "criterion": "2.1.10",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 59,
+      "criterion": "2.1.11",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 60,
+      "criterion": "2.1.12",
+      "description": "Descripción de las tecnologías de información disponibles y las necesarias para la carrera, de acuerdo con la naturaleza de ésta."
+    },
+    {
+      "num": 61,
+      "criterion": "2.1.12",
+      "description": "Porcentaje de estudiantes y profesores que opinan que, en los cursos, se utilizan con frecuencia y pertinencia las tecnologías de información. 49 Criterios y estándares Evidencias 2.1.13 El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina. aprender, deben de"
+    },
+    {
+      "num": 62,
+      "criterion": "2.1.13",
+      "description": "Explicación de cómo el plan de estudios desarrolla en los"
+    },
+    {
+      "num": 63,
+      "criterion": "2.1.13",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 64,
+      "criterion": "2.1.13",
+      "description": "Lista de cursos de métodos de investigación y sus contenidos."
+    },
+    {
+      "num": 65,
+      "criterion": "2.1.14",
+      "description": "Descripción de mecanismos de flexibilidad curricular utilizados por la carrera. Indicación de situaciones o disposiciones que dificultan la flexibilidad curricular, y las áreas del conocimiento en que sí se consideran tales mecanismos."
+    },
+    {
+      "num": 66,
+      "criterion": "2.1.14",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 67,
+      "criterion": "2.1.15",
+      "description": "Lista de actividades extracurriculares que la carrera ofrece, a los estudiantes, como complementos del plan de estudios."
+    },
+    {
+      "num": 68,
+      "criterion": "2.1.15",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 69,
+      "criterion": "2.1.16",
+      "description": "Lista de modalidades de trabajos finales de graduación"
+    },
+    {
+      "num": 70,
+      "criterion": "2.1.16",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 71,
+      "criterion": "2.1.16",
+      "description": "Distribución del total de graduados de los últimos cuatro años, según modalidades de trabajos finales de graduación."
+    },
+    {
+      "num": 72,
+      "criterion": "2.1.16",
+      "description": "Lista de trabajos finales de graduación en las diferentes"
+    },
+    {
+      "num": 73,
+      "criterion": "2.1.17",
+      "description": "Descripci ón de los procedimientos internos para la"
+    },
+    {
+      "num": 74,
+      "criterion": "2.1.17",
+      "description": "Disponibilidad de todos los programas de los cursos. 50 Criterios y estándares Evidencias 2.1.18 Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal. lograr en"
+    },
+    {
+      "num": 75,
+      "criterion": "2.1.18",
+      "description": "Disponibilidad de todos los programas de los cursos. 50 Criterios y estándares Evidencias 2.1.18 Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal. lograr en 75. Disponibilidad de todos los programas de los cursos."
+    },
+    {
+      "num": 76,
+      "criterion": "2.1.18",
+      "description": "Descripción de los procedimientos internos para verificar si los los cursos están redactados en términos de objetivos de aprendizajes o competencias. Los criterios de evaluación de 2.1.19 los aprendizajes deben estar explícitos en cada programa de curso."
+    },
+    {
+      "num": 77,
+      "criterion": "2.1.19",
+      "description": "Disponibilidad de todos los programas de los cursos. 50 Criterios y estándares Evidencias 2.1.18 Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal. lograr en"
+    },
+    {
+      "num": 78,
+      "criterion": "2.2.1",
+      "description": "Descripción de la normativa que regula los plazos de entrega de los resultados obtenidos por los estudiantes en los cursos."
+    },
+    {
+      "num": 79,
+      "criterion": "2.2.1",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 80,
+      "criterion": "2.2.2",
+      "description": "Descripción de las disposiciones que establecen de contratación laboral incluye las horas lectivas, de atención de estudiantes fuera de clase, de preparación de lecciones, de elaboración y aplicación de los instrumentos para evaluar aprendizajes, de revisión y valoración de exámenes y otros trabajos, y de coordinación y dirección de trabajos finales de graduación."
+    },
+    {
+      "num": 81,
+      "criterion": "2.2.3",
+      "description": "Explicación del modo como la"
+    },
+    {
+      "num": 82,
+      "criterion": "2.2.3",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 83,
+      "criterion": "2.2.4",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 84,
+      "criterion": "2.2.5",
+      "description": "Distribución porcentual del personal académico según género, edad y que universidades sus integrantes realizaron su formación inicial (bachillerato o licenciatura) y obtuvieron su posgrado. las en 2.2.4 La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional 2.2.5 Se debe propiciar la diversidad del personal académico en"
+    },
+    {
+      "num": 85,
+      "criterion": "2.2.6",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 86,
+      "criterion": "2.2.7",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 87,
+      "criterion": "2.2.7",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 88,
+      "criterion": "2.2.7",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 89,
+      "criterion": "2.2.7",
+      "description": "Distribución del personal académico de los últimos cuatro años, según años de servicio en la institución y tipo de contrato."
+    },
+    {
+      "num": 90,
+      "criterion": "2.2.7",
+      "description": "De la planilla de profesores de hace cuatro años, indicación del porcentaje de ellos que se mantiene en la actualidad laborando para la carrera. Criterios y estándares Evidencias"
+    },
+    {
+      "num": 91,
+      "criterion": "2.2.8",
+      "description": "Descripción del plan de desarrollo profesional para el personal administrativo, el técnico y el de apoyo, acorde con las necesidades del proceso educativo y las demandas institucionales. Criterios y estándares del componente: 2.4 Infraestructura Criterios y estándares Evidencias 2.4.1 Se debe contar con mecanismos que atiendan la gestión para suplir las necesidades de infraestructura, de acuerdo con las particularidades y necesidades de la carrera. institucional y"
+    },
+    {
+      "num": 92,
+      "criterion": "2.2.8",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 93,
+      "criterion": "2.2.8",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 94,
+      "criterion": "2.2.8",
+      "description": "Porcentaje de docentes que realiza"
+    },
+    {
+      "num": 95,
+      "criterion": "2.2.8",
+      "description": "Descripción de las disposiciones que establecen de contratación laboral incluye las horas lectivas, de atención de estudiantes fuera de clase, de preparación de lecciones, de elaboración y aplicación de los instrumentos para evaluar aprendizajes, de revisión y valoración de exámenes y otros trabajos, y de coordinación y dirección de trabajos finales de graduación."
+    },
+    {
+      "num": 96,
+      "criterion": "2.2.9",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 97,
+      "criterion": "2.2.9",
+      "description": "Porcentaje de profesores que opina que los incentivos o mecanismos de su promoción aplicados propician desarrollo profesional."
+    },
+    {
+      "num": 98,
+      "criterion": "2.2.10",
+      "description": "Descripción del personal académico según jornada de contratación."
+    },
+    {
+      "num": 99,
+      "criterion": "2.2.10",
+      "description": "Explicación de la forma como la"
+    },
+    {
+      "num": 100,
+      "criterion": "2.2.11",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 101,
+      "criterion": "2.2.11",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 102,
+      "criterion": "2.2.11",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 103,
+      "criterion": "2.2.11",
+      "description": "Porcentaje del estudiantado que opina que la jornada de contratación del personal académico favorece la participación en la vida académica de la carrera."
+    },
+    {
+      "num": 104,
+      "criterion": "2.2.11",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 105,
+      "criterion": "2.3.1",
+      "description": "Distribución porcentual del personal académico según género, edad y que universidades sus integrantes realizaron su formación inicial (bachillerato o licenciatura) y obtuvieron su posgrado. las en 2.2.4 La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional 2.2.5 Se debe propiciar la diversidad del personal académico en"
+    },
+    {
+      "num": 106,
+      "criterion": "2.3.1",
+      "description": "Porcentajes del personal académico y de los estudiantes que considera que hay congruencia entre el perfil de entrada y las habilidades, las actitudes y los conocimientos requeridos. 48 Criterios y estándares Evidencias 2.1.5 La carrera debe contar con un perfil profesional de salida claramente establecido, congruente con el ejercicio de la profesión y con los su contenidos fundamento. curriculares que constituyen 2.1.6 Se debe contar con una m"
+    },
+    {
+      "num": 107,
+      "criterion": "2.3.1",
+      "description": "Horarios de apertura y cierre de los servicios que brindan el"
+    },
+    {
+      "num": 108,
+      "criterion": "2.3.2",
+      "description": "Descripción de los procedimientos internos para verificar si los los cursos están redactados en términos de objetivos de aprendizajes o competencias. Los criterios de evaluación de 2.1.19 los aprendizajes deben estar explícitos en cada programa de curso."
+    },
+    {
+      "num": 109,
+      "criterion": "2.3.2",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 110,
+      "criterion": "2.3.3",
+      "description": "Descripción de las estrategias y el programa o proyecto relacionado con la innovación y actualización de los métodos de enseñanza, a los que tiene acceso la carrera."
+    },
+    {
+      "num": 111,
+      "criterion": "2.3.3",
+      "description": "Opinión del personal administrativo, del técnico y del de apoyo con respecto a los mecanismos de evaluación y devolución de resultados a los que están sujetos."
+    },
+    {
+      "num": 112,
+      "criterion": "2.3.3",
+      "description": "Opinión de estudiantes y personal académico sobre la calidad y calidez de los servicios que reciben del personal administrativo, técnico y de apoyo. 2.3.4 Se debe contar con un plan de desarrollo profesional para el personal administrativo, el las técnico y el de apoyo, de acuerdo con necesidades de la carrera."
+    },
+    {
+      "num": 113,
+      "criterion": "2.3.4",
+      "description": "Descripción del plan de desarrollo profesional para el personal administrativo, el técnico y el de apoyo, acorde con las necesidades del proceso educativo y las demandas institucionales. Criterios y estándares del componente: 2.4 Infraestructura Criterios y estándares Evidencias 2.4.1 Se debe contar con mecanismos que atiendan la gestión para suplir las necesidades de infraestructura, de acuerdo con las particularidades y necesidades de la carrera. institucional y"
+    },
+    {
+      "num": 114,
+      "criterion": "2.4.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 115,
+      "criterion": "2.4.1",
+      "description": "Lista de necesidades (satisfechas e insatisfechas ) de"
+    },
+    {
+      "num": 116,
+      "criterion": "2.4.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 117,
+      "criterion": "2.4.2",
+      "description": "Descripción del modo como la infraestructura utilizada por la carrera respeta la normativa para la construcción y habilitación de edificios educativos y lo dispuesto por la Ley las Personas con de Discapacidad. Igualdad de Oportunidades para la carrera respeta"
+    },
+    {
+      "num": 118,
+      "criterion": "2.4.2",
+      "description": "Descripción de forma en que la infraestructura utilizada por la normativa establecida en el Reglamento de Construcciones de la Ley Nº 4240 del 15 de noviembre de 1968."
+    },
+    {
+      "num": 119,
+      "criterion": "2.4.3",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 120,
+      "criterion": "2.4.3",
+      "description": "Porcentajes de estudiantes, de personal académico, de personal administrativo y de apoyo que conocen las normas de seguridad, higiene y salud necesarias en la carrera."
+    },
+    {
+      "num": 121,
+      "criterion": "2.4.4",
+      "description": "Descripción de las condiciones de la infraestructura, de los materiales, del equipo y humanas que permiten el acceso, en igualdad de oportunidades, a personas con discapacidad. Criterios y estándares del componente: 1.3 Correspondencia con el contexto Criterios y estándares Evidencias 1.3.1 El plan de estudios debe responder al estado actual de avance o desarrollo de la disciplina –estado del arte– y a la realidad del contexto nacional e internacional, así como"
+    },
+    {
+      "num": 122,
+      "criterion": "2.4.4",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 123,
+      "criterion": "2.4.5",
+      "description": "Descripción de aulas, auditorios, laboratorios, talleres y otros espacios necesarios, según el total de cursos, grupos, estudiantes matriculados y actividades de la carrera."
+    },
+    {
+      "num": 124,
+      "criterion": "2.4.5",
+      "description": "Grado de satisfacción del personal académico y los"
+    },
+    {
+      "num": 125,
+      "criterion": "2.4.6",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 126,
+      "criterion": "2.4.6",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 127,
+      "criterion": "2.4.7",
+      "description": "Descripción de los espacios disponibles para la gestión académica y los servicios administrativos y técnicos básicos."
+    },
+    {
+      "num": 128,
+      "criterion": "2.4.7",
+      "description": "Distribución porcentual del personal académico según género, edad y que universidades sus integrantes realizaron su formación inicial (bachillerato o licenciatura) y obtuvieron su posgrado. las en 2.2.4 La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional 2.2.5 Se debe propiciar la diversidad del personal académico en"
+    },
+    {
+      "num": 129,
+      "criterion": "2.4.8",
+      "description": "Descripción de las zonas bajo techo y al aire libre para reuniones informales de los estudiantes y espacios para estudio."
+    },
+    {
+      "num": 130,
+      "criterion": "2.4.8",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 131,
+      "criterion": "2.5.1",
+      "description": "Total de centros de información y recursos disponibles para los estudiantes de la carrera."
+    },
+    {
+      "num": 132,
+      "criterion": "2.5.1",
+      "description": "Horarios y total de horas diarias, en que están disponibles los servicios del centro de información y recursos para el personal académico y los estudiantes."
+    },
+    {
+      "num": 133,
+      "criterion": "2.5.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 134,
+      "criterion": "2.5.1",
+      "description": "Capacidad instalada del centro de información y recursos, en"
+    },
+    {
+      "num": 135,
+      "criterion": "2.5.1",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 136,
+      "criterion": "2.5.2",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 137,
+      "criterion": "2.5.2",
+      "description": "Lista de publicaciones periódicas especializadas pertinentes"
+    },
+    {
+      "num": 138,
+      "criterion": "2.5.2",
+      "description": "Lista de ejemplares de la producción académica del personal"
+    },
+    {
+      "num": 139,
+      "criterion": "2.5.2",
+      "description": "Descripción de mecanismos que alerten al personal académico y a los estudiantes cuando circule material y libros o documentos recientes."
+    },
+    {
+      "num": 140,
+      "criterion": "2.5.2",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 141,
+      "criterion": "2.5.2",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 142,
+      "criterion": "2.5.3",
+      "description": "Lista de redes de información académica bibliotecas virtuales, bases de datos, revistas electrónicas u otras disponibles en el área de especialidad de la carrera."
+    },
+    {
+      "num": 143,
+      "criterion": "2.5.3",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 144,
+      "criterion": "2.5.3",
+      "description": "Descripción de las facilidades que ofrece la carrera para que los estudiantes y profesores participen en actividades fuera de las instalaciones de la universidad, cuando el plan de estudios así lo requiera."
+    },
+    {
+      "num": 145,
+      "criterion": "2.5.3",
+      "description": "Descripción de las actividades que desarrolla ese núcleo académico."
+    },
+    {
+      "num": 146,
+      "criterion": "2.5.4",
+      "description": "Número y distribución del personal responsable de brindar los servicios en el centro de información y recursos según grado académico, área de especialidad y jornada laboral."
+    },
+    {
+      "num": 147,
+      "criterion": "2.5.5",
+      "description": "Descripción del mecanismo que se sigue en la carrera para resolver las solicitudes de reconocimiento, y normativa que rige la decisión."
+    },
+    {
+      "num": 148,
+      "criterion": "2.5.5",
+      "description": "Presupuesto anual disponible y ejecutado para la adquisición de"
+    },
+    {
+      "num": 149,
+      "criterion": "2.6.1",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 150,
+      "criterion": "2.6.2",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 151,
+      "criterion": "2.6.2",
+      "description": "Disponibilidad de todos los programas de los cursos. 50 Criterios y estándares Evidencias 2.1.18 Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal. lograr en"
+    },
+    {
+      "num": 152,
+      "criterion": "2.6.2",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 153,
+      "criterion": "2.6.2",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 154,
+      "criterion": "2.6.3",
+      "description": "Número de equipos de multimedia disponibles"
+    },
+    {
+      "num": 155,
+      "criterion": "2.6.3",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 156,
+      "criterion": "2.6.4",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 157,
+      "criterion": "2.6.4",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 158,
+      "criterion": "2.6.5",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 159,
+      "criterion": "2.7.1",
+      "description": "Presupuesto total y tasa de crecimiento del"
+    },
+    {
+      "num": 160,
+      "criterion": "2.7.1",
+      "description": "Descripción sobre la suficiencia del presupuesto asignado a la carrera para cumplir con los objetivos de ésta y lograr el mejoramiento continuo. 2.7.2 Se debe contar con políticas claras que regulen la captación de recursos externos provenientes de fuentes diferentes a la principal; a saber, convenios, donaciones, cooperación, consultorías, pruebas y diagnóstico de laboratorio, investigación y otras."
+    },
+    {
+      "num": 161,
+      "criterion": "2.7.2",
+      "description": "Existencia de políticas y procedimientos que favorezcan la participación del personal académico y estudiantes en este tipo de actividades. 3.5.2 La carrera debe contar con lineamientos explícitos que guíen la realización de proyectos de extensión. lo relacionado con"
+    },
+    {
+      "num": 162,
+      "criterion": "2.7.2",
+      "description": "Destino de los recursos que recibe la carrera de fuentes externas. 58 4.4 DIMENSIÓN 3: Proceso educativo Criterios y estándares del componente: 3.1 Desarrollo docente Criterios y estándares Evidencias 3.1.1 La dirección y el personal académico deben participar en la definición de las modificaciones del plan de estudios. 3.1.2 El personal académico debe asistir a las diferentes actividades de coordinación que implica la gestión y desarrollo de la carrer"
+    },
+    {
+      "num": 163,
+      "criterion": "3.1.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 164,
+      "criterion": "3.1.1",
+      "description": "Existencia de acciones de la extensión que proyecten carrera sobre el entorno social. 23. Estándar La carrera debe ejecutar, al menos, un proyecto de extensión por año. 3.5.4 La carrera debe promover e incentivar entre sus académicos la realización de proyectos de extensión. 3.5.5 El personal académico que realiza actividades de extensión debe contar con los recursos requeridos para cumplir cabalmente con esa labor."
+    },
+    {
+      "num": 165,
+      "criterion": "3.1.2",
+      "description": "Descripción, lista y frecuencia con que se llevan a cabo actividades en las que la carrera solicita la participación del personal académico."
+    },
+    {
+      "num": 166,
+      "criterion": "3.1.2",
+      "description": "Disponibilidad de todos los programas de los cursos. 50 Criterios y estándares Evidencias 2.1.18 Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal. lograr en"
+    },
+    {
+      "num": 167,
+      "criterion": "3.1.2",
+      "description": "Existencia de mecanismos para el control y"
+    },
+    {
+      "num": 168,
+      "criterion": "3.1.2",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 169,
+      "criterion": "3.1.3",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 170,
+      "criterion": "3.1.4",
+      "description": "Descripció n de los mecanismos y designación de"
+    },
+    {
+      "num": 171,
+      "criterion": "3.1.4",
+      "description": "Descripción de las políticas y mecanismos institucionales que garantizan el acceso de estudiantes en igualdad de oportunidades."
+    },
+    {
+      "num": 172,
+      "criterion": "3.1.4",
+      "description": "Instrumento utilizado para evaluar al personal"
+    },
+    {
+      "num": 173,
+      "criterion": "3.1.4",
+      "description": "Distribución porcentual del personal académico según género, edad y que universidades sus integrantes realizaron su formación inicial (bachillerato o licenciatura) y obtuvieron su posgrado. las en 2.2.4 La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional 2.2.5 Se debe propiciar la diversidad del personal académico en"
+    },
+    {
+      "num": 174,
+      "criterion": "3.1.4",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 175,
+      "criterion": "3.1.5",
+      "description": "Descripción de las estrategias y el programa o proyecto relacionado con la innovación y actualización de los métodos de enseñanza, a los que tiene acceso la carrera."
+    },
+    {
+      "num": 176,
+      "criterion": "3.1.5",
+      "description": "Referencia a los principales resultados que dichas"
+    },
+    {
+      "num": 177,
+      "criterion": "3.1.5",
+      "description": "Facilidades que brinda la carrera para que el"
+    },
+    {
+      "num": 178,
+      "criterion": "3.1.5",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 179,
+      "criterion": "3.2.1",
+      "description": "Descripción de la congruencia entre los objetivos del plan de estudios, los cursos y el tipo de actividades de aprendizaje puestos en práctica. 3.2.2 Las estrategias de enseñanza y aprendizaje deben ser congruentes con la naturaleza de la carrera y la asignatura, los objetivos propuestos, las características de los estudiantes, la información, los materiales y los equipos didácticos disponibles; con el tamaño de los grupos y con las más adecu"
+    },
+    {
+      "num": 180,
+      "criterion": "3.2.2",
+      "description": "Descripción de los métodos de enseñanza utilizados por la carrera. 3.2.3 La carrera debe promover en los estudiantes los aprendizajes cognitivos, el desarrollo de destrezas y la formación de actitudes positivas, así como el interés por el aprendizaje continuo y la construcción de un pensamiento crítico, creativo y autónomo."
+    },
+    {
+      "num": 181,
+      "criterion": "3.2.3",
+      "description": "Describa los mecanismos y estrategias que utiliza la carrera"
+    },
+    {
+      "num": 182,
+      "criterion": "3.2.4",
+      "description": "Descripción de las facilidades que ofrece la carrera para que los estudiantes y profesores participen en actividades fuera de las instalaciones de la universidad, cuando el plan de estudios así lo requiera."
+    },
+    {
+      "num": 183,
+      "criterion": "3.2.4",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 184,
+      "criterion": "3.2.5",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 185,
+      "criterion": "3.2.6",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 186,
+      "criterion": "3.2.7",
+      "description": "Opinión de los estudiantes sobre la concordancia entre la metodología de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes. Criterios y estándares del componente: 3.3 Gestión de la carrera Criterios y estándares Evidencias 3.3.1 Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular. 3.3.2 La carrera debe contar con un plan estraté"
+    },
+    {
+      "num": 187,
+      "criterion": "3.3.1",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 188,
+      "criterion": "3.3.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 189,
+      "criterion": "3.3.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 190,
+      "criterion": "3.3.2",
+      "description": "Documento disponible con un plan estratégico que guíe el funcionamiento y el desarrollo de la carrera, con un horizonte de vigencia de cinco años al menos."
+    },
+    {
+      "num": 191,
+      "criterion": "3.3.2",
+      "description": "Lista de los principales resultados visibles del plan"
+    },
+    {
+      "num": 192,
+      "criterion": "3.3.3",
+      "description": "Descripción del mecanismo que se sigue en la carrera para resolver las solicitudes de reconocimiento, y normativa que rige la decisión."
+    },
+    {
+      "num": 193,
+      "criterion": "3.3.3",
+      "description": "Estadísticas anuales disponibles sobre información del"
+    },
+    {
+      "num": 194,
+      "criterion": "3.3.3",
+      "description": "Descripción de la forma como se utilizan los datos sobre el personal académico para la toma de decisiones."
+    },
+    {
+      "num": 195,
+      "criterion": "3.3.4",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 196,
+      "criterion": "3.3.5",
+      "description": "Normativa con los requisitos establecidos para la"
+    },
+    {
+      "num": 197,
+      "criterion": "3.3.5",
+      "description": "Normativa con el procedimiento que se sigue para"
+    },
+    {
+      "num": 198,
+      "criterion": "3.3.5",
+      "description": "Jornada laboral que dedica la persona nombrada a las"
+    },
+    {
+      "num": 199,
+      "criterion": "3.3.5",
+      "description": "Periodo de nombramiento y tiempo de permanencia en el puesto."
+    },
+    {
+      "num": 200,
+      "criterion": "3.3.6",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 201,
+      "criterion": "3.3.6",
+      "description": "Currículum vítae de la persona que ocupa la dirección."
+    },
+    {
+      "num": 202,
+      "criterion": "3.3.6",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 203,
+      "criterion": "3.3.7",
+      "description": "Referencia a los responsables de la orientación y"
+    },
+    {
+      "num": 204,
+      "criterion": "3.3.7",
+      "description": "Descripción de las actividades que desarrolla ese núcleo académico."
+    },
+    {
+      "num": 205,
+      "criterion": "3.3.8",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 206,
+      "criterion": "3.3.8",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 207,
+      "criterion": "3.3.9",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 208,
+      "criterion": "3.3.10",
+      "description": "Lista de las instancias académicas vinculadas con la"
+    },
+    {
+      "num": 209,
+      "criterion": "3.3.10",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 210,
+      "criterion": "3.3.11",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 211,
+      "criterion": "3.3.11",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 212,
+      "criterion": "3.3.12",
+      "description": "Total de ocasiones en que el plan de estudios ha sido"
+    },
+    {
+      "num": 213,
+      "criterion": "3.3.12",
+      "description": "Actas, resoluciones u otros documentos que recojan las modificaciones introducidas al plan de estudios en los últimos cuatro años."
+    },
+    {
+      "num": 214,
+      "criterion": "3.3.13",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 215,
+      "criterion": "3.3.13",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 216,
+      "criterion": "3.3.14",
+      "description": "Descripción de las actividades que desarrolla ese núcleo académico."
+    },
+    {
+      "num": 217,
+      "criterion": "3.3.15",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 218,
+      "criterion": "3.3.15",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 219,
+      "criterion": "3.3.16",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 220,
+      "criterion": "3.3.17",
+      "description": "Frecuencia con la que se ofreció cada curso en los"
+    },
+    {
+      "num": 221,
+      "criterion": "3.3.17",
+      "description": "Descripción de las opciones diferentes a la matrícula ordinaria, que se ofrecen a los estudiantes para llevar cursos; por ejemplo, por suficiencia, mediante tutoría, en línea, y otras."
+    },
+    {
+      "num": 222,
+      "criterion": "3.3.17",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 223,
+      "criterion": "3.3.18",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 224,
+      "criterion": "3.3.19",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 225,
+      "criterion": "3.3.20",
+      "description": "Descripción del plan de mejoramiento de la carrera con lista de disposiciones, decisiones, acciones, responsables, plazos y recursos, que reflejen compromiso con el mejoramiento continuo. 63 Criterios y estándares del componente: 3.4 Investigación Criterios y estándares Evidencias 3.4.1 Existencia de políticas institucionales y de la carrera que incentiven el pensamiento científico riguroso y guíen todo la realización y la utilización de investigaciones."
+    },
+    {
+      "num": 226,
+      "criterion": "3.4.1",
+      "description": "Existencia de políticas y procedimientos que favorezcan la participación del personal académico y estudiantes en este tipo de actividades. 3.5.2 La carrera debe contar con lineamientos explícitos que guíen la realización de proyectos de extensión. lo relacionado con"
+    },
+    {
+      "num": 227,
+      "criterion": "3.4.1",
+      "description": "Descripción de políticas y mecanismos que se siguen para la aprobación de las investigaciones que se realizan."
+    },
+    {
+      "num": 228,
+      "criterion": "3.4.1",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 229,
+      "criterion": "3.4.2",
+      "description": "Facilidades que brinda la carrera para que el personal"
+    },
+    {
+      "num": 230,
+      "criterion": "3.4.2",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 231,
+      "criterion": "3.4.3",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 232,
+      "criterion": "3.4.3",
+      "description": "Descripción de la forma en que se aprovechan los resultados de las investigaciones."
+    },
+    {
+      "num": 233,
+      "criterion": "3.4.4",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 234,
+      "criterion": "3.4.4",
+      "description": "Total de proyectos o acciones de investigación vigentes."
+    },
+    {
+      "num": 235,
+      "criterion": "3.4.4",
+      "description": "Cantidad de recursos destinados a proyectos de"
+    },
+    {
+      "num": 236,
+      "criterion": "3.4.5",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 237,
+      "criterion": "3.4.5",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 238,
+      "criterion": "3.4.5",
+      "description": "Porcentaje del personal académico que considera pertinentes y actuales los referentes universales."
+    },
+    {
+      "num": 239,
+      "criterion": "3.4.6",
+      "description": "Lista de centros, grupos, redes o programas de investigación, con las cuales la carrera mantiene relaciones."
+    },
+    {
+      "num": 240,
+      "criterion": "3.4.6",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 241,
+      "criterion": "3.4.7",
+      "description": "Nombre y descripción de proyectos o acciones de"
+    },
+    {
+      "num": 242,
+      "criterion": "3.4.7",
+      "description": "Descripción de los aportes innovadores."
+    },
+    {
+      "num": 243,
+      "criterion": "3.4.8",
+      "description": "Mecanismos que se ponen en práctica para estimular y"
+    },
+    {
+      "num": 244,
+      "criterion": "3.4.8",
+      "description": "Descripción de la forma en que se aprovechan los resultados de las investigaciones."
+    },
+    {
+      "num": 245,
+      "criterion": "3.4.9",
+      "description": "Muestras de las publicaciones en las que aparecen los"
+    },
+    {
+      "num": 246,
+      "criterion": "3.4.9",
+      "description": "Lista de investigaciones difundidas por otros medios como"
+    },
+    {
+      "num": 247,
+      "criterion": "3.5.1",
+      "description": "Existencia de políticas y procedimientos que favorezcan la participación del personal académico y estudiantes en este tipo de actividades. 3.5.2 La carrera debe contar con lineamientos explícitos que guíen la realización de proyectos de extensión. lo relacionado con"
+    },
+    {
+      "num": 248,
+      "criterion": "3.5.2",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 249,
+      "criterion": "3.5.3",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 250,
+      "criterion": "3.5.3",
+      "description": "Listado de acciones de extensión ejecutadas en los"
+    },
+    {
+      "num": 251,
+      "criterion": "3.5.4",
+      "description": "Descripción de las estrategias y el programa o proyecto relacionado con la innovación y actualización de los métodos de enseñanza, a los que tiene acceso la carrera."
+    },
+    {
+      "num": 252,
+      "criterion": "3.5.5",
+      "description": "Porcentaje de personal académico y estudiantes que conoce la disponibilidad de redes de información académica."
+    },
+    {
+      "num": 253,
+      "criterion": "3.5.5",
+      "description": "Cantidad de recursos destinados a proyectos de"
+    },
+    {
+      "num": 254,
+      "criterion": "3.5.6",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 255,
+      "criterion": "3.5.7",
+      "description": "Estadísticas o datos cuantitativos y cualitativos de las acciones de extensión ejecutadas por la carrera en el último año."
+    },
+    {
+      "num": 256,
+      "criterion": "3.5.7",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 257,
+      "criterion": "3.5.8",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 258,
+      "criterion": "3.5.8",
+      "description": "Muestras de productos comunicacionales utilizados para difundir las acciones de extensión."
+    },
+    {
+      "num": 259,
+      "criterion": "3.5.8",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 260,
+      "criterion": "3.5.9",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 261,
+      "criterion": "3.5.9",
+      "description": "Descripción de la forma en que se aprovechan los resultados de las investigaciones."
+    },
+    {
+      "num": 262,
+      "criterion": "3.6.1",
+      "description": "Existencia de políticas y procedimientos que favorezcan la participación del personal académico y estudiantes en este tipo de actividades. 3.5.2 La carrera debe contar con lineamientos explícitos que guíen la realización de proyectos de extensión. lo relacionado con"
+    },
+    {
+      "num": 263,
+      "criterion": "3.6.1",
+      "description": "Lista de servicios disponibles para atender integralmente a los estudiantes."
+    },
+    {
+      "num": 264,
+      "criterion": "3.6.2",
+      "description": "Normativa y procedimientos existentes para cumplir las leyes"
+    },
+    {
+      "num": 265,
+      "criterion": "3.6.2",
+      "description": "Opinión del personal académico sobre el grado en que le la carrera permiten estar actualizado en didáctica universitaria. las estrategias establecidas por Criterios y estándares del componente: 3.2 Metodología enseñanza-aprendizaje Criterios y estándares Evidencias 3.2.1 Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "num": 266,
+      "criterion": "3.6.2",
+      "description": "Existencia de que existe normativa para nombrar la"
+    },
+    {
+      "num": 267,
+      "criterion": "3.6.2",
+      "description": "Opinión de los estudiantes sobre la concordancia entre la metodología de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes. Criterios y estándares del componente: 3.3 Gestión de la carrera Criterios y estándares Evidencias 3.3.1 Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular. 3.3.2 La carrera debe contar con un plan estraté"
+    },
+    {
+      "num": 268,
+      "criterion": "3.6.4",
+      "description": "Existencia de reglamento o normativa estudiantil y"
+    },
+    {
+      "num": 269,
+      "criterion": "3.6.4",
+      "description": "Mecanismos de divulgación de la normativa y"
+    },
+    {
+      "num": 270,
+      "criterion": "3.6.4",
+      "description": "Instancias que regulan el cumplimiento de la normativa"
+    },
+    {
+      "num": 271,
+      "criterion": "3.6.5",
+      "description": "Instancia responsable de ofrecer servicios de orientación vocacional y ocupacional a los estudiantes, y descripción de los servicios que ofrece. 3.6.6 Se debe ofrecer a los estudiantes con alguna discapacidad las condiciones que garanticen su acceso a las diversas acciones educativas de la carrera. todos los efectos, el 3.6.7 La institución debe garantizar a los estudiantes, registro, control y para certificación de todos sus datos académicos,"
+    },
+    {
+      "num": 272,
+      "criterion": "3.6.6",
+      "description": "Descripción de las acciones, facilidades y asesoría que se brindan a los estudiantes con alguna discapacidad."
+    },
+    {
+      "num": 273,
+      "criterion": "3.6.6",
+      "description": "Opinión de estudiantes con alguna discapacidad sobre el acceso que tienen a los diferentes servicios y sobre su implica el proceso participación en educativo. las actividades que"
+    },
+    {
+      "num": 274,
+      "criterion": "3.6.7",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 275,
+      "criterion": "3.6.7",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 276,
+      "criterion": "3.6.8",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 277,
+      "criterion": "3.6.8",
+      "description": "Porcentaje de estudiantes y profesores que opinan que, en los cursos, se utilizan con frecuencia y pertinencia las tecnologías de información. 49 Criterios y estándares Evidencias 2.1.13 El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina. aprender, deben de"
+    },
+    {
+      "num": 278,
+      "criterion": "3.6.9",
+      "description": "Disponibilidad de estadísticas sobre el uso de los servicios académicos y estudiantiles."
+    },
+    {
+      "num": 279,
+      "criterion": "3.6.9",
+      "description": "Formas en que dicha información se utiliza para la toma de decisiones y el mejoramiento de los servicios."
+    },
+    {
+      "num": 280,
+      "criterion": "3.6.9",
+      "description": "Opinión de los estudiantes sobre la concordancia entre la metodología de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes. Criterios y estándares del componente: 3.3 Gestión de la carrera Criterios y estándares Evidencias 3.3.1 Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular. 3.3.2 La carrera debe contar con un plan estraté"
+    },
+    {
+      "num": 281,
+      "criterion": "3.6.10",
+      "description": "Horario en que atienden las dependencias"
+    },
+    {
+      "num": 282,
+      "criterion": "3.6.10",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 283,
+      "criterion": "3.6.11",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 284,
+      "criterion": "3.6.11",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 285,
+      "criterion": "3.6.12",
+      "description": "Medios vigentes para que el estudiantado exprese sus"
+    },
+    {
+      "num": 286,
+      "criterion": "3.6.12",
+      "description": "Nivel de satisfacción del estudiantado con la carrera, el"
+    },
+    {
+      "num": 287,
+      "criterion": "3.6.12",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 288,
+      "criterion": "3.6.13",
+      "description": "Descripción de las instancias de la carrera a las que tienen acceso los representantes estudiantiles."
+    },
+    {
+      "num": 289,
+      "criterion": "3.6.13",
+      "description": "Mecanismos que se siguen para que los estudiantes"
+    },
+    {
+      "num": 290,
+      "criterion": "3.6.13",
+      "description": "Opinión de los estudiantes sobre la concordancia entre la metodología de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes. Criterios y estándares del componente: 3.3 Gestión de la carrera Criterios y estándares Evidencias 3.3.1 Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular. 3.3.2 La carrera debe contar con un plan estraté"
+    },
+    {
+      "num": 291,
+      "criterion": "3.6.14",
+      "description": "Descripción de disposiciones sobre la asesoría académica curricular para el estudiantado."
+    },
+    {
+      "num": 292,
+      "criterion": "3.6.14",
+      "description": "Total de años en que se ha ofrecido la asesoría académica curricular."
+    },
+    {
+      "num": 293,
+      "criterion": "3.6.14",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 294,
+      "criterion": "3.6.15",
+      "description": "Describa la normativa y su aplicación para que el personal docente ofrezca guía y tutoría académica a los estudiantes."
+    },
+    {
+      "num": 295,
+      "criterion": "3.6.15",
+      "description": "Número de horas semanales disponibles por curso para"
+    },
+    {
+      "num": 296,
+      "criterion": "3.6.15",
+      "description": "Opinión de los estudiantes acerca de la existencia, suficiencia y calidad de la tutoría y guía académica que reciben. 68 Criterios y estándares Evidencias 3.6.16 Deben existir instancias que den seguimiento al desempeño del estudiante y remitan los problemas detectados a las personas encargadas de los servicios de apoyo existentes."
+    },
+    {
+      "num": 297,
+      "criterion": "3.6.16",
+      "description": "Descripción de las instancias de la carrera a las que tienen acceso los representantes estudiantiles."
+    },
+    {
+      "num": 298,
+      "criterion": "3.6.17",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 299,
+      "criterion": "3.6.17",
+      "description": "Porcentaje de estudiantes y profesores que opinan que, en los cursos, se utilizan con frecuencia y pertinencia las tecnologías de información. 49 Criterios y estándares Evidencias 2.1.13 El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina. aprender, deben de"
+    },
+    {
+      "num": 300,
+      "criterion": "4.1.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 301,
+      "criterion": "4.1.1",
+      "description": "Descripción de reclamos más comunes de los estudiantes."
+    },
+    {
+      "num": 302,
+      "criterion": "4.1.1",
+      "description": "Opinión de los estudiantes sobre la concordancia entre la metodología de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes. Criterios y estándares del componente: 3.3 Gestión de la carrera Criterios y estándares Evidencias 3.3.1 Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular. 3.3.2 La carrera debe contar con un plan estraté"
+    },
+    {
+      "num": 303,
+      "criterion": "4.1.2",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 304,
+      "criterion": "4.1.2",
+      "description": "Estadísticas anuales disponibles sobre el estudiantado y sus"
+    },
+    {
+      "num": 305,
+      "criterion": "4.1.2",
+      "description": "Descripción de la forma como se utilizan los datos sobre el personal académico para la toma de decisiones."
+    },
+    {
+      "num": 306,
+      "criterion": "4.1.3",
+      "description": "Descripción del mecanismo que se sigue en la carrera para resolver las solicitudes de reconocimiento, y normativa que rige la decisión."
+    },
+    {
+      "num": 307,
+      "criterion": "4.1.3",
+      "description": "Descripción del mecanismo que se sigue en la carrera para resolver las solicitudes de reconocimiento, y normativa que rige la decisión."
+    },
+    {
+      "num": 308,
+      "criterion": "4.1.4",
+      "description": "Descripción de la normativa que regula los plazos de entrega de los resultados obtenidos por los estudiantes en los cursos."
+    },
+    {
+      "num": 309,
+      "criterion": "4.1.4",
+      "description": "Distribución porcentual del personal académico según género, edad y que universidades sus integrantes realizaron su formación inicial (bachillerato o licenciatura) y obtuvieron su posgrado. las en 2.2.4 La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional 2.2.5 Se debe propiciar la diversidad del personal académico en"
+    },
+    {
+      "num": 310,
+      "criterion": "4.1.5",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 311,
+      "criterion": "4.2.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 312,
+      "criterion": "4.2.1",
+      "description": "Distribución de los estudiantes de la carrera a quienes se les han equiparado créditos, según porcentaje de créditos reconocidos con respecto al total de créditos del plan de estudios. A.8 El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de Enseñanza Media o uno que haya sido equiparado con este por el Consejo Superior de Educación."
+    },
+    {
+      "num": 313,
+      "criterion": "4.2.2",
+      "description": "Razones que aducen los graduados para haber durado más tiempo del establecido en obtener su título."
+    },
+    {
+      "num": 314,
+      "criterion": "4.2.2",
+      "description": "Razones que aducen los graduados para haber durado más tiempo del establecido en obtener su título."
+    },
+    {
+      "num": 315,
+      "criterion": "4.2.3",
+      "description": "Porcentaje de estudiantes que opinan que los espacios para actividades extra-clase son adecuados y están disponibles cuando los necesitan. Criterios y estándares del componente: 2.5 Centro de información y recursos Criterios y estándares Evidencias 2.5.1 El personal académico y el estudiantado de la carrera deben tener acceso, al menos, a un centro de información y recursos que cuente con todos los medios y equipos requeridos por ellos. 2.5.2 El estudiantado y el"
+    },
+    {
+      "num": 316,
+      "criterion": "4.2.3",
+      "description": "Total de horas establecidas para el trabajo comunal."
+    },
+    {
+      "num": 317,
+      "criterion": "4.2.3",
+      "description": "Ejemplos de acciones que realizan"
+    },
+    {
+      "num": 318,
+      "criterion": "4.2.3",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 319,
+      "criterion": "4.2.3",
+      "description": "Total de personal académico y"
+    },
+    {
+      "num": 320,
+      "criterion": "4.2.4",
+      "description": "Describa los mecanismos que"
+    },
+    {
+      "num": 321,
+      "criterion": "4.2.4",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 322,
+      "criterion": "4.2.4",
+      "description": "Mecanismos que utiliza la carrera"
+    },
+    {
+      "num": 323,
+      "criterion": "4.2.5",
+      "description": "Descripción del modelo El modelo de evaluación del SINAES procura visualizar, de manera integradora, los principales elementos del proceso educativo: un entorno que contextualiza, unos recursos o insumos necesarios para realizar el proceso educativo, el proceso mismo y unos resultados. Estos elementos, en el modelo del SINAES, se denominan dimensiones y se evalúan tomando como marco de referencia las características propias de la naturaleza de cada carrera por acr"
+    },
+    {
+      "num": 324,
+      "criterion": "4.2.5",
+      "description": "Estadísticas anuales disponibles"
+    },
+    {
+      "num": 325,
+      "criterion": "4.2.6",
+      "description": "Existencia de un documento oficial que incluya los referentes universales y las corrientes de pensamiento que fundamentan la carrera, así como el lugar en que se encuentran estipulados."
+    },
+    {
+      "num": 326,
+      "criterion": "4.2.6",
+      "description": "Descripción de los mecanismos que aseguran el cumplimiento de los requisitos y correquisitos de cada curso. 2.1.7 El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "num": 327,
+      "criterion": "4.2.6",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 328,
+      "criterion": "4.2.6",
+      "description": "Ejemplos de mejoras hechas al"
+    },
+    {
+      "num": 329,
+      "criterion": "4.2.7",
+      "description": "Percepción de los graduados sobre la formación recibida en los aspectos cognitivos, actitudinales, de destrezas y de competencias generales."
+    },
+    {
+      "num": 330,
+      "criterion": "4.2.7",
+      "description": "Porcentaje de graduados de los"
+    },
+    {
+      "num": 331,
+      "criterion": "4.2.8",
+      "description": "Porcentaje de graduados que"
+    },
+    {
+      "num": 332,
+      "criterion": "4.2.8",
+      "description": "Grado en que los graduados"
+    },
+    {
+      "num": 333,
+      "criterion": "4.2.9",
+      "description": "Mecanismos establecidos para que los graduados mantengan vínculos con la carrera."
+    },
+    {
+      "num": 334,
+      "criterion": "4.2.9",
+      "description": "Descripción del grado de respuesta de los graduados a estas acciones. Criterios y estándares Evidencias y tipo Frecuencia de 335. oportunidades actualización de profesional que la carrera ofrece a los graduados. 4.2.10 La carrera debe ofrecer a sus graduados oportunidades de actualización profesional."
+    },
+    {
+      "num": 335,
+      "criterion": "4.2.10",
+      "description": "Frecuencia y tipo de"
+    },
+    {
+      "num": 336,
+      "criterion": "4.2.10",
+      "description": "Distribución porcentual de la opinión de los estudiantes acerca del acceso a los cursos de la carrera y la frecuencia con que se imparten. 3.3.18 Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "num": 337,
+      "criterion": "4.2.10",
+      "description": "Mecanismos para detectar las"
+    },
+    {
+      "num": 338,
+      "criterion": "4.2.11",
+      "description": "Porcentaje de estudiantes y profesores que opinan que, en los cursos, se utilizan con frecuencia y pertinencia las tecnologías de información. 49 Criterios y estándares Evidencias 2.1.13 El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina. aprender, deben de"
+    },
+    {
+      "num": 339,
+      "criterion": "4.3.1",
+      "description": "Total de producción académica"
+    },
+    {
+      "num": 340,
+      "criterion": "4.3.1",
+      "description": "Descripción y lista del tipo de"
+    },
+    {
+      "num": 341,
+      "criterion": "4.3.1",
+      "description": "Análisis de cómo los proyectos o"
+    },
+    {
+      "num": 342,
+      "criterion": "4.3.1",
+      "description": "Descripción de la estrategia de comunicación y divulgación de los materiales."
+    },
+    {
+      "num": 343,
+      "criterion": "4.3.1",
+      "description": "Total de producción académica"
+    },
+    {
+      "num": 344,
+      "criterion": "4.3.1",
+      "description": "Nombre y fecha de eventos"
+    },
+    {
+      "num": 345,
+      "criterion": null,
+      "description": "Evidencia 345 del Manual SINAES 2009."
+    },
+    {
+      "num": 346,
+      "criterion": null,
+      "description": "Evidencia 346 del Manual SINAES 2009."
+    },
+    {
+      "num": 347,
+      "criterion": null,
+      "description": "Evidencia 347 del Manual SINAES 2009."
+    },
+    {
+      "num": 348,
+      "criterion": null,
+      "description": "Evidencia 348 del Manual SINAES 2009."
+    }
+  ],
+  "criteria": [
+    {
+      "component": "A",
+      "code": "A.1",
+      "description": "El programa o carrera debe contar con al menos una cohorte de graduados y cinco años de funcionamiento."
+    },
+    {
+      "component": "A",
+      "code": "A.2",
+      "description": "La definición del crédito y el número de créditos curso deben a la normativa establecida por corresponder a"
+    },
+    {
+      "component": "A",
+      "code": "A.3",
+      "description": "La carrera debe contar con ciclos lectivos que cumplan con la duración mínima establecida por la normativa de CONARE y CONESUP."
+    },
+    {
+      "component": "A",
+      "code": "A.4",
+      "description": "El título que se otorga debe coincidir en todos sus extremos con la nomenclatura de grados y títulos de la educación superior aprobada por"
+    },
+    {
+      "component": "A",
+      "code": "A.5",
+      "description": "El 100% de los estudiantes que se admitan por traslado debe provenir de instituciones y carreras debidamente entidad autorizadas jurídicamente competente."
+    },
+    {
+      "component": "A",
+      "code": "A.6",
+      "description": "Los cursos que se equiparen deben tener al menos un 90% de congruencia con los objetivos y contenidos del curso objeto del reconocimiento."
+    },
+    {
+      "component": "A",
+      "code": "A.7",
+      "description": "La carrera podrá equiparar a sus estudiantes hasta un máximo del 40% del total de créditos, por transferencia de una carrera no acreditada oficialmente."
+    },
+    {
+      "component": "A",
+      "code": "A.8",
+      "description": "El 100% de los estudiantes admitidos en la carrera debe poseer el título de Bachiller de"
+    },
+    {
+      "component": "A",
+      "code": "A.9",
+      "description": "La equiparación de grados procederá solamente entre instituciones debidamente autorizadas por la entidad competente."
+    },
+    {
+      "component": "A",
+      "code": "A.10",
+      "description": "Todo reconocimiento de un tramo cursado en una institución parauniversitaria debe estar amparado por un convenio específico en el marco del convenio nacional de articulación de la educación superior."
+    },
+    {
+      "component": "A",
+      "code": "A.11",
+      "description": "El 100% de los cursos de la misma carrera debe corresponder a un grado académico igual o superior al que ofrece la carrera."
+    },
+    {
+      "component": "A",
+      "code": "A.12",
+      "description": "Cada carrera podrá reconocer a sus de estudiantes, mediante reconocimiento de aprendizajes por experiencia, hasta un máximo del 20% de los créditos de la carrera."
+    },
+    {
+      "component": "1.1",
+      "code": "1.1.1",
+      "description": "Debe contarse con medios que permitan acceso público a información sobre trámites de ingreso, la duración de los estudios, los requisitos y procedimientos para las convalidaciones y reconocimientos y las tarifas de los trámites académico- administrativos."
+    },
+    {
+      "component": "1.1",
+      "code": "1.1.2",
+      "description": "El estudiante debe ser informado oportunamente y de forma veraz, al menos sobre el plan de estudios, graduación, tiempo promedio de costos, normativa, fechas, trámites y servicios."
+    },
+    {
+      "component": "1.2",
+      "code": "1.2.1",
+      "description": "Los trámites y requisitos de ingreso en la carrera deben estar claramente estipulados en una normativa y ser ampliamente difundidos."
+    },
+    {
+      "component": "1.2",
+      "code": "1.2.2",
+      "description": "Debe promoverse el acceso a la carrera o programa en igualdad de oportunidades, sin discriminación y con respeto por la diversidad."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.1",
+      "description": "El plan de estudios debe responder al estado actual de avance o desarrollo de la disciplina –estado del arte– y a la realidad del contexto nacional e internacional, así como al mercado laboral."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.2",
+      "description": "Se debe contar con políticas y acciones concretas que favorezcan la participación de los estudiantes de la carrera en la atención de necesidades del contexto."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.3",
+      "description": "La carrera debe incorporar, durante el proceso formativo, el análisis y estudio de problemas del contexto, y proponer solución a estos desde su especialidad."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.4",
+      "description": "estrategias y acciones vincular tendientes la la carrera correspondiente comunidad académica, para su retroalimentación y mejora."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.5",
+      "description": "Se debe demostrar que se aprovecha el entorno para experiencias prácticas del estudiantado, según los requerimientos de la carrera."
+    },
+    {
+      "component": "1.3",
+      "code": "1.3.6",
+      "description": "La carrera debe demostrar que incorpora elementos que contribuyen a preparar, a los futuros graduados, para enfrentar los cambios del contexto y de la disciplina."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.1",
+      "description": "La carrera debe contar con un documento siguiente: contenga descriptivo antecedentes, conceptuales, fundamentos objetivos, fines, ejes curriculares y orientación metodológica."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.2",
+      "description": "Los fines y objetivos de la carrera deben ser claros y congruentes con los postulados de la institución y guiar adecuadamente el proceso educativo."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.3",
+      "description": "La carrera debe contar con una descripción explícita de las corrientes del pensamiento que fundamentan el plan de estudios."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.4",
+      "description": "La carrera debe tener un perfil de entrada claramente establecido, los conocimientos, las habilidades y las actitudes que corresponden a su naturaleza."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.5",
+      "description": "La carrera debe contar con un perfil profesional de salida claramente establecido, congruente con el ejercicio de la profesión y con los su contenidos fundamento."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.6",
+      "description": "Se debe contar con una malla curricular que establezca, estrictamente académicos, la secuencia de los cursos, según ciclos, y los requisitos y correquisitos de cada uno."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.7",
+      "description": "El plan de estudios debe incluir cursos teóricos, prácticos y teórico-prácticos, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.8",
+      "description": "El plan de estudios debe establecer mecanismos para la integración de la teoría y la práctica, de acuerdo con la naturaleza de la carrera."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.9",
+      "description": "El plan de estudios debe incorporar contenidos de otras disciplinas afines a la carrera o complementarias, que posibiliten una perspectiva multidisciplinaria."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.10",
+      "description": "Se debe demostrar que el plan de estudios incluye contenidos de ética para el ejercicio profesional."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.11",
+      "description": "El plan de estudios incluye contenidos que estimulan la lectura y el estudio en otro idioma."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.12",
+      "description": "La carrera, de acuerdo con su naturaleza, debe tecnologías de información para apoyar el proceso formativo."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.13",
+      "description": "El plan de estudios y las estrategias didácticas deben estimular, en los estudiantes, su capacidad incluir componentes orientados a desarrollar, en ellos, pensamientos, principios y prácticas científicas rigurosas relevantes para su disciplina."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.14",
+      "description": "El plan de estudios debe considerar la flexibilidad curricular, la cual, sin distorsionar la secuencia, ha de satisfacer intereses específicos de los estudiantes y la posibilidad de enfatizar en diferentes áreas del conocimiento."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.15",
+      "description": "Se deben ofrecer al estudiantado actividades extracurriculares que complementan el plan de estudios."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.16",
+      "description": "Los estudiantes, para graduarse, tienen que realizar un trabajo final de una de las modalidades que corresponden a la carrera, o su equivalente, cuando el grado académico por obtener lo implique como requisito. *"
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.17",
+      "description": "El programa de cada curso debe contener al menos los siguientes elementos: nombre del curso, código, ciclo lectivo en el que se ofrece, descripción general, objetivos generales y específicos, créditos, total de horas lectivas semanales divididas en teoría, práctica y laboratorio, cuando corresponda, contenidos temáticos, metodología, estrategias de evaluación de los aprendizajes y bibliografía."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.18",
+      "description": "Los objetivos de los cursos deberán redactarse en términos de los aprendizajes o las competencias que se pretende los estudiantes, en las esferas cognitiva, de destrezas y actitudinal."
+    },
+    {
+      "component": "2.1",
+      "code": "2.1.19",
+      "description": "los aprendizajes deben estar explícitos en cada programa de curso."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.1",
+      "description": "Se debe contar con normativas para el personal académico, que regule sus deberes y derechos en el ejercicio de la actividad docente."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.2",
+      "description": "En los tiempos asignados al personal académico deben incluirse, en la carga docente, las horas de lecciones, de atención de estudiantes fuera de clase, de preparación de lecciones, de elaboración y aplicación de instrumentos de evaluación exámenes y otros de revisión y valoración de pruebas, tareas y otros requisitos de los cursos, así como de dirección de trabajos finales de graduación."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.3",
+      "description": "La carrera debe garantizar que su personal académico pueda participar en actividades de docencia, investigación y extensión social."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.4",
+      "description": "La carrera debe contar con personal académico competente; la competencia se definirá con base en el grado académico, la experiencia docente y profesional y la producción académica o profesional"
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.5",
+      "description": "Se debe propiciar la diversidad del personal académico en cuanto a género, edad y universidades en que se ha formado."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.6",
+      "description": "Se debe contar con requisitos y procedimientos que garanticen la selección de personal académico idóneo."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.7",
+      "description": "Se deben tener mecanismos para retener a los mejores académicos y contar con planes de sustitución de mediano y largo plazo."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.8",
+      "description": "La carrera debe mantener en ejecución un plan de desarrollo, para el personal académico, que estimule la formación en áreas de interés, la obtención de grados académicos superiores y el mejoramiento en aspectos de didáctica universitaria o de la especialidad."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.9",
+      "description": "Se debe contar con incentivos o mecanismos de promoción que se apliquen al personal académico, que propicien su desarrollo profesional."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.10",
+      "description": "El personal académico de tiempo completo debe asegurar su interacción con el estudiantado y favorecer la participación en la vida académica."
+    },
+    {
+      "component": "2.2",
+      "code": "2.2.11",
+      "description": "Debe existir personal académico de tiempo completo en una proporción tal que asegure tanto un adecuado nivel de interacción entre éste y el estudiantado, como su amplia participación en las diversas actividades curriculares."
+    },
+    {
+      "component": "2.3",
+      "code": "2.3.1",
+      "description": "2.3.2 2.3.3"
+    },
+    {
+      "component": "2.3",
+      "code": "2.3.2",
+      "description": "2.3.3"
+    },
+    {
+      "component": "2.3",
+      "code": "2.3.3",
+      "description": "2.4.1 2.4.2 2.4.3"
+    },
+    {
+      "component": "2.3",
+      "code": "2.3.4",
+      "description": "Se debe contar con un plan de desarrollo profesional para el personal administrativo, el las técnico y el de apoyo, de acuerdo con necesidades de la carrera."
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.1",
+      "description": "2.4.2 2.4.3"
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.2",
+      "description": "2.4.3"
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.3",
+      "description": "2.4.4"
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.4",
+      "description": "EXTERNOS AL CONSEJO NACIONAL DE ACREDITACIÓN. ..................................................................................... 25"
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.5",
+      "description": "Se debe contar con aulas, auditorios, laboratorios, talleres, biblioteca y otros espacios necesarios, en buen estado, suficientes para el número de personas que los necesitan y amueblados adecuadamente, todo ello según la función que cumplen y la naturaleza de la carrera."
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.6",
+      "description": "El personal académico debe tener acceso oportuno a un recinto adecuado para la atención de estudiantes y para la realización de otras actividades propias de su función docente."
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.7",
+      "description": "Debe haber oficinas apropiadas y accesibles para las personas vinculadas con la gestión de la carrera y con los servicios administrativos y técnicos básicos."
+    },
+    {
+      "component": "2.4",
+      "code": "2.4.8",
+      "description": "Los estudiantes deben contar con espacios para las actividades extra-clase."
+    },
+    {
+      "component": "2.5",
+      "code": "2.5.1",
+      "description": "2.5.2 2.5.3"
+    },
+    {
+      "component": "2.5",
+      "code": "2.5.2",
+      "description": "2.5.3"
+    },
+    {
+      "component": "2.5",
+      "code": "2.5.3",
+      "description": "CAPÍTULO III EL MODELO DE EVALUACIÓN ......................................................................................................... 35 3.1"
+    },
+    {
+      "component": "2.5",
+      "code": "2.5.4",
+      "description": "El centro de información y recursos debe estar atendido por profesionales en el área para satisfacer las demandas de préstamo de material bibliográfico, así como la adquisición de nuevos ejemplares."
+    },
+    {
+      "component": "2.5",
+      "code": "2.5.5",
+      "description": "Debe haber un presupuesto asignado para los materiales la adquisición de financiar la carrera y requeridos por bibliográficos mecanismos de coordinación con ésta, para tomar las decisiones relativas a esa adquisición."
+    },
+    {
+      "component": "2.6",
+      "code": "2.6.1",
+      "description": "Equipo y materiales"
+    },
+    {
+      "component": "2.6",
+      "code": "2.6.2",
+      "description": "de informática a los que da acceso la carrera deben contar con equipo actualizado, cantidad suficiente, en buenas condiciones y con los recursos periféricos y de software la requeridos carrera."
+    },
+    {
+      "component": "2.6",
+      "code": "2.6.3",
+      "description": "El personal académico y el estudiantado de la carrera deben tener acceso a recursos de multimedia en buen estado, del tipo requerido y en la cantidad necesaria para el proceso formativo en el aula."
+    },
+    {
+      "component": "2.6",
+      "code": "2.6.4",
+      "description": "Los tener equipos especializados, en buenas condiciones y en cantidad suficiente para la labor docente y de investigación, según la naturaleza de la carrera."
+    },
+    {
+      "component": "2.6",
+      "code": "2.6.5",
+      "description": "Se debe contar, en las aulas, laboratorios, talleres y espacios de trabajo, con los recursos materiales necesarios para el proceso formativo y para todas aquellas labores de gestión y apoyo que lo acompañan."
+    },
+    {
+      "component": "2.7",
+      "code": "2.7.1",
+      "description": "La carrera debe contar con un presupuesto suficiente que le permita cumplir sus objetivos y garantizar el mejoramiento continuo."
+    },
+    {
+      "component": "2.7",
+      "code": "2.7.2",
+      "description": "Se debe contar con políticas claras que regulen la captación de recursos externos provenientes de fuentes diferentes a la principal; a saber, convenios, donaciones, cooperación, consultorías, pruebas y diagnóstico de laboratorio, investigación y otras."
+    },
+    {
+      "component": "3.1",
+      "code": "3.1.1",
+      "description": "La dirección y el personal académico deben participar en la definición de las modificaciones del plan de estudios."
+    },
+    {
+      "component": "3.1",
+      "code": "3.1.2",
+      "description": "El personal académico debe asistir a las diferentes actividades de coordinación que implica la gestión y desarrollo de la carrera, e involucrarse en ellas."
+    },
+    {
+      "component": "3.1",
+      "code": "3.1.3",
+      "description": "La carrera debe administrativos que permitan verificar el cumplimiento de las responsabilidades del personal académico en lo que corresponde a dominio de la materia y de las técnicas didácticas; la actualización; la puntual asistencia a lecciones y a otras actividades curriculares; el respeto por los estudiantes; la disponibilidad ante las necesidades de formación de estos y la entrega pronta de los resultados de las evaluaciones de los aprendizajes hechas a sus alumnos."
+    },
+    {
+      "component": "3.1",
+      "code": "3.1.4",
+      "description": "La carrera debe contar los con mecanismos los instrumentos de evaluación y personal seguimiento académico, que aseguren la calidad de su labor en cada curso y que permitan definir y aplicar acciones correctivas de mejora en forma pronta y oportuna."
+    },
+    {
+      "component": "3.1",
+      "code": "3.1.5",
+      "description": "La carrera debe tener acceso a las estrategias y a un programa o proyecto de investigación educativa, que produzcan la innovación y la actualización de los métodos de enseñanza y la capacitación de los académicos."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.1",
+      "description": "Debe haber congruencia entre los objetivos del plan de estudios, el curso y el tipo de estrategia, y las actividades de aprendizaje puestas en práctica."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.2",
+      "description": "Las estrategias de enseñanza y aprendizaje deben ser congruentes con la naturaleza de la carrera y la asignatura, los objetivos propuestos, las características de los estudiantes, la información, los materiales y los equipos didácticos disponibles; con el tamaño de los grupos y con las más adecuadas teorías de aprendizaje."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.3",
+      "description": "La carrera debe promover en los estudiantes los aprendizajes cognitivos, el desarrollo de destrezas y la formación de actitudes positivas, así como el interés por el aprendizaje continuo y la construcción de un pensamiento crítico, creativo y autónomo."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.4",
+      "description": "La carrera debe ofrecer facilidades al estudiantado para participar en giras de campo y otras actividades fuera de las instalaciones universitarias, cuando el plan de estudios lo requiera."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.5",
+      "description": "La evaluación de los aprendizajes debe incluir no solo evaluación de conocimientos de acuerdo con la naturaleza de la carrera, sino también de las destrezas, las habilidades y las actitudes establecidas en el currículo y definidas en el perfil de salida."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.6",
+      "description": "La propuesta de evaluación debe ser presentada y explicada estudiantes los a durante dos las primeras semanas de clase."
+    },
+    {
+      "component": "3.2",
+      "code": "3.2.7",
+      "description": "Debe haber concordancia entre los métodos de enseñanza y aprendizaje y los métodos de evaluación de los aprendizajes."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.1",
+      "description": "Se debe contar con documentación oficial sobre la estructura organizativa y el de funcionamiento de la universidad, de la unidad académica y de la carrera en particular."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.2",
+      "description": "La carrera debe contar con un plan estratégico que oriente su desarrollo y su funcionamiento, el cual debe contener como mínimo: los objetivos, las acciones, los indicadores de cumplimiento y un cronograma."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.3",
+      "description": "La Universidad en general y la carrera en particular deben contar con mecanismos y recursos para registrar y ofrecer estadísticas e información anual del personal académico carga, cursos y grupos, resultados de evaluaciones, producción intelectual y otros para uso y retroalimentación de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.4",
+      "description": "Es necesario que exista un clima de trabajo que propicie el logro de los objetivos educativos de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.5",
+      "description": "Deben existir una un normativa para procedimiento nombrar la persona que ocupe la dirección de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.6",
+      "description": "La persona que ocupe la dirección debe reunir condiciones de idoneidad y liderazgo para el puesto."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.7",
+      "description": "Se debe contar con un núcleo académico encargado de la orientación y la gestión de la carrera para que ésta no tenga un carácter unipersonal."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.8",
+      "description": "La dirección de la carrera debe ejercer un control efectivo de la ejecución del plan de estudios."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.9",
+      "description": "La dirección tiene la responsabilidad de informar al personal académico y a los estudiantes sobre los cambios en el plan de estudios, con anticipación a su puesta en vigencia."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.10",
+      "description": "La dirección debe tener mecanismos claramente establecidos para la coordinación con otras instancias académicas vinculadas con la ejecución del plan de estudios."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.11",
+      "description": "Debe contarse con mecanismos establecidos de evaluación, revisión, reflexión y actualización periódica del plan de estudios."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.12",
+      "description": "Las modificaciones introducidas al plan de estudios deben estar debidamente documentadas y aprobadas según lo que corresponda."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.13",
+      "description": "Deben existir espacios de reunión conjunta entre la dirección de manera el personal académico y periódica, de tal forma que posibiliten la información, la coordinación, el diálogo y la opinión sobre los aspectos académicos y administrativos de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.14",
+      "description": "Se deben realizar actividades formales periódicas con el personal académico para conocer, analizar, evaluar y tomar decisiones, sobre aspectos relativos a la carrera, considerando la opinión de estudiantes, graduados y de sus empleadores."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.15",
+      "description": "Se debe contar con mecanismos formales de coordinación, integración, acción conjunta y seguimiento entre el personal académico que ofrece un mismo curso, del mismo nivel o eje curricular de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.16",
+      "description": "Deben existir revisiones periódicas sobre la conveniencia para los estudiantes de la oferta de cursos y sus horarios."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.17",
+      "description": "Se debe garantizar el los acceso estudiantes a los cursos de la carrera."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.18",
+      "description": "Deben existir políticas para el reemplazo del personal académico."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.19",
+      "description": "La carrera debe contar con un programa de inducción para el personal académico y administrativo nuevo."
+    },
+    {
+      "component": "3.3",
+      "code": "3.3.20",
+      "description": "Deben existir evidencias de que la carrera incorpora en su gestión el mejoramiento continuo, como parte de los resultados de su evaluación."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.1",
+      "description": "Existencia de políticas institucionales y de la carrera que incentiven el pensamiento científico riguroso y guíen todo la realización y la utilización de investigaciones."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.2",
+      "description": "La carrera debe tener estrategias claramente establecidas, y desarrollar acciones para que el personal académico esté al día en su campo de conocimiento, por medio de la utilización de investigación reciente."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.3",
+      "description": "La investigación que realiza la carrera debe ser congruente con su naturaleza."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.4",
+      "description": "El personal académico que realiza actividades los recursos de requeridos para cumplir cabalmente con esa labor."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.5",
+      "description": "existir"
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.6",
+      "description": "Deben mantenerse relaciones académicas con centros, grupos, redes o programas dedicados a la investigación en el campo disciplinar."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.7",
+      "description": "Se debe fomentar proyectos y acciones de investigación."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.8",
+      "description": "La carrera debe estimular que los resultados de sus investigaciones se integren a la práctica docente y se compartan entre académicos y estudiantes."
+    },
+    {
+      "component": "3.4",
+      "code": "3.4.9",
+      "description": "Los resultados de innovaciones deben ser difundidos mediante publicaciones la comunidad reconocidas por académica y otros mecanismos, para atraer la crítica y la colaboración nacional e internacional."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.1",
+      "description": "La carrera debe contar con políticas y procedimientos claros que favorezcan la realización de actividades de extensión."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.2",
+      "description": "La carrera debe contar con lineamientos explícitos que guíen la realización de proyectos de extensión."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.3",
+      "description": "Existencia de acciones de la extensión que proyecten carrera sobre el entorno social."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.4",
+      "description": "La carrera debe promover e incentivar entre sus académicos la realización de proyectos de extensión."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.5",
+      "description": "El personal académico que realiza actividades de extensión debe contar con los recursos requeridos para cumplir cabalmente con esa labor."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.6",
+      "description": "La carrera debe extensión a fin de que favorezcan, promuevan y creen condiciones para construir alianzas estratégicas internas y externas, de tal manera que se potencie el trabajo conjunto y el uso de sus resultados."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.7",
+      "description": "La carrera debe registrar datos cuantitativos y cualitativos de las acciones de extensión que realiza y tenerlos disponibles por ejemplo, cantidad de beneficiarios, cantidad de actividades o productos concretos, de tal forma que la carrera cuente con información para planificar sus futuras acciones de extensión."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.8",
+      "description": "Los resultados de los proyectos de extensión deben ser ampliamente difundidos entre los actores sociales las herramientas idóneas, de tal manera que se logre la apropiación del conocimiento por parte de tales actores."
+    },
+    {
+      "component": "3.5",
+      "code": "3.5.9",
+      "description": "La carrera debe contar con mecanismos para evaluar el resultado de sus acciones de extensión."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.1",
+      "description": "La institución debe contar con políticas claras para atender los estudiantes y fortalecer así su desarrollo cognitivo, afectivo y social."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.2",
+      "description": "La universidad debe contar con normativa y procedimientos que permitan cumplir las leyes vigentes en materia de discapacidad, hostigamiento sexual y otras."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.4",
+      "description": "Se debe garantizar la la existencia, divulgación y el cumplimiento de normativa la estudiantil."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.5",
+      "description": "Deben estar disponibles programas o servicios de orientación vocacional y ocupacional para los estudiantes que lo requieran."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.6",
+      "description": "Se debe ofrecer a los estudiantes con alguna discapacidad las condiciones que garanticen su acceso a las diversas acciones educativas de la carrera."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.7",
+      "description": "La institución debe garantizar a los estudiantes, registro, control y para certificación de todos sus datos académicos, así como implementar las medidas de seguridad pertinentes para garantizar información y la veracidad de proteger su confidencialidad."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.8",
+      "description": "Se debe contar con servicios para que los estudiantes tengan acceso a becas, ayudas económicas o financiamiento, por su condición socioeconómica, por su excelencia académica o por su participación en actividades universitarias."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.9",
+      "description": "Se debe contar con información sobre el uso y la calidad de los servicios académicos y estudiantiles, y utilizar esta información para la toma de decisiones y el mejoramiento de éstos."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.10",
+      "description": "dependencias administrativas y los servicios académicos deben un horario acorde con las necesidades del estudiantado."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.11",
+      "description": "Se debe ofrecer al estudiantado una guía sobre los procesos administrativos fundamentales."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.12",
+      "description": "Debe contarse con medios eficientes que permitan al estudiantado expresar sus opiniones o su nivel de satisfacción con respecto a la carrera, al personal académico, a los servicios y a las actividades que brinda la institución."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.13",
+      "description": "Debe haber acceso de los estudiantes a las instancias de la carrera donde se analicen y decidan asuntos de interés estudiantil, de acuerdo con la normativa institucional."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.14",
+      "description": "Debe existir asesoría académica curricular para el estudiantado."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.15",
+      "description": "estudiantado tiempo de consulta extra-clase sobre la materia de cada curso."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.16",
+      "description": "Deben existir instancias que den seguimiento al desempeño del estudiante y remitan los problemas detectados a las personas encargadas de los servicios de apoyo existentes."
+    },
+    {
+      "component": "3.6",
+      "code": "3.6.17",
+      "description": "Deben desarrollarse acciones de inducción para nuevos estudiantes, que favorezcan su proceso de transición de un nivel educativo a otro."
+    },
+    {
+      "component": "4.1",
+      "code": "4.1.1",
+      "description": "Debe existir un reglamento de evaluación de los aprendizajes que estipule aspectos como la escala de calificación, las normas de evaluación, los mecanismos y los plazos de apelación, y todo lo relacionado con el rendimiento académico obtenido por el estudiante en los cursos y en la carrera."
+    },
+    {
+      "component": "4.1",
+      "code": "4.1.2",
+      "description": "La Universidad en general y la carrera en particular deben contar con mecanismos y recursos para registrar y ofrecer estadísticas e información anual del estudiantado; como matrícula, características sociodemográficas, admisión, rendimiento académico y tiempo promedio de graduación, entre otras, para uso y retroalimentación de la carrera."
+    },
+    {
+      "component": "4.1",
+      "code": "4.1.3",
+      "description": "Disponibilidad de información confiable sobre el rendimiento académico por curso, por docente y por nivel de la carrera."
+    },
+    {
+      "component": "4.1",
+      "code": "4.1.4",
+      "description": "Se debe garantizar a los estudiantes el acceso oportuno a los resultados de su rendimiento en cada uno de los cursos matriculados."
+    },
+    {
+      "component": "4.1",
+      "code": "4.1.5",
+      "description": "Deben existir acciones educativas que promuevan y procuren el éxito académico de la mayoría de los estudiantes."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.1",
+      "description": "La carrera debe disponer de información confiable que permita establecer el nivel de cumplimiento del estudiantado en cuanto a los requisitos de graduación autorizados."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.2",
+      "description": "Las razones principales que explican una prolongación mayor en el período de estudios y graduación deberán estar relacionadas con situaciones atribuibles a los estudiantes o a su entorno y no a la carrera."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.3",
+      "description": "La carrera debe contar con acciones de proyección en las que participen estudiantes y personal académico"
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.4",
+      "description": "La carrera debe contar con las condiciones del mercado laboral de la disciplina y sobre la inserción laboral de sus graduados, e informarlo a los estudiantes."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.5",
+      "description": "La carrera debe contar con un sistema de información sobre sus graduados."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.6",
+      "description": "Deberá demostrarse que la carrera da seguimiento a sus graduados y que utiliza la información para introducir mejoras en el plan de estudios."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.7",
+      "description": "contar con mecanismos para conocer la percepción de los graduados sobre la formación recibida."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.8",
+      "description": "Un alto porcentaje de graduados debe mostrarse satisfecho con la formación recibida."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.9",
+      "description": "Se deben desarrollar acciones que permitan mantener el vínculo de los graduados con actividades de la carrera."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.10",
+      "description": "La carrera debe ofrecer a sus graduados oportunidades de actualización profesional."
+    },
+    {
+      "component": "4.2",
+      "code": "4.2.11",
+      "description": "Un alto porcentaje de empleadores debe mostrarse satisfecho con los graduados."
+    },
+    {
+      "component": "4.3",
+      "code": "4.3.1",
+      "description": "El personal docente debe contar académica con proveniente de trabajo de investigación y extensión al interior de la carrera."
+    }
+  ],
+  "components": [
+    {
+      "code": "A",
+      "dimension": "D0",
+      "name": "Admisibilidad",
+      "description": "Criterios de admisibilidad."
+    },
+    {
+      "code": "S",
+      "dimension": "D0",
+      "name": "Sostenibilidad",
+      "description": "Criterios de sostenibilidad."
+    },
+    {
+      "code": "1.1",
+      "dimension": "D1",
+      "name": "Información y promoción",
+      "description": "Componente 1.1."
+    },
+    {
+      "code": "1.2",
+      "dimension": "D1",
+      "name": "Proceso de admisión e ingreso",
+      "description": "Componente 1.2."
+    },
+    {
+      "code": "1.3",
+      "dimension": "D1",
+      "name": "Correspondencia con el contexto",
+      "description": "Componente 1.3."
+    },
+    {
+      "code": "2.1",
+      "dimension": "D2",
+      "name": "Plan de estudios",
+      "description": "Componente 2.1."
+    },
+    {
+      "code": "2.2",
+      "dimension": "D2",
+      "name": "Personal académico",
+      "description": "Componente 2.2."
+    },
+    {
+      "code": "2.3",
+      "dimension": "D2",
+      "name": "Personal administrativo",
+      "description": "Componente 2.3."
+    },
+    {
+      "code": "2.4",
+      "dimension": "D2",
+      "name": "Infraestructura",
+      "description": "Componente 2.4."
+    },
+    {
+      "code": "2.5",
+      "dimension": "D2",
+      "name": "Centro de información y recursos",
+      "description": "Componente 2.5."
+    },
+    {
+      "code": "2.6",
+      "dimension": "D2",
+      "name": "Equipo y materiales",
+      "description": "Componente 2.6."
+    },
+    {
+      "code": "2.7",
+      "dimension": "D2",
+      "name": "Finanzas y presupuestos",
+      "description": "Componente 2.7."
+    },
+    {
+      "code": "3.1",
+      "dimension": "D3",
+      "name": "Desarrollo docente",
+      "description": "Componente 3.1."
+    },
+    {
+      "code": "3.2",
+      "dimension": "D3",
+      "name": "Metodología de enseñanza y aprendizaje",
+      "description": "Componente 3.2."
+    },
+    {
+      "code": "3.3",
+      "dimension": "D3",
+      "name": "Gestión de la carrera",
+      "description": "Componente 3.3."
+    },
+    {
+      "code": "3.4",
+      "dimension": "D3",
+      "name": "Investigación",
+      "description": "Componente 3.4."
+    },
+    {
+      "code": "3.5",
+      "dimension": "D3",
+      "name": "Extensión",
+      "description": "Componente 3.5."
+    },
+    {
+      "code": "3.6",
+      "dimension": "D3",
+      "name": "Vida estudiantil",
+      "description": "Componente 3.6."
+    },
+    {
+      "code": "4.1",
+      "dimension": "D4",
+      "name": "Desempeño estudiantil",
+      "description": "Componente 4.1."
+    },
+    {
+      "code": "4.2",
+      "dimension": "D4",
+      "name": "Graduados",
+      "description": "Componente 4.2."
+    },
+    {
+      "code": "4.3",
+      "dimension": "D4",
+      "name": "Proyección de la carrera",
+      "description": "Componente 4.3."
+    }
+  ]
+}

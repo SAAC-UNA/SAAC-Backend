@@ -18,15 +18,15 @@ return new class extends Migration
             // Relación con componente (restrict: no borrar componente si tiene criterios)
             $table->foreignId('componente_id')->constrained('COMPONENTE', 'componente_id')->onDelete('restrict');
             // Descripción del criterio
-            $table->string('descripcion', 300);
+            $table->string('descripcion', 500);
             // Nomenclatura del criterio
             $table->string('nomenclatura', 20);
             // Estado del criterio
             $table->boolean('activo')->default(true);
-            $table->enum('estado', ['Pendiente','En Proceso','Completado','Vencido'])->default('Pendiente');
+            $table->enum('estado', ['Pendiente', 'En Proceso', 'Completado', 'Vencido'])->default('Pendiente');
             // Timestamps de creación y actualización
             $table->timestamps();
-            
+
             // Índices de performance para queries frecuentes
             $table->index('componente_id', 'idx_cr_componente_id');
             $table->index('activo', 'idx_cr_activo');

@@ -18,16 +18,16 @@ return new class extends Migration
             // Relación con criterio (restrict: no borrar criterio si tiene evidencias)
             $table->foreignId('criterio_id')->constrained('CRITERIO', 'criterio_id')->onDelete('restrict');
             // Relación de estado de evidencia migrada a enum directo (CREATE)
-            $table->enum('estado', ['Pendiente','En Proceso','Completado','Vencido','Aprobado','Rechazado','Observada','Validada'])->default('Pendiente');
+            $table->enum('estado', ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'])->default('Pendiente');
             // Descripción de la evidencia
-            $table->string('descripcion', 300);
+            $table->string('descripcion', 500);
             // Nomenclatura de la evidencia
             $table->string('nomenclatura', 20);
             // Estado de la evidencia
             $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
-            
+
             // Índices de performance para queries frecuentes
             $table->index('criterio_id', 'idx_ev_criterio_id');
             $table->index('estado', 'idx_ev_estado');

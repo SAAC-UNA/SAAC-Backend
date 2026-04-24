@@ -43,8 +43,8 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,               // 7. Comentarios (temporal - relación será refactorizada)
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
-            // Nota: modelo tradicional SINAES 2018 se inserta en la migración 007a (no requiere seeder)
-            TraditionalStructureSeeder::class,  // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias
+            // Nota: modelo tradicional SINAES 2018 COMPLETO (TODOS los datos embebidos directamente sin JSON externo)
+            TraditionalStructureSeederComplete::class,  // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias COMPLETO
 
             // === CICLOS Y PROCESOS ===
             AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
@@ -67,9 +67,6 @@ class DatabaseSeeder extends Seeder
 
             // === COMPROMISOS DE MEJORA - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
             CommitmentElementsTestSeeder::class, // 21. Compromisos de mejora elementos (HU-010 modelo flexible)
-
-            // === DEMOSTRACIÓN COMPLETA DEL SISTEMA ===
-            FullSystemDemoSeeder::class,         // 22. Datos de demo para TODOS los RF (ambos modelos)
 
             // === AUDITORÍA Y LOGS ===
             ActionTypeSeeder::class,          // 23. Tipos de acción (catálogo de TIPO_ACCION)
