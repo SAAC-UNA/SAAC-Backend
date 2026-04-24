@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
             // Nota: modelo tradicional SINAES 2018 COMPLETO (TODOS los datos embebidos directamente sin JSON externo)
-            TraditionalStructureSeederComplete::class,  // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias COMPLETO
+            TraditionalStructureSeeder::class,          // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias COMPLETO
 
             // === CICLOS Y PROCESOS ===
             AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
