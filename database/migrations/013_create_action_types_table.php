@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -23,6 +24,12 @@ return new class extends Migration
             // Índice de performance para búsqueda por nombre
             $table->index('descripcion', 'idx_ta_descripcion');
         });
+
+        // Seed inicial con acciones de publicación si no existen
+        DB::table('TIPO_ACCION')->insertOrIgnore([
+            ['descripcion' => 'publicar', 'created_at' => now(), 'updated_at' => now()],
+            ['descripcion' => 'despublicar', 'created_at' => now(), 'updated_at' => now()],
+        ]);
     }
 
     /**

@@ -12,6 +12,8 @@ return new class extends Migration
             $table->id('ciclo_acreditacion_id');
             $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('restrict');
             $table->string('nombre', 50);
+            // Estado del ciclo de acreditación (activo/inactivo)
+            $table->enum('estado', ['activo', 'inactivo'])->default('activo');
             $table->unsignedBigInteger('modelo_estructura_id')
                   ->comment('Modelo SINAES que usa este ciclo');
             $table->timestamps();

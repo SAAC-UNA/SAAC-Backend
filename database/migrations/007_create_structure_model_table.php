@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -16,6 +16,11 @@ return new class extends Migration
             $table->enum('tipo', ['tradicional', 'elemento_flexible']);
             $table->string('version', 20)->nullable();
             $table->boolean('activo')->default(true);
+            // Jerarquía de tipos de nodo (JSON) - migraciones post-creación
+            $table->json('tipos_asignables')->nullable()
+                ->comment('Tipos de nodo ELEMENTO que pueden recibir asignaciones y archivos en este modelo.');
+            $table->json('tipos_jerarquia')->nullable()
+                ->comment('Jerarquía de tipos de nodo ELEMENTO para modelos elemento_flexible.');
             $table->timestamps();
 
             $table->index('tipo');
@@ -23,8 +28,6 @@ return new class extends Migration
         });
 
         // Dato del sistema: el modelo tradicional SINAES 2018 debe existir siempre.
-        // Se inserta aquí (no en seeder) para garantizar que esté disponible
-        // con solo `php artisan migrate`, sin necesitar `--seed`.
         DB::table('MODELO_ESTRUCTURA')->insertOrIgnore([
             'nombre'      => 'SINAES 2018 - Estructura Tradicional',
             'tipo'        => 'tradicional',

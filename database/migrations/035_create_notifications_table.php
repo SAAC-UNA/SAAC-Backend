@@ -28,12 +28,17 @@ return new class extends Migration
                 'vencimiento_plazo',
                 'devolucion_observacion',
                 'aprobacion_criterio',
+                'rechazo_criterio',
                 'aprobacion_evidencia',
                 'rechazo_evidencia',
                 'solicitud_ampliacion',
                 'respuesta_ampliacion',
                 'comentario_nuevo',
-                'actualizacion_sistema'
+                'actualizacion_sistema',
+                'publicacion_informe',
+                'despublicacion_informe',
+                'aprobacion_elemento',
+                'rechazo_elemento'
             ])->comment('Tipo de evento que generó la notificación');
             
             // Canal de notificación

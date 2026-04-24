@@ -17,7 +17,12 @@ return new class extends Migration
             $table->unsignedBigInteger('proceso_id');
             $table->unsignedBigInteger('criterio_aprobacion_id'); // Referencia a la aprobación del criterio
             $table->unsignedBigInteger('usuario_id');
-            $table->enum('estado', ['aprobado', 'rechazado'])->default('aprobado');
+            $table->enum('estado', ['Pendiente','En Proceso','Completado','Vencido','Aprobado','Rechazado','Observada','Validada'])
+                  ->default('Pendiente');
+            // Observaciones sobre la evidencia aprobada/rechazada
+            $table->string('comentario', 500)->nullable();
+            // Nueva fecha límite aplicable a la aprobación de evidencias
+            $table->date('nueva_fecha_limite')->nullable();
             $table->timestamps();
 
             // Foreign keys
@@ -26,11 +31,12 @@ return new class extends Migration
             $table->foreign('criterio_aprobacion_id')->references('aprobacion_criterio_id')->on('APROBACION_CRITERIO')->onDelete('cascade');
             $table->foreign('usuario_id')->references('usuario_id')->on('USUARIO')->onDelete('cascade');
 
-            // Indexes
+            // Indices
             $table->index(['evidencia_id', 'proceso_id'], 'idx_ae_evidencia_proceso'); // cubre búsquedas por evidencia_id también
             $table->index('criterio_aprobacion_id', 'idx_ae_criterio_aprobacion_id');
             $table->index('usuario_id', 'idx_ae_usuario_id');
             $table->index('estado', 'idx_ae_estado');
+            $table->index('nueva_fecha_limite', 'idx_ae_nueva_fecha_limite');
         });
     }
 

@@ -6,15 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('INFORME_ARCHIVO', function (Blueprint $table) {
             $table->id('informe_archivo_id');
 
             $table->foreignId('proceso_id')
+                ->nullable()
                 ->constrained('PROCESO', 'proceso_id')
                 ->onDelete('restrict');
 
@@ -31,7 +29,7 @@ return new class extends Migration
                 ->onDelete('restrict');
 
             $table->timestamp('fecha_subida');
-            $table->enum('tipo', ['archivo', 'enlace'])->default('archivo');
+            $table->string('tipo', 255)->default('archivo');
             $table->string('path', 512)->nullable();
             $table->text('url')->nullable();
             $table->string('nombre_original', 255);
@@ -61,9 +59,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('INFORME_ARCHIVO');

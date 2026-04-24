@@ -25,6 +25,7 @@ return new class extends Migration
                   ->onDelete('restrict');
             
             $table->foreignId('proceso_id')
+                  ->nullable()
                   ->constrained('PROCESO', 'proceso_id')
                   ->onDelete('restrict');
             

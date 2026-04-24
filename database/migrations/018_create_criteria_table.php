@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('nomenclatura', 20);
             // Estado del criterio
             $table->boolean('activo')->default(true);
+            $table->enum('estado', ['Pendiente','En Proceso','Completado','Vencido'])->default('Pendiente');
             // Timestamps de creación y actualización
             $table->timestamps();
             

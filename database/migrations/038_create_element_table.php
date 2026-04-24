@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -34,6 +35,8 @@ return new class extends Migration
             $table->index('categoria', 'idx_elem_categoria');
             $table->index(['padre_id', 'tipo'], 'idx_elem_padre_tipo');
         });
+        // FULLTEXT index en descripcion (mantenido en CREATE para coherencia)
+        DB::statement("ALTER TABLE ELEMENTO ADD FULLTEXT INDEX idx_elem_descripcion_fulltext (descripcion)");
     }
 
     public function down(): void
