@@ -83,7 +83,7 @@ class AuthController extends Controller
             }
 
             // Cargar relaciones necesarias
-            $user->load(['roles', 'permissions', 'careers']);
+            $user->load(['roles', 'permissions', 'careers.career']);
 
             return response()->json([
                 'user' => new UserResource($user),

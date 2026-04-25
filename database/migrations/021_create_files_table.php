@@ -14,53 +14,40 @@ return new class extends Migration
         Schema::create('ARCHIVO', function (Blueprint $table) {
             // Clave primaria
             $table->id('archivo_id');
-            
+
             // Relaciones (LLAVES FORÁNEAS)
-            $table->foreignId('evidencia_id')
-                  ->constrained('EVIDENCIA', 'evidencia_id')
-                  ->onDelete('restrict');
-            
-            $table->foreignId('usuario_id')
-                  ->constrained('USUARIO', 'usuario_id')
-                  ->onDelete('restrict');
-            
-            $table->foreignId('proceso_id')
-                  ->nullable()
-                  ->constrained('PROCESO', 'proceso_id')
-                  ->onDelete('restrict');
-            
+            $table->foreignId('evidencia_id')->nullable()->constrained('EVIDENCIA', 'evidencia_id')->onDelete('restrict');
+            // FK para modelo flexible: archivo pertenece directamente a un ELEMENTO
+            $table->unsignedBigInteger('elemento_id')->nullable();
+            // FK hacia el elemento al que está asociado el archivo (puede ser evidencia, pauta, tarea, etc.)
+            $table->foreign('elemento_id', 'ar_elemento_id_foreign')->references('elemento_id')->on('ELEMENTO')->onDelete('restrict');
+            // FK hacia el usuario que subió el archivo
+            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
+            // FK hacia el proceso al que está asociado el archivo (relevante para evidencias, pautas, tareas, etc.)
+            $table->foreignId('proceso_id')->constrained('PROCESO', 'proceso_id')->onDelete('restrict');
             // Fecha de subida
             $table->timestamp('fecha_subida');
-            
             // TIPO: archivo físico o enlace externo
             $table->enum('tipo', ['archivo', 'enlace'])->default('archivo');
-            
             // UBICACIÓN FÍSICA ÚNICA - Nombre UUID en TrueNAS (solo para tipo='archivo')
             $table->string('path', 512)->nullable();
-            
             // URL externa (solo para tipo='enlace')
             $table->text('url')->nullable();
-            
-            // NUEVO: Nombre original del archivo (legible por humanos)
+            // Nombre original del archivo (legible por humanos)
             $table->string('nombre_original', 255);
-
             // Metadatos del archivo físico (null para enlaces)
             $table->unsignedBigInteger('tamanio')->nullable();
             $table->string('tipo_mime', 255)->nullable();
-
-            // NUEVO: Bandera de acceso público
+            // Bandera de acceso público
             $table->boolean('is_publico')->default(false);
-            
-            // NUEVO: Token UUID para URL pública
+            // Token UUID para URL pública
             $table->string('token_publico', 36)->nullable()->unique();
-            
-            // NUEVO: Fecha de expiración del link público
+            // Fecha de expiración del link público
             $table->timestamp('link_expira_en')->nullable();
-            
             // Timestamps de creación y actualización
             $table->timestamps();
-            
-            // Índices para optimización
+
+            // Índices
             $table->index('evidencia_id', 'idx_ar_evidencia_id');
             $table->index('usuario_id', 'idx_ar_usuario_id');
             $table->index('proceso_id', 'idx_ar_proceso_id');
@@ -68,6 +55,8 @@ return new class extends Migration
             $table->index('tipo', 'idx_ar_tipo');                              // WHERE tipo = 'archivo'/'enlace'
             $table->index(['evidencia_id', 'tipo'], 'idx_ar_evidencia_tipo');  // withCount por tipo en evidencia
             $table->index(['is_publico', 'link_expira_en'], 'idx_ar_publico_expira');
+            $table->index('elemento_id', 'idx_ar_elemento_id');
+            $table->index(['elemento_id', 'tipo'], 'idx_ar_elemento_tipo');
         });
     }
 

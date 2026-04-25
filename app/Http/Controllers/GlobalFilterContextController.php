@@ -61,9 +61,7 @@ class GlobalFilterContextController extends Controller
             'data' => Cache::remember($cacheKey, self::CATALOG_CACHE_TTL_SECONDS, function () use ($user, $context) {
                 $careersQuery = CareerCampus::query()->with(['career', 'campus']);
                 if (!$user->hasRole('Superusuario')) {
-                    $ids = $user->careers()
-                        ->join('CARRERA_SEDE', 'CARRERA.carrera_id', '=', 'CARRERA_SEDE.carrera_id')
-                        ->pluck('CARRERA_SEDE.carrera_sede_id');
+                    $ids = $user->careers()->pluck('CARRERA_SEDE.carrera_sede_id');
                     $careersQuery->whereIn('carrera_sede_id', $ids);
                 }
 

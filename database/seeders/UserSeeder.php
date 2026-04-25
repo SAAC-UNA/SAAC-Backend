@@ -34,17 +34,20 @@ class UserSeeder extends Seeder
         }
 
         /**
-         * PASO 2: Obtener la carrera de Ingeniería en Sistemas
+         * PASO 2: Obtener la carrera-sede de Ingeniería en Sistemas
          */
-        $this->command->info('🎓 Obteniendo carrera...');
+        $this->command->info('🎓 Obteniendo carrera-sede...');
         
         $careerIngSistemas = Career::where('nombre', 'Ingeniería en Sistemas de Información')->first();
+        $careerSede = $careerIngSistemas
+            ? \App\Models\CareerCampus::where('carrera_id', $careerIngSistemas->carrera_id)->first()
+            : null;
 
-        if (!$careerIngSistemas) {
-            $this->command->warn('⚠️  No se encontró la carrera de Ingeniería en Sistemas.');
+        if (!$careerSede) {
+            $this->command->warn('⚠️  No se encontró la carrera-sede de Ingeniería en Sistemas.');
             $this->command->info('Los usuarios se crearán sin asignación de carrera.');
         } else {
-            $this->command->info("  ✅ Carrera encontrada: {$careerIngSistemas->nombre}");
+            $this->command->info("  ✅ Carrera-sede encontrada (ID: {$careerSede->carrera_sede_id})");
         }
 
         /**
@@ -66,7 +69,7 @@ class UserSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Superusuario'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+            'careers' => $careerSede ? [$careerSede->carrera_sede_id] : [],
         ];
 
         // Jose Andres Jara Arias - Administrador
@@ -80,7 +83,7 @@ class UserSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Administrador'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+            'careers' => $careerSede ? [$careerSede->carrera_sede_id] : [],
         ];
 
         // Marisol Hidalgo Murillo
@@ -94,7 +97,7 @@ class UserSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Profesor'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+            'careers' => $careerSede ? [$careerSede->carrera_sede_id] : [],
         ];
 
         // Ian Enmanuel Villegas Jimenez - Encargado de Acreditación
@@ -108,7 +111,7 @@ class UserSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Encargado de Acreditación'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+            'careers' => $careerSede ? [$careerSede->carrera_sede_id] : [],
         ];
 
         // Ana Cristina Zuniga Cardenas
@@ -122,7 +125,7 @@ class UserSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
             ],
             'roles' => ['Profesor'],
-            'careers' => $careerIngSistemas ? [$careerIngSistemas->carrera_id] : [],
+            'careers' => $careerSede ? [$careerSede->carrera_sede_id] : [],
         ];
 
         /**
@@ -143,11 +146,11 @@ class UserSeeder extends Seeder
 
             // Asignar carreras (relación CARRERA_USUARIO)
             if (!empty($userData['careers'])) {
-                foreach ($userData['careers'] as $careerId) {
+                foreach ($userData['careers'] as $careerSedeId) {
                     DB::table('CARRERA_USUARIO')->updateOrInsert(
                         [
                             'usuario_id' => $user->usuario_id,
-                            'carrera_id' => $careerId,
+                            'carrera_sede_id' => $careerSedeId,
                         ],
                         [
                             'created_at' => now(),

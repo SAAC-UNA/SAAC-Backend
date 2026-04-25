@@ -21,9 +21,7 @@ class CareerCampusController extends Controller
         $query = CareerCampus::with(['career', 'campus']);
 
         if ($user && !$user->hasRole('Superusuario')) {
-            $ids = $user->careers()
-                ->join('CARRERA_SEDE', 'CARRERA.carrera_id', '=', 'CARRERA_SEDE.carrera_id')
-                ->pluck('CARRERA_SEDE.carrera_sede_id');
+            $ids = $user->careers()->pluck('CARRERA_SEDE.carrera_sede_id');
             $query->whereIn('carrera_sede_id', $ids);
         }
 

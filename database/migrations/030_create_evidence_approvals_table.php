@@ -11,18 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabla de aprobaciones de evidencias
         Schema::create('APROBACION_EVIDENCIA', function (Blueprint $table) {
+            // Clave primaria BIGINT autoincremental
             $table->id('aprobacion_evidencia_id');
+            // Llave foránea hacia la tabla EVIDENCIA
             $table->unsignedBigInteger('evidencia_id');
+            // Llave foránea hacia la tabla PROCESO
             $table->unsignedBigInteger('proceso_id');
-            $table->unsignedBigInteger('criterio_aprobacion_id'); // Referencia a la aprobación del criterio
+            // Llave foránea hacia la aprobación del criterio
+            $table->unsignedBigInteger('criterio_aprobacion_id');
+            // Llave foránea hacia el usuario que realiza la aprobación
             $table->unsignedBigInteger('usuario_id');
-            $table->enum('estado', ['Pendiente','En Proceso','Completado','Vencido','Aprobado','Rechazado','Observada','Validada'])
-                  ->default('Pendiente');
+            // Estado de la aprobación de la evidencia
+            $table->enum('estado', ['Pendiente', 'En Proceso', 'Completado', 'Vencido', 'Aprobado', 'Rechazado', 'Observada', 'Validada'])->default('Pendiente');
             // Observaciones sobre la evidencia aprobada/rechazada
             $table->string('comentario', 500)->nullable();
             // Nueva fecha límite aplicable a la aprobación de evidencias
             $table->date('nueva_fecha_limite')->nullable();
+            // Timestamps de creación y actualización
             $table->timestamps();
 
             // Foreign keys

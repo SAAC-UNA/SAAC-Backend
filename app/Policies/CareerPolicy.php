@@ -46,7 +46,7 @@ class CareerPolicy
 
         // Administrador solo puede editar carreras asignadas a él
         if ($user->hasRole('Administrador')) {
-            return $user->careers()->where('carrera_id', $career->carrera_id)->exists();
+            return $user->careers()->where('CARRERA_SEDE.carrera_id', $career->carrera_id)->exists();
         }
 
         return false;

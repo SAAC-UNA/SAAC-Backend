@@ -23,8 +23,8 @@ return new class extends Migration
             $table->boolean('activo')->default(true);
             // Timestamps de creación y actualización
             $table->timestamps();
-            
-            // Índices de performance
+
+            // Índices
             $table->index('activo', 'idx_di_activo');
         });
     }

@@ -24,7 +24,7 @@ return new class extends Migration
             // Timestamps de creación y actualización
             $table->timestamps();
 
-            // Índices de performance
+            // Índices
             $table->index('criterio_id', 'idx_es_criterio_id');
             $table->index('activo', 'idx_es_activo');
         });

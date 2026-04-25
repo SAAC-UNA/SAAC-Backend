@@ -16,27 +16,27 @@ return new class extends Migration
             // Clave primaria compuesta
             $table->unsignedBigInteger('compromiso_mejora_id');
             $table->unsignedBigInteger('evidencia_asignacion_id');
-            
+
             // Campo pivot para comentarios
             $table->text('comentario')->nullable();
-            
+
             // Foreign keys con nombres cortos
             $table->foreign('compromiso_mejora_id', 'fk_cm_evidencia_compromiso')
                 ->references('compromiso_mejora_id')
                 ->on('COMPROMISO_MEJORA')
                 ->onDelete('cascade');
-            
+
             $table->foreign('evidencia_asignacion_id', 'fk_cm_evidencia_asignacion')
                 ->references('evidencia_asignacion_id')
                 ->on('EVIDENCIA_ASIGNACION')
                 ->onDelete('cascade');
-            
+
             // Timestamps de creación y actualización
             $table->timestamps();
-            
+
             // Definir clave primaria compuesta
             $table->primary(['compromiso_mejora_id', 'evidencia_asignacion_id'], 'pk_compromiso_evidencia');
-            
+
             // Índice para búsquedas inversas (desde evidencia hacia compromiso)
             $table->index('evidencia_asignacion_id', 'idx_evidencia_asignacion');
         });
