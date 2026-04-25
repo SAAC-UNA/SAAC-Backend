@@ -62,6 +62,11 @@ class ExtensionTimeRequestTestSeeder extends Seeder
         $encargadoRole = Role::where('name', 'Encargado de Acreditación')->first();
         $profesorRole  = Role::where('name', 'Profesor')->first();
 
+        if (!$encargadoRole || !$profesorRole) {
+            echo "❌ ERROR: Faltan roles requeridos (Encargado de Acreditación y/o Profesor).\n";
+            return;
+        }
+
         $encargado = User::whereHas('roles', fn($q) => $q->where('roles.id', $encargadoRole->id))->first();
         $profesor  = User::whereHas('roles', fn($q) => $q->where('roles.id', $profesorRole->id))->first();
 

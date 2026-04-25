@@ -62,6 +62,11 @@ class CommitmentElementsTestSeeder extends Seeder
         $encargadoRole = Role::where('name', 'Encargado de Acreditación')->first();
         $profesorRole  = Role::where('name', 'Profesor')->first();
 
+        if (!$encargadoRole || !$profesorRole) {
+            echo "❌ ERROR: Faltan roles requeridos (Encargado de Acreditación y/o Profesor).\n";
+            return;
+        }
+
         $encargado = User::whereHas('roles', fn($q) => $q->where('roles.id', $encargadoRole->id))->first();
         if (!$encargado) {
             echo "❌ ERROR: No hay usuario Encargado de Acreditación.\n";
