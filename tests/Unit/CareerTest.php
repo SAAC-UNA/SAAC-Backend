@@ -31,14 +31,14 @@ it('deletes a career', function () {
     $this->assertDatabaseMissing('CARRERA', ['carrera_id' => $careerId]);
 });
 
-it('puede asociarse con usuarios', function () {
-    $career = Career::factory()->create();
+it('puede asociarse con usuarios via carrera_sede', function () {
+    $careerCampus = \App\Models\CareerCampus::factory()->create();
     $user = \App\Models\User::factory()->create();
     
-    $career->users()->attach($user->usuario_id);
+    $user->careers()->attach($careerCampus->carrera_sede_id);
     
-    expect($career->users)->toHaveCount(1);
-    expect($career->users->first()->usuario_id)->toBe($user->usuario_id);
+    expect($user->careers)->toHaveCount(1);
+    expect($user->careers->first()->carrera_sede_id)->toBe($careerCampus->carrera_sede_id);
 });
 
 it('puede asociarse con sedes', function () {

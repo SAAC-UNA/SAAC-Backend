@@ -13,13 +13,13 @@ return new class extends Migration
             $table->foreignId('compromiso_mejora_id')
                 ->constrained('COMPROMISO_MEJORA', 'compromiso_mejora_id')
                 ->onDelete('cascade');
-            
+
             $table->foreignId('evidencia_id')
                 ->constrained('EVIDENCIA', 'evidencia_id')
                 ->onDelete('cascade');
-            
+
             $table->timestamps();
-            
+
             // Clave primaria compuesta
             $table->primary(['compromiso_mejora_id', 'evidencia_id'], 'pk_compromiso_evidencia');
         });

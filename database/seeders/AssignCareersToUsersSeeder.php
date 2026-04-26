@@ -51,6 +51,22 @@ class AssignCareersToUsersSeeder extends Seeder
         $this->command->info("✅ Carrera Química encontrada: {$careerQuimi->nombre} (ID: {$careerQuimi->carrera_id})");
 
         /**
+         * Buscar la primera carrera-sede para cada carrera
+         */
+        $careerSedeIng = \App\Models\CareerCampus::where('carrera_id', $careerIng->carrera_id)->first();
+        $careerSedeQuimi = \App\Models\CareerCampus::where('carrera_id', $careerQuimi->carrera_id)->first();
+
+        if (!$careerSedeIng) {
+            $this->command->error('❌ No se encontró ninguna sede para la carrera de Ingeniería');
+            return;
+        }
+
+        if (!$careerSedeQuimi) {
+            $this->command->error('❌ No se encontró ninguna sede para la carrera de Química');
+            return;
+        }
+
+        /**
          * Limpiar asignaciones previas de estos usuarios (evitar duplicados)
          */
         $usuariosIds = array_filter([
@@ -76,7 +92,7 @@ class AssignCareersToUsersSeeder extends Seeder
         if ($adminInge) {
             $insertions[] = [
                 'usuario_id' => $adminInge->usuario_id,
-                'carrera_id' => $careerIng->carrera_id,
+                'carrera_sede_id' => $careerSedeIng->carrera_sede_id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -85,7 +101,7 @@ class AssignCareersToUsersSeeder extends Seeder
         if ($adminQuimi) {
             $insertions[] = [
                 'usuario_id' => $adminQuimi->usuario_id,
-                'carrera_id' => $careerQuimi->carrera_id,
+                'carrera_sede_id' => $careerSedeQuimi->carrera_sede_id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -105,13 +121,13 @@ class AssignCareersToUsersSeeder extends Seeder
         $this->command->info('📊 Resumen de asignaciones:');
         
         if ($adminInge) {
-            $careers = $adminInge->careers()->get();
-            $this->command->info("   👤 {$adminInge->nombre}: {$careers->pluck('nombre')->join(', ')}");
+            $careers = $adminInge->careers()->with('career')->get();
+            $this->command->info("   👤 {$adminInge->nombre}: {$careers->map(fn($cs) => $cs->career?->nombre)->filter()->join(', ')}");
         }
         
         if ($adminQuimi) {
-            $careers = $adminQuimi->careers()->get();
-            $this->command->info("   👤 {$adminQuimi->nombre}: {$careers->pluck('nombre')->join(', ')}");
+            $careers = $adminQuimi->careers()->with('career')->get();
+            $this->command->info("   👤 {$adminQuimi->nombre}: {$careers->map(fn($cs) => $cs->career?->nombre)->filter()->join(', ')}");
         }
 
         $this->command->newLine();

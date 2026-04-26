@@ -15,7 +15,7 @@ class AssignCareersRequest extends FormRequest
     {
         return [
             'careers' => ['required', 'array', 'min:1'],
-            'careers.*' => ['integer', 'distinct', 'exists:CARRERA,carrera_id'],
+            'careers.*' => ['integer', 'distinct', 'exists:CARRERA_SEDE,carrera_sede_id'],
         ];
     }
 
@@ -27,7 +27,7 @@ class AssignCareersRequest extends FormRequest
             'careers.min' => 'Debe enviar al menos una carrera.',
             'careers.*.integer' => 'Cada carrera debe ser un número válido.',
             'careers.*.distinct' => 'No se pueden repetir carreras.',
-            'careers.*.exists' => 'Una o más carreras no existen en el sistema.',
+            'careers.*.exists' => 'Una o más sedes de carrera no existen en el sistema.',
         ];
     }
 }

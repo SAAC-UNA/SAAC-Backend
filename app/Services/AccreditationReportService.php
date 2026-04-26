@@ -101,8 +101,8 @@ class AccreditationReportService
     public function notifyPublication(AccreditationCycle $cycle, AccreditationReport $report, User $publisher): void
     {
         try {
-            $carreraId = $cycle->loadMissing('careerCampus')->careerCampus->carrera_id;
-            $recipientIds = User::whereHas('careers', fn ($careerQuery) => $careerQuery->where('CARRERA.carrera_id', $carreraId))
+            $carreraSede = $cycle->carrera_sede_id;
+            $recipientIds = User::whereHas('careers', fn ($careerQuery) => $careerQuery->where('CARRERA_SEDE.carrera_sede_id', $carreraSede))
                 ->where('status', User::STATUS_ACTIVE)
                 ->where('usuario_id', '!=', $publisher->usuario_id)
                 ->pluck('usuario_id')
@@ -131,14 +131,14 @@ class AccreditationReportService
     public function notifyUnpublication(AccreditationReport $report, User $actor): void
     {
         try {
-            $report->loadMissing('process.cycle.careerCampus');
-            $carreraId = $report->process?->cycle?->careerCampus?->carrera_id;
+            $report->loadMissing('process.cycle');
+            $carreraSede = $report->process?->cycle?->carrera_sede_id;
 
-            if (! $carreraId) {
+            if (! $carreraSede) {
                 return;
             }
 
-            $recipientIds = User::whereHas('careers', fn ($careerQuery) => $careerQuery->where('CARRERA.carrera_id', $carreraId))
+            $recipientIds = User::whereHas('careers', fn ($careerQuery) => $careerQuery->where('CARRERA_SEDE.carrera_sede_id', $carreraSede))
                 ->where('status', User::STATUS_ACTIVE)
                 ->where('usuario_id', '!=', $actor->usuario_id)
                 ->pluck('usuario_id')

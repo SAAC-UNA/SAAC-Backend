@@ -33,7 +33,7 @@ class UserController extends Controller
     {
         // Cargamos roles, permisos directos y permisos de cada rol
         // para que getAllPermissions() en UserResource no dispare lazy loads por usuario
-        $users = User::with(['roles', 'permissions', 'roles.permissions', 'careers'])
+        $users = User::with(['roles', 'permissions', 'roles.permissions', 'careers.career'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -208,9 +208,10 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Carreras asignadas correctamente.',
             'user_id' => $updatedUser->usuario_id,
-            'careers' => $updatedUser->careers->map(fn ($career) => [
-                'carrera_id' => $career->carrera_id,
-                'nombre' => $career->nombre,
+            'careers' => $updatedUser->careers->map(fn ($careerCampus) => [
+                'carrera_sede_id' => $careerCampus->carrera_sede_id,
+                'carrera_id'      => $careerCampus->carrera_id,
+                'nombre'          => $careerCampus->career?->nombre,
             ])->values(),
         ], 200);
     }

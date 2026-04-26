@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AccreditationCycle;
+use Carbon\Carbon;
 
 class AccreditationCycleService
 {
@@ -30,11 +31,16 @@ class AccreditationCycleService
      */
     public function create(array $data): AccreditationCycle
     {
+        $startDate = $data['fecha_inicio'];
+        $endDate = $data['fecha_fin'];
+
         $cycle = AccreditationCycle::create([
             'carrera_sede_id'      => $data['carrera_sede_id'],
             'modelo_estructura_id' => $data['modelo_estructura_id'],
-            'nombre'               => $data['nombre'],
-            'estado'               => $data['estado'] ?? AccreditationCycle::STATUS_ACTIVE,
+            'nombre'               => $this->buildDynamicName($startDate, $endDate),
+            'fecha_inicio'         => $startDate,
+            'fecha_fin'            => $endDate,
+            'estado'               => $data['estado'] ?? $this->resolveStatusByDates($startDate, $endDate),
         ]);
 
         return $cycle->load(['careerCampus.career', 'careerCampus.campus', 'modeloEstructura']);
@@ -54,6 +60,18 @@ class AccreditationCycleService
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
         $newModel = $data['modelo_estructura_id'] ?? null;
+        $startDate = $data['fecha_inicio'] ?? optional($cycle->fecha_inicio)->format('Y-m-d');
+        $endDate = $data['fecha_fin'] ?? optional($cycle->fecha_fin)->format('Y-m-d');
+
+        $resolvedName = $cycle->nombre;
+        if ($startDate && $endDate) {
+            $resolvedName = $this->buildDynamicName($startDate, $endDate);
+        }
+
+        $resolvedStatus = $data['estado'] ?? $cycle->estado;
+        if (!array_key_exists('estado', $data) && $startDate && $endDate) {
+            $resolvedStatus = $this->resolveStatusByDates($startDate, $endDate);
+        }
 
         if ($newModel && (int)$newModel !== (int)$cycle->modelo_estructura_id) {
             if ($cycle->processes()->exists()) {
@@ -67,8 +85,10 @@ class AccreditationCycleService
         $cycle->update([
             'carrera_sede_id'      => $data['carrera_sede_id']      ?? $cycle->carrera_sede_id,
             'modelo_estructura_id' => $newModel                     ?? $cycle->modelo_estructura_id,
-            'nombre'               => $data['nombre']               ?? $cycle->nombre,
-            'estado'               => $data['estado']               ?? $cycle->estado,
+            'nombre'               => $resolvedName,
+            'fecha_inicio'         => $startDate,
+            'fecha_fin'            => $endDate,
+            'estado'               => $resolvedStatus,
         ]);
 
         return $cycle->fresh(['careerCampus.career', 'careerCampus.campus', 'modeloEstructura']);
@@ -87,5 +107,34 @@ class AccreditationCycleService
 
         $cycle->delete();
     }
-    
+
+    private function buildDynamicName(string $startDate, string $endDate): string
+    {
+        $startYear = Carbon::parse($startDate)->year;
+        $endYear = Carbon::parse($endDate)->year;
+
+        if ($startYear === $endYear) {
+            return "Ciclo {$startYear}";
+        }
+
+        return "Ciclo {$startYear}-{$endYear}";
+    }
+
+    private function resolveStatusByDates(string $startDate, string $endDate): string
+    {
+        $today = Carbon::today();
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->endOfDay();
+
+        if ($today->lt($start)) {
+            return AccreditationCycle::STATUS_INACTIVE;
+        }
+
+        if ($today->gt($end)) {
+            return AccreditationCycle::STATUS_COMPLETED;
+        }
+
+        return AccreditationCycle::STATUS_ACTIVE;
+    }
+
 }

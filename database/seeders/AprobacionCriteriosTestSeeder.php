@@ -37,6 +37,11 @@ class AprobacionCriteriosTestSeeder extends Seeder
         echo "Configurando usuarios...\n";
 
         $encargadoRole = Role::where('name', 'Encargado de Acreditación')->first();
+        if (!$encargadoRole) {
+            echo "❌ ERROR: No existe el rol Encargado de Acreditación.\n";
+            return;
+        }
+
         $encargado = User::whereHas('roles', function($q) use ($encargadoRole) {
             $q->where('roles.id', $encargadoRole->id);
         })->first();

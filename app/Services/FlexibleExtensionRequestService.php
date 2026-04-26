@@ -102,13 +102,13 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
             // Email a encargados de acreditación de la carrera
             try {
                 $proceso  = $assignment->proceso ?? \App\Models\Process::find($assignment->proceso_id);
-                $careerId = $proceso?->accreditationCycle?->careerCampus?->carrera_id ?? null;
+                $carreraSede = $proceso?->accreditationCycle?->carrera_sede_id ?? null;
 
                 $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))
-                    ->when($careerId, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('carrera_id', $careerId)))
+                    ->when($carreraSede, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('CARRERA_SEDE.carrera_sede_id', $carreraSede)))
                     ->get();
 
-                if ($managers->isEmpty() && $careerId) {
+                if ($managers->isEmpty() && $carreraSede) {
                     $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))->get();
                 }
 

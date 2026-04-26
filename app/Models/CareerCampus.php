@@ -48,4 +48,14 @@ class CareerCampus extends Model
     {
         return $this->hasMany(AccreditationCycle::class, 'carrera_sede_id');
     }
+
+    /**
+     * Relación: Usuarios asignados a esta carrera-sede.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'CARRERA_USUARIO', 'carrera_sede_id', 'usuario_id');
+    }
 }

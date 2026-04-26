@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,11 +17,11 @@ return new class extends Migration
             // Clave primaria BIGINT autoincremental
             $table->id()->name('tipo_accion_id');
             // Descripción del tipo de acción
-            $table->string('descripcion', 100);
+            $table->string('descripcion', 50);
             // Timestamps de creación y actualización
             $table->timestamps();
 
-            // Índice de performance para búsqueda por nombre
+            // Índices
             $table->index('descripcion', 'idx_ta_descripcion');
         });
 

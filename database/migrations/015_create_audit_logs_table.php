@@ -20,15 +20,15 @@ return new class extends Migration
             // Módulo del sistema donde ocurrió la acción
             $table->string('modulo', 100)->nullable()->comment('Módulo del sistema donde ocurrió la acción (ej: Usuarios, Evidencias)');
             // Relación con usuario (restrict: mantener historial de auditoría)
-            $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
+            $table->foreignId('usuario_id')->nullable()->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
             // Fecha y hora de la acción
             $table->timestamp('fecha_hora')->useCurrent();
             // Detalle de la acción (opcional)
             $table->text('detalle')->nullable();
             // Timestamps de creación y actualización
             $table->timestamps();
-            
-            // Índices de performance para reportes y auditoría
+
+            // Índices
             $table->index('usuario_id', 'idx_bi_usuario_id');
             $table->index('tipo_accion_id', 'idx_bi_tipo_accion_id');
             $table->index('modulo', 'idx_bi_modulo');

@@ -138,7 +138,6 @@ class GlobalFilterContextService
     private function userCareerCampusIds(User $user): array
     {
         return $user->careers()
-            ->join('CARRERA_SEDE', 'CARRERA.carrera_id', '=', 'CARRERA_SEDE.carrera_id')
             ->pluck('CARRERA_SEDE.carrera_sede_id')
             ->map(static fn ($id) => (int) $id)
             ->all();

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable; // necesario para Auth
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens; // Sanctum para autenticación API
+use App\Models\CareerCampus;
 /**
  * Modelo de Usuario del sistema.
  *
@@ -80,7 +81,6 @@ class User extends Authenticatable
 
     public function careers()
     {
-        return $this->belongsToMany(Career::class, 'CARRERA_USUARIO', 'usuario_id', 'carrera_id');
-
+        return $this->belongsToMany(CareerCampus::class, 'CARRERA_USUARIO', 'usuario_id', 'carrera_sede_id');
     }
 }
