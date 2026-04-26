@@ -7,15 +7,22 @@ use App\Models\Campus;
 use App\Models\CareerCampus;
 use App\Models\AccreditationCycle;
 use App\Models\Process;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
 it('admin_carrera_only_sees_processes_of_his_own_career_campus', function () {
+    Permission::firstOrCreate([
+        'name' => 'procesos.view',
+        'guard_name' => 'api',
+    ]);
+
         // Crear roles base
-        Role::create(['name' => 'SuperUsuario', 'guard_name' => 'api']);
-        Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
+        Role::create(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $adminRole = Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
+    $adminRole->givePermissionTo('procesos.view');
 
         // Crear carreras y campus
         $careerIng = Career::factory()->create(['nombre' => 'Ingeniería en Sistemas']);
@@ -57,7 +64,7 @@ it('admin_carrera_only_sees_processes_of_his_own_career_campus', function () {
         $adminInge->careers()->attach($careerIng->carrera_id);
 
         // Autenticación
-        Sanctum::actingAs($adminInge, ['web'], 'sanctum');
+        Sanctum::actingAs($adminInge, ['api'], 'sanctum');
 
         // Llamar al endpoint
         $response = $this->getJson('/api/estructura/procesos');
@@ -69,7 +76,13 @@ it('admin_carrera_only_sees_processes_of_his_own_career_campus', function () {
 });
 
 it('superusuario_can_see_all_processes', function () {
-        Role::create(['name' => 'SuperUsuario', 'guard_name' => 'api']);
+    Permission::firstOrCreate([
+        'name' => 'procesos.view',
+        'guard_name' => 'api',
+    ]);
+
+    $superRole = Role::create(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $superRole->givePermissionTo('procesos.view');
         Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
 
         // Crear carreras y campus
@@ -101,9 +114,9 @@ it('superusuario_can_see_all_processes', function () {
           /** @var \App\Models\User $super */
         // Crear superusuario
         $super = User::factory()->create(['email' => 'pablo.castillo.quesada@una.cr']);
-        $super->assignRole('SuperUsuario');
+        $super->assignRole('Superusuario');
 
-        Sanctum::actingAs($super, ['web'], 'sanctum');
+        Sanctum::actingAs($super, ['api'], 'sanctum');
 
         $response = $this->getJson('/api/estructura/procesos');
 

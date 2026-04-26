@@ -50,11 +50,6 @@ it('can login successfully with valid LDAP credentials', function () {
         ->once()
         ->andReturn($userData);  // Devuelve array de datos del usuario
         
-    $ldapService->shouldReceive('getUserDataFromLdap')
-        ->with('1234567890')
-        ->once()
-        ->andReturn($userData);  // El controller también llama esto después
-        
     $ldapService->shouldReceive('syncUserFromLdap')
         ->with($userData)
         ->once()
@@ -137,11 +132,6 @@ it('fails login when user is inactive', function () {
     // Mock LDAP service - authenticate devuelve datos pero usuario está inactivo
     $ldapService->shouldReceive('authenticate')
         ->with('1234567890', 'password123')
-        ->once()
-        ->andReturn($userData);
-        
-    $ldapService->shouldReceive('getUserDataFromLdap')
-        ->with('1234567890')
         ->once()
         ->andReturn($userData);
         
@@ -257,11 +247,6 @@ it('invalidates all previous tokens on successful login', function () {
     // Mock LDAP service - authenticate devuelve datos del usuario
     $ldapService->shouldReceive('authenticate')
         ->with('1234567890', 'password123')
-        ->once()
-        ->andReturn($userData);
-        
-    $ldapService->shouldReceive('getUserDataFromLdap')
-        ->with('1234567890')
         ->once()
         ->andReturn($userData);
         

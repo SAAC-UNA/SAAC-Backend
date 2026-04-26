@@ -6,23 +6,44 @@ use App\Models\Criterion;
 use App\Models\Standard;
 use App\Models\Evidence;
 use App\Models\Comment;
-use App\Models\EvidenceState;
 use App\Models\University;
 use App\Models\Campus;
 use App\Models\Career;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
+use App\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
+    // Crear permisos necesarios para el test (guard 'api')
+    $permissions = [
+        'dimensiones.edit',
+        'componentes.edit',
+        'criterios.edit',
+        'estandares.edit',
+        'evidencias.edit',
+        'universidades.edit',
+        'sedes.edit',
+        'carreras.edit',
+    ];
+    
+    foreach ($permissions as $perm) {
+        Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'api']);
+    }
+    
+    // Crear rol Superusuario si no existe (guard 'api')
+    $superRole = Role::firstOrCreate(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $superRole->syncPermissions($permissions);
+    
+    // Crear usuario y asignarle el rol
     $this->user = User::factory()->create();
-    Sanctum::actingAs($this->user, ['web'], 'sanctum');
+    $this->user->assignRole($superRole);
+    
+    Sanctum::actingAs($this->user);
 });
 
 it('desactivar dimension desactiva hijos en cascada', function ()
     {
-        // Crear estado de evidencia necesario
-        $evidenceState = EvidenceState::factory()->create();
-
         // Crear dimensión activa
         $dimension = Dimension::factory()->create([
             'nombre' => 'Dimensión Test',
@@ -53,7 +74,6 @@ it('desactivar dimension desactiva hijos en cascada', function ()
         // Crear evidencia tataranieta activa
         $evidence = Evidence::factory()->create([
             'criterio_id' => $criterion->criterio_id,
-            'estado_evidencia_id' => $evidenceState->estado_evidencia_id,
             'descripcion' => 'Evidencia Test',
             'activo' => true
         ]);
@@ -72,10 +92,8 @@ it('desactivar dimension desactiva hijos en cascada', function ()
         );
 
         // Verificar respuesta exitosa
-        $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Estado de la dimensión actualizado correctamente. Elements hijos desactivados en cascada.'
-            ]);
+        $response->assertStatus(200);
+        $this->assertStringContainsString('Estado de la dimensión actualizado correctamente.', (string) $response->json('message'));
 
         // Verificar que TODOS los Elements ahora estén desactivados
         $this->assertEquals(0, $dimension->fresh()->activo, 'La dimensión debe estar desactivada');
@@ -87,9 +105,6 @@ it('desactivar dimension desactiva hijos en cascada', function ()
 
 it('desactivar componente desactiva hijos en cascada', function ()
     {
-        // Crear estado de evidencia necesario
-        $evidenceState = EvidenceState::factory()->create();
-
         // Crear dimensión activa
         $dimension = Dimension::factory()->create([
             'activo' => true
@@ -116,7 +131,6 @@ it('desactivar componente desactiva hijos en cascada', function ()
         // Crear evidencia activa
         $evidence = Evidence::factory()->create([
             'criterio_id' => $criterion->criterio_id,
-            'estado_evidencia_id' => $evidenceState->estado_evidencia_id,
             'activo' => true
         ]);
 
@@ -139,9 +153,6 @@ it('desactivar componente desactiva hijos en cascada', function ()
 
 it('desactivar criterio desactiva hijos en cascada', function ()
     {
-        // Crear estado de evidencia necesario
-        $evidenceState = EvidenceState::factory()->create();
-        
         // Crear dimensión activa
         $dimension = Dimension::factory()->create(['activo' => true]);
         
@@ -166,7 +177,6 @@ it('desactivar criterio desactiva hijos en cascada', function ()
         // Crear evidencia nieta activa
         $evidence = Evidence::factory()->create([
             'criterio_id' => $criterion->criterio_id,
-            'estado_evidencia_id' => $evidenceState->estado_evidencia_id,
             'activo' => true
         ]);
 
@@ -189,9 +199,6 @@ it('desactivar criterio desactiva hijos en cascada', function ()
 
 it('activar dimension activa hijos en cascada', function ()
     {
-        // Crear estado de evidencia necesario
-        $evidenceState = EvidenceState::factory()->create();
-
         // Crear jerarquía completa desactivada
         $dimension = Dimension::factory()->create([
             'activo' => false
@@ -214,7 +221,6 @@ it('activar dimension activa hijos en cascada', function ()
 
         $evidence = Evidence::factory()->create([
             'criterio_id' => $criterion->criterio_id,
-            'estado_evidencia_id' => $evidenceState->estado_evidencia_id,
             'activo' => false
         ]);
 
@@ -225,8 +231,8 @@ it('activar dimension activa hijos en cascada', function ()
         );
 
         // Verificar respuesta
-        $response->assertStatus(200)
-            ->assertJson(['message' => 'Estado de la dimensión actualizado correctamente. Elements hijos activados en cascada.']);
+        $response->assertStatus(200);
+        $this->assertStringContainsString('Estado de la dimensión actualizado correctamente.', (string) $response->json('message'));
 
         // Verificar que TODOS los Elements se activaron en cascada
         $this->assertEquals(1, $dimension->fresh()->activo, 'La dimensión debe estar activa');

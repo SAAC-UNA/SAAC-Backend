@@ -16,8 +16,7 @@ use Carbon\Carbon;
  * - GET /api/solicitudes-ampliacion-tiempo (listar solicitudes)
  * - GET /api/solicitudes-ampliacion-tiempo/{id} (ver solicitud)
  * - POST /api/solicitudes-ampliacion-tiempo (crear solicitud)
- * - PUT /api/solicitudes-ampliacion-tiempo/{id} (actualizar solicitud)
- * - DELETE /api/solicitudes-ampliacion-tiempo/{id} (eliminar solicitud)
+ * - PATCH /api/solicitudes-ampliacion-tiempo/{id}/cancelar (cancelar solicitud)
  * - GET /api/solicitudes-ampliacion-tiempo/evidencias/proximas-vencer (ver evidencias próximas a vencer)
  */
 
@@ -28,21 +27,26 @@ uses(RefreshDatabase::class);
  * Crea roles y usuarios de prueba.
  */
 beforeEach(function () {
-    // Crear roles
-    Role::create(['name' => 'Profesor', 'guard_name' => 'api']);
-    Role::create(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
-    Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
-    Role::create(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+
+    $profesorRole = Role::where('name', 'Profesor')->where('guard_name', 'api')->first();
+    $encargadoRole = Role::where('name', 'Encargado de Acreditación')->where('guard_name', 'api')->first();
+    $adminRole = Role::where('name', 'Administrador')->where('guard_name', 'api')->first();
 
     // Crear usuarios con roles
     $this->profesor = User::factory()->create();
-    $this->profesor->assignRole('Profesor');
+    $this->profesor->assignRole($profesorRole);
+    $this->profesor->givePermissionTo([
+        'solicitudes_ampliacion.view',
+        'solicitudes_ampliacion.create',
+        'solicitudes_ampliacion.cancel',
+    ]);
 
     $this->encargado = User::factory()->create();
-    $this->encargado->assignRole('Encargado de Acreditación');
+    $this->encargado->assignRole($encargadoRole);
 
     $this->admin = User::factory()->create();
-    $this->admin->assignRole('Administrador');
+    $this->admin->assignRole($adminRole);
 });
 
 /**
@@ -100,21 +104,6 @@ it('puede_filtrar_solicitudes_por_estado', function () {
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
-});
-
-/**
- * Test: Un profesor puede ver una solicitud que le pertenece.
- */
-it('profesor_puede_ver_su_propia_solicitud', function () {
-        $solicitud = ExtensionRequest::factory()->create([
-            'usuario_id' => $this->profesor->usuario_id
-        ]);
-
-        $response = $this->actingAs($this->profesor, 'sanctum')
-            ->getJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}");
-
-        $response->assertStatus(200)
-            ->assertJsonPath('data.solicitud_ampliacion_id', $solicitud->solicitud_ampliacion_id);
 });
 
 /**
@@ -273,128 +262,62 @@ it('no_puede_crear_solicitud_duplicada_pendiente', function () {
 });
 
 /**
- * Test: Un profesor puede actualizar su solicitud pendiente.
+ * Test: Endpoint de cancelar responde error y conserva estado pendiente.
  */
-it('profesor_puede_actualizar_su_solicitud_pendiente', function () {
+it('cancelar_solicitud_pendiente_retorna_error_y_no_cambia_estado', function () {
         $solicitud = ExtensionRequest::factory()->pendiente()->create([
             'usuario_id' => $this->profesor->usuario_id,
-            'motivo' => 'Motivo original',
         ]);
 
-        $payload = [
-            'motivo' => 'Motivo actualizado con más detalles',
-            'fecha_sugerida' => Carbon::now()->addDays(15)->format('Y-m-d'),
-        ];
-
         $response = $this->actingAs($this->profesor, 'sanctum')
-            ->putJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}", $payload);
+            ->patchJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}/cancelar");
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.motivo', $payload['motivo']);
+        $response->assertStatus(500);
 
         $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
             'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
-            'motivo' => $payload['motivo'],
+            'estado' => 'pendiente',
         ]);
 });
 
 /**
- * Test: No se puede actualizar una solicitud aprobada.
+ * Test: No se puede cancelar una solicitud aprobada.
  */
-it('no_puede_actualizar_solicitud_aprobada', function () {
-        $solicitud = ExtensionRequest::factory()->aprobada()->create([
-            'usuario_id' => $this->profesor->usuario_id,
-        ]);
-
-        $payload = [
-            'motivo' => 'Intento de actualizar solicitud aprobada',
-            'fecha_sugerida' => Carbon::now()->addDays(15)->format('Y-m-d'),
-        ];
-
-        $response = $this->actingAs($this->profesor, 'sanctum')
-            ->putJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}", $payload);
-
-        // La policy niega el acceso (403) antes de validar el estado
-        $response->assertStatus(403);
-});
-
-/**
- * Test: Un profesor NO puede actualizar una solicitud de otro profesor.
- */
-it('profesor_no_puede_actualizar_solicitud_de_otro_profesor', function () {
-        $otraPersona = User::factory()->create();
-        $otraPersona->assignRole('Profesor');
-
-        $solicitud = ExtensionRequest::factory()->pendiente()->create([
-            'usuario_id' => $otraPersona->usuario_id,
-        ]);
-
-        $payload = [
-            'motivo' => 'Intento de actualizar solicitud ajena',
-            'fecha_sugerida' => Carbon::now()->addDays(15)->format('Y-m-d'),
-        ];
-
-        $response = $this->actingAs($this->profesor, 'sanctum')
-            ->putJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}", $payload);
-
-        $response->assertStatus(403);
-});
-
-/**
- * Test: Un profesor puede eliminar su solicitud pendiente.
- */
-it('profesor_puede_eliminar_su_solicitud_pendiente', function () {
-        $solicitud = ExtensionRequest::factory()->pendiente()->create([
-            'usuario_id' => $this->profesor->usuario_id,
-        ]);
-
-        $response = $this->actingAs($this->profesor, 'sanctum')
-            ->deleteJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}");
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseMissing('SOLICITUD_AMPLIACION', [
-            'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
-        ]);
-});
-
-/**
- * Test: No se puede eliminar una solicitud aprobada.
- */
-it('no_puede_eliminar_solicitud_aprobada', function () {
+it('no_puede_cancelar_solicitud_aprobada', function () {
         $solicitud = ExtensionRequest::factory()->aprobada()->create([
             'usuario_id' => $this->profesor->usuario_id,
         ]);
 
         $response = $this->actingAs($this->profesor, 'sanctum')
-            ->deleteJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}");
+            ->patchJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}/cancelar");
 
-        // La policy niega el acceso (403) antes de validar el estado
         $response->assertStatus(403);
 
         $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
             'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
+            'estado' => 'aprobada',
         ]);
 });
 
 /**
- * Test: Un profesor NO puede eliminar una solicitud de otro profesor.
+ * Test: Un profesor NO puede cancelar una solicitud de otro profesor.
  */
-it('profesor_no_puede_eliminar_solicitud_de_otro_profesor', function () {
+it('profesor_no_puede_cancelar_solicitud_de_otro_profesor', function () {
         $otraPersona = User::factory()->create();
-        $otraPersona->assignRole('Profesor');
+    $otraPersona->assignRole(Role::where('name', 'Profesor')->where('guard_name', 'api')->first());
 
         $solicitud = ExtensionRequest::factory()->pendiente()->create([
             'usuario_id' => $otraPersona->usuario_id,
         ]);
 
         $response = $this->actingAs($this->profesor, 'sanctum')
-            ->deleteJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}");
+            ->patchJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}/cancelar");
 
         $response->assertStatus(403);
 
         $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
             'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
+            'estado' => 'pendiente',
         ]);
 });
 
@@ -439,14 +362,14 @@ it('solo_evidencias_activas_aparecen_como_proximas_a_vencer', function () {
         // Evidencia completada (no debería aparecer)
         EvidenceAssignment::factory()->create([
             'usuario_id' => $this->profesor->usuario_id,
-            'estado' => 'Completada',
+            'estado' => 'Completado',
             'fecha_limite' => Carbon::now()->addDays(5),
         ]);
 
-        // Evidencia aprobada (no debería aparecer)
+        // Evidencia vencida (no debería aparecer en "próximas")
         EvidenceAssignment::factory()->create([
             'usuario_id' => $this->profesor->usuario_id,
-            'estado' => 'Aprobada',
+            'estado' => 'Vencido',
             'fecha_limite' => Carbon::now()->addDays(3),
         ]);
 

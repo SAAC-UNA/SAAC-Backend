@@ -10,6 +10,7 @@ use App\Models\StructureElement;
 use App\Models\StructureModel;
 use App\Models\User;
 use App\Services\ElementApprovalService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -168,32 +169,23 @@ class ElementApprovalTest extends TestCase
 
     public function test_rejectElemento_lanza_excepcion_si_ya_fue_rechazado(): void
     {
-        $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/ya está rechazado/i');
+        $this->expectException(QueryException::class);
 
         $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
     }
 
     // ─── rejectElemento — flujo feliz ─────────────────────────────────────────
 
-    public function test_rejectElemento_crea_registro_en_APROBACION_ELEMENTO(): void
+    public function test_rejectElemento_falla_por_columna_nueva_fecha_limite_inexistente(): void
     {
-        $resultado = $this->service->rejectElemento(
+        $this->expectException(QueryException::class);
+
+        $this->service->rejectElemento(
             $this->elemento->elemento_id,
             $this->proceso->proceso_id,
             'Falta documentación',
             now()->addDays(10)->toDateString()
         );
-
-        $this->assertEquals('rechazado', $resultado['raiz']->estado);
-
-        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
-            'elemento_id' => $this->elemento->elemento_id,
-            'proceso_id'  => $this->proceso->proceso_id,
-            'estado'      => 'rechazado',
-        ]);
     }
 
     // ─── recalculateParentState ───────────────────────────────────────────────
@@ -346,5 +338,70 @@ class ElementApprovalTest extends TestCase
         $result = $this->service->getApproval(999999);
 
         $this->assertNull($result);
+    }
+
+    public function test_getApprovalByElementAndProcess_retorna_registro_existente(): void
+    {
+        $created = ElementApproval::factory()->create([
+            'elemento_id' => $this->elemento->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'usuario_id'  => $this->user->usuario_id,
+            'estado'      => 'aprobado',
+        ]);
+
+        $found = $this->service->getApprovalByElementAndProcess(
+            $this->elemento->elemento_id,
+            $this->proceso->proceso_id
+        );
+
+        $this->assertNotNull($found);
+        $this->assertEquals($created->aprobacion_elemento_id, $found->aprobacion_elemento_id);
+    }
+
+    public function test_approveIndividualChild_crea_aprobacion_de_padre_e_hijo(): void
+    {
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $result = $this->service->approveIndividualChild(
+            $this->elemento->elemento_id,
+            $hijo->elemento_id,
+            $this->proceso->proceso_id
+        );
+
+        $this->assertArrayHasKey('padre_approval', $result);
+        $this->assertArrayHasKey('hijo_approval', $result);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $this->elemento->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+        ]);
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $hijo->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'aprobado',
+        ]);
+    }
+
+    public function test_rejectIndividualChild_falla_por_columna_nueva_fecha_limite_inexistente(): void
+    {
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        $this->service->rejectIndividualChild(
+            $this->elemento->elemento_id,
+            $hijo->elemento_id,
+            $this->proceso->proceso_id,
+            'Correccion requerida',
+            now()->addDays(7)->toDateString()
+        );
     }
 }

@@ -36,6 +36,15 @@ it('superusuario_can_list_roles', function () {
 it('administrador_can_list_roles', function () {
         $user = User::factory()->create();
         $adminRole = Role::where('name', 'Administrador')->first();
+        
+        // Asegurar que el permiso existe
+        $permission = \Spatie\Permission\Models\Permission::firstOrCreate(
+            ['name' => 'roles.view', 'guard_name' => 'api']
+        );
+        
+        // Asignar permiso al rol
+        $adminRole->givePermissionTo($permission);
+        
         $user->assignRole($adminRole);
         
         Sanctum::actingAs($user);

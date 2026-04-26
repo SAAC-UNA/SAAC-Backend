@@ -4,11 +4,36 @@ use App\Models\Criterion;
 use App\Models\Component;
 use App\Models\Dimension;
 use App\Models\User;
+use App\Models\Role;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
     $this->baseEndpoint = '/api/estructura/criterios';
+
+    $permissions = [
+        'criterios.view',
+        'criterios.create',
+        'criterios.edit',
+        'criterios.update',
+        'criterios.delete',
+    ];
+
+    foreach ($permissions as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'api',
+        ]);
+    }
+
+    $adminRole = Role::firstOrCreate([
+        'name' => 'Administrador',
+        'guard_name' => 'api',
+    ]);
+    $adminRole->syncPermissions($permissions);
+
     $this->user = User::factory()->create();
+    $this->user->assignRole($adminRole);
     Sanctum::actingAs($this->user);
 });
 
@@ -86,7 +111,7 @@ it('update actualiza un criterio', function () {
         $requestPayload = [
             'componente_id' => $criterion->componente_id,
             'descripcion'   => 'Actualizado',
-            'nomenclatura'  => $criterion->nomenclatura,
+            'nomenclatura'  => 'CRIT-UPD-01',
         ];
 
         $this->putJson("{$this->baseEndpoint}/{$criterion->getKey()}", $requestPayload)

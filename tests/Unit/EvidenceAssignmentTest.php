@@ -21,7 +21,17 @@ it('find by id returns assignment or null', function () {
 });
 
 it('assign evidence creates assignments', function () {
-    $process = \App\Models\Process::factory()->create();
+    // Crear un modelo de estructura tradicional
+    $modeloTradicional = \App\Models\StructureModel::factory()->create([
+        'tipo' => \App\Models\StructureModel::TIPO_TRADICIONAL
+    ]);
+    // Crear un ciclo con modelo tradicional
+    $cycle = \App\Models\AccreditationCycle::factory()->create([
+        'modelo_estructura_id' => $modeloTradicional->modelo_estructura_id
+    ]);
+    $process = \App\Models\Process::factory()->create([
+        'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id
+    ]);
     $evidence = \App\Models\Evidence::factory()->create();
     $user = \App\Models\User::factory()->create();
     $service = new EvidenceAssignmentService();

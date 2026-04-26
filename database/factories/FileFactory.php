@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\File>
@@ -16,9 +17,8 @@ class FileFactory extends Factory
      */
     public function definition(): array
     {
-        return [
+        $data = [
             'evidencia_id'  => null,
-            'elemento_id'   => null,
             'usuario_id'    => \App\Models\User::factory(),
             'proceso_id'    => \App\Models\Process::factory(),
             'fecha_subida'  => now(),
@@ -30,5 +30,11 @@ class FileFactory extends Factory
             'token_publico' => null,
             'link_expira_en'=> null,
         ];
+
+        if (Schema::hasColumn('ARCHIVO', 'elemento_id')) {
+            $data['elemento_id'] = null;
+        }
+
+        return $data;
     }
 }
