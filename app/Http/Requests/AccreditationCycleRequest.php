@@ -40,21 +40,22 @@ class AccreditationCycleRequest extends FormRequest
                 'exists:CARRERA_SEDE,carrera_sede_id',
             ],
 
-            // Obligatorio en creación; único por par (nombre + carrera_sede_id)
-            // El mismo nombre en otra sede sí está permitido
+            // Nombre opcional: se autogenera en el servicio a partir de las fechas.
             'nombre' => [
-                $isPost ? 'required' : 'sometimes',
+                'sometimes',
                 'string',
                 'max:50',
-                Rule::unique((new AccreditationCycle)->getTable(), 'nombre')
-                    ->where(fn($q) => $q->where(
-                        'carrera_sede_id',
-                        $this->input('carrera_sede_id')
-                    ))
-                    // En update se ignora el ciclo actual para no bloquearse a sí mismo
-                    ->when($isUpdate && $id, fn($rule) =>
-                        $rule->ignore($id, 'ciclo_acreditacion_id')
-                    ),
+            ],
+
+            'fecha_inicio' => [
+                $isPost ? 'required' : 'sometimes',
+                'date',
+            ],
+
+            'fecha_fin' => [
+                $isPost ? 'required' : 'sometimes',
+                'date',
+                'after_or_equal:fecha_inicio',
             ],
 
             // Obligatorio en creación; debe existir en MODELO_ESTRUCTURA
@@ -86,7 +87,11 @@ class AccreditationCycleRequest extends FormRequest
             'carrera_sede_id.exists'   => 'La sede de carrera no existe.',
             'nombre.required'          => 'El nombre del ciclo es obligatorio.',
             'nombre.max'               => 'El nombre no puede superar los 50 caracteres.',
-            'nombre.unique'            => 'Ya existe un ciclo con ese nombre en esta sede.',
+            'fecha_inicio.required'    => 'La fecha de inicio es obligatoria.',
+            'fecha_inicio.date'        => 'La fecha de inicio no tiene un formato válido.',
+            'fecha_fin.required'       => 'La fecha de fin es obligatoria.',
+            'fecha_fin.date'           => 'La fecha de fin no tiene un formato válido.',
+            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser mayor o igual a la fecha de inicio.',
             'modelo_estructura_id.required' => 'El modelo de estructura es obligatorio.',
             'modelo_estructura_id.exists'   => 'El modelo de estructura no existe.',
             'estado.in'                    => 'El estado debe ser activo, inactivo o completado.',
@@ -103,14 +108,17 @@ class AccreditationCycleRequest extends FormRequest
         if (in_array($this->method(), ['PUT', 'PATCH'])) {
             $validator->after(function ($v) {
                 if (!$this->hasAny(['modelo_estructura_id', 'nombre', 'estado'])) {
+                    if (!$this->hasAny(['fecha_inicio', 'fecha_fin'])) {
                     $v->errors()->add('general', 'Debes enviar al menos un campo para actualizar.');
+                    }
                 }
             });
         }
 
-        // Siempre: verifica la regla de 1 ciclo activo por carrera+sede (AC-6)
+        // Reglas de coherencia del dominio
         $validator->after(function ($v) {
             $this->validateSingleActiveCycle($v);
+            $this->validateDateOverlap($v);
         });
     }
 
@@ -127,8 +135,8 @@ class AccreditationCycleRequest extends FormRequest
         $isUpdate = in_array($this->method(), ['PUT', 'PATCH']);
 
         if ($isPost) {
-            // POST sin estado explícito → el service lo pone en 'activo' por defecto
-            $nuevoEstado = $this->input('estado', AccreditationCycle::STATUS_ACTIVE);
+            // En POST solo aplica AC-6 cuando el cliente envía estado activo explícito.
+            $nuevoEstado = $this->input('estado');
             $carreraSede = $this->input('carrera_sede_id');
             $excluirId   = null;
         } elseif ($isUpdate) {
@@ -165,6 +173,48 @@ class AccreditationCycleRequest extends FormRequest
             $v->errors()->add(
                 'carrera_sede_id',
                 'Ya existe un ciclo activo para esta carrera en esta sede.'
+            );
+        }
+    }
+
+    /**
+     * Evita solapamiento de periodos en una misma carrera+sede.
+     */
+    private function validateDateOverlap($v): void
+    {
+        $isPost   = $this->isMethod('POST');
+        $isUpdate = in_array($this->method(), ['PUT', 'PATCH']);
+
+        if (!$isPost && !$isUpdate) {
+            return;
+        }
+
+        $id = $this->route('accreditation_cycle') ?? $this->route('id');
+        $currentCycle = $id ? AccreditationCycle::find($id) : null;
+
+        $carreraSede = $this->input('carrera_sede_id', $currentCycle?->carrera_sede_id);
+        $fechaInicio = $this->input('fecha_inicio', $currentCycle?->fecha_inicio?->format('Y-m-d'));
+        $fechaFin = $this->input('fecha_fin', $currentCycle?->fecha_fin?->format('Y-m-d'));
+
+        if (!$carreraSede || !$fechaInicio || !$fechaFin) {
+            return;
+        }
+
+        $query = AccreditationCycle::query()
+            ->where('carrera_sede_id', $carreraSede)
+            ->whereNotNull('fecha_inicio')
+            ->whereNotNull('fecha_fin')
+            ->whereDate('fecha_inicio', '<=', $fechaFin)
+            ->whereDate('fecha_fin', '>=', $fechaInicio);
+
+        if ($id) {
+            $query->where('ciclo_acreditacion_id', '!=', $id);
+        }
+
+        if ($query->exists()) {
+            $v->errors()->add(
+                'fecha_inicio',
+                'Ya existe un ciclo para esta carrera-sede cuyo periodo se solapa con las fechas indicadas.'
             );
         }
     }

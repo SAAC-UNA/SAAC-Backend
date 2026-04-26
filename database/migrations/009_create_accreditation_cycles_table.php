@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('carrera_sede_id')->constrained('CARRERA_SEDE', 'carrera_sede_id')->onDelete('restrict');
             // Nombre del ciclo de acreditación
             $table->string('nombre', 50);
+            // Rango de fechas del ciclo
+            $table->date('fecha_inicio')->nullable();
+            $table->date('fecha_fin')->nullable();
             // Estado del ciclo de acreditación (activo/inactivo)
             $table->enum('estado', ['activo', 'inactivo', 'completado'])->default('activo');
             // Relación con modelo_estructura
@@ -29,6 +32,7 @@ return new class extends Migration
             $table->index('carrera_sede_id', 'idx_ca_carrera_sede_id');
             $table->index('modelo_estructura_id', 'idx_ca_modelo_estructura');
             $table->index('estado', 'index_ciclo_acreditacion_estado');
+            $table->index(['carrera_sede_id', 'fecha_inicio', 'fecha_fin'], 'idx_ciclo_carrera_fechas');
         });
     }
 
