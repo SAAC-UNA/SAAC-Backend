@@ -5,19 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\University;
-use App\Models\Campus;
-use App\Models\Career;
-use App\Models\CareerCampus;
-use App\Models\AccreditationCycle;
 use App\Models\Process;
-use App\Models\Dimension;
-use App\Models\Component;
 use App\Models\Criterion;
-use App\Models\Evidence;
-use App\Models\EvidenceAssignment;
 use App\Models\CriterionApproval;
-use App\Models\EvidenceState;
 use Illuminate\Support\Facades\Hash;
 
 class AprobacionCriteriosTestSeeder extends Seeder

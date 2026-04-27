@@ -16,12 +16,18 @@ beforeEach(function () {
 });
 
 it('puede listar tipos de acción', function () {
-    ActionType::factory()->count(3)->create();
+    $created = ActionType::factory()->count(3)->create();
     
     $response = $this->getJson('/api/bitacora/tipos-accion');
     
-    $response->assertStatus(200)
-        ->assertJsonCount(3);
+    $response->assertStatus(200);
+
+    foreach ($created as $type) {
+        $response->assertJsonFragment([
+            'tipo_accion_id' => $type->tipo_accion_id,
+            'descripcion' => $type->descripcion,
+        ]);
+    }
 });
 
 it('puede crear y recuperar un tipo de acción', function () {

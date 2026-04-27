@@ -4,10 +4,33 @@ use App\Models\EvidenceAssignment;
 use App\Models\Process;
 use App\Models\Evidence;
 use App\Models\User;
+use App\Models\Role;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
+    $permissions = [
+        'asignaciones.view',
+        'asignaciones.create',
+        'asignaciones.edit',
+        'asignaciones.delete',
+    ];
+
+    foreach ($permissions as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'api',
+        ]);
+    }
+
+    $adminRole = Role::firstOrCreate([
+        'name' => 'Administrador',
+        'guard_name' => 'api',
+    ]);
+    $adminRole->syncPermissions($permissions);
+
     $this->user = User::factory()->create();
+    $this->user->assignRole($adminRole);
     Sanctum::actingAs($this->user);
 });
 

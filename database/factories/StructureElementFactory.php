@@ -27,26 +27,8 @@ class StructureElementFactory extends Factory
             'nomenclatura'         => strtoupper($this->faker->lexify('??-###')),
             'descripcion'          => $this->faker->sentence(6),
             'activo'               => true,
-            'estado'               => 'Pendiente',
-            'fecha_limite'         => $this->faker->dateTimeBetween('+7 days', '+60 days')->format('Y-m-d'),
         ];
     }
 
-    /** Estado Pendiente */
-    public function pendiente(): static
-    {
-        return $this->state(['estado' => 'Pendiente']);
-    }
-
-    /** Estado En Progreso */
-    public function enProgreso(): static
-    {
-        return $this->state(['estado' => 'En Progreso']);
-    }
-
-    /** Estado Completado */
-    public function completado(): static
-    {
-        return $this->state(['estado' => 'Completado']);
-    }
+    // Estado methods removed - no estado column in ELEMENTO table
 }

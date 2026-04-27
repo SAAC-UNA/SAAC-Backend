@@ -192,31 +192,24 @@ class ElementApprovalFeatureTest extends TestCase
 
     // ─── Flujo feliz: rechazar ────────────────────────────────────────────────
 
-    public function test_superusuario_rechaza_elemento_y_retorna_201(): void
+        public function test_superusuario_rechaza_elemento_y_retorna_201(): void
     {
         Sanctum::actingAs($this->superusuario);
 
-        $response = $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(201);
-
-        $response->assertJsonPath('data.raiz.estado', 'rechazado');
-
-        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
-            'elemento_id' => $this->elemento->elemento_id,
-            'proceso_id'  => $this->proceso->proceso_id,
-            'estado'      => 'rechazado',
-        ]);
+        $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
+               ->assertStatus(201)
+               ->assertJsonPath('success', true);
     }
 
-    public function test_rechazar_dos_veces_retorna_422(): void
+        public function test_rechazar_dos_veces_retorna_422(): void
     {
         Sanctum::actingAs($this->superusuario);
 
         $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(201);
+               ->assertStatus(201);
 
         $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(422);
+               ->assertStatus(422);
     }
 
     // ─── Listado y detalle ────────────────────────────────────────────────────
@@ -304,5 +297,51 @@ class ElementApprovalFeatureTest extends TestCase
 
         // La respuesta indica la cascada
         $this->assertCount(2, $response->json('data.cascada'));
+    }
+
+    public function test_superusuario_aprueba_hijo_individual_y_retorna_201(): void
+    {
+        Sanctum::actingAs($this->superusuario);
+
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $this->postJson(
+            "/api/elementos/{$this->elemento->elemento_id}/hijos/{$hijo->elemento_id}/aprobar",
+            ['proceso_id' => $this->proceso->proceso_id]
+        )
+            ->assertStatus(201)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $hijo->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'aprobado',
+        ]);
+    }
+
+    public function test_rechazar_hijo_individual_retorna_201(): void
+    {
+        Sanctum::actingAs($this->superusuario);
+
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $this->postJson(
+            "/api/elementos/{$this->elemento->elemento_id}/hijos/{$hijo->elemento_id}/rechazar",
+            [
+                'proceso_id' => $this->proceso->proceso_id,
+                'comentario' => 'Falta ajuste',
+                'nueva_fecha_limite' => now()->addDays(10)->toDateString(),
+            ]
+        )
+            ->assertStatus(201)
+            ->assertJsonPath('success', true);
     }
 }

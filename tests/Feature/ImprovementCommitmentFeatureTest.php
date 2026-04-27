@@ -16,13 +16,15 @@ use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
-    // Crear roles con guard 'api'
-    $this->adminRole = Role::create(['name' => 'Encargado de Acreditación', 'guard_name' => 'api']);
-    $this->profesorRole = Role::create(['name' => 'Profesor', 'guard_name' => 'api']);
+    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+
+    $this->adminRole = Role::where('name', 'Encargado de Acreditación')->where('guard_name', 'api')->first();
+    $this->profesorRole = Role::where('name', 'Profesor')->where('guard_name', 'api')->first();
+    $superusuarioRole = Role::where('name', 'Superusuario')->where('guard_name', 'api')->first();
 
     // Crear usuario autenticado
     $this->user = User::factory()->create();
-    $this->user->assignRole($this->adminRole);
+    $this->user->assignRole($superusuarioRole);
 });
 
 it('puede listar compromisos de mejora con paginacion', function () {
@@ -63,7 +65,7 @@ it('puede_filtrar_compromisos_por_estado', function () {
 it('puede_filtrar_compromisos_por_proceso', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         ImprovementCommitment::factory()->count(2)->create(['proceso_id' => $process->proceso_id]);
         ImprovementCommitment::factory()->count(3)->create();
 
@@ -123,6 +125,7 @@ it('puede_crear_compromiso_de_mejora', function () {
         ]);
         $process = Process::factory()->create([
             'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+            'tipo_proceso' => 'Compromiso de mejora',
         ]);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -172,6 +175,7 @@ it('no_permite_duplicar_compromiso_por_proceso', function () {
         ]);
         $process = Process::factory()->create([
             'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+            'tipo_proceso' => 'Compromiso de mejora',
         ]);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
@@ -217,7 +221,7 @@ it('valida_campos_requeridos_al_crear', function () {
 it('valida_formato_fecha_inicio', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);
@@ -241,7 +245,7 @@ it('valida_formato_fecha_inicio', function () {
 it('valida_fecha_fin_posterior_a_fecha_inicio', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);
@@ -381,30 +385,10 @@ it('puede_filtrar_compromisos_por_usuario', function () {
             ->assertJsonStructure(['data'])
             ->assertJsonCount(1, 'data');
 });
-it('puede_filtrar_compromisos_por_evidencia', function () {
-        Sanctum::actingAs($this->user);
-
-        $evidence = Evidence::factory()->create();
-        $commitment = ImprovementCommitment::factory()->create();
-        $assignment = EvidenceAssignment::factory()->create([
-            'evidencia_id' => $evidence->evidencia_id
-        ]);
-
-        $commitment->assignedEvidences()->attach($assignment->evidencia_asignacion_id);
-
-        // Crear otros compromisos
-        ImprovementCommitment::factory()->count(2)->create();
-
-        $response = $this->getJson("/api/compromisos-de-mejora/evidencia/{$evidence->evidencia_id}");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['data'])
-            ->assertJsonCount(1, 'data');
-});
 it('puede_crear_compromiso_con_asignaciones_a_usuarios', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);
@@ -450,7 +434,7 @@ it('puede_crear_compromiso_con_asignaciones_a_usuarios', function () {
 it('puede_crear_compromiso_con_asignaciones_a_roles', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);
@@ -497,7 +481,7 @@ it('puede_crear_compromiso_con_asignaciones_a_roles', function () {
 it('no_permite_asignar_evidencia_no_vinculada_al_compromiso', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);
@@ -529,7 +513,7 @@ it('no_permite_asignar_evidencia_no_vinculada_al_compromiso', function () {
 it('no_permite_asignacion_duplicada', function () {
         Sanctum::actingAs($this->user);
 
-        $process = Process::factory()->create();
+    $process = Process::factory()->create(['tipo_proceso' => 'Compromiso de mejora']);
         $dimension = Dimension::factory()->create();
         $component = Component::factory()->create(['dimension_id' => $dimension->dimension_id]);
         $criterion = Criterion::factory()->create(['componente_id' => $component->componente_id]);

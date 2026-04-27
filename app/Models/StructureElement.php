@@ -27,14 +27,11 @@ class StructureElement extends Model
         'nomenclatura',
         'descripcion',
         'activo',
-        'estado',
-        'fecha_limite',
     ];
 
     // Casts
     protected $casts = [
         'activo'       => 'boolean',
-        'fecha_limite' => 'date',
     ];
 
     // ===== RELACIONES =====

@@ -11,8 +11,23 @@ use Laravel\Sanctum\Sanctum;
 beforeEach(function () {
     $this->baseEndpoint = '/api/estructura/estandares';
     
+    // Crear permisos necesarios (considerar tanto .create/.edit/.delete como .update)
+    $permissions = [
+        'estandares.view',
+        'estandares.create',
+        'estandares.edit',
+        'estandares.update',
+        'estandares.delete',
+    ];
+    
+    foreach ($permissions as $perm) {
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'api']);
+    }
+    
     // Crear rol y usuario autenticado
-    $adminRole = Role::create(['name' => 'Administrador', 'guard_name' => 'api']);
+    $adminRole = Role::firstOrCreate(['name' => 'Administrador', 'guard_name' => 'api']);
+    $adminRole->givePermissionTo($permissions);
+    
     $this->user = User::factory()->create();
     $this->user->assignRole($adminRole);
     

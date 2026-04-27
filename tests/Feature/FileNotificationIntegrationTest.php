@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
@@ -33,7 +34,15 @@ beforeEach(function () {
     $this->uploader = User::factory()->create(['nombre' => 'File Uploader']);
     $this->supervisor = User::factory()->create(['nombre' => 'Supervisor']);
 
-    $role = Role::firstOrCreate(['name' => 'SuperUsuario', 'guard_name' => 'api']);
+    foreach (['archivos.view', 'archivos.upload', 'archivos.download', 'archivos.delete', 'archivos.make_public'] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'api',
+        ]);
+    }
+
+    $role = Role::firstOrCreate(['name' => 'Superusuario', 'guard_name' => 'api']);
+    $role->syncPermissions(['archivos.view', 'archivos.upload', 'archivos.download', 'archivos.delete', 'archivos.make_public']);
     $this->uploader->assignRole($role);
     $this->supervisor->assignRole($role);
     

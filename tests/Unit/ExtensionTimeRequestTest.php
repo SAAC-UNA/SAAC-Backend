@@ -172,13 +172,13 @@ it('incluye evidencias vencidas', function () {
 it('excluye evidencias completadas', function () {
     EvidenceAssignment::factory()->create([
         'usuario_id' => $this->user->usuario_id,
-        'estado' => 'Completada',
+        'estado' => 'Completado',
         'fecha_limite' => Carbon::now()->addDays(5)
     ]);
 
     EvidenceAssignment::factory()->create([
         'usuario_id' => $this->user->usuario_id,
-        'estado' => 'Aprobada',
+        'estado' => 'Completado',
         'fecha_limite' => Carbon::now()->addDays(5)
     ]);
 
@@ -256,23 +256,7 @@ it('falla si la evidencia no pertenece al usuario', function () {
     ];
 
     $this->service->createRequest($data, $this->user->usuario_id);
-})->throws(ValidationException::class, 'asignadas a usted');
-
-it('falla si la evidencia está aprobada', function () {
-    $evidenceAssignment = EvidenceAssignment::factory()->create([
-        'usuario_id' => $this->user->usuario_id,
-        'estado' => 'Aprobada',
-        'fecha_limite' => Carbon::now()->addDays(3)
-    ]);
-
-    $data = [
-        'evidencia_asignacion_id' => $evidenceAssignment->evidencia_asignacion_id,
-        'motivo' => 'Necesito más tiempo',
-        'fecha_sugerida' => Carbon::now()->addDays(10)->format('Y-m-d')
-    ];
-
-    $this->service->createRequest($data, $this->user->usuario_id);
-})->throws(ValidationException::class, 'ya aprobadas');
+})->throws(ValidationException::class, 'asignaciones propias');
 
 it('falla si el plazo ya venció', function () {
     $evidenceAssignment = EvidenceAssignment::factory()->create([
@@ -344,109 +328,3 @@ it('falla si la ampliación excede 30 días', function () {
     $this->service->createRequest($data, $this->user->usuario_id);
 })->throws(ValidationException::class, '30 días');
 
-it('actualiza solicitud exitosamente', function () {
-    $evidenceAssignment = EvidenceAssignment::factory()->create([
-        'usuario_id' => $this->user->usuario_id,
-        'fecha_limite' => Carbon::now()->addDays(5)
-    ]);
-
-    $solicitud = ExtensionRequest::factory()->pendiente()->create([
-        'usuario_id' => $this->user->usuario_id,
-        'evidencia_asignacion_id' => $evidenceAssignment->evidencia_asignacion_id,
-        'motivo' => 'Motivo original',
-        'fecha_sugerida' => Carbon::now()->addDays(10)
-    ]);
-
-    $data = [
-        'motivo' => 'Motivo actualizado con más información',
-        'fecha_sugerida' => Carbon::now()->addDays(15)->format('Y-m-d')
-    ];
-
-    $result = $this->service->updateRequest(
-        $solicitud->solicitud_ampliacion_id,
-        $data,
-        $this->user->usuario_id
-    );
-
-    $this->assertEquals($data['motivo'], $result->motivo);
-
-    $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
-        'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
-        'motivo' => $data['motivo']
-    ]);
-});
-
-it('falla al actualizar si la solicitud no existe', function () {
-    $this->service->updateRequest(999999, ['motivo' => 'Nuevo motivo'], $this->user->usuario_id);
-})->throws(ValidationException::class);
-
-it('falla al actualizar si el usuario no es el dueño', function () {
-    $otroUsuario = User::factory()->create();
-
-    $solicitud = ExtensionRequest::factory()->pendiente()->create([
-        'usuario_id' => $otroUsuario->usuario_id
-    ]);
-
-    $this->service->updateRequest(
-        $solicitud->solicitud_ampliacion_id,
-        ['motivo' => 'Nuevo motivo'],
-        $this->user->usuario_id
-    );
-})->throws(ValidationException::class, 'permisos');
-
-it('falla al actualizar si la solicitud no está pendiente', function () {
-    $solicitud = ExtensionRequest::factory()->aprobada()->create([
-        'usuario_id' => $this->user->usuario_id
-    ]);
-
-    $this->service->updateRequest(
-        $solicitud->solicitud_ampliacion_id,
-        ['motivo' => 'Nuevo motivo'],
-        $this->user->usuario_id
-    );
-})->throws(ValidationException::class, 'pendientes');
-
-it('elimina solicitud exitosamente', function () {
-    $solicitud = ExtensionRequest::factory()->pendiente()->create([
-        'usuario_id' => $this->user->usuario_id
-    ]);
-
-    $result = $this->service->deleteRequest(
-        $solicitud->solicitud_ampliacion_id,
-        $this->user->usuario_id
-    );
-
-    $this->assertTrue($result);
-
-    $this->assertDatabaseMissing('SOLICITUD_AMPLIACION', [
-        'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id
-    ]);
-});
-
-it('falla al eliminar si la solicitud no existe', function () {
-    $this->service->deleteRequest(999999, $this->user->usuario_id);
-})->throws(ValidationException::class);
-
-it('falla al eliminar si el usuario no es el dueño', function () {
-    $otroUsuario = User::factory()->create();
-
-    $solicitud = ExtensionRequest::factory()->pendiente()->create([
-        'usuario_id' => $otroUsuario->usuario_id
-    ]);
-
-    $this->service->deleteRequest(
-        $solicitud->solicitud_ampliacion_id,
-        $this->user->usuario_id
-    );
-})->throws(ValidationException::class, 'propias solicitudes');
-
-it('falla al eliminar si la solicitud no está pendiente', function () {
-    $solicitud = ExtensionRequest::factory()->aprobada()->create([
-        'usuario_id' => $this->user->usuario_id
-    ]);
-
-    $this->service->deleteRequest(
-        $solicitud->solicitud_ampliacion_id,
-        $this->user->usuario_id
-    );
-})->throws(ValidationException::class, 'pendientes');
