@@ -129,10 +129,12 @@ class LdapService
                 ]
             );
 
-            Log::info($user->wasRecentlyCreated
-                ? "Usuario creado desde LDAP: {$ldapData['cedula']}"
-                : "Usuario actualizado desde LDAP: {$ldapData['cedula']}"
-            );
+            if ($user->wasRecentlyCreated) {
+                $user->assignRole('Profesor');
+                Log::info("Usuario creado desde LDAP con rol Profesor: {$ldapData['cedula']}");
+            } else {
+                Log::info("Usuario actualizado desde LDAP: {$ldapData['cedula']}");
+            }
 
             return $user;
         } catch (Exception $e) {

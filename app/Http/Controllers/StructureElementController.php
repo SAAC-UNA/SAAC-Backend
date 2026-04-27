@@ -3,24 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\StructureElement;
+use App\Models\Process;
 use App\Services\StructureElementService;
 use App\Services\FilterElementService;
+use App\Services\FlexibleHierarchyReportService;
 use App\Services\AuditLogService;
-use App\Exports\ElementsExport;
+use App\Exports\InformeExport;
 use App\Http\Requests\StructureElementRequest;
 use App\Http\Requests\FilterElementRequest;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class StructureElementController extends Controller
 {
     protected $service;
     protected FilterElementService $filterService;
+    protected FlexibleHierarchyReportService $reportService;
 
-    public function __construct(StructureElementService $service, FilterElementService $filterService)
+    public function __construct(
+        StructureElementService $service,
+        FilterElementService $filterService,
+        FlexibleHierarchyReportService $reportService
+    )
     {
         $this->service       = $service;
         $this->filterService = $filterService;
+        $this->reportService = $reportService;
     }
 
     /**
@@ -53,18 +62,18 @@ class StructureElementController extends Controller
     public function show($id)
     {
         $item = $this->service->findById((int)$id);
-        
+
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
         }
-        
+
         return response()->json($item, 200);
     }
 
     /**
      * GET /api/estructura/jerarquia/arbol
      * Query params: ?root_id=5&modelo_estructura_id=2
-     * 
+     *
      * COMENTADO: Funcionalidad de árbol jerárquico para futuro.
      * Usará SP_OBTENER_ARBOL_JERARQUIA para construir estructura completa.
      */
@@ -111,7 +120,7 @@ class StructureElementController extends Controller
     public function update(StructureElementRequest $request, $id)
     {
         $item = StructureElement::find($id);
-        
+
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
         }
@@ -136,7 +145,7 @@ class StructureElementController extends Controller
     public function destroy($id)
     {
         $item = StructureElement::find($id);
-        
+
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
         }
@@ -169,7 +178,7 @@ class StructureElementController extends Controller
     public function setActive(Request $request, $id)
     {
         $item = StructureElement::find($id);
-        
+
         if (!$item) {
             return response()->json(['message' => 'Elemento no encontrado.'], 404);
         }
@@ -205,14 +214,84 @@ class StructureElementController extends Controller
         $user    = $request->user();
         $filters = $request->validated();
 
-        $filters['per_page'] = 999999;
-        $elements = $this->filterService->filter($filters, $user)->items();
+        $collection = $this->getHierarchyCollectionForExport($filters, $user);
+        $report = $this->reportService->build(
+            $collection,
+            isset($filters['proceso_id']) ? (int) $filters['proceso_id'] : null
+        );
 
-        $collection = collect($elements);
-        $exporter   = new ElementsExport($collection);
+        $exporter   = new InformeExport($report);
         $filePath   = $exporter->generate();
+        $filename   = 'informe_estructura_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        return response()->download($filePath)->deleteFileAfterSend(true);
+        AuditLogService::log(
+            'exportar',
+            "Exportó elementos en Excel con {$report['total_evidences']} registro(s).",
+            'Reportes',
+            $user?->usuario_id
+        );
+
+        return response()
+            ->download(
+                $filePath,
+                $filename,
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ]
+            )
+            ->deleteFileAfterSend(true);
+    }
+
+    private function getHierarchyCollectionForExport(array $filters, $user): Collection
+    {
+        $modeloId = $filters['modelo_estructura_id'] ?? null;
+
+        if (!$modeloId && !empty($filters['proceso_id'])) {
+            $modeloId = Process::query()
+                ->with('accreditationCycle')
+                ->find($filters['proceso_id'])
+                ?->accreditationCycle
+                ?->modelo_estructura_id;
+        }
+
+        if (!$modeloId) {
+            $filters['per_page'] = 999999;
+            return collect($this->filterService->filter($filters, $user)->items());
+        }
+
+        $query = StructureElement::query()
+            ->with(['parent', 'files', 'modeloEstructura'])
+            ->where('modelo_estructura_id', $modeloId)
+            ->orderBy('elemento_id');
+
+        if (!empty($filters['elemento_raiz_id'])) {
+            $ids = $this->getDescendantIds((int) $filters['elemento_raiz_id']);
+            $query->whereIn('elemento_id', $ids);
+        }
+
+        return $query->get();
+    }
+
+    private function getDescendantIds(int $rootId): array
+    {
+        $allIds = [$rootId];
+        $frontier = [$rootId];
+
+        while (!empty($frontier)) {
+            $children = StructureElement::query()
+                ->whereIn('padre_id', $frontier)
+                ->pluck('elemento_id')
+                ->all();
+
+            if (empty($children)) {
+                break;
+            }
+
+            $allIds = array_merge($allIds, $children);
+            $frontier = $children;
+        }
+
+        return $allIds;
     }
 
     /**
@@ -233,6 +312,13 @@ class StructureElementController extends Controller
             ->setPaper('a4', 'landscape');
 
         $filename = 'elementos_' . now()->format('Y-m-d_His') . '.pdf';
+
+        AuditLogService::log(
+            'exportar',
+            "Exportó elementos en PDF con {$collection->count()} registro(s).",
+            'Reportes',
+            $user?->usuario_id
+        );
 
         return $pdf->download($filename);
     }

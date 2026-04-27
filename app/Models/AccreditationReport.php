@@ -31,33 +31,37 @@ class AccreditationReport extends Model
     public const STATUS_UNPUBLISHED = 'despublicado';
 
     // Nombre de la tabla en la base de datos
-    protected $table = 'INFORME_ACREDITACION';
+    protected $table = 'INFORME_ARCHIVO';
 
     // Clave primaria
-    protected $primaryKey = 'informe_acreditacion_id';
+    protected $primaryKey = 'informe_archivo_id';
 
     // Campos que se pueden asignar masivamente
     protected $fillable = [
-        'ciclo_acreditacion_id',
-        'archivo_id',
+        'proceso_id',
+        'usuario_id',
         'usuario_publicacion_id',
+        'fecha_subida',
+        'tipo',
+        'path',
+        'url',
+        'nombre_original',
+        'tamanio',
+        'tipo_mime',
+        'is_publico',
+        'token_publico',
+        'link_expira_en',
         'estado',
-        'numero_resolucion',
-        'fecha_resolucion',
-        'vigencia_desde',
-        'vigencia_hasta',
         'fecha_publicacion',
         'observaciones',
-        'esta_acreditada',
     ];
 
     // Cast de tipos
     protected $casts = [
-        'fecha_resolucion'  => 'date:Y-m-d',
-        'vigencia_desde'    => 'date:Y-m-d',
-        'vigencia_hasta'    => 'date:Y-m-d',
+        'fecha_subida'      => 'datetime',
         'fecha_publicacion' => 'datetime',
-        'esta_acreditada'   => 'boolean',
+        'is_publico'        => 'boolean',
+        'link_expira_en'    => 'datetime',
     ];
 
     // --- Helpers de dominio ---
@@ -74,14 +78,31 @@ class AccreditationReport extends Model
         return $this->estado === self::STATUS_UNPUBLISHED;
     }
 
-    /** Retorna true si la acreditación sigue vigente a la fecha actual. */
-    public function isCurrentlyValid(): bool
+    public function hasExpiredLink(): bool
     {
-        $today = now()->toDateString();
-        return $this->isPublished()
-            && $this->vigencia_desde->format('Y-m-d') <= $today
-            && $this->vigencia_hasta->format('Y-m-d') >= $today;
+        if (!$this->link_expira_en) {
+            return false;
+        }
+
+        return now()->greaterThan($this->link_expira_en);
     }
+
+    public function isPubliclyAccessible(): bool
+    {
+        return $this->is_publico && !$this->hasExpiredLink() && !empty($this->token_publico);
+    }
+
+    public function getPublicUrl(): ?string
+    {
+        if (!$this->isPubliclyAccessible()) {
+            return null;
+        }
+
+        $baseUrl = (string) config('app.frontend_url', config('app.url'));
+
+        return rtrim($baseUrl, '/') . '/p-informes/' . $this->token_publico;
+    }
+
 
     // --- Scopes ---
 
@@ -100,23 +121,13 @@ class AccreditationReport extends Model
     // --- Relaciones ---
 
     /**
-     * Relación: Un informe pertenece a un ciclo de acreditación.
+     * Relación: Un informe pertenece a un proceso.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function accreditationCycle()
+    public function process()
     {
-        return $this->belongsTo(AccreditationCycle::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
-    }
-
-    /**
-     * Relación: Un informe tiene un archivo PDF adjunto.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function file()
-    {
-        return $this->belongsTo(File::class, 'archivo_id', 'archivo_id');
+        return $this->belongsTo(Process::class, 'proceso_id', 'proceso_id');
     }
 
     /**

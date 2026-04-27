@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\AccreditationReport;
 use App\Models\AccreditationCycle;
+use App\Models\AccreditationReport;
 use App\Models\User;
 
 /**
@@ -37,7 +37,7 @@ class AccreditationReportPolicy
     }
 
     /**
-     * Publicar un nuevo informe en un ciclo completado.
+     * Publicar un nuevo informe en un ciclo.
      * Solo usuarios con permiso informes_acreditacion.publish.
      */
     public function publish(User $user, AccreditationCycle $cycle): bool

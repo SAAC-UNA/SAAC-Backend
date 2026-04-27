@@ -42,7 +42,6 @@ abstract class BaseCareer extends Model
 
             //  Obtener todos los carrera_sede_id asociados al usuario
             $careerCampusIds = $user->careers()
-                ->join('CARRERA_SEDE', 'CARRERA.carrera_id', '=', 'CARRERA_SEDE.carrera_id')
                 ->pluck('CARRERA_SEDE.carrera_sede_id')
                 ->toArray();
 

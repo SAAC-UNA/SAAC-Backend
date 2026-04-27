@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int    $carrera_sede_id
  * @property int|null $modelo_estructura_id
  * @property string $nombre
+ * @property string|null $fecha_inicio
+ * @property string|null $fecha_fin
  * @property string $estado
  */
 class AccreditationCycle extends BaseCareer
@@ -32,7 +34,19 @@ class AccreditationCycle extends BaseCareer
     protected $primaryKey = 'ciclo_acreditacion_id';
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['carrera_sede_id', 'modelo_estructura_id', 'nombre', 'estado'];
+    protected $fillable = [
+        'carrera_sede_id',
+        'modelo_estructura_id',
+        'nombre',
+        'fecha_inicio',
+        'fecha_fin',
+        'estado',
+    ];
+
+    protected $casts = [
+        'fecha_inicio' => 'date:Y-m-d',
+        'fecha_fin' => 'date:Y-m-d',
+    ];
 
     // --- Helpers de dominio: verifican el estado del ciclo ---
 
@@ -113,16 +127,5 @@ class AccreditationCycle extends BaseCareer
     public function modeloEstructura()
     {
         return $this->belongsTo(StructureModel::class, 'modelo_estructura_id', 'modelo_estructura_id');
-    }
-
-    /**
-     * Relación: Un ciclo de acreditación puede tener un informe de acreditación publicado.
-     * Un ciclo solo puede tener un informe (restricción unique en BD).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
-     */
-    public function accreditationReport()
-    {
-        return $this->hasOne(AccreditationReport::class, 'ciclo_acreditacion_id', 'ciclo_acreditacion_id');
     }
 }

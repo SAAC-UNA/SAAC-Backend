@@ -59,7 +59,7 @@ class AuthService
 
         $sessionLifetimeMinutes = (int) config('session.lifetime', 120);
         $token = $user->createToken('auth-token', ['*'], now()->addMinutes($sessionLifetimeMinutes))->plainTextToken;
-        $user->load(['roles', 'permissions', 'careers']);
+        $user->load(['roles', 'permissions', 'careers.career']);
 
         AuditLogService::log(
             'login',

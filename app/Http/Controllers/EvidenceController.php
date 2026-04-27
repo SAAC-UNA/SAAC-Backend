@@ -11,7 +11,8 @@ use App\Http\Requests\EvidenceRequest;
 use App\Http\Requests\FilterEvidenceRequest;
 use App\Http\Requests\RetroalimentacionRequest;
 use App\Services\AuditLogService;
-use App\Exports\EvidencesExport;
+use App\Services\EvidenceReportService;
+use App\Exports\InformeExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
@@ -20,13 +21,16 @@ class EvidenceController extends Controller
 {
     protected TradicionalEvidenceService $service;
     protected TradicionalEvidenceFilterService $filterService;
+    protected EvidenceReportService $reportService;
 
     public function __construct(
         TradicionalEvidenceService $service,
-        TradicionalEvidenceFilterService $filterService
+        TradicionalEvidenceFilterService $filterService,
+        EvidenceReportService $reportService
     ) {
         $this->service       = $service;
         $this->filterService = $filterService;
+        $this->reportService = $reportService;
     }
     /**
      * GET /api/estructura/evidencias
@@ -173,12 +177,12 @@ class EvidenceController extends Controller
 
     /**
      * GET /api/estructura/evidencias/filter
-     * 
+     *
      * MÉTODO NUEVO - Creado para HU-012
      * Este método NO modifica el comportamiento de index()
-     * 
+     *
      * Filtrar evidencias con múltiples criterios combinables
-     * 
+     *
      * Cumple con los siguientes Criterios de Aceptación:
      * - #1: Aplicación de filtros básicos
      * - #2: Validación de parámetros
@@ -186,11 +190,11 @@ class EvidenceController extends Controller
      * - #4: Ordenamiento de resultados
      * - #5: Paginación de resultados
      * - #6: Sin coincidencias (retorna array vacío)
-     * 
+     *
      * Query parameters (todos opcionales):
      * ?criterio_id=4&responsable_id=15&fecha_desde=2025-01-01&fecha_hasta=2025-12-31
      * &estado_evidencia_id=2&rol_id=3&sort_by=fecha&sort_order=desc&per_page=20
-     * 
+     *
      * @param FilterEvidenceRequest $request Filtros validados
      * @return \Illuminate\Http\JsonResponse
      */
@@ -207,7 +211,7 @@ class EvidenceController extends Controller
     /**
      * HU-012 - Exportar evidencias filtradas a Excel
      * GET /api/estructura/evidencias/export/excel?criterio_id=1&estado_evidencia_id=2...
-     * 
+     *
      * @param FilterEvidenceRequest $request
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
@@ -216,25 +220,46 @@ class EvidenceController extends Controller
         $user = $request->user();
         $filters = $request->validated();
 
-        // Obtener evidencias sin paginación para exportar
-        $filters['per_page'] = 999999;
-        $evidences = $this->filterService->filter($filters, $user)->items();
+        try {
+            $collection = $this->getExportCollection($filters, $user);
+            $report = $this->reportService->build($collection, $filters);
 
-        // Convertir a Collection para el export
-        $collection = collect($evidences);
+            $exporter = new InformeExport($report);
+            $filePath = $exporter->generate();
+            $filename = 'informe_acreditacion_' . now()->format('Y-m-d_His') . '.xlsx';
 
-        // Generar archivo Excel
-        $exporter = new EvidencesExport($collection);
-        $filePath = $exporter->generate();
+            AuditLogService::log(
+                'exportar',
+                "Exportó evidencias en Excel con {$report['total_evidences']} registro(s).",
+                'Reportes',
+                $user?->usuario_id
+            );
 
-        // Descargar y eliminar archivo temporal
-        return response()->download($filePath)->deleteFileAfterSend(true);
+            return response()
+                ->download(
+                    $filePath,
+                    $filename,
+                    [
+                        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    ]
+                )
+                ->deleteFileAfterSend(true);
+        } catch (\Throwable $exception) {
+            Log::error('Error al generar informe de evidencias en Excel', [
+                'user_id' => $user?->usuario_id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'No se pudo generar el informe en Excel.',
+            ], 500);
+        }
     }
 
     /**
      * HU-012 - Exportar evidencias filtradas a PDF
      * GET /api/estructura/evidencias/export/pdf?criterio_id=1&estado_evidencia_id=2...
-     * 
+     *
      * @param FilterEvidenceRequest $request
      * @return \Illuminate\Http\Response
      */
@@ -243,18 +268,39 @@ class EvidenceController extends Controller
         $user = $request->user();
         $filters = $request->validated();
 
-        // Obtener evidencias sin paginación
+        try {
+            $collection = $this->getExportCollection($filters, $user);
+            $report = $this->reportService->build($collection, $filters);
+
+            $pdf = Pdf::loadView('exports.informe', ['report' => $report])
+                ->setPaper('a4', 'landscape');
+
+            $filename = 'evidencias_' . now()->format('Y-m-d_His') . '.pdf';
+
+            AuditLogService::log(
+                'exportar',
+                "Exportó evidencias en PDF con {$report['total_evidences']} registro(s).",
+                'Reportes',
+                $user?->usuario_id
+            );
+
+            return $pdf->download($filename);
+        } catch (\Throwable $exception) {
+            Log::error('Error al generar informe de evidencias en PDF', [
+                'user_id' => $user?->usuario_id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'No se pudo generar el informe en PDF.',
+            ], 500);
+        }
+    }
+
+    private function getExportCollection(array $filters, $user)
+    {
         $filters['per_page'] = 999999;
-        $evidences = $this->filterService->filter($filters, $user)->items();
 
-        // Convertir a Collection
-        $collection = collect($evidences);
-
-        $pdf = Pdf::loadView('exports.evidences', ['evidences' => $collection])
-            ->setPaper('a4', 'landscape');
-
-        $filename = 'evidencias_' . now()->format('Y-m-d_His') . '.pdf';
-
-        return $pdf->download($filename);
+        return collect($this->filterService->filter($filters, $user)->items());
     }
 }

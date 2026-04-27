@@ -34,10 +34,11 @@ class UserResource extends JsonResource
                     'name' => $role->name,
                 ];
             }),
-            'careers' => $this->careers->map(function ($career) {
+            'careers' => $this->careers->map(function ($careerCampus) {
                 return [
-                    'carrera_id' => $career->carrera_id,
-                    'nombre' => $career->nombre,
+                    'carrera_sede_id' => $careerCampus->carrera_sede_id,
+                    'carrera_id'      => $careerCampus->carrera_id,
+                    'nombre'          => $careerCampus->career?->nombre,
                 ];
             })->values(),
             'direct_permissions' => $this->permissions->map(function ($permission) {

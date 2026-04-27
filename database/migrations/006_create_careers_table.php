@@ -22,11 +22,12 @@ return new class extends Migration
             // Timestamps de creación y actualización
             $table->timestamps();
 
-            // Índices de performance
+            // Índices
             $table->index('activo', 'idx_ca_activo');
             $table->index('nombre', 'idx_ca_nombre');
         });
     }
+
     /**
      * Reverse the migrations.
      */

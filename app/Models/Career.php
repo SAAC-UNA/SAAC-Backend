@@ -28,11 +28,6 @@ class Career extends Model
     // Campos que se pueden asignar masivamente
     protected $fillable = ['nombre', 'activo'];
 
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'CARRERA_USUARIO', 'carrera_id', 'usuario_id');
-    }
-
     public function campuses()
     {
         return $this->belongsToMany(Campus::class, 'CARRERA_SEDE', 'carrera_id', 'sede_id');

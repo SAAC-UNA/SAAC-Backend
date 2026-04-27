@@ -30,16 +30,28 @@ class CareerCampusSeeder extends Seeder
 
         $carreraSede = [];
         foreach ($carreras as $carrera) {
-            $carreraSede[] = [
-                'carrera_id' => $carrera->carrera_id,
-                'sede_id' => $campusAlajuela->sede_id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            $exists = DB::table('CARRERA_SEDE')
+                ->where('carrera_id', $carrera->carrera_id)
+                ->where('sede_id', $campusAlajuela->sede_id)
+                ->exists();
+
+            if (!$exists) {
+                $carreraSede[] = [
+                    'carrera_id' => $carrera->carrera_id,
+                    'sede_id' => $campusAlajuela->sede_id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        if (empty($carreraSede)) {
+            $this->command->info('ℹ️  Las relaciones carrera-sede ya existen');
+            return;
         }
 
         DB::table('CARRERA_SEDE')->insert($carreraSede);
 
-        $this->command->info("✅ {$carreras->count()} carreras vinculadas al Campus Alajuela");
+        $this->command->info("✅ " . count($carreraSede) . " carreras vinculadas al Campus Alajuela");
     }
 }

@@ -117,7 +117,7 @@ class UserAdminService
 
         if (!$actor->hasRole('Superusuario')) {
             $allowedCareerIds = $actor->careers()
-                ->pluck('CARRERA.carrera_id')
+                ->pluck('CARRERA_SEDE.carrera_sede_id')
                 ->map(fn ($id) => (int) $id)
                 ->values()
                 ->all();
@@ -133,6 +133,6 @@ class UserAdminService
 
         $target->careers()->sync($careerIds);
 
-        return $target->fresh(['roles', 'permissions', 'careers']);
+        return $target->fresh(['roles', 'permissions', 'careers.career']);
     }
 }

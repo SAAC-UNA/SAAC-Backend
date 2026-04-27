@@ -26,6 +26,8 @@ class AccreditationCycleResource extends JsonResource
             'carrera_sede_id'       => $this->carrera_sede_id,
             'modelo_estructura_id'  => $this->modelo_estructura_id,
             'nombre'                => $this->nombre,
+            'fecha_inicio'          => optional($this->fecha_inicio)->format('Y-m-d'),
+            'fecha_fin'             => optional($this->fecha_fin)->format('Y-m-d'),
             'estado'                => $this->estado,
             'created_at'            => optional($this->created_at)->toISOString(),
             'updated_at'            => optional($this->updated_at)->toISOString(),

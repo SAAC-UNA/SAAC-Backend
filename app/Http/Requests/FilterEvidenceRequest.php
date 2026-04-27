@@ -253,7 +253,6 @@ class FilterEvidenceRequest extends FormRequest
             'responsable_id' => 'responsable',
             'fecha_desde' => 'fecha inicial',
             'fecha_hasta' => 'fecha final',
-            'estado_evidencia_id' => 'estado de evidencia',
             'rol_id' => 'rol',
             'sort_by' => 'campo de ordenamiento',
             'sort_order' => 'orden',

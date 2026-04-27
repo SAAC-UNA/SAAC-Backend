@@ -24,7 +24,7 @@ return new class extends Migration
             // Timestamps de creación y actualización
             $table->timestamps();
 
-            // Índices de performance
+            // Índices
             $table->index('universidad_id', 'idx_se_universidad_id');
             $table->index('activo', 'idx_se_activo');
             $table->index('nombre', 'idx_se_nombre');

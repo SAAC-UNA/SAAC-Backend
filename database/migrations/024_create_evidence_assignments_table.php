@@ -14,35 +14,26 @@ return new class extends Migration
         Schema::create('EVIDENCIA_ASIGNACION', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('evidencia_asignacion_id');
-            
             // Relación con proceso (cascade: si se borra el proceso, se borran sus asignaciones)
             $table->foreignId('proceso_id')->constrained('PROCESO', 'proceso_id')->onDelete('cascade');
-            
             // Relación con evidencia (restrict: no borrar evidencia si tiene asignaciones)
             $table->foreignId('evidencia_id')->constrained('EVIDENCIA', 'evidencia_id')->onDelete('restrict');
-            
             // Relación con usuario (restrict: no borrar usuario si tiene asignaciones)
             $table->foreignId('usuario_id')->constrained('USUARIO', 'usuario_id')->onDelete('restrict');
-            
             // Estado de la asignación
             $table->enum('estado', ['Pendiente', 'En Progreso', 'Completado', 'Vencido'])->default('Pendiente');
-            
             // Fecha cuando se realizó la asignación
             $table->datetime('fecha_asignacion');
-            
             // Fecha límite de entrega
             $table->datetime('fecha_limite')->nullable();
-            
             // Comentario de la asignación (varchar de 500)
             $table->string('comentario', 500)->nullable();
-            
             // Timestamps de creación y actualización
             $table->timestamps();
-            
             // Índice único para evitar asignaciones duplicadas del mismo usuario a la misma evidencia en el mismo proceso
             $table->unique(['proceso_id', 'evidencia_id', 'usuario_id'], 'unique_proceso_evidencia_usuario');
-            
-            // Índices de performance para queries frecuentes
+
+            // Índices
             $table->index('usuario_id', 'idx_ea_usuario_id');
             $table->index('estado', 'idx_ea_estado');
             $table->index('fecha_limite', 'idx_ea_fecha_limite');

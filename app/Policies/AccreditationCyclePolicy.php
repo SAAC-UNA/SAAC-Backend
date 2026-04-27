@@ -39,12 +39,13 @@ class AccreditationCyclePolicy
     }
 
     /**
-     * AC-4: Solo se puede editar si el ciclo está activo
-     * AC-5: Requiere permiso ciclos.edit
+     * AC-5: Requiere permiso ciclos.edit.
+     * Regla actual: se permite editar ciclos activos o inactivos;
+     * solo se bloquean ciclos completados.
      */
     public function update(User $user, AccreditationCycle $accreditationCycle): bool
     {
-        if (!$accreditationCycle->isEditable()) {
+        if ($accreditationCycle->isCompleted()) {
             return false;
         }
 

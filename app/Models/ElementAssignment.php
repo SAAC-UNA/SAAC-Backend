@@ -7,10 +7,13 @@ use App\Models\File;
 use App\Models\ExtensionRequest;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class ElementAssignment extends Model
 {
     use HasFactory;
+
+    private static ?bool $archivoHasElementoId = null;
 
     protected $table = 'ELEMENTO_ASIGNACION';
 
@@ -110,9 +113,18 @@ class ElementAssignment extends Model
      */
     public function filesByAssignee()
     {
-        return $this->hasMany(File::class, 'elemento_id', 'elemento_id')
-            ->whereColumn('ARCHIVO.usuario_id', 'ELEMENTO_ASIGNACION.usuario_id')
+        $query = $this->hasMany(File::class, 'usuario_id', 'usuario_id')
             ->whereColumn('ARCHIVO.proceso_id', 'ELEMENTO_ASIGNACION.proceso_id');
+
+        if (self::$archivoHasElementoId === null) {
+            self::$archivoHasElementoId = Schema::hasColumn('ARCHIVO', 'elemento_id');
+        }
+
+        if (self::$archivoHasElementoId) {
+            $query->whereColumn('ARCHIVO.elemento_id', 'ELEMENTO_ASIGNACION.elemento_id');
+        }
+
+        return $query;
     }
 
     /**

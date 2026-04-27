@@ -32,6 +32,7 @@ use App\Http\Controllers\ImprovementCommitmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProcessController;
+use App\Http\Controllers\ReportFileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StandardController;
 use App\Http\Controllers\StructureElementController;
@@ -464,6 +465,29 @@ Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])-
 });
 
 // ============================================
+// Archivos de Informes (separados de evidencia)
+// ============================================
+Route::middleware(['auth:sanctum', 'refresh.session', 'global.filter.context'])->prefix('informes-archivos')->group(function () {
+    Route::get('/', [ReportFileController::class, 'index'])
+        ->middleware('permission:archivos.view');
+    Route::post('/', [ReportFileController::class, 'store'])
+        ->middleware(['throttle:10,1', 'permission:archivos.upload']);
+    Route::get('/{archivoInforme}', [ReportFileController::class, 'show'])
+        ->middleware('permission:archivos.view');
+    Route::delete('/{archivoInforme}', [ReportFileController::class, 'destroy'])
+        ->middleware('permission:archivos.delete');
+    Route::get('/{archivoInforme}/download', [ReportFileController::class, 'download'])
+        ->middleware('permission:archivos.download');
+    Route::post('/{archivoInforme}/make-public', [ReportFileController::class, 'makePublic'])
+        ->middleware('permission:archivos.make_public');
+    Route::post('/{archivoInforme}/revoke-public', [ReportFileController::class, 'revokePublic'])
+        ->middleware('permission:archivos.make_public');
+});
+
+Route::get('/p-informes/{token}', [ReportFileController::class, 'publicAccess'])
+    ->name('public.report-files.access');
+
+// ============================================
 // Informes de Acreditación (HU-028)
 // ============================================
 
@@ -473,6 +497,9 @@ Route::get('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationRepor
 
 // Escritura: requieren autenticación
 Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
+    Route::get('admin/informes-acreditacion', [AccreditationReportController::class, 'indexAdmin'])
+        ->middleware('permission:informes_acreditacion.view');
+
     Route::post('estructura/ciclos-acreditacion/{cycle}/informe', [AccreditationReportController::class, 'publish'])
         ->middleware('permission:informes_acreditacion.publish');
 

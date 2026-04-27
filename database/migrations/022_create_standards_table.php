@@ -18,13 +18,13 @@ return new class extends Migration
             // Relación con criterio (restrict: no borrar criterio si tiene estándares)
             $table->foreignId('criterio_id')->constrained('CRITERIO')->name('criterio_id')->onDelete('restrict');
             // Descripción del estándar
-            $table->string('descripcion', 250)->name('descripcion');
+            $table->string('descripcion', 500);
             // Estado del estándar
             $table->boolean('activo')->default(true)->name('activo');
             // Timestamps de creación y actualización
             $table->timestamps();
-            
-            // Índices de performance
+
+            // Índices
             $table->index('criterio_id', 'idx_es_criterio_id');
             $table->index('activo', 'idx_es_activo');
         });

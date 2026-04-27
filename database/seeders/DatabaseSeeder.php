@@ -19,8 +19,6 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Ejecuta todos los seeders registrados en la aplicación.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -43,11 +41,14 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,               // 7. Comentarios (temporal - relación será refactorizada)
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
-            // Nota: modelo tradicional SINAES 2018 se inserta en la migración 007a (no requiere seeder)
-            TraditionalStructureSeeder::class,  // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias
+            // IMPORTANTE: StructureModelSeeder debe ejecutarse ANTES de AccreditationCycleSeeder
+            StructureModelSeeder::class,         // 8. Modelos de estructura (tradicional y flexible)
+            TraditionalStructureSeeder::class,          // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias COMPLETO
+            FlexibleStructureSeeder::class,             // 20. Estructura flexible SINAES 2026 (Dimensión→Pauta→Fuente)
 
             // === CICLOS Y PROCESOS ===
-            AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de carrera_sede)
+            // IMPORTANTE: Se ejecutan DESPUÉS de StructureModelSeeder para que el modelo flexible exista
+            AccreditationCycleSeeder::class,    // 14. Ciclos de acreditación (dependen de modelo_flexible)
             ProcessSeeder::class,               // 15. Procesos (dependen de ciclos)
             AccreditationReportSeeder::class,   // 16. Informes de acreditación SINAES (HU-027)
             AutoevaluationSeeder::class,        // 17. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
@@ -57,19 +58,15 @@ class DatabaseSeeder extends Seeder
             EvidenceAssignmentTestSeeder::class, // 18. Asignaciones de evidencias (para pruebas de aprobación)
 
             // === APROBACIONES DE CRITERIOS (DATOS DE PRUEBA) ===
+            // IMPORTANTE: Se ejecutan DESPUÉS de ProcessSeeder y AutoevaluationSeeder
             AprobacionCriteriosTestSeeder::class, // 19. Aprobaciones de criterios (para pruebas de endpoints)
 
-            // === MODELO FLEXIBLE (SINAES 2026) ===
-            FlexibleStructureSeeder::class,    // 20. Estructura flexible SINAES 2026 (Dimensión→Pauta→Fuente)
-
             // === APROBACIONES DE ELEMENTOS - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
+            // IMPORTANTE: Se ejecutan DESPUÉS de AccreditationCycleSeeder y ProcessSeeder
             ApprovalElementsTestSeeder::class, // 21. Aprobaciones de elementos (HU-010 modelo flexible)
 
             // === COMPROMISOS DE MEJORA - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
             CommitmentElementsTestSeeder::class, // 21. Compromisos de mejora elementos (HU-010 modelo flexible)
-
-            // === DEMOSTRACIÓN COMPLETA DEL SISTEMA ===
-            FullSystemDemoSeeder::class,         // 22. Datos de demo para TODOS los RF (ambos modelos)
 
             // === AUDITORÍA Y LOGS ===
             ActionTypeSeeder::class,          // 23. Tipos de acción (catálogo de TIPO_ACCION)

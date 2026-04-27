@@ -84,13 +84,13 @@ class TradicionalExtensionRequestService extends AbstractExtensionRequestService
                 )->find($data['evidencia_asignacion_id']);
 
                 if ($asignacionConRelaciones) {
-                    $careerId = $asignacionConRelaciones->process?->accreditationCycle?->careerCampus?->carrera_id ?? null;
+                    $carreraSede = $asignacionConRelaciones->process?->accreditationCycle?->carrera_sede_id ?? null;
 
                     $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))
-                        ->when($careerId, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('carrera_id', $careerId)))
+                        ->when($carreraSede, fn($q) => $q->whereHas('careers', fn($q2) => $q2->where('CARRERA_SEDE.carrera_sede_id', $carreraSede)))
                         ->get();
 
-                    if ($managers->isEmpty() && $careerId) {
+                    if ($managers->isEmpty() && $carreraSede) {
                         $managers = User::whereHas('roles', fn($q) => $q->where('name', 'Encargado de Acreditacion'))->get();
                     }
 
