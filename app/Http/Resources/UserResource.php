@@ -38,6 +38,7 @@ class UserResource extends JsonResource
                 return [
                     'carrera_sede_id' => $careerCampus->carrera_sede_id,
                     'carrera_id'      => $careerCampus->carrera_id,
+                    'sede_id'         => $careerCampus->sede_id,
                     'nombre'          => $careerCampus->career?->nombre,
                 ];
             })->values(),

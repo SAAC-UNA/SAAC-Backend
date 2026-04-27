@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Career extends Model
 {
@@ -26,11 +27,22 @@ class Career extends Model
     public $timestamps = true;
 
     // Campos que se pueden asignar masivamente
-    protected $fillable = ['nombre', 'activo'];
+    protected $fillable = ['nombre', 'activo', 'universidad_id'];
 
-    public function campuses()
+    /**
+     * Relación: Una carrera pertenece a una universidad.
+     */
+    public function university(): BelongsTo
     {
-        return $this->belongsToMany(Campus::class, 'CARRERA_SEDE', 'carrera_id', 'sede_id');
+        return $this->belongsTo(University::class, 'universidad_id', 'universidad_id');
+    }
+
+    /**
+     * Relación: Una carrera tiene muchas entradas carrera-sede (pivot).
+     */
+    public function careerCampuses(): HasMany
+    {
+        return $this->hasMany(CareerCampus::class, 'carrera_id', 'carrera_id');
     }
 
 }

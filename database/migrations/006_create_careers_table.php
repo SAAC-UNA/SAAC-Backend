@@ -15,6 +15,8 @@ return new class extends Migration
         Schema::create('CARRERA', function (Blueprint $table) {
             // Clave primaria BIGINT autoincremental
             $table->id()->name('carrera_id');
+            // Universidad a la que pertenece la carrera
+            $table->unsignedBigInteger('universidad_id')->nullable();
             // Nombre de la carrera
             $table->string('nombre', 250);
             // Estado de la carrera
@@ -22,7 +24,14 @@ return new class extends Migration
             // Timestamps de creación y actualización
             $table->timestamps();
 
+            // Foreign key
+            $table->foreign('universidad_id', 'fk_ca_universidad')
+                ->references('universidad_id')
+                ->on('UNIVERSIDAD')
+                ->onDelete('restrict');
+
             // Índices
+            $table->index('universidad_id', 'idx_ca_universidad');
             $table->index('activo', 'idx_ca_activo');
             $table->index('nombre', 'idx_ca_nombre');
         });

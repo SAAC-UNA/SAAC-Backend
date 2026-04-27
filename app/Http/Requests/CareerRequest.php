@@ -21,15 +21,22 @@ class CareerRequest extends FormRequest
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
                 Rule::unique('CARRERA','nombre')->ignore($this->route('carrera'), 'carrera_id')
             ],
+            'universidad_id' => [
+                'required',
+                'integer',
+                'exists:UNIVERSIDAD,universidad_id',
+            ],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'nombre.required'      => 'El nombre es obligatorio.',
-            'nombre.regex'         => 'El nombre solo puede contener letras y espacios.',
-            'nombre.unique'        => 'Ya existe una carrera con ese nombre.',
+            'nombre.required'         => 'El nombre es obligatorio.',
+            'nombre.regex'            => 'El nombre solo puede contener letras y espacios.',
+            'nombre.unique'           => 'Ya existe una carrera con ese nombre.',
+            'universidad_id.required' => 'Debe seleccionar una universidad.',
+            'universidad_id.exists'   => 'La universidad seleccionada no existe.',
         ];
     }
 

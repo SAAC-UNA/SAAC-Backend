@@ -248,6 +248,8 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 
     // POST, PUT, DELETE - cada uno con su propio permiso
     // Rutas protegidas para crear/editar procesos y ciclos (solo usuarios con permisos específicos)
+    Route::post('estructura/carrera-sede', [CareerCampusController::class, 'store'])
+        ->middleware('permission:ciclos.create');
     Route::post('estructura/ciclos-acreditacion', [AccreditationCycleController::class, 'store'])
         ->middleware('permission:ciclos.create');
     Route::match(['put', 'patch'], 'estructura/ciclos-acreditacion/{id}', [AccreditationCycleController::class, 'update'])

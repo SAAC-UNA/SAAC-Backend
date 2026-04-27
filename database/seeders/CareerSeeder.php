@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Career;
 use App\Models\Campus;
+use App\Models\CareerCampus;
 
 class CareerSeeder extends Seeder
 {
@@ -12,15 +13,15 @@ class CareerSeeder extends Seeder
     {
         $this->command->info('🎓 Creando Carreras...');
 
-        // Obtener la primera sede (Campus Central de la UNA)
+        // Obtener el campus de referencia para crear la entrada CARRERA_SEDE
         $campusCentral = Campus::where('nombre', 'LIKE', '%Alajuela%')->first();
-        
+
         if (!$campusCentral) {
             $this->command->error('❌ No se encontró un campus. Crea sedes primero.');
             return;
         }
 
-        $this->command->info("📍 Asignando carreras a: {$campusCentral->nombre}");
+        $this->command->info("📍 Asignando carreras a: {$campusCentral->university?->nombre} – {$campusCentral->nombre}");
 
         $careerNames = [
             'Ingeniería en Sistemas de Información',
@@ -30,15 +31,22 @@ class CareerSeeder extends Seeder
         ];
 
         foreach ($careerNames as $careerName) {
-            // Crear o encontrar la carrera
+            // Crear o encontrar la carrera (ahora con universidad_id directo)
             $career = Career::firstOrCreate(
                 ['nombre' => $careerName],
-                ['activo' => true]
+                [
+                    'activo'         => true,
+                    'universidad_id' => $campusCentral->universidad_id,
+                ]
             );
 
-            // Asociar con el campus usando syncWithoutDetaching para evitar duplicados
-            $career->campuses()->syncWithoutDetaching([$campusCentral->sede_id]);
-            $this->command->info("✅ {$career->nombre} asociada a {$campusCentral->nombre}");
+            // Crear entrada en CARRERA_SEDE si no existe
+            CareerCampus::firstOrCreate([
+                'carrera_id' => $career->carrera_id,
+                'sede_id'    => $campusCentral->sede_id,
+            ]);
+
+            $this->command->info("✅ {$career->nombre} → {$campusCentral->nombre}");
         }
 
         $this->command->info('🎉 Carreras creadas y asociadas');

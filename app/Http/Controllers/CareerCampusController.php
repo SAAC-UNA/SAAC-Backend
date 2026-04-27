@@ -27,6 +27,8 @@ class CareerCampusController extends Controller
 
         $items = $query->get()->map(fn(CareerCampus $cs) => [
             'carrera_sede_id' => $cs->carrera_sede_id,
+            'carrera_id'      => $cs->carrera_id,
+            'sede_id'         => $cs->sede_id,
             'carrera_nombre'  => $cs->career?->nombre ?? '—',
             'sede_nombre'     => $cs->campus?->nombre ?? '—',
         ]);
@@ -43,11 +45,28 @@ class CareerCampusController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Resolve or create a CARRERA_SEDE entry.
+     *
+     * Receives carrera_id + sede_id, finds an existing pivot entry or creates one,
+     * and returns the carrera_sede_id. This is called before creating an accreditation cycle.
      */
-    public function store(StoreCareerCampusRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'carrera_id' => ['required', 'integer', 'exists:CARRERA,carrera_id'],
+            'sede_id'    => ['required', 'integer', 'exists:SEDE,sede_id'],
+        ]);
+
+        $careerCampus = CareerCampus::firstOrCreate(
+            [
+                'carrera_id' => $validated['carrera_id'],
+                'sede_id'    => $validated['sede_id'],
+            ]
+        );
+
+        return response()->json([
+            'carrera_sede_id' => $careerCampus->carrera_sede_id,
+        ], 200);
     }
 
     /**

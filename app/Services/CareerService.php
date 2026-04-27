@@ -13,33 +13,35 @@ class CareerService
     public function getAll()
     {
         return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () =>
-            Career::with('campuses.university')->orderBy('nombre')->get()
+            Career::with('university')->orderBy('nombre')->get()
         );
     }
 
     public function findById(int $id): ?Career
     {
-        return Career::with('campuses.university')->find($id);
+        return Career::with('university')->find($id);
     }
 
     public function create(array $data): Career
     {
         $career = Career::create([
-            'nombre' => $data['nombre'],
-            'activo' => $data['activo'] ?? true,
+            'nombre'         => $data['nombre'],
+            'activo'         => $data['activo'] ?? true,
+            'universidad_id' => $data['universidad_id'],
         ]);
         Cache::forget(self::CACHE_KEY);
-        return $career->load('campuses.university');
+        return $career->load('university');
     }
 
     public function update(Career $career, array $data): Career
     {
         $career->update([
-            'nombre' => $data['nombre'] ?? $career->nombre,
-            'activo' => $data['activo'] ?? $career->activo,
+            'nombre'         => $data['nombre'] ?? $career->nombre,
+            'activo'         => $data['activo'] ?? $career->activo,
+            'universidad_id' => $data['universidad_id'] ?? $career->universidad_id,
         ]);
         Cache::forget(self::CACHE_KEY);
-        return $career->fresh('campuses.university');
+        return $career->fresh('university');
     }
 
     public function delete(Career $career): void
