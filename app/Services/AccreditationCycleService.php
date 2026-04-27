@@ -60,8 +60,8 @@ class AccreditationCycleService
     public function update(AccreditationCycle $cycle, array $data): AccreditationCycle
     {
         $newModel = $data['modelo_estructura_id'] ?? null;
-        $startDate = $data['fecha_inicio'] ?? optional($cycle->fecha_inicio)->format('Y-m-d');
-        $endDate = $data['fecha_fin'] ?? optional($cycle->fecha_fin)->format('Y-m-d');
+        $startDate = $data['fecha_inicio'] ?? $cycle->fecha_inicio;
+        $endDate = $data['fecha_fin'] ?? $cycle->fecha_fin;
 
         $resolvedName = $cycle->nombre;
         if ($startDate && $endDate) {
@@ -110,8 +110,8 @@ class AccreditationCycleService
 
     private function buildDynamicName(string $startDate, string $endDate): string
     {
-        $startYear = Carbon::parse($startDate)->year;
-        $endYear = Carbon::parse($endDate)->year;
+        $startYear = (int) $startDate;
+        $endYear = (int) $endDate;
 
         if ($startYear === $endYear) {
             return "Ciclo {$startYear}";
@@ -123,8 +123,8 @@ class AccreditationCycleService
     private function resolveStatusByDates(string $startDate, string $endDate): string
     {
         $today = Carbon::today();
-        $start = Carbon::parse($startDate)->startOfDay();
-        $end = Carbon::parse($endDate)->endOfDay();
+        $start = Carbon::createFromDate((int) $startDate, 1, 1)->startOfDay();
+        $end   = Carbon::createFromDate((int) $endDate, 12, 31)->endOfDay();
 
         if ($today->lt($start)) {
             return AccreditationCycle::STATUS_INACTIVE;

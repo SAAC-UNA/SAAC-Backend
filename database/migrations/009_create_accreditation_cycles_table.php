@@ -17,8 +17,8 @@ return new class extends Migration
             // Nombre del ciclo de acreditación
             $table->string('nombre', 50);
             // Rango de fechas del ciclo
-            $table->date('fecha_inicio')->nullable();
-            $table->date('fecha_fin')->nullable();
+            $table->string('fecha_inicio', 4)->nullable();
+            $table->string('fecha_fin', 4)->nullable();
             // Estado del ciclo de acreditación (activo/inactivo)
             $table->enum('estado', ['activo', 'inactivo', 'completado'])->default('activo');
             // Relación con modelo_estructura

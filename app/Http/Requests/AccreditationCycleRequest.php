@@ -49,13 +49,15 @@ class AccreditationCycleRequest extends FormRequest
 
             'fecha_inicio' => [
                 $isPost ? 'required' : 'sometimes',
-                'date',
+                'string',
+                'digits:4',
             ],
 
             'fecha_fin' => [
                 $isPost ? 'required' : 'sometimes',
-                'date',
-                'after_or_equal:fecha_inicio',
+                'string',
+                'digits:4',
+                'gte:fecha_inicio',
             ],
 
             // Obligatorio en creación; debe existir en MODELO_ESTRUCTURA

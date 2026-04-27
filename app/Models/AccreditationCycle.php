@@ -43,10 +43,7 @@ class AccreditationCycle extends BaseCareer
         'estado',
     ];
 
-    protected $casts = [
-        'fecha_inicio' => 'date:Y-m-d',
-        'fecha_fin' => 'date:Y-m-d',
-    ];
+    protected $casts = [];
 
     // --- Helpers de dominio: verifican el estado del ciclo ---
 
