@@ -51,9 +51,9 @@ class AccreditationReportFeatureTest extends TestCase
 
         // Asociar encargado y profesor con la carrera del ciclo para que el
         // global scope BaseCareer (byCareerCampus) no filtre el ciclo fuera.
-        $carreraId = $this->process->accreditationCycle->careerCampus->carrera_id;
-        $this->encargado->careers()->attach($carreraId);
-        $this->profesor->careers()->attach($carreraId);
+        $careerCampusId = $this->process->accreditationCycle->careerCampus->carrera_sede_id;
+        $this->encargado->careers()->attach($careerCampusId);
+        $this->profesor->careers()->attach($careerCampusId);
     }
 
     // ─── Helper ──────────────────────────────────────────────────────────────

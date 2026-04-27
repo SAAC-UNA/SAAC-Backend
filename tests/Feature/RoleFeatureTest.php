@@ -5,17 +5,52 @@ use App\Models\User;
 use App\Models\AuditLog;
 use Laravel\Sanctum\Sanctum;
 
+function roleTestRetryTransientDb(callable $callback, int $attempts = 3)
+{
+    $lastException = null;
+
+    for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+        try {
+            return $callback();
+        } catch (\Illuminate\Database\QueryException $exception) {
+            $message = strtolower($exception->getMessage());
+            $isTransient = str_contains($message, 'deadlock found')
+                || str_contains($message, 'table definition has changed');
+
+            if (!$isTransient || $attempt === $attempts) {
+                throw $exception;
+            }
+
+            $lastException = $exception;
+        }
+    }
+
+    if ($lastException) {
+        throw $lastException;
+    }
+
+    return null;
+}
+
+function roleTestUserWithRole(string $roleName): User
+{
+    return roleTestRetryTransientDb(function () use ($roleName) {
+        $user = User::factory()->create();
+        $user->assignRole(Role::where('name', $roleName)->first());
+
+        return $user;
+    });
+}
+
 beforeEach(function () {
-    $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+    roleTestRetryTransientDb(fn() => $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class));
 });
 it('unauthenticated_users_cannot_access_roles', function () {
         $response = $this->getJson('/api/roles');
         $response->assertStatus(401);
 });
 it('non_admin_users_cannot_access_roles', function () {
-        $user = User::factory()->create();
-        $profesorRole = Role::where('name', 'Profesor')->first();
-        $user->assignRole($profesorRole);
+    $user = roleTestUserWithRole('Profesor');
         
         Sanctum::actingAs($user);
 
@@ -23,9 +58,7 @@ it('non_admin_users_cannot_access_roles', function () {
         $response->assertStatus(403);
 });
 it('superusuario_can_list_roles', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -34,7 +67,7 @@ it('superusuario_can_list_roles', function () {
                  ->assertJsonStructure(['data']);
 });
 it('administrador_can_list_roles', function () {
-        $user = User::factory()->create();
+    $user = roleTestRetryTransientDb(fn() => User::factory()->create());
         $adminRole = Role::where('name', 'Administrador')->first();
         
         // Asegurar que el permiso existe
@@ -54,9 +87,7 @@ it('administrador_can_list_roles', function () {
                  ->assertJsonStructure(['data']);
 });
 it('superusuario_can_create_role_and_logs_to_audit', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -82,9 +113,7 @@ it('superusuario_can_create_role_and_logs_to_audit', function () {
         // Nota: Bitácora se prueba por separado en pruebas de integración
 });
 it('superusuario_can_update_role_and_logs_changes', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -113,9 +142,7 @@ it('superusuario_can_update_role_and_logs_changes', function () {
         // Nota: Bitácora se prueba por separado
 });
 it('superusuario_can_delete_role_and_logs_deletion', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -133,9 +160,7 @@ it('superusuario_can_delete_role_and_logs_deletion', function () {
         // Nota: Bitácora se prueba por separado
 });
 it('it_validates_required_name_field', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -147,9 +172,7 @@ it('it_validates_required_name_field', function () {
                  ->assertJsonValidationErrors(['name']);
 });
 it('it_prevents_duplicate_role_names', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -163,9 +186,7 @@ it('it_prevents_duplicate_role_names', function () {
         $response->assertStatus(422);
 });
 it('it_can_show_specific_role', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 
@@ -182,9 +203,7 @@ it('it_can_show_specific_role', function () {
                  ]);
 });
 it('it_returns_404_for_nonexistent_role', function () {
-        $user = User::factory()->create();
-        $superRole = Role::where('name', 'Superusuario')->first();
-        $user->assignRole($superRole);
+    $user = roleTestUserWithRole('Superusuario');
         
         Sanctum::actingAs($user);
 

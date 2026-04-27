@@ -61,7 +61,7 @@ it('admin_carrera_only_sees_processes_of_his_own_career_campus', function () {
         $adminInge->assignRole('Administrador');
 
         // Asociar carrera Ingeniería al usuario
-        $adminInge->careers()->attach($careerIng->carrera_id);
+        $adminInge->careers()->attach($careerCampusIng->carrera_sede_id);
 
         // Autenticación
         Sanctum::actingAs($adminInge, ['api'], 'sanctum');

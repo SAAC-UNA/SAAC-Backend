@@ -262,9 +262,9 @@ it('no_puede_crear_solicitud_duplicada_pendiente', function () {
 });
 
 /**
- * Test: Endpoint de cancelar responde error y conserva estado pendiente.
+ * Test: Endpoint de cancelar responde éxito y cambia estado a cancelada.
  */
-it('cancelar_solicitud_pendiente_retorna_error_y_no_cambia_estado', function () {
+it('cancelar_solicitud_pendiente_retorna_exito_y_cambia_estado', function () {
         $solicitud = ExtensionRequest::factory()->pendiente()->create([
             'usuario_id' => $this->profesor->usuario_id,
         ]);
@@ -272,11 +272,12 @@ it('cancelar_solicitud_pendiente_retorna_error_y_no_cambia_estado', function () 
         $response = $this->actingAs($this->profesor, 'sanctum')
             ->patchJson("/api/solicitudes-ampliacion-tiempo/{$solicitud->solicitud_ampliacion_id}/cancelar");
 
-        $response->assertStatus(500);
+        $response->assertStatus(200)
+            ->assertJsonPath('message', 'Solicitud cancelada exitosamente.');
 
         $this->assertDatabaseHas('SOLICITUD_AMPLIACION', [
             'solicitud_ampliacion_id' => $solicitud->solicitud_ampliacion_id,
-            'estado' => 'pendiente',
+            'estado' => 'cancelada',
         ]);
 });
 

@@ -169,23 +169,38 @@ class ElementApprovalTest extends TestCase
 
     public function test_rejectElemento_lanza_excepcion_si_ya_fue_rechazado(): void
     {
-        $this->expectException(QueryException::class);
+        // Primer rechazo
+        $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
+
+        // Segundo rechazo sobre el mismo elemento debe fallar por validación de negocio
+        $this->expectException(\InvalidArgumentException::class);
 
         $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
     }
 
     // ─── rejectElemento — flujo feliz ─────────────────────────────────────────
 
-    public function test_rejectElemento_falla_por_columna_nueva_fecha_limite_inexistente(): void
+    public function test_rejectElemento_con_fecha_limite_guarda_rechazo_correctamente(): void
     {
-        $this->expectException(QueryException::class);
+        $fechaLimite = now()->addDays(10)->toDateString();
 
-        $this->service->rejectElemento(
+        $result = $this->service->rejectElemento(
             $this->elemento->elemento_id,
             $this->proceso->proceso_id,
             'Falta documentación',
-            now()->addDays(10)->toDateString()
+            $fechaLimite
         );
+
+        $this->assertArrayHasKey('raiz', $result);
+        $this->assertEquals('rechazado', $result['raiz']->estado);
+        $this->assertEquals('Falta documentación', $result['raiz']->comentario);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $this->elemento->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'rechazado',
+            'comentario'  => 'Falta documentación',
+        ]);
     }
 
     // ─── recalculateParentState ───────────────────────────────────────────────
@@ -386,7 +401,7 @@ class ElementApprovalTest extends TestCase
         ]);
     }
 
-    public function test_rejectIndividualChild_falla_por_columna_nueva_fecha_limite_inexistente(): void
+    public function test_rejectIndividualChild_rechaza_hijo_con_fecha_limite(): void
     {
         $hijo = StructureElement::factory()->create([
             'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
@@ -394,14 +409,23 @@ class ElementApprovalTest extends TestCase
             'activo'               => true,
         ]);
 
-        $this->expectException(QueryException::class);
-
-        $this->service->rejectIndividualChild(
+        $result = $this->service->rejectIndividualChild(
             $this->elemento->elemento_id,
             $hijo->elemento_id,
             $this->proceso->proceso_id,
             'Correccion requerida',
             now()->addDays(7)->toDateString()
         );
+
+        $this->assertArrayHasKey('padre_approval', $result);
+        $this->assertArrayHasKey('hijo_approval', $result);
+        $this->assertEquals('rechazado', $result['hijo_approval']->estado);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $hijo->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'rechazado',
+            'comentario'  => 'Correccion requerida',
+        ]);
     }
 }

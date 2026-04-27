@@ -192,23 +192,24 @@ class ElementApprovalFeatureTest extends TestCase
 
     // ─── Flujo feliz: rechazar ────────────────────────────────────────────────
 
-    public function test_superusuario_rechaza_elemento_y_retorna_500(): void
+        public function test_superusuario_rechaza_elemento_y_retorna_201(): void
     {
         Sanctum::actingAs($this->superusuario);
 
         $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(500);
+               ->assertStatus(201)
+               ->assertJsonPath('success', true);
     }
 
-    public function test_rechazar_dos_veces_retorna_500(): void
+        public function test_rechazar_dos_veces_retorna_422(): void
     {
         Sanctum::actingAs($this->superusuario);
 
         $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(500);
+               ->assertStatus(201);
 
         $this->postJson("/api/elementos/{$this->elemento->elemento_id}/rechazar", $this->aprobarPayload())
-             ->assertStatus(500);
+               ->assertStatus(422);
     }
 
     // ─── Listado y detalle ────────────────────────────────────────────────────
@@ -322,7 +323,7 @@ class ElementApprovalFeatureTest extends TestCase
         ]);
     }
 
-    public function test_rechazar_hijo_individual_retorna_500_por_columna_inexistente(): void
+    public function test_rechazar_hijo_individual_retorna_201(): void
     {
         Sanctum::actingAs($this->superusuario);
 
@@ -340,6 +341,7 @@ class ElementApprovalFeatureTest extends TestCase
                 'nueva_fecha_limite' => now()->addDays(10)->toDateString(),
             ]
         )
-            ->assertStatus(500);
+            ->assertStatus(201)
+            ->assertJsonPath('success', true);
     }
 }

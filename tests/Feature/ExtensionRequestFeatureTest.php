@@ -82,9 +82,9 @@ beforeEach(function () {
     ]);
 
     // Asignar encargado a la carrera
-    $this->encargado->careers()->attach($carrera->carrera_id);
+    $this->encargado->careers()->attach($careerCampus->carrera_sede_id);
     // Necesario para el scope BaseCareer en relaciones de proceso
-    $this->docente->careers()->attach($carrera->carrera_id);
+    $this->docente->careers()->attach($careerCampus->carrera_sede_id);
 });
 
 /* ========== PRUEBAS DE LISTADO ========== */
