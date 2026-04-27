@@ -20,7 +20,6 @@ class ElementApprovalFactory extends Factory
             'usuario_id'        => User::factory(),
             'estado'            => 'aprobado',
             'comentario'        => $this->faker->optional()->sentence(),
-            'nueva_fecha_limite'=> null,
         ];
     }
 
@@ -28,7 +27,6 @@ class ElementApprovalFactory extends Factory
     {
         return $this->state(fn () => [
             'estado'            => 'rechazado',
-            'nueva_fecha_limite'=> now()->addDays(30)->toDateString(),
         ]);
     }
 

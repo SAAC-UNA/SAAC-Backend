@@ -20,6 +20,33 @@ class RetroalimentacionFeatureTest extends TestCase
     private string $baseEndpoint = '/api/estructura/evidencias';
     private User $encargado;
 
+    private function retryTransientDb(callable $callback, int $attempts = 3)
+    {
+        $lastException = null;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                return $callback();
+            } catch (\Illuminate\Database\QueryException $exception) {
+                $message = strtolower($exception->getMessage());
+                $isTransient = str_contains($message, 'table definition has changed')
+                    || str_contains($message, 'deadlock found');
+
+                if (!$isTransient || $attempt === $attempts) {
+                    throw $exception;
+                }
+
+                $lastException = $exception;
+            }
+        }
+
+        if ($lastException) {
+            throw $lastException;
+        }
+
+        return null;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -215,9 +242,11 @@ class RetroalimentacionFeatureTest extends TestCase
 
         $evidence = $this->crearEvidenciaRevisable('Vencido');
 
-        $this->postJson("{$this->baseEndpoint}/{$evidence->getKey()}/retroalimentacion", [
+        $response = $this->retryTransientDb(fn() => $this->postJson("{$this->baseEndpoint}/{$evidence->getKey()}/retroalimentacion", [
             'estado'     => 'Observada',
             'comentario' => 'Evidencia vencida con observaciones.',
-        ])->assertStatus(200);
+        ]));
+
+        $response->assertStatus(200);
     }
 }

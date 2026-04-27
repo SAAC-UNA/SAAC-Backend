@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\AccreditationReport;
+use App\Models\Process;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,6 +66,6 @@ class AccreditationReportTest extends TestCase
     {
         $report = AccreditationReport::factory()->create();
 
-        $this->assertInstanceOf(SelfEvaluationProcess::class, $report->process);
+        $this->assertInstanceOf(Process::class, $report->process);
     }
 }

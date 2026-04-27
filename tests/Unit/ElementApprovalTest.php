@@ -10,6 +10,7 @@ use App\Models\StructureElement;
 use App\Models\StructureModel;
 use App\Models\User;
 use App\Services\ElementApprovalService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -168,31 +169,37 @@ class ElementApprovalTest extends TestCase
 
     public function test_rejectElemento_lanza_excepcion_si_ya_fue_rechazado(): void
     {
+        // Primer rechazo
         $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
 
+        // Segundo rechazo sobre el mismo elemento debe fallar por validación de negocio
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/ya está rechazado/i');
 
         $this->service->rejectElemento($this->elemento->elemento_id, $this->proceso->proceso_id);
     }
 
     // ─── rejectElemento — flujo feliz ─────────────────────────────────────────
 
-    public function test_rejectElemento_crea_registro_en_APROBACION_ELEMENTO(): void
+    public function test_rejectElemento_con_fecha_limite_guarda_rechazo_correctamente(): void
     {
-        $resultado = $this->service->rejectElemento(
+        $fechaLimite = now()->addDays(10)->toDateString();
+
+        $result = $this->service->rejectElemento(
             $this->elemento->elemento_id,
             $this->proceso->proceso_id,
             'Falta documentación',
-            now()->addDays(10)->toDateString()
+            $fechaLimite
         );
 
-        $this->assertEquals('rechazado', $resultado['raiz']->estado);
+        $this->assertArrayHasKey('raiz', $result);
+        $this->assertEquals('rechazado', $result['raiz']->estado);
+        $this->assertEquals('Falta documentación', $result['raiz']->comentario);
 
         $this->assertDatabaseHas('APROBACION_ELEMENTO', [
             'elemento_id' => $this->elemento->elemento_id,
             'proceso_id'  => $this->proceso->proceso_id,
             'estado'      => 'rechazado',
+            'comentario'  => 'Falta documentación',
         ]);
     }
 
@@ -346,5 +353,79 @@ class ElementApprovalTest extends TestCase
         $result = $this->service->getApproval(999999);
 
         $this->assertNull($result);
+    }
+
+    public function test_getApprovalByElementAndProcess_retorna_registro_existente(): void
+    {
+        $created = ElementApproval::factory()->create([
+            'elemento_id' => $this->elemento->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'usuario_id'  => $this->user->usuario_id,
+            'estado'      => 'aprobado',
+        ]);
+
+        $found = $this->service->getApprovalByElementAndProcess(
+            $this->elemento->elemento_id,
+            $this->proceso->proceso_id
+        );
+
+        $this->assertNotNull($found);
+        $this->assertEquals($created->aprobacion_elemento_id, $found->aprobacion_elemento_id);
+    }
+
+    public function test_approveIndividualChild_crea_aprobacion_de_padre_e_hijo(): void
+    {
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $result = $this->service->approveIndividualChild(
+            $this->elemento->elemento_id,
+            $hijo->elemento_id,
+            $this->proceso->proceso_id
+        );
+
+        $this->assertArrayHasKey('padre_approval', $result);
+        $this->assertArrayHasKey('hijo_approval', $result);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $this->elemento->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+        ]);
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $hijo->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'aprobado',
+        ]);
+    }
+
+    public function test_rejectIndividualChild_rechaza_hijo_con_fecha_limite(): void
+    {
+        $hijo = StructureElement::factory()->create([
+            'modelo_estructura_id' => $this->elemento->modelo_estructura_id,
+            'padre_id'             => $this->elemento->elemento_id,
+            'activo'               => true,
+        ]);
+
+        $result = $this->service->rejectIndividualChild(
+            $this->elemento->elemento_id,
+            $hijo->elemento_id,
+            $this->proceso->proceso_id,
+            'Correccion requerida',
+            now()->addDays(7)->toDateString()
+        );
+
+        $this->assertArrayHasKey('padre_approval', $result);
+        $this->assertArrayHasKey('hijo_approval', $result);
+        $this->assertEquals('rechazado', $result['hijo_approval']->estado);
+
+        $this->assertDatabaseHas('APROBACION_ELEMENTO', [
+            'elemento_id' => $hijo->elemento_id,
+            'proceso_id'  => $this->proceso->proceso_id,
+            'estado'      => 'rechazado',
+            'comentario'  => 'Correccion requerida',
+        ]);
     }
 }

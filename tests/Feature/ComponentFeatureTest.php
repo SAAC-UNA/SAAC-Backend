@@ -3,11 +3,36 @@
 use App\Models\Component;
 use App\Models\Dimension;
 use App\Models\User;
+use App\Models\Role;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
     $this->baseEndpoint = '/api/estructura/componentes';
+
+    $permissions = [
+        'componentes.view',
+        'componentes.create',
+        'componentes.edit',
+        'componentes.update',
+        'componentes.delete',
+    ];
+
+    foreach ($permissions as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'api',
+        ]);
+    }
+
+    $adminRole = Role::firstOrCreate([
+        'name' => 'Administrador',
+        'guard_name' => 'api',
+    ]);
+    $adminRole->syncPermissions($permissions);
+
     $this->user = User::factory()->create();
+    $this->user->assignRole($adminRole);
     Sanctum::actingAs($this->user);
 });
 

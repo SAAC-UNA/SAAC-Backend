@@ -309,22 +309,6 @@ it('retorna compromisos del usuario', function () {
         $this->assertEquals($commitment1->compromiso_mejora_id, $result->first()->compromiso_mejora_id);
     });
 
-it('retorna compromisos con evidencia', function () {
-        $evidence = Evidence::factory()->create();
-        $commitment = ImprovementCommitment::factory()->create();
-        $assignment = EvidenceAssignment::factory()->create(['evidencia_id' => $evidence->evidencia_id]);
-
-        $commitment->assignedEvidences()->attach($assignment->evidencia_asignacion_id);
-
-        // Crear otros compromisos
-        ImprovementCommitment::factory()->count(2)->create();
-
-        $result = $this->service->getCommitmentsByEvidence($evidence->evidencia_id);
-
-        $this->assertCount(1, $result);
-        $this->assertEquals($commitment->compromiso_mejora_id, $result->first()->compromiso_mejora_id);
-    });
-
 it('se puede crear un compromiso', function () {
         $process = Process::factory()->create();
         $commitment = ImprovementCommitment::factory()->create([

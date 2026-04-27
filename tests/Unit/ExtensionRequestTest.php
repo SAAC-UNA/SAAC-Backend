@@ -31,6 +31,7 @@ it('has fillable attributes', function () {
     $solicitud = new ExtensionRequest();
     $fillable = [
         'evidencia_asignacion_id',
+        'elemento_asignacion_id',
         'usuario_id',
         'motivo',
         'fecha_sugerida',

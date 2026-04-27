@@ -17,7 +17,8 @@ class ActionTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'descripcion' => $this->faker->sentence(3),
+            // Column TIPO_ACCION.descripcion is VARCHAR(50).
+            'descripcion' => substr($this->faker->sentence(3, false), 0, 50),
         ];
     }
 }

@@ -47,7 +47,7 @@ it('filters processes by user role and career campus', function () {
     // Crear usuario con rol Administrador (Ingeniería)
     $adminInge = User::factory()->create();
     $adminInge->assignRole('Administrador');
-    $adminInge->careers()->attach($careerIng->carrera_id);
+    $adminInge->careers()->attach($careerCampusIng->carrera_sede_id);
 
     // Aplicar el filtro por carrera_sede_id
     $filtered = Process::whereHas('accreditationCycle.careerCampus', function ($q) use ($adminInge) {
