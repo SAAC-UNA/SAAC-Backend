@@ -84,9 +84,13 @@ class StructureElementRequest extends FormRequest
             'tipo' => $isUpdate
                 ? ['sometimes', 'required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/u']
                 : ['required', 'string', 'max:30', 'regex:/^[A-Za-z\xC0-\xFF0-9 ]+$/u'],
-            'nombre'       => ['nullable', 'string', 'max:100'],
+            'nombre'       => $isUpdate
+                ? ['sometimes', 'required', 'string', 'max:100']
+                : ['required', 'string', 'max:100'],
             'categoria'    => 'nullable|in:A,B,C,D',
-            'nomenclatura' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
+            'nomenclatura' => $isUpdate
+                ? ['sometimes', 'required', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/']
+                : ['required', 'string', 'max:20', 'regex:/^[A-Za-z0-9.\-_]+$/'],
             'descripcion'  => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
             'activo'       => 'boolean',
 
@@ -125,7 +129,10 @@ class StructureElementRequest extends FormRequest
             'tipo.required'                 => 'El tipo es obligatorio.',
             'tipo.max'                      => 'El tipo no puede exceder 30 caracteres.',
             'tipo.regex'                    => 'El tipo solo puede contener letras, números y espacios (ej: area, subarea, pauta, nivel1).',
+            'nombre.required'               => 'El nombre es obligatorio.',
+            'nombre.max'                    => 'El nombre no puede exceder 100 caracteres.',
             'categoria.in'                  => 'La categoría debe ser A, B, C o D.',
+            'nomenclatura.required'         => 'La nomenclatura es obligatoria.',
             'nomenclatura.max'              => 'La nomenclatura no puede exceder 20 caracteres.',
             'nomenclatura.regex'            => 'La nomenclatura solo puede contener letras, números, puntos, guiones y guiones bajos (ej: AG-01, F1.1).',
             'descripcion.max'               => 'La descripción no puede exceder 500 caracteres.',

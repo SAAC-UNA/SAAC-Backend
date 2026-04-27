@@ -19,11 +19,11 @@ return new class extends Migration
             // Tipo de elemento (ej. 'facultad', 'carrera', 'sede', 'pauta', etc.)
             $table->string('tipo', 30);
             // Campos comunes para cualquier tipo de elemento
-            $table->string('nombre', 100)->nullable();
+            $table->string('nombre', 100);
             // Categoria de relevancia, solo aplicable para elementos de tipo 'pauta'
             $table->enum('categoria', ['A', 'B', 'C', 'D'])->nullable()->comment('Categoria de relevancia. Solo aplica para tipo=pauta');
             // Nomenclatura específica, puede ser código o sigla dependiendo del tipo de elemento
-            $table->string('nomenclatura', 20)->nullable();
+            $table->string('nomenclatura', 20);
             // Descripción general del elemento, útil para cualquier tipo
             $table->text('descripcion')->nullable();
             // Estado de actividad del elemento

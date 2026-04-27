@@ -23,6 +23,7 @@ class StructureElementFactory extends Factory
             'modelo_estructura_id' => \App\Models\StructureModel::factory(),
             'padre_id'             => null,
             'tipo'                 => $this->faker->randomElement(['criterio', 'componente', 'estandar']),
+            'nombre'               => $this->faker->sentence(3),
             'categoria'            => $this->faker->randomElement(['A', 'B', 'C', null]),
             'nomenclatura'         => strtoupper($this->faker->lexify('??-###')),
             'descripcion'          => $this->faker->sentence(6),
