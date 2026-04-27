@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('version', 20)->nullable();
             // Estado del modelo
             $table->boolean('activo')->default(true);
+            $table->json('tipos_requieren_archivo')->nullable();
             // Jerarquía de tipos de nodo (JSON) - migraciones post-creación
             $table->json('tipos_asignables')->nullable()->comment('Tipos de nodo ELEMENTO que pueden recibir asignaciones y archivos en este modelo.');
             // Jerarquía de tipos de nodo (JSON) - migraciones post-creación

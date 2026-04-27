@@ -41,6 +41,8 @@ class FilterElementService
         $responsableId      = $filters['responsable_id']       ?? null;
         $elementoRaizId     = $filters['elemento_raiz_id']     ?? null;
         $busqueda           = $filters['busqueda']             ?? null;
+        $requiresFile       = $filters['requiere_archivo']     ?? null;
+        $missingFile        = $filters['falta_archivo']        ?? null;
 
         $sortBy    = $filters['sort_by'] ?? 'elemento_id';
         $sortOrder = in_array(strtolower($filters['sort_order'] ?? ''), ['asc', 'desc'])
@@ -126,6 +128,20 @@ class FilterElementService
                 'MATCH(nomenclatura, descripcion) AGAINST (? IN BOOLEAN MODE)',
                 [$busqueda . '*']
             );
+        }
+
+        // Filter: Elements that CAN have files (based on model configuration)
+        if ($requiresFile && $requiresFile === true) {
+            $query->whereHas('modeloEstructura', function ($subQuery) {
+                $subQuery->whereRaw("JSON_CONTAINS(tipos_requieren_archivo, JSON_QUOTE(ELEMENTO.tipo))");
+            });
+        }
+
+        // Filter: Elements that require files but don't have any uploaded
+        if ($missingFile && $missingFile === true) {
+            $query->whereHas('modeloEstructura', function ($subQuery) {
+                $subQuery->whereRaw("JSON_CONTAINS(tipos_requieren_archivo, JSON_QUOTE(ELEMENTO.tipo))");
+            })->whereDoesntHave('files');
         }
 
         $paginator = $query->orderBy($sortColumn, $sortOrder)->paginate($perPage, ['*'], 'page', $page);

@@ -154,11 +154,13 @@ class FlexibleFileService extends AbstractFileService
             throw new \InvalidArgumentException("El elemento {$elementoId} no existe.");
         }
 
-        $tiposAsignables = optional($elemento->modeloEstructura)->tipos_asignables;
-        if (!empty($tiposAsignables) && !in_array($elemento->tipo, $tiposAsignables)) {
+        $tiposPermitidos = optional($elemento->modeloEstructura)->tipos_requieren_archivo ?? [];
+        
+        // Si hay configuración de tipos permitidos y este tipo NO está en la lista, bloquear
+        if (!empty($tiposPermitidos) && !in_array($elemento->tipo, $tiposPermitidos)) {
             throw new \InvalidArgumentException(
-                "El elemento de tipo '{$elemento->tipo}' no acepta archivos en este modelo. " .
-                'Tipos permitidos: ' . implode(', ', $tiposAsignables) . '.'
+                "El elemento de tipo '{$elemento->tipo}' no puede tener archivos en este modelo. " .
+                'Tipos permitidos: ' . implode(', ', $tiposPermitidos) . '.'
             );
         }
     }

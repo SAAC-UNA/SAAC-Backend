@@ -37,10 +37,12 @@ class StructureModelRequest extends FormRequest
                 'descripcion' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z\xC0-\xFF0-9 .,\-:;()]+$/u'],
                 'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z\xC0-\xFF0-9.\-]+$/u'],
                 'tipos_jerarquia' => ['nullable', 'array'],
-                'tipos_jerarquia.*.tipo'       => ['required_with:tipos_jerarquia', 'string', 'max:50'],
-                'tipos_jerarquia.*.padre_tipo' => ['nullable', 'string', 'max:50'],
-                'tipos_asignables'    => ['nullable', 'array'],
-                'tipos_asignables.*'  => ['string', 'max:50'],
+                'tipos_jerarquia.*.tipo'       => ['required_with:tipos_jerarquia', 'string', 'max:30'],
+                'tipos_jerarquia.*.padre_tipo' => ['nullable', 'string', 'max:30'],
+                'tipos_asignables'           => ['nullable', 'array'],
+                'tipos_asignables.*'         => ['string', 'max:30'],
+                'tipos_requieren_archivo'    => ['nullable', 'array'],
+                'tipos_requieren_archivo.*'  => ['string', 'max:30'],
             ];
         }
 
@@ -52,10 +54,12 @@ class StructureModelRequest extends FormRequest
             'version'     => ['nullable', 'string', 'max:20',  'regex:/^[A-Za-z\xC0-\xFF0-9.\-]+$/u'],
             'activo'      => 'boolean',
             'tipos_jerarquia' => ['nullable', 'array'],
-            'tipos_jerarquia.*.tipo'       => ['required_with:tipos_jerarquia', 'string', 'max:50'],
-            'tipos_jerarquia.*.padre_tipo' => ['nullable', 'string', 'max:50'],
-            'tipos_asignables'    => ['nullable', 'array'],
-            'tipos_asignables.*'  => ['string', 'max:50'],
+            'tipos_jerarquia.*.tipo'       => ['required_with:tipos_jerarquia', 'string', 'max:30'],
+            'tipos_jerarquia.*.padre_tipo' => ['nullable', 'string', 'max:30'],
+            'tipos_asignables'           => ['nullable', 'array'],
+            'tipos_asignables.*'         => ['string', 'max:30'],
+            'tipos_requieren_archivo'    => ['nullable', 'array'],
+            'tipos_requieren_archivo.*'  => ['string', 'max:30'],
         ];
     }
 
