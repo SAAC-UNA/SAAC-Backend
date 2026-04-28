@@ -18,11 +18,11 @@ class EvidenceAssignmentTestSeeder extends Seeder
             return;
         }
 
-        echo "📝 Insertando datos de prueba para aprobación de criterios...\n";
+        echo "📝 Insertando datos de prueba para asignaciones de evidencias...\n";
 
-        // Obtener el primer usuario disponible dinámicamente
-        $primeroUsuarioId = DB::table('USUARIO')->value('usuario_id');
-        if (!$primeroUsuarioId) {
+        // Obtener todos los usuarios dinámicamente
+        $usuarios = DB::table('USUARIO')->pluck('usuario_id');
+        if ($usuarios->isEmpty()) {
             $this->command->warn('⚠️  EvidenceAssignmentTestSeeder omitido: no hay usuarios en BD.');
             return;
         }
@@ -41,72 +41,55 @@ class EvidenceAssignmentTestSeeder extends Seeder
 
         echo "✅ Encontradas {$evidenciasCriterio1->count()} evidencias para Criterio 1\n";
 
-        // Insertar asignaciones COMPLETADAS para todas las evidencias del Criterio 1
-        foreach ($evidenciasCriterio1 as $evidenciaId) {
-            DB::table('EVIDENCIA_ASIGNACION')->insert([
-                'proceso_id' => 1,
-                'evidencia_id' => $evidenciaId,
-                'usuario_id' => $primeroUsuarioId,
-                'estado' => 'completado',
-                'fecha_asignacion' => now(),
-                'fecha_limite' => now()->addDays(30),
-                'comentario' => 'Evidencia completada para pruebas',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        echo "✅ Asignaciones completadas insertadas para Criterio 1\n";
-
         // Obtener evidencias del Criterio 2
         $evidenciasCriterio2 = DB::table('EVIDENCIA')
             ->where('criterio_id', 2)
             ->where('activo', 1)
             ->limit(4)
-            ->get();
+            ->pluck('evidencia_id');
 
         echo "✅ Encontradas {$evidenciasCriterio2->count()} evidencias para Criterio 2\n";
 
-        // Insertar asignaciones MIXTAS para el Criterio 2 (algunas completadas, otras pendientes)
-        foreach ($evidenciasCriterio2 as $index => $evidencia) {
-            $estado = ($index % 2 == 0) ? 'completado' : 'pendiente';
-            
-            DB::table('EVIDENCIA_ASIGNACION')->insert([
-                'proceso_id' => 2,
-                'evidencia_id' => $evidencia->evidencia_id,
-                'usuario_id' => $primeroUsuarioId,
-                'estado' => $estado,
-                'fecha_asignacion' => now(),
-                'fecha_limite' => now()->addDays(30),
-                'comentario' => 'Evidencia de prueba mixta',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Insertar asignaciones para TODOS los usuarios
+        foreach ($usuarios as $usuarioId) {
+            // Proceso 1 – asignaciones Completadas (para pruebas de aprobación de criterios)
+            foreach ($evidenciasCriterio1 as $evidenciaId) {
+                DB::table('EVIDENCIA_ASIGNACION')->insert([
+                    'proceso_id'      => 1,
+                    'evidencia_id'    => $evidenciaId,
+                    'usuario_id'      => $usuarioId,
+                    'estado'          => 'Completado',
+                    'fecha_asignacion' => now(),
+                    'fecha_limite'    => now()->addDays(30),
+                    'comentario'      => 'Evidencia completada para pruebas',
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]);
+            }
+
+            // Proceso 2 – asignaciones mixtas (Pendiente / En Progreso para flujos de trabajo)
+            foreach ($evidenciasCriterio2 as $index => $evidenciaId) {
+                $estado = ($index % 2 === 0) ? 'Pendiente' : 'En Progreso';
+
+                DB::table('EVIDENCIA_ASIGNACION')->insert([
+                    'proceso_id'      => 2,
+                    'evidencia_id'    => $evidenciaId,
+                    'usuario_id'      => $usuarioId,
+                    'estado'          => $estado,
+                    'fecha_asignacion' => now(),
+                    'fecha_limite'    => now()->addDays(30),
+                    'comentario'      => 'Evidencia de prueba mixta',
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]);
+            }
         }
 
-        echo "✅ Asignaciones mixtas insertadas para Criterio 2\n";
+        echo "✅ Asignaciones insertadas para {$usuarios->count()} usuario(s)\n";
 
         // Mostrar resumen
-        $resumen = DB::select("
-            SELECT 
-                c.criterio_id,
-                c.nomenclatura AS criterio,
-                COUNT(DISTINCT e.evidencia_id) AS total_evidencias,
-                COUNT(DISTINCT CASE WHEN ea.estado = 'completado' THEN ea.evidencia_id END) AS completadas,
-                COUNT(DISTINCT CASE WHEN ea.estado = 'pendiente' THEN ea.evidencia_id END) AS pendientes
-            FROM CRITERIO c
-            JOIN EVIDENCIA e ON c.criterio_id = e.criterio_id
-            LEFT JOIN EVIDENCIA_ASIGNACION ea ON e.evidencia_id = ea.evidencia_id
-            WHERE c.criterio_id IN (1, 2)
-              AND e.activo = 1
-            GROUP BY c.criterio_id, c.nomenclatura
-            ORDER BY c.criterio_id
-        ");
-
-        echo "\n📊 RESUMEN DE ASIGNACIONES:\n";
-        foreach ($resumen as $row) {
-            echo "  Criterio {$row->criterio_id} ({$row->criterio}): {$row->completadas}/{$row->total_evidencias} completadas\n";
-        }
+        $total = DB::table('EVIDENCIA_ASIGNACION')->count();
+        echo "\n📊 Total EVIDENCIA_ASIGNACION: {$total}\n";
 
         echo "\n🎉 Datos de prueba listos!\n";
         echo "\n📝 ENDPOINTS PARA PROBAR:\n";
