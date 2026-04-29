@@ -27,11 +27,12 @@ class EvidenceAssignmentController extends Controller
 
     /**
      * GET /api/evidencias-asignaciones
-     * Mostrar todas las asignaciones de evidencias.
+     * Mostrar todas las asignaciones de evidencias, filtradas por proceso si el contexto lo indica.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $assignments = $this->service->getAll();
+        $procesoId = $request->query('proceso_id') ? (int) $request->query('proceso_id') : null;
+        $assignments = $this->service->getAll($procesoId);
         return EvidenceAssignmentResource::collection($assignments)->response();
     }
 
@@ -188,11 +189,20 @@ class EvidenceAssignmentController extends Controller
 
     /**
      * GET /api/usuarios/{usuarioId}/evidencias-asignadas
-     * Obtener todas las evidencias asignadas a un usuario específico.
+     * Obtener las evidencias asignadas a un usuario, filtradas por proceso si el contexto lo indica.
      */
-    public function getByUser(string $usuarioId): JsonResponse
+    public function getByUser(Request $request, string $usuarioId): JsonResponse
     {
-        $assignments = $this->service->getAssignmentsByUser((int)$usuarioId);
+        $authUser = $request->user();
+        $isSelf   = (int) $usuarioId === (int) $authUser->usuario_id;
+        $canView  = $authUser->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
+
+        if (!$isSelf && !$canView) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $procesoId = $request->query('proceso_id') ? (int) $request->query('proceso_id') : null;
+        $assignments = $this->service->getAssignmentsByUser((int)$usuarioId, $procesoId);
         return EvidenceAssignmentResource::collection($assignments)->response();
     }
 
@@ -303,35 +313,75 @@ class EvidenceAssignmentController extends Controller
     /**
      * GET /api/usuarios/{usuarioId}/mis-ciclos
      * Obtener los ciclos de acreditación donde el usuario tiene asignaciones,
-     * con el tipo de modelo de cada uno (tradicional / elemento_flexible).
+     * enriquecidos con sede, carrera y tipos de proceso asignados.
      */
-    public function getUserCycles(string $usuarioId): JsonResponse
+    public function getUserCycles(Request $request, string $usuarioId): JsonResponse
     {
-        $userId = (int) $usuarioId;
+        $userId   = (int) $usuarioId;
+        $authUser = $request->user();
+        $isSelf   = $userId === (int) $authUser->usuario_id;
+        $canView  = $authUser->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
 
-        $traditionalCycles = EvidenceAssignment::where('usuario_id', $userId)
-            ->with('process.accreditationCycle.modeloEstructura')
-            ->get()
-            ->pluck('process.accreditationCycle')
-            ->filter()
-            ->unique('ciclo_acreditacion_id');
+        if (!$isSelf && !$canView) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
 
-        $flexibleCycles = ElementAssignment::where('usuario_id', $userId)
-            ->with('process.accreditationCycle.modeloEstructura')
-            ->get()
-            ->pluck('process.accreditationCycle')
-            ->filter()
-            ->unique('ciclo_acreditacion_id');
+        $cycleMap = [];
 
-        $cycles = $traditionalCycles->merge($flexibleCycles)
-            ->unique('ciclo_acreditacion_id')
-            ->map(fn ($cycle) => [
-                'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
-                'nombre'               => $cycle->nombre,
-                'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'tradicional',
-            ])
-            ->values();
+        $eagerLoad = [
+            'process',
+            'process.accreditationCycle',
+            'process.accreditationCycle.careerCampus.career',
+            'process.accreditationCycle.careerCampus.campus',
+            'process.accreditationCycle.modeloEstructura',
+        ];
 
-        return response()->json(['data' => $cycles], 200);
+        foreach (EvidenceAssignment::where('usuario_id', $userId)->with($eagerLoad)->get() as $assignment) {
+            $process = $assignment->process;
+            $cycle   = $process?->accreditationCycle;
+            if (!$cycle) continue;
+
+            $key = $cycle->ciclo_acreditacion_id;
+            if (!isset($cycleMap[$key])) {
+                $cycleMap[$key] = [
+                    'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+                    'nombre'               => $cycle->nombre,
+                    'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'tradicional',
+                    'carrera_sede_id'      => $cycle->carrera_sede_id,
+                    'carrera_nombre'       => $cycle->careerCampus?->career?->nombre ?? '',
+                    'sede_nombre'          => $cycle->careerCampus?->campus?->nombre ?? '',
+                    'procesos'             => [],
+                ];
+            }
+            $tipoProceso = $process->tipo_proceso ?? null;
+            if ($tipoProceso && !in_array($tipoProceso, $cycleMap[$key]['procesos'])) {
+                $cycleMap[$key]['procesos'][] = $tipoProceso;
+            }
+        }
+
+        foreach (ElementAssignment::where('usuario_id', $userId)->with($eagerLoad)->get() as $assignment) {
+            $process = $assignment->process;
+            $cycle   = $process?->accreditationCycle;
+            if (!$cycle) continue;
+
+            $key = $cycle->ciclo_acreditacion_id;
+            if (!isset($cycleMap[$key])) {
+                $cycleMap[$key] = [
+                    'ciclo_acreditacion_id' => $cycle->ciclo_acreditacion_id,
+                    'nombre'               => $cycle->nombre,
+                    'tipo_modelo'          => $cycle->modeloEstructura?->tipo ?? 'elemento_flexible',
+                    'carrera_sede_id'      => $cycle->carrera_sede_id,
+                    'carrera_nombre'       => $cycle->careerCampus?->career?->nombre ?? '',
+                    'sede_nombre'          => $cycle->careerCampus?->campus?->nombre ?? '',
+                    'procesos'             => [],
+                ];
+            }
+            $tipoProceso = $process->tipo_proceso ?? null;
+            if ($tipoProceso && !in_array($tipoProceso, $cycleMap[$key]['procesos'])) {
+                $cycleMap[$key]['procesos'][] = $tipoProceso;
+            }
+        }
+
+        return response()->json(['data' => array_values($cycleMap)], 200);
     }
 }

@@ -172,10 +172,22 @@ class ElementAssignmentController extends Controller
 
     /**
      * GET /api/usuarios/{usuarioId}/elementos-asignados
+     * Filtrado por proceso si el contexto lo indica.
      */
-    public function byUser(string $userId): JsonResponse
+    public function byUser(Request $request, string $userId): JsonResponse
     {
-        $assignments = $this->service->getByUser((int) $userId);
+        $authUser = $request->user();
+        $isSelf   = (int) $userId === (int) $authUser->usuario_id;
+        $canView  = $authUser->hasRole(['Superusuario', 'Administrador', 'Encargado de Acreditación']);
+
+        if (!$isSelf && !$canView) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+
+        $processId = $request->query('proceso_id') !== null && is_numeric($request->query('proceso_id'))
+            ? (int) $request->query('proceso_id')
+            : null;
+        $assignments = $this->service->getByUser((int) $userId, $processId);
         return response()->json(['data' => ElementAssignmentResource::collection($assignments)], 200);
     }
 
