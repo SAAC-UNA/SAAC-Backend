@@ -3,7 +3,7 @@
 > Generado a partir de las migraciones Laravel del proyecto.
 > Para visualizarlo en VS Code instala la extensión **"Markdown Preview Mermaid Support"** (`bierner.markdown-mermaid`) y abre el preview (`Ctrl+Shift+V`).
 >
-> **Última actualización:** commits `ee2d23b` y `3eb399b` — se agregaron las tablas `MODELO_ESTRUCTURA` y `JERARQUIA`, y se actualizó `PROCESO`.
+> **Última actualización:** migración `040` — se añadieron tablas para el **modelo flexible** (`ELEMENTO`, `ELEMENTO_ASIGNACION`, `APROBACION_ELEMENTO`, `COMPROMISO_MEJORA_ELEMENTO`, `COMPROMISO_MEJORA_ELEMENTO_ASIGNACION`, `SOLICITUD_AMPLIACION_ELEMENTO`, `INFORME_ARCHIVO`); se actualizaron `MODELO_ESTRUCTURA`, `PROCESO`, `ARCHIVO` y `SOLICITUD_AMPLIACION`.
 
 ```mermaid
 erDiagram
@@ -37,29 +37,34 @@ erDiagram
     PROCESO {
         bigint proceso_id PK
         bigint ciclo_acreditacion_id FK
-        bigint modelo_estructura_id FK
-        string tipo_proceso
+        enum tipo_proceso
+        date fecha_inicio
+        date fecha_finalizacion
         boolean activo
     }
     MODELO_ESTRUCTURA {
         bigint modelo_estructura_id PK
         string nombre
         text descripcion
-        string tipo
+        enum tipo
         string version
         boolean activo
+        json tipos_requieren_archivo
+        json tipos_asignables
+        json tipos_jerarquia
     }
-    JERARQUIA {
-        bigint jerarquia_id PK
+    ELEMENTO {
+        bigint elemento_id PK
+        bigint padre_id FK
         bigint modelo_estructura_id FK
-        bigint parent_id FK
-        string nombre
         string tipo
+        string nombre
         enum categoria
         string nomenclatura
         text descripcion
-        integer orden
         boolean activo
+        enum estado
+        date fecha_limite
     }
     AUTOEVALUACION {
         bigint autoevaluacion_id PK
@@ -69,6 +74,15 @@ erDiagram
     }
     COMPROMISO_MEJORA {
         bigint compromiso_mejora_id PK
+        bigint proceso_id FK
+        text descripcion
+        date fecha_inicio
+        date fecha_fin
+        enum estado
+        boolean activo
+    }
+    COMPROMISO_MEJORA_ELEMENTO {
+        bigint compromiso_elemento_id PK
         bigint proceso_id FK
         text descripcion
         date fecha_inicio
@@ -148,6 +162,7 @@ erDiagram
     ARCHIVO {
         bigint archivo_id PK
         bigint evidencia_id FK
+        bigint elemento_id FK
         bigint usuario_id FK
         bigint proceso_id FK
         timestamp fecha_subida
@@ -156,8 +171,29 @@ erDiagram
         text url
         string nombre_original
         bigint tamanio
+        string tipo_mime
         boolean is_publico
         string token_publico
+        timestamp link_expira_en
+    }
+    INFORME_ARCHIVO {
+        bigint informe_archivo_id PK
+        bigint proceso_id FK
+        bigint usuario_id FK
+        bigint usuario_publicacion_id FK
+        timestamp fecha_subida
+        string tipo
+        string path
+        text url
+        string nombre_original
+        bigint tamanio
+        string tipo_mime
+        boolean is_publico
+        string token_publico
+        timestamp link_expira_en
+        enum estado
+        timestamp fecha_publicacion
+        text observaciones
     }
     EVIDENCIA_ASIGNACION {
         bigint evidencia_asignacion_id PK
@@ -168,14 +204,38 @@ erDiagram
         datetime fecha_asignacion
         datetime fecha_limite
     }
+    ELEMENTO_ASIGNACION {
+        bigint elemento_asignacion_id PK
+        bigint elemento_id FK
+        bigint usuario_id FK
+        bigint proceso_id FK
+        bigint asignado_por FK
+        enum estado
+        date fecha_limite
+        text comentario
+    }
     SOLICITUD_AMPLIACION {
         bigint solicitud_ampliacion_id PK
         bigint evidencia_asignacion_id FK
+        bigint elemento_asignacion_id FK
         bigint usuario_id FK
         bigint usuario_resolutor_id FK
         string motivo
         datetime fecha_sugerida
-        string estado
+        enum estado
+        datetime fecha_resolucion
+        string justificacion
+    }
+    SOLICITUD_AMPLIACION_ELEMENTO {
+        bigint solicitud_ampliacion_elemento_id PK
+        bigint elemento_asignacion_id FK
+        bigint usuario_id FK
+        bigint usuario_resolutor_id FK
+        string motivo
+        datetime fecha_sugerida
+        enum estado
+        datetime fecha_resolucion
+        string justificacion
     }
     APROBACION_CRITERIO {
         bigint aprobacion_criterio_id PK
@@ -193,6 +253,15 @@ erDiagram
         bigint usuario_id FK
         enum estado
     }
+    APROBACION_ELEMENTO {
+        bigint aprobacion_elemento_id PK
+        bigint elemento_id FK
+        bigint proceso_id FK
+        bigint usuario_id FK
+        enum estado
+        string comentario
+        date nueva_fecha_limite
+    }
     COMPROMISO_MEJORA_EVIDENCIA {
         bigint compromiso_mejora_id FK
         bigint evidencia_id FK
@@ -202,6 +271,11 @@ erDiagram
         bigint evidencia_asignacion_id FK
         text comentario
     }
+    COMPROMISO_MEJORA_ELEMENTO_ASIGNACION {
+        bigint compromiso_elemento_id FK
+        bigint elemento_asignacion_id FK
+        string comentario
+    }
 
     %% ── Jerarquía institucional ──
     UNIVERSIDAD ||--o{ SEDE : "tiene"
@@ -210,54 +284,71 @@ erDiagram
     CARRERA_SEDE ||--o{ CICLO_ACREDITACION : "tiene"
     CICLO_ACREDITACION ||--o{ PROCESO : "contiene"
 
-    %% ── Modelo de estructura y jerarquía flexible ──
-    MODELO_ESTRUCTURA ||--o{ PROCESO : "usado en"
-    MODELO_ESTRUCTURA ||--o{ JERARQUIA : "define"
-    JERARQUIA ||--o{ JERARQUIA : "contiene"
+    %% ── Modelo de estructura flexible ──
+    MODELO_ESTRUCTURA ||--o{ ELEMENTO : "define"
+    ELEMENTO ||--o{ ELEMENTO : "contiene"
 
     %% ── Proceso → subentidades ──
     PROCESO ||--o| AUTOEVALUACION : "genera"
     PROCESO ||--o{ COMPROMISO_MEJORA : "genera"
+    PROCESO ||--o{ COMPROMISO_MEJORA_ELEMENTO : "genera"
     PROCESO ||--o{ EVIDENCIA_ASIGNACION : "tiene"
+    PROCESO ||--o{ ELEMENTO_ASIGNACION : "tiene"
     PROCESO ||--o{ ARCHIVO : "almacena"
+    PROCESO ||--o{ INFORME_ARCHIVO : "almacena"
     PROCESO ||--o{ APROBACION_CRITERIO : "registra"
     PROCESO ||--o{ APROBACION_EVIDENCIA : "registra"
+    PROCESO ||--o{ APROBACION_ELEMENTO : "registra"
 
-    %% ── Catálogo académico ──
+    %% ── Catálogo tradicional (SINAES 2018) ──
     DIMENSION ||--o{ COMPONENTE : "agrupa"
     COMPONENTE ||--o{ CRITERIO : "tiene"
     CRITERIO ||--o{ ESTANDAR : "define"
     CRITERIO ||--o{ EVIDENCIA : "requiere"
     CRITERIO ||--o{ APROBACION_CRITERIO : "es aprobado en"
 
-    %% ── Evidencias ──
+    %% ── Evidencias (modelo tradicional) ──
     ESTADO_EVIDENCIA ||--o{ EVIDENCIA : "clasifica"
     EVIDENCIA ||--o{ ARCHIVO : "documentada con"
     EVIDENCIA ||--o{ EVIDENCIA_ASIGNACION : "asignada en"
     EVIDENCIA ||--o{ COMPROMISO_MEJORA_EVIDENCIA : "vinculada a"
     EVIDENCIA ||--o{ APROBACION_EVIDENCIA : "aprobada en"
 
+    %% ── Elementos (modelo flexible) ──
+    ELEMENTO ||--o{ ARCHIVO : "documentado con"
+    ELEMENTO ||--o{ ELEMENTO_ASIGNACION : "asignado en"
+    ELEMENTO ||--o{ APROBACION_ELEMENTO : "aprobado en"
+
     %% ── Usuarios ──
     USUARIO ||--o{ BITACORA : "genera"
     USUARIO ||--o{ COMENTARIO : "escribe"
     USUARIO ||--o{ ARCHIVO : "sube"
+    USUARIO ||--o{ INFORME_ARCHIVO : "sube"
     USUARIO ||--o{ CARRERA_USUARIO : "asignado a"
     USUARIO ||--o{ EVIDENCIA_ASIGNACION : "responsable de"
+    USUARIO ||--o{ ELEMENTO_ASIGNACION : "responsable de"
     USUARIO ||--o{ SOLICITUD_AMPLIACION : "solicita"
+    USUARIO ||--o{ SOLICITUD_AMPLIACION_ELEMENTO : "solicita"
     USUARIO ||--o{ APROBACION_CRITERIO : "aprueba"
     USUARIO ||--o{ APROBACION_EVIDENCIA : "aprueba"
+    USUARIO ||--o{ APROBACION_ELEMENTO : "aprueba"
     CARRERA ||--o{ CARRERA_USUARIO : "tiene"
 
     %% ── Auditoría ──
     TIPO_ACCION ||--o{ BITACORA : "categoriza"
 
-    %% ── Compromisos de mejora ──
+    %% ── Compromisos de mejora (modelo tradicional) ──
     COMPROMISO_MEJORA ||--o{ COMPROMISO_MEJORA_EVIDENCIA : "incluye"
     COMPROMISO_MEJORA ||--o{ COMPROMISO_MEJORA_EVIDENCIA_ASIGNACION : "vincula"
     EVIDENCIA_ASIGNACION ||--o{ COMPROMISO_MEJORA_EVIDENCIA_ASIGNACION : "vinculada a"
     EVIDENCIA_ASIGNACION ||--o{ SOLICITUD_AMPLIACION : "tiene"
 
-    %% ── Aprobaciones ──
+    %% ── Compromisos de mejora (modelo flexible) ──
+    COMPROMISO_MEJORA_ELEMENTO ||--o{ COMPROMISO_MEJORA_ELEMENTO_ASIGNACION : "vincula"
+    ELEMENTO_ASIGNACION ||--o{ COMPROMISO_MEJORA_ELEMENTO_ASIGNACION : "vinculada a"
+    ELEMENTO_ASIGNACION ||--o{ SOLICITUD_AMPLIACION_ELEMENTO : "tiene"
+
+    %% ── Aprobaciones (modelo tradicional) ──
     APROBACION_CRITERIO ||--o{ APROBACION_EVIDENCIA : "contiene"
 ```
 
