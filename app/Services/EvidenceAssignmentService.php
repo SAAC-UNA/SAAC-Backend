@@ -34,11 +34,12 @@ class EvidenceAssignmentService
     }
 
     /**
-     * Obtener todas las asignaciones de evidencias.
+     * Obtener todas las asignaciones de evidencias, opcionalmente filtradas por proceso.
      */
-    public function getAll()
+    public function getAll(?int $procesoId = null)
     {
         return $this->baseQuery()
+            ->when($procesoId !== null, fn ($q) => $q->where('proceso_id', $procesoId))
             ->orderBy('fecha_asignacion', 'desc')
             ->get();
     }
@@ -220,12 +221,13 @@ class EvidenceAssignmentService
     }
 
     /**
-     * Obtener asignaciones por usuario.
+     * Obtener asignaciones por usuario, opcionalmente filtradas por proceso.
      */
-    public function getAssignmentsByUser(int $usuarioId)
+    public function getAssignmentsByUser(int $usuarioId, ?int $procesoId = null)
     {
         return $this->baseQuery()
             ->where('usuario_id', $usuarioId)
+            ->when($procesoId !== null, fn ($q) => $q->where('proceso_id', $procesoId))
             ->orderBy('fecha_asignacion', 'desc')
             ->get();
     }

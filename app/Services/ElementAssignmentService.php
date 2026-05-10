@@ -287,13 +287,18 @@ class ElementAssignmentService
     }
 
     /**
-     * Get assignments by user.
+     * Get assignments by user, optionally filtered by process.
      */
-    public function getByUser(int $userId)
+    public function getByUser(int $userId, ?int $processId = null)
     {
-        return Cache::remember("element-assignments.user.{$userId}", self::CACHE_TTL, fn () =>
+        $cacheKey = $processId !== null
+            ? "element-assignments.user.{$userId}.process.{$processId}"
+            : "element-assignments.user.{$userId}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, fn () =>
             $this->baseQuery()
                 ->where('usuario_id', $userId)
+                ->when($processId !== null, fn ($q) => $q->where('proceso_id', $processId))
                 ->orderBy('created_at', 'desc')
                 ->get()
         );
