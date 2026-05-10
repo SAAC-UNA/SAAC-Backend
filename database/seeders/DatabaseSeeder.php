@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
 
             // === USUARIOS Y RELACIONES ===
             UserSeeder::class,                  // 6. Usuarios con roles y carreras
-            CommentSeeder::class,               // 7. Comentarios (temporal - relación será refactorizada)
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
             // IMPORTANTE: StructureModelSeeder debe ejecutarse ANTES de AccreditationCycleSeeder
@@ -53,23 +52,8 @@ class DatabaseSeeder extends Seeder
             AutoevaluationSeeder::class,        // 17. Autoevaluaciones (dependen de procesos tipo "Autoevaluación")
             ImprovementCommitmentSeeder::class, // 17. Compromisos de mejora (dependen de procesos tipo "Compromiso de mejora")
 
-            // === ASIGNACIONES DE EVIDENCIAS ===
-            EvidenceAssignmentTestSeeder::class, // 18. Asignaciones de evidencias (para pruebas de aprobación)
-
-            // === APROBACIONES DE CRITERIOS (DATOS DE PRUEBA) ===
-            // IMPORTANTE: Se ejecutan DESPUÉS de ProcessSeeder y AutoevaluationSeeder
-            AprobacionCriteriosTestSeeder::class, // 19. Aprobaciones de criterios (para pruebas de endpoints)
-
-            // === APROBACIONES DE ELEMENTOS - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
-            // IMPORTANTE: Se ejecutan DESPUÉS de AccreditationCycleSeeder y ProcessSeeder
-            ApprovalElementsTestSeeder::class, // 21. Aprobaciones de elementos (HU-010 modelo flexible)
-
-            // === COMPROMISOS DE MEJORA - MODELO FLEXIBLE (DATOS DE PRUEBA) ===
-            CommitmentElementsTestSeeder::class, // 21. Compromisos de mejora elementos (HU-010 modelo flexible)
-
             // === AUDITORÍA Y LOGS ===
             ActionTypeSeeder::class,          // 23. Tipos de acción (catálogo de TIPO_ACCION)
-            // AuditLogSeeder::class,            // 22. Logs de auditoría
         ]);
 
         $this->command->info('');
