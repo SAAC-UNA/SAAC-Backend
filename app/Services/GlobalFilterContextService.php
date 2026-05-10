@@ -99,7 +99,9 @@ class GlobalFilterContextService
             return;
         }
 
-        $query = AccreditationCycle::query()->where('ciclo_acreditacion_id', $cycleId);
+        $query = AccreditationCycle::query()
+            ->where('ciclo_acreditacion_id', $cycleId)
+            ->where('estado', 'activo');
 
         if ($careerCampusId !== null) {
             $query->where('carrera_sede_id', $careerCampusId);
@@ -107,7 +109,7 @@ class GlobalFilterContextService
 
         if (!$query->exists()) {
             throw ValidationException::withMessages([
-                'ciclo_acreditacion_id' => ['El ciclo seleccionado no existe o no pertenece a la carrera-sede activa.'],
+                'ciclo_acreditacion_id' => ['El ciclo seleccionado no existe, no está activo o no pertenece a la carrera-sede activa.'],
             ]);
         }
     }
@@ -118,7 +120,9 @@ class GlobalFilterContextService
             return;
         }
 
-        $query = Process::query()->where('proceso_id', $processId);
+        $query = Process::query()
+            ->where('proceso_id', $processId)
+            ->where('activo', true);
 
         if ($cycleId !== null) {
             $query->where('ciclo_acreditacion_id', $cycleId);
@@ -130,7 +134,7 @@ class GlobalFilterContextService
 
         if (!$query->exists()) {
             throw ValidationException::withMessages([
-                'proceso_id' => ['El proceso seleccionado no existe o no coincide con el contexto activo.'],
+                'proceso_id' => ['El proceso seleccionado no existe, no está activo o no coincide con el contexto activo.'],
             ]);
         }
     }
