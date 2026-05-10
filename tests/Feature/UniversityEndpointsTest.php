@@ -40,7 +40,8 @@ it('store crea una universidad', function () {
         $data = ['nombre' => 'Universidad Test'];
 
         $this->postJson('/api/estructura/universidades', $data)
-             ->assertNotFound();
+             ->assertCreated()
+             ->assertJsonFragment(['nombre' => 'Universidad Test']);
 
         $this->assertDatabaseHas('UNIVERSIDAD', $data);
 });

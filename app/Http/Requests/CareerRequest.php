@@ -13,13 +13,17 @@ class CareerRequest extends FormRequest
 
     public function rules(): array
     {
+        $id = $this->route('career') ?? $this->route('id');
+
         return [
             'nombre' => [
                 'required',
                 'string',
                 'max:250',
                 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/',
-                Rule::unique('CARRERA','nombre')->ignore($this->route('carrera'), 'carrera_id')
+                Rule::unique('CARRERA', 'nombre')
+                    ->where(fn ($query) => $query->where('universidad_id', $this->universidad_id))
+                    ->ignore($id, 'carrera_id'),
             ],
             'universidad_id' => [
                 'required',

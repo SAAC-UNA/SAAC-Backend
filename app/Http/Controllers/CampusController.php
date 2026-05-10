@@ -53,14 +53,11 @@ class CampusController extends Controller
     {
         $campus = $this->service->create($request->validated());
 
-        $primaryKeyName = $campus->getKeyName();
-
         return response()
             ->json([
                 'message' => 'Campus creado correctamente.',
                 'data'    => $campus
-            ], 201)
-            ->header('Location', route('campuses.show', $campus->$primaryKeyName));
+            ], 201);
     }
 
     /**

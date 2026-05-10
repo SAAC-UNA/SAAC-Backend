@@ -59,8 +59,7 @@ class UniversityController extends Controller
             ->json([
                 'message' => 'Universidad creada correctamente.',
                 'data'    => $university
-            ], 201)
-            ->header('Location', route('universidades.show', $university->universidad_id));
+            ], 201);
     }
 
     /**

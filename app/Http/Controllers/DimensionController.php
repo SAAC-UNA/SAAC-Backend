@@ -46,11 +46,8 @@ class DimensionController extends Controller
     public function store(DimensionRequest $request)
     {
         $dimension = $this->service->create($request->validated());
-        $primaryKeyName = $dimension->getKeyName();
-
         return response()
-            ->json(['message' => 'Dimensión creada correctamente.', 'data' => $dimension], 201)
-            ->header('Location', route('dimensiones.show', $dimension->$primaryKeyName));
+            ->json(['message' => 'Dimensión creada correctamente.', 'data' => $dimension], 201);
     }
     /**
      * PUT/PATCH /api/dimensiones/{id}

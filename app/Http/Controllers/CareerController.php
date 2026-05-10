@@ -47,12 +47,8 @@ class CareerController extends Controller
     public function store(CareerRequest $request)
     {
         $career = $this->service->create($request->validated());
-        $primaryKeyName = $career->getKeyName();
-
-        // Respuesta con código 201 y Location header
         return response()
-            ->json(['message' => 'Carrera creada correctamente.', 'data' => $career], 201)
-            ->header('Location', route('carreras.show', $career->$primaryKeyName));
+            ->json(['message' => 'Carrera creada correctamente.', 'data' => $career], 201);
     }
 
     /**
