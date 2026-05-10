@@ -195,8 +195,8 @@ class AccreditationCycleRequest extends FormRequest
         $currentCycle = $id ? AccreditationCycle::find($id) : null;
 
         $carreraSede = $this->input('carrera_sede_id', $currentCycle?->carrera_sede_id);
-        $fechaInicio = $this->input('fecha_inicio', $currentCycle?->fecha_inicio?->format('Y-m-d'));
-        $fechaFin = $this->input('fecha_fin', $currentCycle?->fecha_fin?->format('Y-m-d'));
+        $fechaInicio = $this->input('fecha_inicio', $currentCycle?->fecha_inicio);
+        $fechaFin = $this->input('fecha_fin', $currentCycle?->fecha_fin);
 
         if (!$carreraSede || !$fechaInicio || !$fechaFin) {
             return;
