@@ -42,7 +42,6 @@ class DatabaseSeeder extends Seeder
 
             // === DATOS DEL DOMINIO DE ACREDITACIÓN ===
             // IMPORTANTE: StructureModelSeeder debe ejecutarse ANTES de AccreditationCycleSeeder
-            StructureModelSeeder::class,         // 8. Modelos de estructura (tradicional y flexible)
             TraditionalStructureSeeder::class,          // 8-12. Dimensiones → Componentes → Criterios → Estándares → Evidencias COMPLETO
             FlexibleStructureSeeder::class,             // 20. Estructura flexible SINAES 2026 (Dimensión→Pauta→Fuente)
 

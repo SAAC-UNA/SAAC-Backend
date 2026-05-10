@@ -18,7 +18,7 @@ return new class extends Migration
             // Relación con componente (restrict: no borrar componente si tiene criterios)
             $table->foreignId('componente_id')->constrained('COMPONENTE', 'componente_id')->onDelete('restrict');
             // Descripción del criterio
-            $table->string('descripcion', 500);
+            $table->text('descripcion', 500);
             // Nomenclatura del criterio
             $table->string('nomenclatura', 20);
             // Estado del criterio
