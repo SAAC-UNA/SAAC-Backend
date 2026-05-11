@@ -3,6 +3,7 @@
 use App\Models\Career;
 use App\Models\User;
 use App\Models\Campus;
+use App\Models\University;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 
@@ -38,25 +39,33 @@ it('show devuelve 404 si no existe', function () {
 });
 
 it('store crea una carrera', function () {
+        $university = University::factory()->create();
+
         $data = [
-            'nombre' => 'Ingeniería Industrial',
-            'activo' => true,
+            'nombre'         => 'Ingeniería Industrial',
+            'universidad_id' => $university->universidad_id,
         ];
 
-        $response = $this->postJson($this->base, $data);
+        $this->postJson($this->base, $data)
+             ->assertStatus(201)
+             ->assertJsonPath('data.nombre', 'Ingeniería Industrial');
 
-        $this->assertContains($response->status(), [404, 500]);
-
-        if ($response->status() === 404) {
-            $this->assertDatabaseHas('CARRERA', ['nombre' => 'Ingeniería Industrial']);
-        }
+        $this->assertDatabaseHas('CARRERA', [
+            'nombre' => 'Ingeniería Industrial',
+            'universidad_id' => $university->universidad_id,
+        ]);
 });
 
 it('update actualiza una carrera', function () {
-        $c = Career::factory()->create(['nombre' => 'Original']);
+        $university = University::factory()->create();
+        $c = Career::factory()->create([
+            'nombre' => 'Original',
+            'universidad_id' => $university->universidad_id,
+        ]);
 
         $payload = [
             'nombre' => 'Actualizado',
+            'universidad_id' => $university->universidad_id,
         ];
 
         $this->putJson("{$this->base}/{$c->getKey()}", $payload)

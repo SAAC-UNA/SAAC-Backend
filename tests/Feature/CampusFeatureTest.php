@@ -68,7 +68,8 @@ it('puede crear un campus', function () {
     
     $response = $this->postJson('/api/estructura/campuses', $data);
 
-    $this->assertContains($response->status(), [404, 500]);
+    $response->assertStatus(201)
+        ->assertJsonPath('data.nombre', 'Campus Nuevo');
     
     $this->assertDatabaseHas('SEDE', [
         'nombre' => 'Campus Nuevo',

@@ -49,14 +49,11 @@ it('store crea un campus', function () use ($base) {
         'nombre'         => 'Campus Central',
     ];
 
-    $response = $this->postJson($base, $data);
+    $this->postJson($base, $data)
+         ->assertStatus(201)
+         ->assertJsonPath('data.nombre', 'Campus Central');
 
-    $this->assertContains($response->status(), [404, 500]);
-
-    // Flujo normal actual: crea el registro, pero falla al construir la URL de respuesta.
-    if ($response->status() === 404) {
-        $this->assertDatabaseHas('SEDE', $data);
-    }
+    $this->assertDatabaseHas('SEDE', $data);
 });
 
 it('update actualiza un campus', function () use ($base) {
@@ -64,7 +61,7 @@ it('update actualiza un campus', function () use ($base) {
 
     $payload = [
         'nombre' => 'Actualizado',
-        'universidad_id' => $c->universidad_id, // 👈 este campo es obligatorio en tu request
+        'universidad_id' => $c->universidad_id, //  este campo es obligatorio en tu request
     ];
 
     $this->putJson($base.'/'.$c->getKey(), $payload)

@@ -259,7 +259,7 @@ it('desactivar universidad desactiva campus en cascada', function ()
         ]);
 
         // Asociar carrera con campus
-        $career->campuses()->attach($campus->sede_id);
+        $campus->careers()->attach($career->carrera_id);
 
         // Verificar que todos estén activos inicialmente
         $this->assertEquals(1, $university->fresh()->activo);
@@ -291,7 +291,7 @@ it('desactivar campus desactiva carreras asociadas en cascada', function ()
         $career = Career::factory()->create(['activo' => true]);
         
         // Asociar carrera con campus
-        $career->campuses()->attach($campus->sede_id);
+        $campus->careers()->attach($career->carrera_id);
 
         // Desactivar el campus directamente (sin endpoint ya que está comentado)
         $campus->update(['activo' => false]);
@@ -330,7 +330,7 @@ it('activar universidad activa campus en cascada', function ()
         $career = Career::factory()->create(['activo' => false]);
         
         // Asociar carrera con campus
-        $career->campuses()->attach($campus->sede_id);
+        $campus->careers()->attach($career->carrera_id);
 
         // Activar la universidad
         $response = $this->patchJson(

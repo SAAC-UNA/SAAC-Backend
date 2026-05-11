@@ -45,10 +45,10 @@ it('puede asociarse con sedes', function () {
     $career = Career::factory()->create();
     $campus = \App\Models\Campus::factory()->create();
     
-    $career->campuses()->attach($campus->sede_id);
+    $campus->careers()->attach($career->carrera_id);
     
-    expect($career->campuses)->toHaveCount(1);
-    expect($career->campuses->first()->sede_id)->toBe($campus->sede_id);
+    expect($campus->careers)->toHaveCount(1);
+    expect($campus->careers->first()->carrera_id)->toBe($career->carrera_id);
 });
 
 it('tiene campo activo por defecto', function () {

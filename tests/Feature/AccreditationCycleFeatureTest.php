@@ -73,8 +73,8 @@ class AccreditationCycleFeatureTest extends TestCase
             'carrera_sede_id'      => $this->careerCampus->carrera_sede_id,
             'modelo_estructura_id' => $this->modelo->modelo_estructura_id,
             'nombre'               => 'Ciclo 2026-2030',
-            'fecha_inicio'         => now()->toDateString(),
-            'fecha_fin'            => now()->addYears(4)->toDateString(),
+            'fecha_inicio'         => (string) now()->year,
+            'fecha_fin'            => (string) now()->addYears(4)->year,
         ])->assertStatus(201);
 
         $response->assertJsonPath('data.nombre', 'Ciclo 2026-2030');
@@ -132,8 +132,8 @@ class AccreditationCycleFeatureTest extends TestCase
         $response = $this->postJson($this->baseEndpoint, [
             'carrera_sede_id'      => $this->careerCampus->carrera_sede_id,
             'modelo_estructura_id' => $this->modelo->modelo_estructura_id,
-            'fecha_inicio'         => now()->toDateString(),
-            'fecha_fin'            => now()->addYears(4)->toDateString(),
+            'fecha_inicio'         => (string) now()->year,
+            'fecha_fin'            => (string) now()->addYears(4)->year,
         ])->assertStatus(201);
 
         $this->assertStringStartsWith('Ciclo ', $response->json('data.nombre'));
@@ -209,8 +209,8 @@ class AccreditationCycleFeatureTest extends TestCase
             'modelo_estructura_id' => $this->modelo->modelo_estructura_id,
             'nombre'               => 'Ciclo otra sede',
             'estado'               => 'activo',
-            'fecha_inicio'         => now()->toDateString(),
-            'fecha_fin'            => now()->addYears(4)->toDateString(),
+            'fecha_inicio'         => (string) now()->year,
+            'fecha_fin'            => (string) now()->addYears(4)->year,
         ])->assertStatus(201);
     }
 
