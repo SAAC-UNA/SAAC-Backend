@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class StoreUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +23,25 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'cedula' => ['required', 'string', 'regex:/^\d{9}$/'],
+            'role' => [
+                'required',
+                'string',
+                'max:64',
+                Rule::exists('roles', 'name')->where(
+                    fn ($query) => $query->where('guard_name', 'api')
+                ),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'cedula.required' => 'La cedula es requerida.',
+            'cedula.regex' => 'La cedula debe contener exactamente 9 digitos.',
+            'role.required' => 'El rol es requerido.',
+            'role.exists' => 'El rol seleccionado no existe.',
         ];
     }
 }

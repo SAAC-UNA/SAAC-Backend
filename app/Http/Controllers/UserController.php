@@ -8,9 +8,11 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 //use App\Models\Role; //modelo que extiende SpatieRole
 use App\Services\UserAdminService;
+use App\Services\LdapService;
 use App\Services\AuditLogService;
 use App\Http\Requests\AssignRoleRequest;
 use App\Http\Requests\AssignPermissionsRequest;
@@ -22,7 +24,10 @@ use App\Http\Requests\AssignCareersRequest;
 
 class UserController extends Controller
 {
-    public function __construct(private UserAdminService $userAdmin) {}
+    public function __construct(
+        private UserAdminService $userAdmin,
+        private LdapService $ldapService
+    ) {}
    
 
     /**
@@ -53,9 +58,62 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreUserRequest $request)
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        //
+        Gate::authorize('usuarios.create');
+
+        $cedula = (string) $request->string('cedula')->trim();
+        $roleName = (string) $request->string('role')->trim();
+
+        if (User::where('cedula', $cedula)->exists()) {
+            return response()->json([
+                'message' => 'El usuario ya existe en SAAC',
+            ], 409);
+        }
+
+        $ldapData = $this->ldapService->getUserDataFromLdap($cedula);
+
+        if (!$ldapData) {
+            return response()->json([
+                'message' => 'No se encontró un usuario en LDAP con la cédula indicada',
+            ], 404);
+        }
+
+        if (User::where('cedula', $ldapData['cedula'])->exists()) {
+            return response()->json([
+                'message' => 'El usuario ya existe en SAAC',
+            ], 409);
+        }
+
+        if (User::where('email', $ldapData['email'])->exists()) {
+            return response()->json([
+                'message' => 'Ya existe un usuario en SAAC con el correo obtenido desde LDAP',
+            ], 409);
+        }
+
+        $user = DB::transaction(function () use ($ldapData, $roleName) {
+            $createdUser = User::create([
+                'cedula' => $ldapData['cedula'],
+                'nombre' => $ldapData['nombre'],
+                'email'  => $ldapData['email'],
+                'status' => User::STATUS_ACTIVE,
+            ]);
+
+            $createdUser->assignRole($roleName);
+
+            return $createdUser->fresh(['roles', 'permissions', 'roles.permissions', 'careers.career']);
+        });
+
+        AuditLogService::log(
+            'crear',
+            "Usuario \"{$user->nombre}\" creado desde LDAP con rol '{$roleName}'",
+            'Usuarios'
+        );
+
+        return response()->json([
+            'message' => 'Usuario creado desde LDAP correctamente',
+            'data' => new UserResource($user),
+        ], 201);
     }
 
     /**
