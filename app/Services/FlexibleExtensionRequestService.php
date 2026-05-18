@@ -62,6 +62,12 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
                 );
             }
 
+            if (!$assignment->fecha_limite) {
+                throw new \InvalidArgumentException(
+                    'No se puede solicitar ampliacion porque esta asignacion no tiene fecha limite.'
+                );
+            }
+
             $tienePendiente = ExtensionRequest::where('elemento_asignacion_id', $assignment->elemento_asignacion_id)
                 ->where('estado', ExtensionRequest::ESTADO_PENDIENTE)
                 ->exists();
@@ -72,22 +78,20 @@ class FlexibleExtensionRequestService extends AbstractExtensionRequestService
                 );
             }
 
-            if ($assignment->fecha_limite) {
-                $fechaLimite = \Carbon\Carbon::parse($assignment->fecha_limite);
-                $sugerida    = \Carbon\Carbon::parse($data['fecha_sugerida']);
+            $fechaLimite = \Carbon\Carbon::parse($assignment->fecha_limite);
+            $sugerida    = \Carbon\Carbon::parse($data['fecha_sugerida']);
 
-                if ($sugerida->lte($fechaLimite)) {
-                    throw new \InvalidArgumentException(
-                        'La fecha sugerida debe ser posterior a la fecha límite actual ('
-                        . $fechaLimite->format('d/m/Y') . ').'
-                    );
-                }
+            if ($sugerida->lte($fechaLimite)) {
+                throw new \InvalidArgumentException(
+                    'La fecha sugerida debe ser posterior a la fecha límite actual ('
+                    . $fechaLimite->format('d/m/Y') . ').'
+                );
+            }
 
-                if ($fechaLimite->diffInDays($sugerida) > 30) {
-                    throw new \InvalidArgumentException(
-                        'La ampliación no puede exceder 30 días desde la fecha límite actual.'
-                    );
-                }
+            if ($fechaLimite->diffInDays($sugerida) > 30) {
+                throw new \InvalidArgumentException(
+                    'La ampliación no puede exceder 30 días desde la fecha límite actual.'
+                );
             }
 
             $solicitud = ExtensionRequest::create([
