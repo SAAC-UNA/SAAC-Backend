@@ -521,22 +521,29 @@ Route::middleware(['auth:sanctum', 'refresh.session'])->group(function () {
 // Protegidas con:
 // - auth:sanctum: Requiere usuario autenticado con token válido
 // - permission:usuarios.edit: Requiere permiso específico para editar usuarios
-Route::prefix('admin/users')->middleware(['auth:sanctum', 'permission:usuarios.view|usuarios.edit'])->group(function () {
-    Route::get('/', [UserController::class, 'index']);
+Route::prefix('admin/users')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [UserController::class, 'index'])
+        ->middleware('permission:usuarios.view|usuarios.edit');
+    Route::post('/', [UserController::class, 'store'])
+        ->middleware('permission:usuarios.create');
     // Activa un usuario cambiando su estado a "active"
     // Ejemplo: Patch/api/admin/users/5/activate
     Route::patch('{user}/activate', [UserController::class, 'activate'])
+        ->middleware('permission:usuarios.edit')
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     // Desactiva un usuario cambiando su estado a "inactive"
     // Ejemplo: Patch/api/admin/users/5/deactivate
     Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])
+        ->middleware('permission:usuarios.edit')
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/role', [UserController::class, 'assignRole'])
+        ->middleware('permission:usuarios.edit')
         ->missing(fn (Request $request) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/permissions', [UserController::class, 'assignPermissions'])
+        ->middleware('permission:usuarios.edit')
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
     Route::put('{user}/careers', [UserController::class, 'assignCareers'])
-        ->middleware('permission:usuarios.assign|usuarios.approve')
+        ->middleware(['permission:usuarios.view|usuarios.edit', 'permission:usuarios.assign|usuarios.approve'])
         ->missing(fn (Request $r) => response()->json(['error' => 'Usuario no encontrado'], 404));
 });
 
