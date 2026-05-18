@@ -123,6 +123,9 @@ class TradicionalFileService extends AbstractFileService
             ->where('usuario_id', $usuarioId)
             ->where('proceso_id', $procesoId)
             ->where('estado', EvidenceAssignment::ESTADO_PENDIENTE)
-            ->update(['estado' => EvidenceAssignment::ESTADO_EN_PROGRESO]);
+            ->get()
+            ->each(fn (EvidenceAssignment $assignment) => $assignment->update([
+                'estado' => EvidenceAssignment::ESTADO_EN_PROGRESO,
+            ]));
     }
 }
