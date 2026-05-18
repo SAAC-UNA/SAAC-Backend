@@ -13,7 +13,7 @@ return new class extends Migration
             // Clave primaria
             $table->id()->name('solicitud_ampliacion_id');
             // Llave foránea hacia la evidencia de asignación relacionada
-            $table->foreignId('evidencia_asignacion_id')->constrained('EVIDENCIA_ASIGNACION', 'evidencia_asignacion_id')->onDelete('restrict');
+            $table->foreignId('evidencia_asignacion_id')->nullable()->constrained('EVIDENCIA_ASIGNACION', 'evidencia_asignacion_id')->onDelete('restrict');
             // Llave foránea hacia el elemento de asignación relacionado (opcional, ya que la solicitud puede ser general para la asignación)
             $table->foreignId('elemento_asignacion_id')->nullable()->constrained('ELEMENTO_ASIGNACION', 'elemento_asignacion_id')->onDelete('restrict');
             // Llave foránea hacia el usuario que realiza la solicitud
